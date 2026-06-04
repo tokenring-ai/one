@@ -28,11 +28,12 @@
     "@tokenring-ai/filesystem": "workspace:*",
     "@tokenring-ai/git": "workspace:*",
     "@tokenring-ai/github": "workspace:*",
-    "@tokenring-ai/image-generation": "workspace:*",
+    "@tokenring-ai/image": "workspace:*",
     "@tokenring-ai/javascript": "workspace:*",
     "@tokenring-ai/kubernetes": "workspace:*",
     "@tokenring-ai/lifecycle": "workspace:*",
     "@tokenring-ai/linux-audio": "workspace:*",
+    "@tokenring-ai/media-library": "workspace:*",
     "@tokenring-ai/posix-system": "workspace:*",
     "@tokenring-ai/markdown": "workspace:*",
     "@tokenring-ai/mcp": "workspace:*",
@@ -57,6 +58,7 @@
     "@tokenring-ai/todo": "workspace:*",
     "@tokenring-ai/typescript": "workspace:*",
     "@tokenring-ai/utility": "workspace:*",
+    "@tokenring-ai/video": "workspace:*",
     "@tokenring-ai/web-host": "workspace:*",
     "@tokenring-ai/workflow": "workspace:*",
     "@tokenring-ai/websearch": "workspace:*",
@@ -91,7 +93,7 @@
   },
   "type": "module",
   "exports": {
-    ".": "./index.ts",
+    ".": "./tokenring.ts",
     "./*": "./*.ts"
   }
 }

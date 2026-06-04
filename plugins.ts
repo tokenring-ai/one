@@ -22,11 +22,12 @@ import FileIndexPlugin from "@tokenring-ai/file-index/plugin";
 import FilesystemPlugin from "@tokenring-ai/filesystem/plugin";
 import GitPlugin from "@tokenring-ai/git/plugin";
 import GithubPlugin from "@tokenring-ai/github/plugin";
-import ImageGenerationPlugin from "@tokenring-ai/image-generation/plugin";
+import ImageGenerationPlugin from "@tokenring-ai/image/plugin";
 import JavascriptPlugin from "@tokenring-ai/javascript/plugin";
 import KubernetesPlugin from "@tokenring-ai/kubernetes/plugin";
 import LifecyclePlugin from "@tokenring-ai/lifecycle/plugin";
 import LinuxAudioPlugin from "@tokenring-ai/linux-audio/plugin";
+import MediaLibraryPlugin from "@tokenring-ai/media-library/plugin";
 import MarkdownPlugin from "@tokenring-ai/markdown/plugin";
 import MCPPlugin from "@tokenring-ai/mcp/plugin";
 import MemoryPlugin from "@tokenring-ai/memory/plugin";
@@ -52,6 +53,7 @@ import ThinkingPlugin from "@tokenring-ai/thinking/plugin";
 import TodoPlugin from "@tokenring-ai/todo/plugin";
 import TypescriptPlugin from "@tokenring-ai/typescript/plugin";
 import VaultPlugin from "@tokenring-ai/vault/plugin";
+import VideoGenerationPlugin from "@tokenring-ai/video/plugin";
 import WebHostPlugin from "@tokenring-ai/web-host/plugin";
 import WebSearchPlugin from "@tokenring-ai/websearch/plugin";
 import WorkflowPlugin from "@tokenring-ai/workflow/plugin";
@@ -81,6 +83,7 @@ export const plugins = [
   FilesystemPlugin,
   GitPlugin,
   GithubPlugin,
+  MediaLibraryPlugin,
   ImageGenerationPlugin,
   JavascriptPlugin,
   KubernetesPlugin,
@@ -111,6 +114,7 @@ export const plugins = [
   TodoPlugin,
   TypescriptPlugin,
   VaultPlugin,
+  VideoGenerationPlugin,
   WebHostPlugin,
   WebSearchPlugin,
   WorkflowPlugin,
@@ -139,6 +143,7 @@ export const configSchema = z.object({
   ...FilesystemPlugin.config.shape,
   ...GitPlugin.config.shape,
   ...GithubPlugin.config.shape,
+  ...MediaLibraryPlugin.config.shape,
   ...ImageGenerationPlugin.config.shape,
   ...JavascriptPlugin.config.shape,
   ...KubernetesPlugin.config.shape,
@@ -169,6 +174,7 @@ export const configSchema = z.object({
   ...TodoPlugin.config.shape,
   ...TypescriptPlugin.config.shape,
   ...VaultPlugin.config.shape,
+  ...VideoGenerationPlugin.config.shape,
   ...WebHostPlugin.config.shape,
   ...WebSearchPlugin.config.shape,
   ...WorkflowPlugin.config.shape,

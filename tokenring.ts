@@ -165,10 +165,17 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
       chatFrontend: {
         spaDirectory: path.resolve(frontendDirectory, "chat"),
       },
-      imageGeneration: {
+      mediaLibrary: {
         agentDefaults: {
-          outputDirectory: path.join(dataDirectory, "image-library"),
+          outputDirectory: path.join(dataDirectory, "media-library"),
         },
+      },
+      imageGeneration: {
+        agentDefaults: {},
+      },
+      videoGeneration: {
+        defaultModels: ["*"],
+        agentDefaults: {},
       },
       filesystem: {
         agentDefaults: {
@@ -229,7 +236,7 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
     const mergedConfig = deepClone(defaultConfig, config);
     const parsedConfig = configSchema.parse(mergedConfig);
 
-    const appConfig = buildTokenRingAppConfig(configSchema, parsedConfig);
+    const appConfig = await buildTokenRingAppConfig(configSchema, parsedConfig);
 
     const app = new TokenRingApp(appConfig);
 
