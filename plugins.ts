@@ -5,7 +5,7 @@ import { TokenRingAppConfigSchema } from "@tokenring-ai/app/schema";
 import AudioPlugin from "@tokenring-ai/audio/plugin";
 import AWSPlugin from "@tokenring-ai/aws/plugin";
 import ChatPlugin from "@tokenring-ai/chat/plugin";
-import ChatFrontendPlugin from "@tokenring-ai/chat-frontend/plugin";
+import OneFrontendPlugin from "@tokenring-ai/one-frontend/plugin";
 import CheckpointPlugin from "@tokenring-ai/checkpoint/plugin";
 import ChromePlugin from "@tokenring-ai/chrome/plugin";
 import CLIPlugin from "@tokenring-ai/cli/plugin";
@@ -49,7 +49,6 @@ import TasksPlugin from "@tokenring-ai/tasks/plugin";
 import TelegramPlugin from "@tokenring-ai/telegram/plugin";
 import TerminalPlugin from "@tokenring-ai/terminal/plugin";
 import TestingPlugin from "@tokenring-ai/testing/plugin";
-import ThinkingPlugin from "@tokenring-ai/thinking/plugin";
 import TodoPlugin from "@tokenring-ai/todo/plugin";
 import TypescriptPlugin from "@tokenring-ai/typescript/plugin";
 import VaultPlugin from "@tokenring-ai/vault/plugin";
@@ -65,7 +64,7 @@ export const plugins = [
   AIClientPlugin,
   AudioPlugin,
   AWSPlugin,
-  ChatFrontendPlugin,
+  OneFrontendPlugin,
   ChatPlugin,
   CLIPlugin,
   CloudQuotePlugin,
@@ -110,7 +109,6 @@ export const plugins = [
   TelegramPlugin,
   TerminalPlugin,
   TestingPlugin,
-  ThinkingPlugin,
   TodoPlugin,
   TypescriptPlugin,
   VaultPlugin,
@@ -126,7 +124,7 @@ export const configSchema = z.object({
   ...AIClientPlugin.config.shape,
   ...AudioPlugin.config.shape,
   ...AWSPlugin.config.shape,
-  ...ChatFrontendPlugin.config.shape,
+  ...OneFrontendPlugin.config.shape,
   ...ChatPlugin.config.shape,
   ...CLIPlugin.config.shape,
   ...CloudQuotePlugin.config.shape,
@@ -170,7 +168,6 @@ export const configSchema = z.object({
   ...TelegramPlugin.config.shape,
   ...TerminalPlugin.config.shape,
   ...TestingPlugin.config.shape,
-  ...ThinkingPlugin.config.shape,
   ...TodoPlugin.config.shape,
   ...TypescriptPlugin.config.shape,
   ...VaultPlugin.config.shape,

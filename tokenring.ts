@@ -162,8 +162,8 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
           projectDirectory,
         },
       },
-      chatFrontend: {
-        spaDirectory: path.resolve(frontendDirectory, "chat"),
+      oneFrontend: {
+        spaDirectory: path.resolve(frontendDirectory, "one"),
       },
       mediaLibrary: {
         agentDefaults: {
@@ -247,6 +247,6 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
     await app.run();
   } catch (err: unknown) {
     process.stdout.write("\u001B[2J\u001B[H\n\n");
-    console.error(chalk.red(formatLogMessages(["Caught Error: ", err as Error])));
+    console.error(chalk.red(formatLogMessages(err as Error)));
   }
 }
