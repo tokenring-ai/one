@@ -89,7 +89,7 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
 
     projectDirectory = path.resolve(projectDirectory);
     dataDirectory = path.resolve(dataDirectory || path.join(projectDirectory, "/.tokenring"));
-    const configDirectory = path.join(os.homedir(), "/.tokenring");
+    const configDirectory = path.join(os.homedir(), "/.config/tokenring");
     if (!fs.existsSync(configDirectory)) {
       fs.mkdirSync(configDirectory, { recursive: true });
     }
@@ -228,7 +228,7 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
       } satisfies z.input<typeof WebHostConfigSchema>,
       ...(vault && {
         vault: {
-          vaultFile: typeof vault === "string" ? vault : `${homeDirectory}/.tokenring/secrets.vault`,
+          vaultFile: typeof vault === "string" ? vault : `${homeDirectory}/.config/tokenring/secrets.vault`,
         },
       }),
     } satisfies Partial<z.input<typeof configSchema>>;
