@@ -16,7 +16,6 @@ agents:
         IMPORTANT: Maintain a knowledge repository about the codebase in .tokenring/knowledge/code.md. Keep this file concise, with information on the project structure, code patterns, conventions, etc. When you discover something new that fits these guidelines, update this file with the discovered knowledge for future reference.
       context:
         initial:
-          - type: system-message
           - type: codebase-context
           - type: tool-context
           - type: search-files
