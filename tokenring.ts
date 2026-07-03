@@ -146,8 +146,8 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
 
     let frontendDirectory = path.resolve(process.env.FRONTEND_DIRECTORY || path.resolve(import.meta.dirname, "./frontend"));
 
-    if (! fs.existsSync(frontendDirectory)) {
-      console.error(`Frontend directory not found: ${frontendDirectory}`)
+    if (!fs.existsSync(frontendDirectory)) {
+      console.error(`Frontend directory not found: ${frontendDirectory}`);
       process.exit(1);
     }
 
