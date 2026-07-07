@@ -1,26 +1,26 @@
 #!/usr/bin/env node
 
-import deepClone from "@tokenring-ai/utility/object/deepClone";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import type { ACPConfigSchema } from "@tokenring-ai/acp";
 import TokenRingApp, { PluginManager } from "@tokenring-ai/app";
 import buildTokenRingAppConfig from "@tokenring-ai/app/buildTokenRingAppConfig";
+import { BunStorageConfigSchema } from "@tokenring-ai/bun-storage";
 import type { CLIConfigSchema } from "@tokenring-ai/cli";
-import type { DrizzleStorageConfigSchema } from "@tokenring-ai/drizzle-storage/schema";
 import type { FileSystemConfigSchema } from "@tokenring-ai/filesystem/schema";
 import type { TerminalConfigSchema } from "@tokenring-ai/terminal/schema";
-import formatLogMessages from "@tokenring-ai/utility/string/formatLogMessage";
+import formatError from "@tokenring-ai/utility/error/formatError";
+import deepClone from "@tokenring-ai/utility/object/deepClone";
 import type { WebHostAuthConfig, WebHostConfigSchema } from "@tokenring-ai/web-host/schema";
 import chalk from "chalk";
 import { Command } from "commander";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import type { z } from "zod";
-import packageInfo from "./package.json" with { type: "json" };
 import bannerCompact from "./banner.compact.txt" with { type: "text" };
 import bannerNarrow from "./banner.narrow.txt" with { type: "text" };
 import bannerWide from "./banner.wide.txt" with { type: "text" };
 import config from "./config/index.ts";
+import packageInfo from "./package.json" with { type: "json" };
 import { configSchema, plugins } from "./plugins.ts";
 
 // Interface definitions
@@ -137,14 +137,14 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
       }
     }
 
-    const [listenHost, listenPortStr] = http?.split?.(":") ?? ["127.0.0.1", ""];
+    const [listenHost, listenPortStr] = http?.split(":") ?? ["127.0.0.1", ""];
     const listenPort = listenPortStr ? parseInt(listenPortStr, 10) : undefined;
     if (listenPort && Number.isNaN(listenPort)) {
       console.error(`Invalid port number: ${listenPort}`);
       process.exit(1);
     }
 
-    let frontendDirectory = path.resolve(process.env.FRONTEND_DIRECTORY || path.resolve(import.meta.dirname, "./frontend"));
+    const frontendDirectory = path.resolve(process.env.FRONTEND_DIRECTORY || path.resolve(import.meta.dirname, "./frontend"));
 
     if (!fs.existsSync(frontendDirectory)) {
       console.error(`Frontend directory not found: ${frontendDirectory}`);
@@ -189,10 +189,9 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
           workingDirectory: projectDirectory,
         },
       } satisfies z.input<typeof TerminalConfigSchema>,
-      drizzleStorage: {
-        type: "sqlite",
-        databasePath: path.resolve(configDirectory, "./database.sqlite"),
-      } satisfies z.input<typeof DrizzleStorageConfigSchema>,
+      bunStorage: {
+        connectionString: `sqlite://${path.resolve(configDirectory, "./database.sqlite")}`,
+      } satisfies z.input<typeof BunStorageConfigSchema>,
       ...(acp && {
         acp: {
           transport: "stdio",
@@ -233,7 +232,7 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
       }),
     } satisfies Partial<z.input<typeof configSchema>>;
 
-    const mergedConfig = deepClone(defaultConfig, config);
+    const mergedConfig = deepClone(defaultConfig, config) as unknown;
     const parsedConfig = configSchema.parse(mergedConfig);
 
     const appConfig = await buildTokenRingAppConfig(configSchema, parsedConfig);
@@ -245,8 +244,8 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
     await pluginManager.installPlugins(plugins);
 
     await app.run();
-  } catch (err: unknown) {
+  } catch (err) {
     process.stdout.write("\u001B[2J\u001B[H\n\n");
-    console.error(chalk.red(formatLogMessages(err as Error)));
+    console.error(chalk.red(formatError(err)));
   }
 }

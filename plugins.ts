@@ -5,7 +5,6 @@ import { TokenRingAppConfigSchema } from "@tokenring-ai/app/schema";
 import AudioPlugin from "@tokenring-ai/audio/plugin";
 import AWSPlugin from "@tokenring-ai/aws/plugin";
 import ChatPlugin from "@tokenring-ai/chat/plugin";
-import OneFrontendPlugin from "@tokenring-ai/one-frontend/plugin";
 import CheckpointPlugin from "@tokenring-ai/checkpoint/plugin";
 import ChromePlugin from "@tokenring-ai/chrome/plugin";
 import CLIPlugin from "@tokenring-ai/cli/plugin";
@@ -14,7 +13,7 @@ import CodeWatchPlugin from "@tokenring-ai/code-watch/plugin";
 import CodeBasePlugin from "@tokenring-ai/codebase/plugin";
 import DatabasePlugin from "@tokenring-ai/database/plugin";
 import DockerPlugin from "@tokenring-ai/docker/plugin";
-import DrizzleStoragePlugin from "@tokenring-ai/drizzle-storage/plugin";
+import BunStoragePlugin from "@tokenring-ai/bun-storage/plugin";
 import EmailPlugin from "@tokenring-ai/email/plugin";
 import EscalationPlugin from "@tokenring-ai/escalation/plugin";
 import FeedbackPlugin from "@tokenring-ai/feedback/plugin";
@@ -27,13 +26,14 @@ import JavascriptPlugin from "@tokenring-ai/javascript/plugin";
 import KubernetesPlugin from "@tokenring-ai/kubernetes/plugin";
 import LifecyclePlugin from "@tokenring-ai/lifecycle/plugin";
 import LinuxAudioPlugin from "@tokenring-ai/linux-audio/plugin";
-import MediaLibraryPlugin from "@tokenring-ai/media-library/plugin";
 import MarkdownPlugin from "@tokenring-ai/markdown/plugin";
 import MCPPlugin from "@tokenring-ai/mcp/plugin";
+import MediaLibraryPlugin from "@tokenring-ai/media-library/plugin";
 import MemoryPlugin from "@tokenring-ai/memory/plugin";
 import MetricsPlugin from "@tokenring-ai/metrics/plugin";
 import MySQLPlugin from "@tokenring-ai/mysql/plugin";
 import NewsRPMPlugin from "@tokenring-ai/newsrpm/plugin";
+import OneFrontendPlugin from "@tokenring-ai/one-frontend/plugin";
 import PosixSystemPlugin from "@tokenring-ai/posix-system/plugin";
 import QueuePlugin from "@tokenring-ai/queue/plugin";
 import ResearchPlugin from "@tokenring-ai/research/plugin";
@@ -74,7 +74,7 @@ export const plugins = [
   CodeWatchPlugin,
   DatabasePlugin,
   DockerPlugin,
-  DrizzleStoragePlugin,
+  BunStoragePlugin,
   EmailPlugin,
   EscalationPlugin,
   FeedbackPlugin,
@@ -134,7 +134,7 @@ export const configSchema = z.object({
   ...CodeWatchPlugin.config.shape,
   ...DatabasePlugin.config.shape,
   ...DockerPlugin.config.shape,
-  ...DrizzleStoragePlugin.config.shape,
+  ...BunStoragePlugin.config.shape,
   ...EscalationPlugin.config.shape,
   ...FeedbackPlugin.config.shape,
   ...FileIndexPlugin.config.shape,

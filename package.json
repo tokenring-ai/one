@@ -20,7 +20,7 @@
     "@tokenring-ai/codebase": "workspace:*",
     "@tokenring-ai/database": "workspace:*",
     "@tokenring-ai/docker": "workspace:*",
-    "@tokenring-ai/drizzle-storage": "workspace:*",
+    "@tokenring-ai/bun-storage": "workspace:*",
     "@tokenring-ai/escalation": "workspace:*",
     "@tokenring-ai/email": "workspace:*",
     "@tokenring-ai/feedback": "workspace:*",
