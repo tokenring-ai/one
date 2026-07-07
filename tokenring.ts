@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import type { ACPConfigSchema } from "@tokenring-ai/acp";
 import TokenRingApp, { PluginManager } from "@tokenring-ai/app";
 import buildTokenRingAppConfig from "@tokenring-ai/app/buildTokenRingAppConfig";
-import { BunStorageConfigSchema } from "@tokenring-ai/bun-storage";
+import type { BunStorageConfigSchema } from "@tokenring-ai/bun-storage";
 import type { CLIConfigSchema } from "@tokenring-ai/cli";
 import type { FileSystemConfigSchema } from "@tokenring-ai/filesystem/schema";
 import type { TerminalConfigSchema } from "@tokenring-ai/terminal/schema";
@@ -12,9 +15,6 @@ import deepClone from "@tokenring-ai/utility/object/deepClone";
 import type { WebHostAuthConfig, WebHostConfigSchema } from "@tokenring-ai/web-host/schema";
 import chalk from "chalk";
 import { Command } from "commander";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import type { z } from "zod";
 import bannerCompact from "./banner.compact.txt" with { type: "text" };
 import bannerNarrow from "./banner.narrow.txt" with { type: "text" };
