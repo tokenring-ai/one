@@ -10,3 +10,6 @@ chat:
     - "deepseek:deepseek-chat"
     - "qwen:qwen3-coder-flash"
     - "*"
+  defaultTranscriptionModels:
+    - "openai:*"
+    - "google:*"
