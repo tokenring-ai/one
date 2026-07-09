@@ -75,6 +75,7 @@
     "directory": "app/one"
   },
   "license": "MIT",
+  "main": "tokenring.ts",
   "bin": {},
   "optionalDependencies": {},
   "files": [
@@ -83,9 +84,6 @@
   ],
   "scripts": {
     "build": "tsc --noEmit",
-    "prepack": "bun run build && cp -Lr frontend dist",
-    "tokenring": "bun tokenring.ts",
-    "build-container": "docker build -t tokenring:latest -f docker/Dockerfile .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

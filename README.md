@@ -483,7 +483,6 @@ bun run tokenring      # run locally
 |--------|-------------|
 | `bun run build` | Type-check the project |
 | `bun run tokenring` | Run TokenRing One with source from current directory |
-| `bun run build-container` | Build Docker container |
 | `bun run test` | Run all tests |
 | `bun run test:watch` | Run tests in watch mode |
 | `bun run test:coverage` | Run tests with coverage |
