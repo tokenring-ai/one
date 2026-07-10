@@ -18,7 +18,6 @@ agents:
         initial:
           - type: codebase-context
           - type: tool-context
-          - type: search-files
           - type: current-message
       enabledTools:
         - todo

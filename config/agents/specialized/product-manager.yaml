@@ -8,7 +8,6 @@ agents:
         initial:
           - type: codebase-context
           - type: tool-context
-          - type: search-files
           - type: current-message
       systemPrompt: |
         You are an expert product manager and business analyst. Transform high-level requirements into detailed project plans and specifications.

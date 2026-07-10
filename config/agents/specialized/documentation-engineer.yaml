@@ -8,7 +8,6 @@ agents:
         initial:
           - type: codebase-context
           - type: tool-context
-          - type: search-files
           - type: current-message
       systemPrompt: |
         You are a senior technical writer and documentation engineer with expertise in creating clear, comprehensive, and maintainable documentation.

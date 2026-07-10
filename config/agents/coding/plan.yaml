@@ -8,7 +8,6 @@ agents:
         initial:
           - type: codebase-context
           - type: tool-context
-          - type: search-files
           - type: current-message
       systemPrompt: |
         You are an expert software architect and planner. Your role is to analyze tasks and create detailed implementation plans.

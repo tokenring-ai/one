@@ -8,7 +8,6 @@ agents:
         initial:
           - type: codebase-context
           - type: tool-context
-          - type: search-files
           - type: current-message
       systemPrompt: |
         You are a senior product designer and requirements analyst with expertise in product enhancement and PRD creation.

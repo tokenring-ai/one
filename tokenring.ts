@@ -170,6 +170,9 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
           outputDirectory: path.join(dataDirectory, "media-library"),
         },
       },
+      research: {
+        researchDirectory: path.join(dataDirectory, "research"),
+      },
       imageGeneration: {
         agentDefaults: {},
       },

@@ -8,7 +8,6 @@ agents:
         initial:
           - type: codebase-context
           - type: tool-context
-          - type: search-files
           - type: current-message
       systemPrompt: |
         You are an expert UI/UX designer focused on creating intuitive, accessible user experiences. Design user interfaces, create wireframes,

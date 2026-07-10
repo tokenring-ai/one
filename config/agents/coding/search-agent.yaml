@@ -1,6 +1,6 @@
 agents:
-  web-research:
-    displayName: Web Research
+  search-agent:
+    displayName: Search Agent
     description: Analyzes a topic and generates a detailed, verified research report using web search.
     category: Research
     chat:
@@ -16,11 +16,11 @@ agents:
       enabledTools:
         - websearch_*
 commands:
-  research web:
-    agentType: web-research
-    description: Perform a deep-dive research task on a specific topic
+  search agent:
+    agentType: search-agent
+    description: Perform a deep-dive web search on a specific topic
     help: |
-      Dispatches a research request to an AI agent with web search capabilities. The agent provides factual, verified information from established sources.
+      Dispatches a search request to an AI agent with web search capabilities. The agent provides factual, verified information from established sources.
 
       The report includes:
       - Verbatim extractions of key data points
@@ -29,12 +29,12 @@ commands:
       - Comprehensive markdown formatting
 
       ## Usage
-      /research web <topic or question>
+      /search agent <topic or question>
 
       ## Examples
-      /research web Latest advancements in solid-state battery technology 2024
-      /research web Financial performance of major tech companies in Q3
-      /research web Historical context of the Silk Road maritime routes
+      /search agent Latest advancements in solid-state battery technology 2024
+      /search agent Financial performance of major tech companies in Q3
+      /search agent Historical context of the Silk Road maritime routes
 
       ## Notes
       - This agent uses live web search to ensure up-to-date information.
@@ -49,10 +49,10 @@ commands:
 
         Begin your research now.
 tools:
-  research:
-    agentType: web-research
-    description: Perform a deep-dive research task on a specific topic using web search. Returns a verified report with source citations.
-    displayName: Research Agents/Web Research
+  search_agent:
+    agentType: search-agent
+    description: Perform a deep-dive web search on a specific topic. Returns a verified report with source citations.
+    displayName: Research Agents/Search Agent
     inputArguments:
       prompt:
         description: A description of the topic or question to research.

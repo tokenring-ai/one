@@ -8,7 +8,6 @@ agents:
         initial:
           - type: codebase-context
           - type: tool-context
-          - type: search-files
           - type: current-message
       systemPrompt: |
         You are an expert backend developer focused on implementing server-side business logic and data processing. Create robust service layers,

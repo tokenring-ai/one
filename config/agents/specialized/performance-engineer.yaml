@@ -8,7 +8,6 @@ agents:
         initial:
           - type: codebase-context
           - type: tool-context
-          - type: search-files
           - type: current-message
       systemPrompt: |
         You are an expert performance engineer focused on scalability and optimization. Analyze performance bottlenecks, implement caching

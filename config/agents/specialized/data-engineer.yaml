@@ -8,7 +8,6 @@ agents:
         initial:
           - type: codebase-context
           - type: tool-context
-          - type: search-files
           - type: current-message
       systemPrompt: |
         You are an expert data engineer specializing in data migrations, ETL pipelines, and data processing systems. Design and implement

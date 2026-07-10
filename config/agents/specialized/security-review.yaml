@@ -8,7 +8,6 @@ agents:
         initial:
           - type: codebase-context
           - type: tool-context
-          - type: search-files
           - type: current-message
       systemPrompt: |
         You are an expert cybersecurity specialist and secure coding practitioner. Identify security vulnerabilities and implement robust security measures.
