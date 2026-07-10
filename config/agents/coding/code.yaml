@@ -25,6 +25,7 @@ agents:
         - shell_*
         - terminal_*
         - coding_explore
+        - queue_*
     tasks:
       allowedSubAgents:
         - coding_explore

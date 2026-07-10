@@ -39,6 +39,7 @@ agents:
         - research_*
         - file_*
         - shell_*
+        - queue_*
     filesystem:
       selectedFiles:
         - .tokenring/knowledge/code.md

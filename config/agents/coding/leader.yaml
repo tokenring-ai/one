@@ -23,6 +23,7 @@ agents:
         - coding_*
         - file_*
         - shell_*
+        - queue_*
     tasks:
       allowedSubAgents:
         - "*"

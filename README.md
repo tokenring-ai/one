@@ -279,7 +279,7 @@ TokenRing One is built as a modular TypeScript monorepo with specialized package
 - **@tokenring-ai/mysql**: MySQL integration with connection pooling and schema inspection
 - **@tokenring-ai/drizzle-storage**: Multi-database storage using Drizzle ORM (SQLite, MySQL, PostgreSQL)
 - **@tokenring-ai/checkpoint**: Checkpoint service for agent state persistence
-- **@tokenring-ai/queue**: Task queuing with checkpoint preservation for sequential processing
+- **@tokenring-ai/queue**: App-level work queue that dispatches items to agents of a specific type
 - **@tokenring-ai/memory**: Agent memory management and attention storage
 
 ### Development Tools
@@ -508,7 +508,7 @@ The TokenRing One ecosystem consists of specialized packages organized into func
 - **mysql**: MySQL integration
 - **drizzle-storage**: Multi-database ORM support
 - **checkpoint**: Agent state persistence
-- **queue**: Task queuing system
+- **queue**: App-level work queue dispatching to typed agents
 - **memory**: Memory management and attention storage
 
 #### Development Tools

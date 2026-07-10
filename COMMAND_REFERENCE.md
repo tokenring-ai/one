@@ -85,7 +85,7 @@ their functionality and the packages they belong to.
 
 | Command   | Description    | Usage                              |
 | --------- | -------------- | ---------------------------------- |
-| `/queue`  | Manage queue   | `/queue [add\|remove\|list\|run]`  |
+| `/queue`  | Manage work queue   | `/queue [list\|add\|results\|remove\|clear\|status\|queues\|create]`  |
 
 ### State
 
@@ -294,15 +294,17 @@ Run tests and automatically fix failures using AI.
 
 #### `/queue`
 
-Manage a queue of chat prompts for batch processing.
+Manage an app-level work queue. Each queue dispatches items to fresh agents of an assigned type,
+up to a per-queue concurrency limit. A `default` queue always exists.
 
-- **Add**: Add prompts to queue
-- **Remove**: Remove by index
-- **List**: Show all queued items
-- **Start**: Begin queue processing
-- **Next/Run**: Process next item
-- **Skip**: Re-add to end
-- **Done**: End processing
+- **list**: Show pending items (`--all` to include running)
+- **add**: Add a task to a queue
+- **results**: Show recently completed results
+- **remove**: Remove a pending item by position
+- **clear**: Remove all pending items
+- **status**: Show a queue's configuration and health
+- **queues**: List all configured queues
+- **create**: Create a new named queue (`--type`, `--concurrency`)
 
 ### State Management
 
