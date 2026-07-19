@@ -5,7 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import type { ACPConfigSchema } from "@tokenring-ai/acp";
 import TokenRingApp, { PluginManager } from "@tokenring-ai/app";
-import buildTokenRingAppConfig from "@tokenring-ai/app/buildTokenRingAppConfig";
+import { buildTokenRingAppConfigLayers } from "@tokenring-ai/app/buildTokenRingAppConfig";
+import ConfigurationService from "@tokenring-ai/app/config/ConfigurationService";
 import type { BunStorageConfigSchema } from "@tokenring-ai/bun-storage";
 import type { CLIConfigSchema } from "@tokenring-ai/cli";
 import type { FileSystemConfigSchema } from "@tokenring-ai/filesystem/schema";
@@ -30,7 +31,7 @@ interface CommandOptions {
   acp: boolean;
   http?: string | undefined;
   auth: boolean;
-  vault?: string | true;
+  vaultFile: string;
   ui: "cli" | "none";
   agent: string;
   p: boolean;
@@ -61,8 +62,9 @@ program
   .option("--auth", "Require authentication for the webui (tokens must be provided via TR_AUTH_PASSWORD or TR_AUTH_BEARER environment variables)")
   .option("--agent <type>", "Agent type to start with", "code")
   .option(
-    "--vault [path]",
-    "Use a vault file for storing secrets. The vault password will be prompted for at startup, or can be provided from TR_VAULT_PASSWORD. (default: ~/.tokenring/secrets.vault)",
+    "--vaultFile <path>",
+    "Path to the vault file for storing secrets. Password is read from the system secrets manager (auto-generated on first run) or TR_VAULT_PASSWORD.",
+    `${homeDirectory}/.config/tokenring/secrets.vault`,
   )
   .option("-p", "Enable shutdown when done")
   .allowExcessArguments(true)
@@ -80,7 +82,7 @@ Examples:
   .action(runApp)
   .parse();
 
-async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, agent, vault, p }: CommandOptions): Promise<void> {
+async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, agent, vaultFile, p }: CommandOptions): Promise<void> {
   const args = program.args;
   try {
     if (acp && args.length > 0) {
@@ -228,19 +230,28 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
         }),
         autoStart: !!http,
       } satisfies z.input<typeof WebHostConfigSchema>,
-      ...(vault && {
-        vault: {
-          vaultFile: typeof vault === "string" ? vault : `${homeDirectory}/.config/tokenring/secrets.vault`,
-        },
-      }),
+      vault: {
+        vaultFile,
+      },
     } satisfies Partial<z.input<typeof configSchema>>;
 
     const mergedConfig = deepClone(defaultConfig, config) as unknown;
     const parsedConfig = configSchema.parse(mergedConfig);
 
-    const appConfig = await buildTokenRingAppConfig(configSchema, parsedConfig);
+    const userOverridesFile = path.join(os.homedir(), ".tokenring", "config.yaml");
+    const { config: appConfig, baseConfig, overrides, overlayError } = await buildTokenRingAppConfigLayers(configSchema, parsedConfig, { userOverridesFile });
 
     const app = new TokenRingApp(appConfig);
+
+    app.addServices(
+      new ConfigurationService(app, {
+        configSchema,
+        baseConfig,
+        overridesFile: userOverridesFile,
+        overrides,
+        overlayError,
+      }),
+    );
 
     const pluginManager = new PluginManager(app);
 
