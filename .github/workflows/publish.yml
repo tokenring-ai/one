@@ -122,8 +122,7 @@ jobs:
 
       - name: Stage npm component packages
         run: |
-          mkdir -p packaging/npm/frontend/frontend/one
-          cp -a artifacts/one-frontend/. packaging/npm/frontend/frontend/one/
+          cp -a artifacts/one-frontend/. packaging/npm/frontend/
 
           for platform in darwin-arm64 darwin-x64 linux-x64 linux-arm64; do
             mkdir -p "packaging/npm/backend/bin/$platform" "packaging/npm/cli/bin/$platform"

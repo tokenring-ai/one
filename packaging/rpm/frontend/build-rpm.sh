@@ -26,8 +26,8 @@ TOPDIR="$(mktemp -d)"
 trap 'rm -rf "$TOPDIR"' EXIT
 mkdir -p "$TOPDIR"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 PAYLOAD="$TOPDIR/SOURCES/payload"
-mkdir -p "$PAYLOAD/usr/lib/tokenring-ai/one/frontend/one" "$PAYLOAD/usr/share/doc/$PKG_NAME"
-cp -a "$FRONTEND"/. "$PAYLOAD/usr/lib/tokenring-ai/one/frontend/one/"
+mkdir -p "$PAYLOAD/usr/lib/tokenring-ai/one/frontend" "$PAYLOAD/usr/share/doc/$PKG_NAME"
+cp -a "$FRONTEND"/. "$PAYLOAD/usr/lib/tokenring-ai/one/frontend/"
 echo "MIT License - Copyright TokenRing AI contributors" > "$PAYLOAD/usr/share/doc/$PKG_NAME/LICENSE"
 CHANGELOG_DATE="$(date -u '+%a %b %d %Y')"
 

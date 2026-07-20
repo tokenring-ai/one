@@ -24,7 +24,7 @@ command -v dpkg-deb >/dev/null || { echo "dpkg-deb is required" >&2; exit 1; }
 PKG_NAME="tokenring-one-frontend"
 PKG_ROOT="$(mktemp -d)"
 trap 'rm -rf "$PKG_ROOT"' EXIT
-FRONTEND_DIR="$PKG_ROOT/usr/lib/tokenring-ai/one/frontend/one"
+FRONTEND_DIR="$PKG_ROOT/usr/lib/tokenring-ai/one/frontend"
 mkdir -p "$PKG_ROOT/DEBIAN" "$FRONTEND_DIR" "$PKG_ROOT/usr/share/doc/$PKG_NAME"
 cp -a "$FRONTEND"/. "$FRONTEND_DIR/"
 
