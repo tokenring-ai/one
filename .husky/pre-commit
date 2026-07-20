@@ -1,0 +1,3 @@
+tsc
+biome check --fix
+oxlint --fix

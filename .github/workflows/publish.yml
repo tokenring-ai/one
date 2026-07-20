@@ -1,0 +1,457 @@
+name: Publish TokenRing One
+
+on:
+  push:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/tokenring-ai/one
+  BUN_VERSION: 1.3.14
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            bun_target: bun-darwin-arm64
+            backend_artifact: tokenring-one-macos-arm64
+            cli_artifact: tokenring-cli-macos-arm64
+            build_frontend: false
+          - os: macos-15-intel
+            bun_target: bun-darwin-x64
+            backend_artifact: tokenring-one-macos-x64
+            cli_artifact: tokenring-cli-macos-x64
+            build_frontend: false
+          - os: ubuntu-latest
+            bun_target: bun-linux-x64
+            backend_artifact: tokenring-one-linux-x64
+            cli_artifact: tokenring-cli-linux-x64
+            build_frontend: true
+          - os: ubuntu-24.04-arm
+            bun_target: bun-linux-arm64
+            backend_artifact: tokenring-one-linux-arm64
+            cli_artifact: tokenring-cli-linux-arm64
+            build_frontend: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - run: bun install
+
+      - name: Build frontend
+        if: matrix.build_frontend
+        run: bun run build
+        working-directory: ./frontend
+
+      - name: Upload frontend
+        if: matrix.build_frontend
+        uses: actions/upload-artifact@v7
+        with:
+          name: one-frontend
+          path: ./frontend/dist
+
+      - name: Build backend
+        run: bun build --compile --target=${{ matrix.bun_target }} ./tokenring.ts --outfile ../${{ matrix.backend_artifact }}
+        working-directory: ./backend
+
+      - name: Check backend
+        run: ./${{ matrix.backend_artifact }} -h
+
+      - name: Build CLI
+        run: |
+          cargo build --release --locked --manifest-path cli/Cargo.toml
+          cp cli/target/release/one "${{ matrix.cli_artifact }}"
+
+      - name: Check CLI
+        run: ./${{ matrix.cli_artifact }} -h
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.backend_artifact }}
+          path: ./${{ matrix.backend_artifact }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.cli_artifact }}
+          path: ./${{ matrix.cli_artifact }}
+
+  publish-npm:
+    runs-on: ubuntu-latest
+    needs: [build]
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: one-frontend
+          path: ./artifacts/one-frontend
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: tokenring-one-*
+          path: ./artifacts
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: tokenring-cli-*
+          path: ./artifacts
+          merge-multiple: true
+
+      - name: Stage npm component packages
+        run: |
+          mkdir -p packaging/npm/frontend/frontend/one
+          cp -a artifacts/one-frontend/. packaging/npm/frontend/frontend/one/
+
+          for platform in darwin-arm64 darwin-x64 linux-x64 linux-arm64; do
+            mkdir -p "packaging/npm/backend/bin/$platform" "packaging/npm/cli/bin/$platform"
+          done
+          cp artifacts/tokenring-one-macos-arm64 packaging/npm/backend/bin/darwin-arm64/tokenring-one
+          cp artifacts/tokenring-one-macos-x64 packaging/npm/backend/bin/darwin-x64/tokenring-one
+          cp artifacts/tokenring-one-linux-x64 packaging/npm/backend/bin/linux-x64/tokenring-one
+          cp artifacts/tokenring-one-linux-arm64 packaging/npm/backend/bin/linux-arm64/tokenring-one
+          cp artifacts/tokenring-cli-macos-arm64 packaging/npm/cli/bin/darwin-arm64/tokenring
+          cp artifacts/tokenring-cli-macos-x64 packaging/npm/cli/bin/darwin-x64/tokenring
+          cp artifacts/tokenring-cli-linux-x64 packaging/npm/cli/bin/linux-x64/tokenring
+          cp artifacts/tokenring-cli-linux-arm64 packaging/npm/cli/bin/linux-arm64/tokenring
+          chmod +x packaging/npm/backend/bin/*/tokenring-one packaging/npm/cli/bin/*/tokenring
+
+      - name: Publish component packages
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          npm publish --access public --tag next ./packaging/npm/frontend
+          npm publish --access public --tag next ./packaging/npm/backend
+          npm publish --access public --tag next ./packaging/npm/cli
+          npm publish --access public --tag next ./packaging/npm/one
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  package-deb:
+    runs-on: ubuntu-latest
+    needs: [build]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            backend_binary: tokenring-one-linux-x64
+            cli_binary: tokenring-cli-linux-x64
+            build_frontend: true
+          - arch: arm64
+            backend_binary: tokenring-one-linux-arm64
+            cli_binary: tokenring-cli-linux-arm64
+            build_frontend: false
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$(jq -r .version packaging/npm/one/package.json)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: ${{ matrix.backend_binary }}
+          path: ./artifacts
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: ${{ matrix.cli_binary }}
+          path: ./artifacts
+
+      - uses: actions/download-artifact@v7
+        if: matrix.build_frontend
+        with:
+          name: one-frontend
+          path: ./artifacts/one-frontend
+
+      - name: Build Debian packages
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          outdir=./artifacts/deb
+          ./packaging/deb/backend/build-deb.sh --version "$version" --arch "${{ matrix.arch }}" --binary "./artifacts/${{ matrix.backend_binary }}" --outdir "$outdir"
+          ./packaging/deb/cli/build-deb.sh --version "$version" --arch "${{ matrix.arch }}" --binary "./artifacts/${{ matrix.cli_binary }}" --outdir "$outdir"
+          ./packaging/deb/one/build-deb.sh --version "$version" --arch "${{ matrix.arch }}" --outdir "$outdir"
+
+      - name: Build Debian frontend package
+        if: matrix.build_frontend
+        run: ./packaging/deb/frontend/build-deb.sh --version "${{ steps.version.outputs.version }}" --frontend ./artifacts/one-frontend --outdir ./artifacts/deb
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tokenring-deb-${{ matrix.arch }}
+          path: ./artifacts/deb/*.deb
+
+  package-rpm:
+    needs: [build]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+            backend_binary: tokenring-one-linux-x64
+            cli_binary: tokenring-cli-linux-x64
+            build_frontend: true
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+            backend_binary: tokenring-one-linux-arm64
+            cli_binary: tokenring-cli-linux-arm64
+            build_frontend: false
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install rpmbuild
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$(jq -r .version packaging/npm/one/package.json)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: ${{ matrix.backend_binary }}
+          path: ./artifacts
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: ${{ matrix.cli_binary }}
+          path: ./artifacts
+
+      - uses: actions/download-artifact@v7
+        if: matrix.build_frontend
+        with:
+          name: one-frontend
+          path: ./artifacts/one-frontend
+
+      - name: Build RPM packages
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          outdir=./artifacts/rpm
+          ./packaging/rpm/backend/build-rpm.sh --version "$version" --arch "${{ matrix.arch }}" --binary "./artifacts/${{ matrix.backend_binary }}" --outdir "$outdir"
+          ./packaging/rpm/cli/build-rpm.sh --version "$version" --arch "${{ matrix.arch }}" --binary "./artifacts/${{ matrix.cli_binary }}" --outdir "$outdir"
+          ./packaging/rpm/one/build-rpm.sh --version "$version" --arch "${{ matrix.arch }}" --outdir "$outdir"
+
+      - name: Build RPM frontend package
+        if: matrix.build_frontend
+        run: ./packaging/rpm/frontend/build-rpm.sh --version "${{ steps.version.outputs.version }}" --frontend ./artifacts/one-frontend --outdir ./artifacts/rpm
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tokenring-rpm-${{ matrix.arch }}
+          path: ./artifacts/rpm/*.rpm
+
+  verify-npm:
+    needs: [publish-npm]
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+
+      - name: Verify published packages
+        run: |
+          version="${GITHUB_REF#refs/tags/v}"
+          for attempt in 1 2 3 4 5; do
+            npm view "@tokenring-ai/one@$version" version && break
+            sleep 15
+          done
+          npx "@tokenring-ai/one@$version" -h
+          npx "@tokenring-ai/one-cli@$version" -h
+          npx "@tokenring-ai/one-backend@$version" -h
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [publish-npm, package-deb, package-rpm]
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: tokenring-one-*
+          path: ./artifacts
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: tokenring-cli-*
+          path: ./artifacts
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: tokenring-deb-*
+          path: ./artifacts
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: tokenring-rpm-*
+          path: ./artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            artifacts/tokenring-one-macos-*
+            artifacts/tokenring-one-linux-*
+            artifacts/tokenring-cli-macos-*
+            artifacts/tokenring-cli-linux-*
+            artifacts/tokenring-one_*.deb
+            artifacts/tokenring-one-backend_*.deb
+            artifacts/tokenring-one-cli_*.deb
+            artifacts/tokenring-one-frontend_*.deb
+            artifacts/tokenring-one_*.rpm
+            artifacts/tokenring-one-backend_*.rpm
+            artifacts/tokenring-one-cli_*.rpm
+            artifacts/tokenring-one-frontend_*.rpm
+
+  publish-docker:
+    needs: [build]
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [full, server, cli]
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: one-frontend
+          path: ./packaging/docker/one/dist/frontend/one
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: tokenring-one-linux-${{ matrix.arch == 'amd64' && 'x64' || 'arm64' }}
+          path: ./packaging/docker/one/dist
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: tokenring-cli-linux-${{ matrix.arch == 'amd64' && 'x64' || 'arm64' }}
+          path: ./packaging/docker/one/dist
+
+      - name: Normalize Docker architecture filenames
+        if: matrix.arch == 'amd64'
+        run: |
+          cp packaging/docker/one/dist/tokenring-one-linux-x64 packaging/docker/one/dist/tokenring-one-linux-amd64
+          cp packaging/docker/one/dist/tokenring-cli-linux-x64 packaging/docker/one/dist/tokenring-cli-linux-amd64
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build and push ${{ matrix.target }} by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: ./packaging/docker/one
+          file: ./packaging/docker/one/Dockerfile
+          target: ${{ matrix.target }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=one-${{ matrix.target }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=one-${{ matrix.target }}-${{ matrix.arch }}
+
+      - name: Export digest
+        run: |
+          mkdir -p "${{ runner.temp }}/digests"
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: docker-digests-${{ matrix.target }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          retention-days: 1
+
+  publish-docker-manifest:
+    runs-on: ubuntu-latest
+    needs: [publish-docker]
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        target: [full, server, cli]
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: docker-digests-${{ matrix.target }}-*
+          merge-multiple: true
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Create one:${{ matrix.target }} multi-arch manifest
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          refs=()
+          for digest in *; do
+            refs+=("${{ env.IMAGE_NAME }}@sha256:$digest")
+          done
+          docker buildx imagetools create -t "${{ env.IMAGE_NAME }}:${{ matrix.target }}" "${refs[@]}"
+          docker buildx imagetools inspect "${{ env.IMAGE_NAME }}:${{ matrix.target }}"

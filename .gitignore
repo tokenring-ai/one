@@ -1,21 +1,25 @@
-# ---This file is auto-generated, see /scripts/generate-package-files.pl
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+.env
+.env*
+keys
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+*.log
 
 /awscliv2.sig
-build
-coverage
-dist
-.DS_Store
-.env
-.env.development.local
-.env.local
-.env.production.local
-.env.test.local
 /.idea/
-keys
-.next/
-node_modules
-*.log
-*.log*
-out/
-*.pem
-*.sqlite
+/.claude/
+/dist/
+/dist-ts/
+/design/
+/.run/
+/.codex
+/coverage/
+/node_modules/
+/target/
+/build/
+/frontend/dist/

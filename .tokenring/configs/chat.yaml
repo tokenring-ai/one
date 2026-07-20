@@ -1,0 +1,4 @@
+chat:
+  defaultModels:
+    - "llama:*"
+    - "Z.ai:glm-5.2"

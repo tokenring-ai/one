@@ -1,0 +1,23 @@
+agents:
+  schedule-tester:
+    displayName: Scheduling agent
+    description: This agent is designed to test the scheduler
+    category: Testing
+    minimumRunning: 0
+    chat:
+      compaction:
+        policy: automatic
+      systemPrompt: ""
+      enabledTools: []
+    scheduler:
+      autoStart: true
+      tasks:
+        helloWorldTask:
+          message: hello
+          after: "09:00"
+          weekdays: mon tue wed thu fri
+        helloWorldTask2:
+          message: hello
+          after: "04:08"
+          before: "04:13"
+          weekdays: mon tue wed thu fri

@@ -1,0 +1,47 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "import",
+    "typescript",
+    "unicorn",
+    "oxc"
+  ],
+  "ignorePatterns": [
+    "**/node_modules",
+    "**/dist",
+    "**/*.test.*",
+    "plugin/**/test/**",
+    "frontend/assets",
+    "frontend/src/test/*",
+    "util/**",
+    "deps/**",
+    "docs/**"
+  ],
+  "options": {
+    "typeAware": true,
+    "typeCheck": true
+  },
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "eslint/no-useless-assignment": "error",
+    "typescript/no-unnecessary-condition": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-unsafe-assignment": "warn",
+    "typescript/no-base-to-string": "error",
+    "typescript/no-implied-eval": "off",
+    "eslint/no-unsafe-finally": "off",
+    "eslint/no-control-regex": "off",
+    "typescript/restrict-template-expressions": [
+      "error",
+      {
+        "allowNumber": true,
+        "allowArray": false
+      }
+    ]
+  },
+  "env": {
+    "builtin": true
+  }
+}

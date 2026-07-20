@@ -1,0 +1,13 @@
+workflows:
+  testCoverageAnalysis:
+    category: "Testing"
+    displayName: "All-Package Test Checker"
+    description: "This agent automatically searches for code in the TokenRing monorepo that is missing test coverage, and adds test coverage using the testEngineer agent."
+    agentType: "leader"
+    steps:
+      - /function define js getPackageDirectories() { return (await import('fs')).globSync('pkg/*') }
+      - /list @packages = getPackageDirectories()
+      - |
+        /for $pkg in @packages {
+          /eval /agent run --neverFail --type test-engineer Scan the source code in $pkg/, and look through each file for any non-trivial code that is not covered by any tests in $pkg/run, and add tests as needed to provide ample code coverage for the package. Then run bun test in the $pkg/ directory, to validate the test
+        }

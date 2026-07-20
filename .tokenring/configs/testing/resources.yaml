@@ -1,0 +1,52 @@
+testing:
+  agentDefaults:
+    maxAutoRepairs: 5
+  resources:
+    tsc:
+      type: shell
+      name: Typescript Check
+      command: npx tsc --noEmit
+      isolation: none
+      timeoutSeconds: 60
+      cropOutput: 20000
+      projectDirectory: ./
+    test:
+      type: shell
+      name: Bun Testing
+      command: set -o pipefail && bun test --max-concurrency 1 --only-failures 2>&1 | head -n 1000
+      isolation: none
+      projectDirectory: ./
+      timeoutSeconds: 60
+      cropOutput: 20000
+#    markdown:
+#      type: shell
+#      name: Markdown Validation
+#      command: markdownlint {pkg,app,frontend,docs}/**/*.md --fix 2>/dev/null 1>/dev/null ; markdownlint {pkg,app,frontend,docs}/**/*.md
+#      isolation: none
+#      projectDirectory: ./
+#      timeoutSeconds: 60
+#      cropOutput: 20000
+    biome:
+      type: shell
+      name: Biome Formatting
+      command: biome lint {pkg,app,frontend}/ --fix --unsafe 2>/dev/null 1>/dev/null ; biome lint {pkg,app,frontend}/
+      isolation: none
+      projectDirectory: ./
+      timeoutSeconds: 60
+      cropOutput: 20000
+    oxlint:
+      type: shell
+      name: Oxlint Linting
+      command: oxlint check --fix .
+      isolation: none
+      projectDirectory: ./
+      timeoutSeconds: 60
+      cropOutput: 20000
+    knip:
+      type: shell
+      name: Knip Unused Dependencies
+      command: bun run check:knip
+      isolation: none
+      projectDirectory: ./
+      timeoutSeconds: 60
+      cropOutput: 20000

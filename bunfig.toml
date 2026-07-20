@@ -1,0 +1,14 @@
+[install]
+# Only install package versions published at least 5 days ago
+minimumReleaseAge = 432000
+ignoreScripts = true
+linkWorkspacePackages = false
+linker = "hoisted"
+#minimumReleaseAgeExcludes = ["oxlint","oxlint-tsgolint"]
+
+
+[test]
+# Multiple patterns
+pathIgnorePatterns = [
+    "frontend/**"
+]

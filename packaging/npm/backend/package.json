@@ -1,0 +1,30 @@
+{
+  "name": "@tokenring-ai/one-backend",
+  "version": "0.2.51",
+  "description": "TokenRing One native backend server",
+  "license": "MIT",
+  "bin": {
+    "tokenring-one-server": "tokenring-one-server.js"
+  },
+  "files": [
+    "README.md",
+    "tokenring-one-server.js",
+    "bin"
+  ],
+  "keywords": [
+    "tokenring",
+    "ai",
+    "agent",
+    "backend",
+    "server"
+  ],
+  "homepage": "https://github.com/tokenring-ai/one#readme",
+  "bugs": {
+    "url": "https://github.com/tokenring-ai/one/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tokenring-ai/one.git",
+    "directory": "packaging/npm/backend"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@tokenring-ai/one-cli",
+  "version": "0.2.51",
+  "description": "TokenRing One native terminal client",
+  "license": "MIT",
+  "bin": {
+    "tokenring": "tokenring.js"
+  },
+  "files": [
+    "README.md",
+    "tokenring.js",
+    "bin"
+  ],
+  "keywords": [
+    "tokenring",
+    "ai",
+    "agent",
+    "cli",
+    "tui",
+    "local-first"
+  ],
+  "homepage": "https://github.com/tokenring-ai/one#readme",
+  "bugs": {
+    "url": "https://github.com/tokenring-ai/one/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tokenring-ai/one.git",
+    "directory": "packaging/npm/cli"
+  }
+}

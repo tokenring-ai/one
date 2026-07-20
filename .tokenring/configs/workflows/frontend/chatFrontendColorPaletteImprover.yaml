@@ -1,0 +1,13 @@
+workflows:
+  chatFrontendColorPaletteImprover:
+    category: "Frontend"
+    displayName: "Chat Frontend Color Palette Improver"
+    description: "Reviews and improves color usage in chat frontend components for consistency and proper contrast with parent and child components"
+    agentType: "leader"
+    steps:
+      - /function define js getChatTsxFiles() { return (await import('fs')).globSync('frontend/chat/src/**/*.tsx') }
+      - /list @files = getChatTsxFiles()
+      - |
+        /for $file in @files {
+          /eval /agent run --neverFail --type ui-ux-designer Review the colors used in $file — backgrounds, text, borders, and accents. Ensure they align with the design systems color palette, maintain sufficient contrast ratios for accessibility, and are visually coherent with parent and child components. Replace any hardcoded or off-palette colors with the correct design tokens or Tailwind classes.
+        }

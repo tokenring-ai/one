@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "useUnknownInCatchVariables": true,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "jsx": "preserve",
+    "allowImportingTsExtensions": true,
+    "types": [
+      "bun"
+    ],
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": [
+    "backend/*.ts",
+    "backend/*.tsx",
+    "frontend/*.ts",
+    "frontend/*.tsx",
+    "plugin/**/*.ts",
+    "plugin/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

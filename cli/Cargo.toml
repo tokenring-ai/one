@@ -1,0 +1,27 @@
+[package]
+name = "tokenring-one-cli"
+version = "0.2.51"
+edition = "2021"
+license = "MIT"
+description = "Ratatui-powered terminal UI for TokenRing One"
+
+[[bin]]
+name = "one"
+path = "src/main.rs"
+
+[dependencies]
+ansi-to-tui = "8.0.1"
+anyhow = "1.0"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+base64 = "0.22"
+clap = { version = "4", features = ["derive", "env"] }
+crossterm = "0.29.0"
+ratatui = "0.30.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+signal-hook = "0.3"
+termimad = "0.34.1"
+toml = "1.1.2"
+notify-rust = "4"
+tungstenite = { version = "0.29.0", features = ["native-tls"] }
+unicode-width = "0.2"

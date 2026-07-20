@@ -1,0 +1,59 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+  "files": {
+    "includes": [
+      "{plugin,backend,frontend}/**/*.ts",
+      "{plugin,backend,frontend}/**/*.tsx",
+      "!**/dist",
+      "!**/dist-ts",
+      "!**/node_modules",
+      "!**/*.config.ts"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space"
+  },
+  "javascript": {
+    "formatter": {
+      "arrowParentheses": "asNeeded",
+      "lineWidth": 160
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "a11y": {
+        "useMediaCaption": "off",
+        "noAutofocus": "off",
+        "useSemanticElements": "off",
+        "useKeyWithClickEvents": "off",
+        "noStaticElementInteractions": "off",
+        "noLabelWithoutControl": "off"
+      },
+      "style": {
+        "useTemplate": "off",
+        "noNonNullAssertion": "off"
+      },
+      "correctness": {
+        "noVoidTypeReturn": "off",
+        "noUnsafeFinally": "off",
+        "useExhaustiveDependencies": "off"
+      },
+      "complexity": {
+        "noBannedTypes": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "off",
+        "noControlCharactersInRegex": "off",
+        "noConfusingVoidType": "off",
+        "noAssignInExpressions": "off",
+        "noExplicitAny": "off"
+      }
+    }
+  }
+}

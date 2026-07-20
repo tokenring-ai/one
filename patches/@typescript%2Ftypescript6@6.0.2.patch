@@ -1,0 +1,16 @@
+diff --git a/package.json b/package.json
+index b8db1e4190bf6a54bef4ec6b7d5589180bfd9ebd..d0eb6a09d6167e4cf2bef88f6928c8ad33fa7e6a 100644
+--- a/package.json
++++ b/package.json
+@@ -21,11 +21,7 @@
+   },
+   "main": "./lib/typescript.js",
+   "types": "./lib/typescript.d.ts",
+-  "bin": {
+-    "tsc6": "./bin/tsc6"
+-  },
+   "files": [
+-    "bin",
+     "lib",
+     "LICENSE.txt",
+     "README.md"

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { randomBytes } from "node:crypto";
 import fs from "node:fs";
@@ -24,10 +24,10 @@ import { configSchema, plugins } from "./plugins.ts";
 // Interface definitions
 interface CommandOptions {
   projectDirectory: string;
+  frontendDirectory: string;
   dataDirectory: string;
   listen: string;
   port: string;
-  auth: boolean;
   vaultFile: string;
 }
 
@@ -65,7 +65,7 @@ Examples:
   .action(runApp)
   .parse();
 
-async function runApp({ projectDirectory, dataDirectory, listen, port, vaultFile }: CommandOptions): Promise<void> {
+async function runApp({ projectDirectory, dataDirectory, frontendDirectory, listen, port, vaultFile }: CommandOptions): Promise<void> {
   try {
     projectDirectory = path.resolve(projectDirectory);
     dataDirectory = path.resolve(dataDirectory || path.join(projectDirectory, "/.tokenring"));
@@ -117,8 +117,8 @@ async function runApp({ projectDirectory, dataDirectory, listen, port, vaultFile
           projectDirectory,
         },
       },
-      oneFrontend: {
-        spaDirectory: path.resolve(frontendDirectory, "one"),
+      frontend: {
+        directory: frontendDirectory,
       },
       mediaLibrary: {
         agentDefaults: {

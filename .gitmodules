@@ -1,0 +1,232 @@
+[submodule "plugin/cloudquote"]
+	path = plugin/cloudquote
+	url = ../cloudquote.git
+	branch = main
+[submodule "plugin/newsrpm"]
+	path = plugin/newsrpm
+	url = ../newsrpm.git
+	branch = main
+[submodule "plugin/agent"]
+	path = plugin/agent
+	url = ../agent.git
+	branch = main
+[submodule "plugin/ai-client"]
+	path = plugin/ai-client
+	url = ../ai-client.git
+	branch = main
+[submodule "plugin/app"]
+	path = plugin/app
+	url = ../app.git
+	branch = main
+[submodule "plugin/audio"]
+	path = plugin/audio
+	url = ../audio.git
+	branch = main
+[submodule "plugin/aws"]
+	path = plugin/aws
+	url = ../aws.git
+	branch = main
+[submodule "plugin/chat"]
+	path = plugin/chat
+	url = ../chat.git
+	branch = main
+[submodule "plugin/checkpoint"]
+	path = plugin/checkpoint
+	url = ../checkpoint.git
+	branch = main
+[submodule "plugin/chrome"]
+	path = plugin/chrome
+	url = ../chrome.git
+	branch = main
+[submodule "plugin/code-watch"]
+	path = plugin/code-watch
+	url = ../code-watch.git
+	branch = main
+[submodule "plugin/codebase"]
+	path = plugin/codebase
+	url = ../codebase.git
+	branch = main
+[submodule "plugin/database"]
+	path = plugin/database
+	url = ../database.git
+	branch = main
+[submodule "plugin/docker"]
+	path = plugin/docker
+	url = ../docker.git
+	branch = main
+[submodule "plugin/bun-storage"]
+	path = plugin/bun-storage
+	url = ../bun-storage.git
+	branch = main
+[submodule "plugin/escalation"]
+	path = plugin/escalation
+	url = ../escalation.git
+	branch = main
+[submodule "plugin/email"]
+	path = plugin/email
+	url = ../email.git
+	branch = main
+[submodule "plugin/feedback"]
+	path = plugin/feedback
+	url = ../feedback.git
+	branch = main
+[submodule "plugin/file-index"]
+	path = plugin/file-index
+	url = ../file-index.git
+	branch = main
+[submodule "plugin/filesystem"]
+	path = plugin/filesystem
+	url = ../filesystem.git
+	branch = main
+[submodule "plugin/git"]
+	path = plugin/git
+	url = ../git.git
+	branch = main
+[submodule "plugin/github"]
+	path = plugin/github
+	url = ../github.git
+	branch = main
+[submodule "plugin/image"]
+	path = plugin/image
+	url = ../image.git
+	branch = main
+[submodule "plugin/javascript"]
+	path = plugin/javascript
+	url = ../javascript.git
+	branch = main
+[submodule "plugin/kubernetes"]
+	path = plugin/kubernetes
+	url = ../kubernetes.git
+	branch = main
+[submodule "plugin/lifecycle"]
+	path = plugin/lifecycle
+	url = ../lifecycle.git
+	branch = main
+[submodule "plugin/media-library"]
+	path = plugin/media-library
+	url = ../media-library.git
+	branch = main
+[submodule "plugin/posix-system"]
+	path = plugin/posix-system
+	url = ../posix-system.git
+	branch = main
+[submodule "plugin/markdown"]
+	path = plugin/markdown
+	url = ../markdown.git
+	branch = main
+[submodule "plugin/mcp"]
+	path = plugin/mcp
+	url = ../mcp.git
+	branch = main
+[submodule "plugin/memory"]
+	path = plugin/memory
+	url = ../memory.git
+	branch = main
+[submodule "plugin/metrics"]
+	path = plugin/metrics
+	url = ../metrics.git
+	branch = main
+[submodule "plugin/mysql"]
+	path = plugin/mysql
+	url = ../mysql.git
+	branch = main
+[submodule "plugin/queue"]
+	path = plugin/queue
+	url = ../queue.git
+	branch = main
+[submodule "plugin/research"]
+	path = plugin/research
+	url = ../research.git
+	branch = main
+[submodule "plugin/rpc"]
+	path = plugin/rpc
+	url = ../rpc.git
+	branch = main
+[submodule "plugin/sandbox"]
+	path = plugin/sandbox
+	url = ../sandbox.git
+	branch = main
+[submodule "plugin/scheduler"]
+	path = plugin/scheduler
+	url = ../scheduler.git
+	branch = main
+[submodule "plugin/scraperapi"]
+	path = plugin/scraperapi
+	url = ../scraperapi.git
+	branch = main
+[submodule "plugin/scripting"]
+	path = plugin/scripting
+	url = ../scripting.git
+	branch = main
+[submodule "plugin/serper"]
+	path = plugin/serper
+	url = ../serper.git
+	branch = main
+[submodule "plugin/skills"]
+	path = plugin/skills
+	url = ../skills.git
+	branch = main
+[submodule "plugin/slack"]
+	path = plugin/slack
+	url = ../slack.git
+	branch = main
+[submodule "plugin/tasks"]
+	path = plugin/tasks
+	url = ../tasks.git
+	branch = main
+[submodule "plugin/telegram"]
+	path = plugin/telegram
+	url = ../telegram.git
+	branch = main
+[submodule "plugin/terminal"]
+	path = plugin/terminal
+	url = ../terminal.git
+	branch = main
+[submodule "plugin/testing"]
+	path = plugin/testing
+	url = ../testing.git
+	branch = main
+[submodule "plugin/todo"]
+	path = plugin/todo
+	url = ../todo.git
+	branch = main
+[submodule "plugin/typescript"]
+	path = plugin/typescript
+	url = ../typescript.git
+	branch = main
+[submodule "plugin/utility"]
+	path = plugin/utility
+	url = ../utility.git
+	branch = main
+[submodule "plugin/video"]
+	path = plugin/video
+	url = ../video.git
+	branch = main
+[submodule "plugin/web-host"]
+	path = plugin/web-host
+	url = ../web-host.git
+	branch = main
+[submodule "plugin/workflow"]
+	path = plugin/workflow
+	url = ../workflow.git
+	branch = main
+[submodule "plugin/websearch"]
+	path = plugin/websearch
+	url = ../websearch.git
+	branch = main
+[submodule "plugin/vault"]
+	path = plugin/vault
+	url = ../vault.git
+	branch = main
+[submodule "plugin/blog"]
+	path = plugin/blog
+	url = ../blog.git
+	branch = main
+[submodule "plugin/calendar"]
+	path = plugin/calendar
+	url = ../calendar.git
+	branch = main
+[submodule "plugin/cdn"]
+	path = plugin/cdn
+	url = ../cdn.git
+	branch = main

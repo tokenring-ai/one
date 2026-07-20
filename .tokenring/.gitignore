@@ -1,0 +1,3 @@
+*.sqlite*
+config/*.local.json
+image-library
