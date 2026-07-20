@@ -1,6 +1,6 @@
 {
   "name": "@tokenring-ai/one-backend",
-  "version": "0.2.52",
+  "version": "0.2.53",
   "description": "TokenRing One native backend server",
   "license": "MIT",
   "bin": {
