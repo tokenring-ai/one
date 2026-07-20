@@ -1,6 +1,6 @@
 {
   "name": "@tokenring-ai/one",
-  "version": "0.2.53",
+  "version": "0.2.54",
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
     "@oxlint-tsgolint/darwin-arm64": "0.24.0",
