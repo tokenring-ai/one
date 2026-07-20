@@ -31,7 +31,7 @@ env.TOKENRING_ONE_BINARY ??= path.join(
   platformArch,
   'tokenring-one',
 );
-env.FRONTEND_DIRECTORY ??= path.join(frontendDirectory, 'frontend');
+env.FRONTEND_DIRECTORY ??= frontendDirectory;
 
 const child = spawn(binaryPath, process.argv.slice(2), { stdio: 'inherit', env });
 child.on('error', (error) => {
