@@ -1,6 +1,6 @@
 {
   "name": "@tokenring-ai/one",
-  "version": "0.2.51",
+  "version": "0.2.52",
   "description": "TokenRing One — complete local-first multi-agent AI workspace",
   "license": "MIT",
   "bin": {
@@ -11,9 +11,9 @@
     "tokenring-one.js"
   ],
   "dependencies": {
-    "@tokenring-ai/one-backend": "0.2.51",
-    "@tokenring-ai/one-cli": "0.2.51",
-    "@tokenring-ai/one-frontend": "0.2.51"
+    "@tokenring-ai/one-backend": "0.2.52",
+    "@tokenring-ai/one-cli": "0.2.52",
+    "@tokenring-ai/one-frontend": "0.2.52"
   },
   "keywords": [
     "tokenring",

@@ -1,7 +1,7 @@
 {
   "name": "@tokenring-ai/one-backend",
   "description": "TokenRing One Backend",
-  "version": "0.2.51",
+  "version": "0.2.52",
   "devDependencies": {
     "@tokenring-ai/cloudquote": "workspace:*",
     "@tokenring-ai/newsrpm": "workspace:*",

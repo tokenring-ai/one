@@ -1,6 +1,6 @@
 {
   "name": "@tokenring-ai/one-cli",
-  "version": "0.2.51",
+  "version": "0.2.52",
   "description": "TokenRing One native terminal client",
   "license": "MIT",
   "bin": {
