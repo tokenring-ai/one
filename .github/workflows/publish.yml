@@ -141,10 +141,10 @@ jobs:
       - name: Publish component packages
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          npm publish --access public --tag next ./packaging/npm/frontend
-          npm publish --access public --tag next ./packaging/npm/backend
-          npm publish --access public --tag next ./packaging/npm/cli
-          npm publish --access public --tag next ./packaging/npm/one
+          npm stage publish --provenance --access public --tag next ./packaging/npm/frontend
+          npm stage publish --provenance --access public --tag next ./packaging/npm/backend
+          npm stage publish --provenance --access public --tag next ./packaging/npm/cli
+          npm stage publish --provenance --access public --tag next ./packaging/npm/one
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
