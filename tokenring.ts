@@ -1,25 +1,22 @@
 #!/usr/bin/env node
 
+import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { ACPConfigSchema } from "@tokenring-ai/acp";
 import TokenRingApp, { PluginManager } from "@tokenring-ai/app";
 import { buildTokenRingAppConfigLayers } from "@tokenring-ai/app/buildTokenRingAppConfig";
 import ConfigurationService from "@tokenring-ai/app/config/ConfigurationService";
 import type { BunStorageConfigSchema } from "@tokenring-ai/bun-storage";
-import type { CLIConfigSchema } from "@tokenring-ai/cli";
 import type { FileSystemConfigSchema } from "@tokenring-ai/filesystem/schema";
 import type { TerminalConfigSchema } from "@tokenring-ai/terminal/schema";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import deepClone from "@tokenring-ai/utility/object/deepClone";
-import type { WebHostAuthConfig, WebHostConfigSchema } from "@tokenring-ai/web-host/schema";
+import type { WebHostConfigSchema } from "@tokenring-ai/web-host/schema";
+import { secrets } from "bun";
 import chalk from "chalk";
 import { Command } from "commander";
 import type { z } from "zod";
-import bannerCompact from "./banner.compact.txt" with { type: "text" };
-import bannerNarrow from "./banner.narrow.txt" with { type: "text" };
-import bannerWide from "./banner.wide.txt" with { type: "text" };
 import config from "./config/index.ts";
 import packageInfo from "./package.json" with { type: "json" };
 import { configSchema, plugins } from "./plugins.ts";
@@ -28,14 +25,10 @@ import { configSchema, plugins } from "./plugins.ts";
 interface CommandOptions {
   projectDirectory: string;
   dataDirectory: string;
-  acp: boolean;
-  http?: string | undefined;
+  listen: string;
+  port: string;
   auth: boolean;
   vaultFile: string;
-  ui: "cli" | "none";
-  agent: string;
-  p: boolean;
-  args: string[];
 }
 
 const homeDirectory = process.env.HOME || "/home/" + process.env.USER || "/root";
@@ -47,48 +40,33 @@ program
   .name("tokenring")
   .description("TokenRing One - AI-powered personal assistant")
   .version(packageInfo.version)
-  .option("--ui <cli|none>", "Select the UI to use for the application", "cli")
   .option("--projectDirectory <path>", "Path to the working directory to work in (default: cwd)", ".")
   .option(
     "--dataDirectory <path>",
     "Path to the data directory to use to store data (knowledge, session database, etc.) (default: <projectDirectory>/.tokenring)",
     "",
   )
-  .option("--acp", "Start the app in ACP mode over stdin/stdout")
-  .option(
-    "--http [host:port]",
-    "Starts an HTTP server for interacting with the application, by default listening on 127.0.0.1 and a random port, unless host and port are specified",
-  )
-  .option("--auth", "Require authentication for the webui (tokens must be provided via TR_AUTH_PASSWORD or TR_AUTH_BEARER environment variables)")
-  .option("--agent <type>", "Agent type to start with", "code")
+  .option("--listen <host>", "Host interface the HTTP server binds to", "127.0.0.1")
+  .option("--port <port>", "Port the HTTP server listens on (0 picks a random free port)", "0")
   .option(
     "--vaultFile <path>",
     "Path to the vault file for storing secrets. Password is read from the system secrets manager (auto-generated on first run) or TR_VAULT_PASSWORD.",
     `${homeDirectory}/.config/tokenring/secrets.vault`,
   )
-  .option("-p", "Enable shutdown when done")
-  .allowExcessArguments(true)
   .addHelpText(
     "after",
     `
 Examples:
   tokenring
   tokenring --projectDirectory ./my-app --dataDirectory ./my-data
-  tokenring --acp --projectDirectory ./my-app
-  tokenring --agent leader "Create a new React component"
-  tokenring -p "Fix the bug in app.ts"
+  tokenring --listen 127.0.0.1 --port 3000
 `,
   )
   .action(runApp)
   .parse();
 
-async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, agent, vaultFile, p }: CommandOptions): Promise<void> {
-  const args = program.args;
+async function runApp({ projectDirectory, dataDirectory, listen, port, vaultFile }: CommandOptions): Promise<void> {
   try {
-    if (acp && args.length > 0) {
-      throw new Error("ACP mode does not support positional startup prompts");
-    }
-
     projectDirectory = path.resolve(projectDirectory);
     dataDirectory = path.resolve(dataDirectory || path.join(projectDirectory, "/.tokenring"));
     const configDirectory = path.join(os.homedir(), "/.config/tokenring");
@@ -96,53 +74,28 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
       fs.mkdirSync(configDirectory, { recursive: true });
     }
 
-    // Handle authentication via environment variables
-    const users: WebHostAuthConfig["users"] = {};
+    const adminUser = process.env.TR_ADMIN_USER || "admin";
+    let adminPassword = process.env.TR_ADMIN_PASSWORD;
 
-    if (auth) {
-      // Read auth tokens from environment variables
-      const authPassword = process.env.TR_AUTH_PASSWORD;
-      const authBearer = process.env.TR_AUTH_BEARER;
+    if (!adminPassword) {
+      adminPassword = (await secrets.get({ service: "tokenring", name: "adminPassword" })) ?? undefined;
+    }
 
-      // Validate that at least one auth method is provided
-      if (!authPassword && !authBearer) {
-        console.error("Error: Authentication requested but no auth tokens provided.");
-        console.error("Please set TR_AUTH_PASSWORD or TR_AUTH_BEARER environment variable(s).");
-        process.exit(1);
-      }
+    if (!adminPassword) {
+      adminPassword = randomBytes(12).toString("hex");
+      console.log(`A admin password was not provided in TR_ADMIN_PASSWORD.\nUsing login/password ${adminUser}/${adminPassword}`);
 
-      // Build auth configuration from environment variables
-      if (authPassword) {
-        const [username, password] = authPassword.split(":");
-        if (!username || !password) {
-          console.error("Error: Invalid TR_AUTH_PASSWORD format. Expected format: 'username:password'");
-          process.exit(1);
-        }
-        if (password.length < 8) {
-          console.error("Error: Password must be at least 8 characters long.");
-          process.exit(1);
-        }
-        (users[username] ??= {}).password = password;
-      }
-
-      if (authBearer) {
-        const [username, bearerToken] = authBearer.split(":");
-        if (!username || !bearerToken) {
-          console.error("Error: Invalid TR_AUTH_BEARER format. Expected format: 'username:token'");
-          process.exit(1);
-        }
-        if (bearerToken.length < 8) {
-          console.error("Error: Bearer token must be at least 8 characters long.");
-          process.exit(1);
-        }
-        (users[username] ??= {}).bearerToken = bearerToken;
+      try {
+        await secrets.set({ service: "tokenring", name: "adminPassword", value: adminPassword });
+        console.log(`Admin password stored in system keychain. Please copy the password above as it will not be displayed again.`);
+      } catch (err) {
+        console.error(`Failed to store admin password in keychain, password will reset at every application restart: ${formatError(err)}`);
       }
     }
 
-    const [listenHost, listenPortStr] = http?.split(":") ?? ["127.0.0.1", ""];
-    const listenPort = listenPortStr ? parseInt(listenPortStr, 10) : undefined;
-    if (listenPort && Number.isNaN(listenPort)) {
-      console.error(`Invalid port number: ${listenPort}`);
+    const listenPort = parseInt(port, 10);
+    if (Number.isNaN(listenPort) || listenPort < 0 || listenPort > 65535) {
+      console.error(`Invalid port number: ${port}`);
       process.exit(1);
     }
 
@@ -157,7 +110,7 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
       app: {
         configDirectories: [path.join(homeDirectory, "configs"), path.join(dataDirectory, "configs")],
         dataDirectory,
-        printLogs: ui === "none" && !acp,
+        printLogs: true,
       },
       checkpoint: {
         app: {
@@ -197,38 +150,16 @@ async function runApp({ projectDirectory, dataDirectory, acp, ui, http, auth, ag
       bunStorage: {
         connectionString: `sqlite://${path.resolve(configDirectory, "./database.sqlite")}`,
       } satisfies z.input<typeof BunStorageConfigSchema>,
-      ...(acp && {
-        acp: {
-          transport: "stdio",
-          defaultAgentType: agent,
-        } satisfies z.input<typeof ACPConfigSchema>,
-      }),
-      ...(!acp &&
-        ui !== "none" && {
-          cli: {
-            chatBanner: `TokenRing One ${packageInfo.version}`,
-            screenBanner: `TokenRing One ${packageInfo.version}`,
-            loadingBannerWide: bannerWide,
-            loadingBannerNarrow: bannerNarrow,
-            loadingBannerCompact: bannerCompact,
-            ...(args.length > 0 && {
-              startAgent: {
-                type: agent,
-                prompt: args.join(" "),
-                shutdownWhenDone: p,
-              },
-            }),
-          } satisfies z.input<typeof CLIConfigSchema>,
-        }),
       webHost: {
-        host: listenHost,
-        ...(listenPort && { port: listenPort }),
-        ...(auth && {
-          auth: {
-            users,
+        host: listen,
+        port: listenPort,
+        auth: {
+          users: {
+            [adminUser]: {
+              password: adminPassword,
+            },
           },
-        }),
-        autoStart: !!http,
+        },
       } satisfies z.input<typeof WebHostConfigSchema>,
       vault: {
         vaultFile,

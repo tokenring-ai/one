@@ -3,7 +3,6 @@
   "description": "TokenRing One Application",
   "version": "0.2.51",
   "devDependencies": {
-    "@tokenring-ai/acp": "workspace:*",
     "@tokenring-ai/cloudquote": "workspace:*",
     "@tokenring-ai/newsrpm": "workspace:*",
     "@tokenring-ai/agent": "workspace:*",
@@ -15,7 +14,6 @@
     "@tokenring-ai/one-frontend": "workspace:*",
     "@tokenring-ai/checkpoint": "workspace:*",
     "@tokenring-ai/chrome": "workspace:*",
-    "@tokenring-ai/cli": "workspace:*",
     "@tokenring-ai/code-watch": "workspace:*",
     "@tokenring-ai/codebase": "workspace:*",
     "@tokenring-ai/database": "workspace:*",
@@ -32,7 +30,6 @@
     "@tokenring-ai/javascript": "workspace:*",
     "@tokenring-ai/kubernetes": "workspace:*",
     "@tokenring-ai/lifecycle": "workspace:*",
-    "@tokenring-ai/linux-audio": "workspace:*",
     "@tokenring-ai/media-library": "workspace:*",
     "@tokenring-ai/posix-system": "workspace:*",
     "@tokenring-ai/markdown": "workspace:*",

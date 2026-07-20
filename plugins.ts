@@ -1,4 +1,3 @@
-import ACPPlugin from "@tokenring-ai/acp/plugin";
 import AgentPlugin from "@tokenring-ai/agent/plugin";
 import AIClientPlugin from "@tokenring-ai/ai-client/plugin";
 import { TokenRingAppConfigSchema } from "@tokenring-ai/app/schema";
@@ -8,7 +7,6 @@ import BunStoragePlugin from "@tokenring-ai/bun-storage/plugin";
 import ChatPlugin from "@tokenring-ai/chat/plugin";
 import CheckpointPlugin from "@tokenring-ai/checkpoint/plugin";
 import ChromePlugin from "@tokenring-ai/chrome/plugin";
-import CLIPlugin from "@tokenring-ai/cli/plugin";
 import CloudQuotePlugin from "@tokenring-ai/cloudquote/plugin";
 import CodeWatchPlugin from "@tokenring-ai/code-watch/plugin";
 import CodeBasePlugin from "@tokenring-ai/codebase/plugin";
@@ -25,7 +23,6 @@ import ImageGenerationPlugin from "@tokenring-ai/image/plugin";
 import JavascriptPlugin from "@tokenring-ai/javascript/plugin";
 import KubernetesPlugin from "@tokenring-ai/kubernetes/plugin";
 import LifecyclePlugin from "@tokenring-ai/lifecycle/plugin";
-import LinuxAudioPlugin from "@tokenring-ai/linux-audio/plugin";
 import MarkdownPlugin from "@tokenring-ai/markdown/plugin";
 import MCPPlugin from "@tokenring-ai/mcp/plugin";
 import MediaLibraryPlugin from "@tokenring-ai/media-library/plugin";
@@ -59,14 +56,12 @@ import WorkflowPlugin from "@tokenring-ai/workflow/plugin";
 import { z } from "zod";
 
 export const plugins = [
-  ACPPlugin,
   AgentPlugin,
   AIClientPlugin,
   AudioPlugin,
   AWSPlugin,
   OneFrontendPlugin,
   ChatPlugin,
-  CLIPlugin,
   CloudQuotePlugin,
   CheckpointPlugin,
   ChromePlugin,
@@ -87,7 +82,6 @@ export const plugins = [
   JavascriptPlugin,
   KubernetesPlugin,
   LifecyclePlugin,
-  LinuxAudioPlugin,
   PosixSystemPlugin,
   MarkdownPlugin,
   MCPPlugin,
@@ -119,14 +113,12 @@ export const plugins = [
 ];
 export const configSchema = z.object({
   ...TokenRingAppConfigSchema.shape,
-  ...ACPPlugin.config.shape,
   ...AgentPlugin.config.shape,
   ...AIClientPlugin.config.shape,
   ...AudioPlugin.config.shape,
   ...AWSPlugin.config.shape,
   ...OneFrontendPlugin.config.shape,
   ...ChatPlugin.config.shape,
-  ...CLIPlugin.config.shape,
   ...CloudQuotePlugin.config.shape,
   ...CheckpointPlugin.config.shape,
   ...ChromePlugin.config.shape,
@@ -146,7 +138,6 @@ export const configSchema = z.object({
   ...JavascriptPlugin.config.shape,
   ...KubernetesPlugin.config.shape,
   ...LifecyclePlugin.config.shape,
-  ...LinuxAudioPlugin.config.shape,
   ...PosixSystemPlugin.config.shape,
   ...MarkdownPlugin.config.shape,
   ...MetricsPlugin.config.shape,
