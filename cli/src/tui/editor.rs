@@ -10,12 +10,23 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crate::tui::keybinds::Keybinds;
 use crate::tui::text::visible_len;
 
+/// Max undo snapshots retained per editor.
+const MAX_UNDO: usize = 64;
+
+#[derive(Clone)]
+struct EditorSnapshot {
+    chars: Vec<char>,
+    cursor: usize,
+}
+
 /// A multi-line text buffer editor.
 #[derive(Clone)]
 pub struct InputEditor {
     chars: Vec<char>,
     cursor: usize,
     preferred_column: Option<usize>,
+    undo_stack: Vec<EditorSnapshot>,
+    redo_stack: Vec<EditorSnapshot>,
 }
 
 impl Default for InputEditor {
@@ -30,6 +41,8 @@ impl InputEditor {
             chars: Vec::new(),
             cursor: 0,
             preferred_column: None,
+            undo_stack: Vec::new(),
+            redo_stack: Vec::new(),
         }
     }
 
@@ -51,18 +64,68 @@ impl InputEditor {
         self.chars.is_empty()
     }
 
+    fn snapshot(&self) -> EditorSnapshot {
+        EditorSnapshot {
+            chars: self.chars.clone(),
+            cursor: self.cursor,
+        }
+    }
+
+    fn restore(&mut self, snap: EditorSnapshot) {
+        self.chars = snap.chars;
+        self.cursor = snap.cursor.min(self.chars.len());
+        self.preferred_column = None;
+    }
+
+    /// Push the current buffer onto the undo stack before a mutating edit.
+    fn push_undo(&mut self) {
+        self.undo_stack.push(self.snapshot());
+        if self.undo_stack.len() > MAX_UNDO {
+            self.undo_stack.remove(0);
+        }
+        self.redo_stack.clear();
+    }
+
+    pub fn undo(&mut self) -> bool {
+        let Some(prev) = self.undo_stack.pop() else {
+            return false;
+        };
+        self.redo_stack.push(self.snapshot());
+        self.restore(prev);
+        true
+    }
+
+    pub fn redo(&mut self) -> bool {
+        let Some(next) = self.redo_stack.pop() else {
+            return false;
+        };
+        self.undo_stack.push(self.snapshot());
+        if self.undo_stack.len() > MAX_UNDO {
+            self.undo_stack.remove(0);
+        }
+        self.restore(next);
+        true
+    }
+
     pub fn set_text(&mut self, value: &str) {
         self.set_text_with_cursor(value, value.chars().count())
     }
 
     pub fn set_text_with_cursor(&mut self, value: &str, cursor: usize) {
+        // Programmatic set (history browse, paste helpers) replaces undo history.
         self.chars = value.chars().collect();
         let len = self.chars.len();
         self.cursor = cursor.clamp(0, len);
         self.preferred_column = None;
+        self.undo_stack.clear();
+        self.redo_stack.clear();
     }
 
     pub fn clear(&mut self) {
+        if self.chars.is_empty() {
+            return;
+        }
+        self.push_undo();
         self.chars.clear();
         self.cursor = 0;
         self.preferred_column = None;
@@ -72,6 +135,7 @@ impl InputEditor {
         if text.is_empty() {
             return;
         }
+        self.push_undo();
         let inserted: Vec<char> = text.chars().collect();
         let tail: Vec<char> = self.chars.split_off(self.cursor);
         self.chars.extend(inserted);
@@ -88,6 +152,7 @@ impl InputEditor {
         if self.cursor == 0 {
             return;
         }
+        self.push_undo();
         self.chars.remove(self.cursor - 1);
         self.cursor -= 1;
         self.preferred_column = None;
@@ -97,6 +162,7 @@ impl InputEditor {
         if self.cursor >= self.chars.len() {
             return;
         }
+        self.push_undo();
         self.chars.remove(self.cursor);
         self.preferred_column = None;
     }
@@ -105,6 +171,7 @@ impl InputEditor {
         if self.cursor == 0 {
             return;
         }
+        self.push_undo();
         let mut start = self.cursor;
         while start > 0 && self.chars[start - 1].is_whitespace() {
             start -= 1;
@@ -122,6 +189,7 @@ impl InputEditor {
         if self.cursor >= len {
             return;
         }
+        self.push_undo();
         let mut end = self.cursor;
         while end < len && self.chars[end].is_whitespace() {
             end += 1;
@@ -136,6 +204,11 @@ impl InputEditor {
     /// Clear the contents of the current line (preserving the line break).
     pub fn delete_line(&mut self) {
         let location = self.cursor_location();
+        if location.line_start == location.line_end {
+            return;
+        }
+        self.push_undo();
+        let location = self.cursor_location();
         self.drain_range(location.line_start, location.line_end);
         self.cursor = location.line_start;
         self.preferred_column = None;
@@ -146,6 +219,8 @@ impl InputEditor {
         if location.line_start == self.cursor {
             return;
         }
+        self.push_undo();
+        let location = self.cursor_location();
         self.drain_range(location.line_start, self.cursor);
         self.cursor = location.line_start;
         self.preferred_column = None;
@@ -156,6 +231,8 @@ impl InputEditor {
         if location.line_end == self.cursor {
             return;
         }
+        self.push_undo();
+        let location = self.cursor_location();
         self.drain_range(self.cursor, location.line_end);
         self.preferred_column = None;
     }
@@ -212,6 +289,14 @@ impl InputEditor {
 
     pub fn move_end(&mut self) {
         self.cursor = self.cursor_location().line_end;
+        self.preferred_column = None;
+    }
+
+    /// Jump to the end of the whole buffer (all lines), unlike [`Self::move_end`]
+    /// which only jumps to the end of the current line. Used for "select all"
+    /// (there is no selection model, so this is the closest equivalent).
+    pub fn move_to_end(&mut self) {
+        self.cursor = self.chars.len();
         self.preferred_column = None;
     }
 
@@ -380,6 +465,24 @@ pub fn render_editor(
 /// All editing bindings are resolved against the [`Keybinds`] struct, so they
 /// follow the configured keybind set.
 pub fn apply_editor_keypress(editor: &mut InputEditor, key: KeyEvent, kb: &Keybinds) -> bool {
+    if kb.input_undo.matches(key) {
+        return editor.undo();
+    }
+    if kb.input_redo.matches(key) {
+        return editor.redo();
+    }
+    if kb.input_clear.matches(key) {
+        if editor.is_empty() {
+            return false;
+        }
+        editor.clear();
+        return true;
+    }
+    if kb.input_select_all.matches(key) {
+        // No selection model: jump to buffer end so Super+A is not a dead key.
+        editor.move_to_end();
+        return true;
+    }
     if kb.input_line_home.matches(key) {
         editor.move_home();
         return true;
@@ -432,25 +535,23 @@ pub fn apply_editor_keypress(editor: &mut InputEditor, key: KeyEvent, kb: &Keybi
         editor.move_right();
         return true;
     }
+    if kb.input_move_up.matches(key) {
+        let line_index = editor.cursor_location().line_index;
+        if line_index > 0 {
+            editor.move_up();
+            return true;
+        }
+        return false;
+    }
+    if kb.input_move_down.matches(key) {
+        let line_index = editor.cursor_location().line_index;
+        if line_index < editor.line_count() - 1 {
+            editor.move_down();
+            return true;
+        }
+        return false;
+    }
     match key.code {
-        KeyCode::Up => {
-            let line_index = editor.cursor_location().line_index;
-            if line_index > 0 {
-                editor.move_up();
-                true
-            } else {
-                false
-            }
-        }
-        KeyCode::Down => {
-            let line_index = editor.cursor_location().line_index;
-            if line_index < editor.line_count() - 1 {
-                editor.move_down();
-                true
-            } else {
-                false
-            }
-        }
         KeyCode::Home => {
             editor.move_home();
             true
@@ -485,6 +586,20 @@ mod tests {
         assert_eq!(e.cursor(), 5);
         e.backspace();
         assert_eq!(e.text(), "hell");
+    }
+
+    #[test]
+    fn undo_redo_round_trip() {
+        let mut e = InputEditor::new();
+        e.insert("ab");
+        e.insert("c");
+        assert_eq!(e.text(), "abc");
+        assert!(e.undo());
+        assert_eq!(e.text(), "ab");
+        assert!(e.undo());
+        assert_eq!(e.text(), "");
+        assert!(e.redo());
+        assert_eq!(e.text(), "ab");
     }
 
     #[test]

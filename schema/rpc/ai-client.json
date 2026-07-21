@@ -1,0 +1,1383 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Client RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/ai-client",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "listChatModels request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listChatModels"
+        },
+        "params": {
+          "$ref": "#/$defs/listChatModelsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listChatModels response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listChatModelsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listChatModelsByProvider request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listChatModelsByProvider"
+        },
+        "params": {
+          "$ref": "#/$defs/listChatModelsByProviderParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listChatModelsByProvider response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listChatModelsByProviderResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listEmbeddingModels request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listEmbeddingModels"
+        },
+        "params": {
+          "$ref": "#/$defs/listEmbeddingModelsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listEmbeddingModels response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listEmbeddingModelsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listEmbeddingModelsByProvider request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listEmbeddingModelsByProvider"
+        },
+        "params": {
+          "$ref": "#/$defs/listEmbeddingModelsByProviderParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listEmbeddingModelsByProvider response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listEmbeddingModelsByProviderResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listImageGenerationModels request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listImageGenerationModels"
+        },
+        "params": {
+          "$ref": "#/$defs/listImageGenerationModelsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listImageGenerationModels response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listImageGenerationModelsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listImageGenerationModelsByProvider request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listImageGenerationModelsByProvider"
+        },
+        "params": {
+          "$ref": "#/$defs/listImageGenerationModelsByProviderParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listImageGenerationModelsByProvider response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listImageGenerationModelsByProviderResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listVideoGenerationModels request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listVideoGenerationModels"
+        },
+        "params": {
+          "$ref": "#/$defs/listVideoGenerationModelsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listVideoGenerationModels response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listVideoGenerationModelsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listVideoGenerationModelsByProvider request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listVideoGenerationModelsByProvider"
+        },
+        "params": {
+          "$ref": "#/$defs/listVideoGenerationModelsByProviderParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listVideoGenerationModelsByProvider response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listVideoGenerationModelsByProviderResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listSpeechModels request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listSpeechModels"
+        },
+        "params": {
+          "$ref": "#/$defs/listSpeechModelsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listSpeechModels response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listSpeechModelsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listSpeechModelsByProvider request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listSpeechModelsByProvider"
+        },
+        "params": {
+          "$ref": "#/$defs/listSpeechModelsByProviderParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listSpeechModelsByProvider response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listSpeechModelsByProviderResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listTranscriptionModels request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listTranscriptionModels"
+        },
+        "params": {
+          "$ref": "#/$defs/listTranscriptionModelsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listTranscriptionModels response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listTranscriptionModelsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listTranscriptionModelsByProvider request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listTranscriptionModelsByProvider"
+        },
+        "params": {
+          "$ref": "#/$defs/listTranscriptionModelsByProviderParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listTranscriptionModelsByProvider response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listTranscriptionModelsByProviderResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listRerankingModels request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listRerankingModels"
+        },
+        "params": {
+          "$ref": "#/$defs/listRerankingModelsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listRerankingModels response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listRerankingModelsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listRerankingModelsByProvider request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listRerankingModelsByProvider"
+        },
+        "params": {
+          "$ref": "#/$defs/listRerankingModelsByProviderParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listRerankingModelsByProvider response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listRerankingModelsByProviderResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "listChatModelsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listChatModelsResult": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "available": {
+                "type": "boolean"
+              },
+              "hot": {
+                "type": "boolean"
+              },
+              "modelSpec": {}
+            },
+            "required": [
+              "status",
+              "available",
+              "hot",
+              "modelSpec"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "models"
+      ],
+      "additionalProperties": false
+    },
+    "listChatModelsByProviderParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listChatModelsByProviderResult": {
+      "type": "object",
+      "properties": {
+        "modelsByProvider": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "hot": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "status",
+                "available",
+                "hot"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "required": [
+        "modelsByProvider"
+      ],
+      "additionalProperties": false
+    },
+    "listEmbeddingModelsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listEmbeddingModelsResult": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "available": {
+                "type": "boolean"
+              },
+              "hot": {
+                "type": "boolean"
+              },
+              "modelSpec": {}
+            },
+            "required": [
+              "status",
+              "available",
+              "hot",
+              "modelSpec"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "models"
+      ],
+      "additionalProperties": false
+    },
+    "listEmbeddingModelsByProviderParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listEmbeddingModelsByProviderResult": {
+      "type": "object",
+      "properties": {
+        "modelsByProvider": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "hot": {
+                  "type": "boolean"
+                },
+                "modelSpec": {}
+              },
+              "required": [
+                "status",
+                "available",
+                "hot",
+                "modelSpec"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "required": [
+        "modelsByProvider"
+      ],
+      "additionalProperties": false
+    },
+    "listImageGenerationModelsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listImageGenerationModelsResult": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "available": {
+                "type": "boolean"
+              },
+              "hot": {
+                "type": "boolean"
+              },
+              "modelSpec": {}
+            },
+            "required": [
+              "status",
+              "available",
+              "hot",
+              "modelSpec"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "models"
+      ],
+      "additionalProperties": false
+    },
+    "listImageGenerationModelsByProviderParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listImageGenerationModelsByProviderResult": {
+      "type": "object",
+      "properties": {
+        "modelsByProvider": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "hot": {
+                  "type": "boolean"
+                },
+                "modelSpec": {}
+              },
+              "required": [
+                "status",
+                "available",
+                "hot",
+                "modelSpec"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "required": [
+        "modelsByProvider"
+      ],
+      "additionalProperties": false
+    },
+    "listVideoGenerationModelsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listVideoGenerationModelsResult": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "available": {
+                "type": "boolean"
+              },
+              "hot": {
+                "type": "boolean"
+              },
+              "modelSpec": {}
+            },
+            "required": [
+              "status",
+              "available",
+              "hot",
+              "modelSpec"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "models"
+      ],
+      "additionalProperties": false
+    },
+    "listVideoGenerationModelsByProviderParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listVideoGenerationModelsByProviderResult": {
+      "type": "object",
+      "properties": {
+        "modelsByProvider": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "hot": {
+                  "type": "boolean"
+                },
+                "modelSpec": {}
+              },
+              "required": [
+                "status",
+                "available",
+                "hot",
+                "modelSpec"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "required": [
+        "modelsByProvider"
+      ],
+      "additionalProperties": false
+    },
+    "listSpeechModelsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listSpeechModelsResult": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "available": {
+                "type": "boolean"
+              },
+              "hot": {
+                "type": "boolean"
+              },
+              "modelSpec": {}
+            },
+            "required": [
+              "status",
+              "available",
+              "hot",
+              "modelSpec"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "models"
+      ],
+      "additionalProperties": false
+    },
+    "listSpeechModelsByProviderParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listSpeechModelsByProviderResult": {
+      "type": "object",
+      "properties": {
+        "modelsByProvider": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "hot": {
+                  "type": "boolean"
+                },
+                "modelSpec": {}
+              },
+              "required": [
+                "status",
+                "available",
+                "hot",
+                "modelSpec"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "required": [
+        "modelsByProvider"
+      ],
+      "additionalProperties": false
+    },
+    "listTranscriptionModelsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listTranscriptionModelsResult": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "available": {
+                "type": "boolean"
+              },
+              "hot": {
+                "type": "boolean"
+              },
+              "modelSpec": {}
+            },
+            "required": [
+              "status",
+              "available",
+              "hot",
+              "modelSpec"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "models"
+      ],
+      "additionalProperties": false
+    },
+    "listTranscriptionModelsByProviderParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listTranscriptionModelsByProviderResult": {
+      "type": "object",
+      "properties": {
+        "modelsByProvider": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "hot": {
+                  "type": "boolean"
+                },
+                "modelSpec": {}
+              },
+              "required": [
+                "status",
+                "available",
+                "hot",
+                "modelSpec"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "required": [
+        "modelsByProvider"
+      ],
+      "additionalProperties": false
+    },
+    "listRerankingModelsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listRerankingModelsResult": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "available": {
+                "type": "boolean"
+              },
+              "hot": {
+                "type": "boolean"
+              },
+              "modelSpec": {}
+            },
+            "required": [
+              "status",
+              "available",
+              "hot",
+              "modelSpec"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "models"
+      ],
+      "additionalProperties": false
+    },
+    "listRerankingModelsByProviderParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listRerankingModelsByProviderResult": {
+      "type": "object",
+      "properties": {
+        "modelsByProvider": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "hot": {
+                  "type": "boolean"
+                },
+                "modelSpec": {}
+              },
+              "required": [
+                "status",
+                "available",
+                "hot",
+                "modelSpec"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "required": [
+        "modelsByProvider"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "AI Client RPC",
+    "path": "/rpc/ai-client",
+    "source": "plugin/ai-client/rpc/schema.ts",
+    "methods": {
+      "listChatModels": {
+        "type": "query",
+        "params": "#/$defs/listChatModelsParams",
+        "result": "#/$defs/listChatModelsResult"
+      },
+      "listChatModelsByProvider": {
+        "type": "query",
+        "params": "#/$defs/listChatModelsByProviderParams",
+        "result": "#/$defs/listChatModelsByProviderResult"
+      },
+      "listEmbeddingModels": {
+        "type": "query",
+        "params": "#/$defs/listEmbeddingModelsParams",
+        "result": "#/$defs/listEmbeddingModelsResult"
+      },
+      "listEmbeddingModelsByProvider": {
+        "type": "query",
+        "params": "#/$defs/listEmbeddingModelsByProviderParams",
+        "result": "#/$defs/listEmbeddingModelsByProviderResult"
+      },
+      "listImageGenerationModels": {
+        "type": "query",
+        "params": "#/$defs/listImageGenerationModelsParams",
+        "result": "#/$defs/listImageGenerationModelsResult"
+      },
+      "listImageGenerationModelsByProvider": {
+        "type": "query",
+        "params": "#/$defs/listImageGenerationModelsByProviderParams",
+        "result": "#/$defs/listImageGenerationModelsByProviderResult"
+      },
+      "listVideoGenerationModels": {
+        "type": "query",
+        "params": "#/$defs/listVideoGenerationModelsParams",
+        "result": "#/$defs/listVideoGenerationModelsResult"
+      },
+      "listVideoGenerationModelsByProvider": {
+        "type": "query",
+        "params": "#/$defs/listVideoGenerationModelsByProviderParams",
+        "result": "#/$defs/listVideoGenerationModelsByProviderResult"
+      },
+      "listSpeechModels": {
+        "type": "query",
+        "params": "#/$defs/listSpeechModelsParams",
+        "result": "#/$defs/listSpeechModelsResult"
+      },
+      "listSpeechModelsByProvider": {
+        "type": "query",
+        "params": "#/$defs/listSpeechModelsByProviderParams",
+        "result": "#/$defs/listSpeechModelsByProviderResult"
+      },
+      "listTranscriptionModels": {
+        "type": "query",
+        "params": "#/$defs/listTranscriptionModelsParams",
+        "result": "#/$defs/listTranscriptionModelsResult"
+      },
+      "listTranscriptionModelsByProvider": {
+        "type": "query",
+        "params": "#/$defs/listTranscriptionModelsByProviderParams",
+        "result": "#/$defs/listTranscriptionModelsByProviderResult"
+      },
+      "listRerankingModels": {
+        "type": "query",
+        "params": "#/$defs/listRerankingModelsParams",
+        "result": "#/$defs/listRerankingModelsResult"
+      },
+      "listRerankingModelsByProvider": {
+        "type": "query",
+        "params": "#/$defs/listRerankingModelsByProviderParams",
+        "result": "#/$defs/listRerankingModelsByProviderResult"
+      }
+    }
+  }
+}

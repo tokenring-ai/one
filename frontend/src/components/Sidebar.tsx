@@ -32,9 +32,9 @@ import {
   X,
 } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { agentRPCClient, type useAgentList, type useAgentTypes, type useWorkflows, workflowRPCClient } from "../rpc";
+import { agentRPCClient, type useAgentList, type useAgentTypes, useTodos, type useWorkflows, workflowRPCClient } from "../rpc";
 import ConfirmDialog from "./overlay/confirm-dialog.tsx";
 import { useSidebar } from "./SidebarContext";
 import ErrorState from "./ui/ErrorState.tsx";
@@ -53,6 +53,98 @@ interface AppNavItem {
   icon: React.ReactNode;
   label: string;
   color: string;
+}
+
+const SIDEBAR_TODO_MAX = 7;
+/** When trimming an over-long list, keep at most this many completed items at the top. */
+const SIDEBAR_TODO_MAX_COMPLETED = 3;
+
+type SidebarTodo = {
+  id: string;
+  content: string;
+  status: string;
+};
+
+/** Completed first (stable), then in-progress, then pending. */
+function statusRank(status: string): number {
+  switch (status) {
+    case "completed":
+      return 0;
+    case "in_progress":
+      return 1;
+    case "pending":
+      return 2;
+    default:
+      return 3;
+  }
+}
+
+/**
+ * Cap a sorted todo list to {@link SIDEBAR_TODO_MAX} items.
+ * 1. If over the max, drop completed items from the top until ≤3 remain (or under max).
+ * 2. If still over the max, drop from the bottom.
+ * Returns counts of hidden items for "+N more" labels above/below.
+ */
+function capTodos(todos: SidebarTodo[]): {
+  items: SidebarTodo[];
+  moreAbove: number;
+  moreBelow: number;
+} {
+  if (todos.length <= SIDEBAR_TODO_MAX) {
+    return { items: todos, moreAbove: 0, moreBelow: 0 };
+  }
+
+  const items = [...todos];
+  let moreAbove = 0;
+  let moreBelow = 0;
+
+  const completedCount = () => items.filter(t => t.status === "completed").length;
+
+  while (items.length > SIDEBAR_TODO_MAX && completedCount() > SIDEBAR_TODO_MAX_COMPLETED && items[0]?.status === "completed") {
+    items.shift();
+    moreAbove += 1;
+  }
+
+  while (items.length > SIDEBAR_TODO_MAX) {
+    items.pop();
+    moreBelow += 1;
+  }
+
+  return { items, moreAbove, moreBelow };
+}
+
+/** Active marker is `>`; completed show a checkmark; pending show none. */
+function todoStatusMarker(status: string): string {
+  switch (status) {
+    case "in_progress":
+      return ">";
+    case "completed":
+      return "✓";
+    default:
+      return "";
+  }
+}
+
+function todoStatusClass(status: string): string {
+  switch (status) {
+    case "completed":
+      return "text-emerald-500";
+    case "in_progress":
+      return "text-accent";
+    default:
+      return "text-secondary";
+  }
+}
+
+function todoContentClass(status: string): string {
+  switch (status) {
+    case "completed":
+      return "text-emerald-500";
+    case "in_progress":
+      return "text-secondary";
+    default:
+      return "text-secondary";
+  }
 }
 
 const APP_NAV_ITEMS: AppNavItem[] = [
@@ -87,6 +179,17 @@ export default function Sidebar({ currentAgentId, agents, workflows, agentTypes 
   const { isSidebarExpanded, toggleSidebar, isMobileOpen, setMobileOpen, localStorageAvailable } = useSidebar();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [storageBannerDismissed, setStorageBannerDismissed] = useState(false);
+  const todosStream = useTodos(currentAgentId || undefined);
+
+  const cappedTodos = useMemo(() => {
+    if (todosStream.data?.status !== "success") {
+      return { items: [] as SidebarTodo[], moreAbove: 0, moreBelow: 0 };
+    }
+    // Completed at top (green), then in-progress, then pending — original order preserved within each status.
+    const todos = [...todosStream.data.todos];
+    todos.sort((a, b) => statusRank(a.status) - statusRank(b.status));
+    return capTodos(todos);
+  }, [todosStream.data]);
 
   const navigateAndClose = (path: string) => {
     void navigate(path);
@@ -272,48 +375,79 @@ export default function Sidebar({ currentAgentId, agents, workflows, agentTypes 
                   ) : (agents.data?.length ?? 0) === 0 ? (
                     <div className="px-3 py-4 text-center text-muted text-2xs italic">No active agents</div>
                   ) : (
-                    agents.data!.map(agent => (
-                      <div
-                        key={agent.id}
-                        onClick={() => navigateAndClose(`/agent/${agent.id}`)}
-                        onKeyDown={e => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            navigateAndClose(`/agent/${agent.id}`);
-                          }
-                        }}
-                        className={`group flex items-center gap-3 px-3 py-2 rounded-md transition-all cursor-pointer focus-ring ${currentAgentId === agent.id ? "bg-active border border-primary" : "hover:bg-hover border border-transparent"}`}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`Open agent ${agent.displayName}`}
-                        aria-current={currentAgentId === agent.id ? "page" : undefined}
-                      >
-                        <div className="shrink-0" aria-hidden="true">
-                          {agent.idle ? (
-                            <Pause className="w-3.5 h-3.5 text-muted" />
-                          ) : (
-                            <div className="w-3.5 h-3.5 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+                    agents.data!.map(agent => {
+                      const isSelected = currentAgentId === agent.id;
+                      return (
+                        <div
+                          key={agent.id}
+                          onClick={() => navigateAndClose(`/agent/${agent.id}`)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              navigateAndClose(`/agent/${agent.id}`);
+                            }
+                          }}
+                          className={`group px-3 py-2 rounded-md transition-all cursor-pointer focus-ring ${
+                            isSelected ? "bg-active border border-primary" : "hover:bg-hover border border-transparent"
+                          }`}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Open agent ${agent.displayName}`}
+                          aria-current={isSelected ? "page" : undefined}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="shrink-0" aria-hidden="true">
+                              {agent.idle ? (
+                                <Pause className="w-3.5 h-3.5 text-muted" />
+                              ) : (
+                                <div className="w-3.5 h-3.5 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className={`text-sm font-medium truncate ${isSelected ? "text-primary" : "text-secondary"}`}>{agent.displayName}</div>
+                              <div className="text-2xs text-muted mt-0.5 truncate">{agent.currentActivity}</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={e => {
+                                e.stopPropagation();
+                                void handleDeleteClick(agent.id, agent.idle);
+                              }}
+                              className="p-1.5 text-muted hover:text-red-500 transition-colors opacity-40 hover:opacity-100 group-focus-within:opacity-100 focus-ring cursor-pointer rounded-md active:scale-[0.98]"
+                              aria-label={`Delete agent ${agent.displayName}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Live todos for the selected agent — inside the selection bubble */}
+                          {isSelected && cappedTodos.items.length > 0 && (
+                            <ul className="mt-2 ml-6 space-y-1 border-t border-primary/40 pt-2" aria-label={`Todos for ${agent.displayName}`}>
+                              {cappedTodos.moreAbove > 0 && <li className="text-2xs text-muted font-mono leading-snug">{cappedTodos.moreAbove} more</li>}
+                              {cappedTodos.items.map(todo => {
+                                const marker = todoStatusMarker(todo.status);
+                                return (
+                                  <li
+                                    key={todo.id}
+                                    className={`relative min-w-0 text-2xs font-mono leading-snug ${todoContentClass(todo.status)}`}
+                                    title={todo.content}
+                                  >
+                                    {/* Marker hangs left of the text column so rows align with "N more". */}
+                                    {marker ? (
+                                      <span className={`absolute top-0 right-full mr-2 select-none ${todoStatusClass(todo.status)}`} aria-hidden="true">
+                                        {marker}
+                                      </span>
+                                    ) : null}
+                                    <span className="line-clamp-2">{todo.content}</span>
+                                  </li>
+                                );
+                              })}
+                              {cappedTodos.moreBelow > 0 && <li className="text-2xs text-muted font-mono leading-snug">{cappedTodos.moreBelow} more</li>}
+                            </ul>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className={`text-sm font-medium truncate ${currentAgentId === agent.id ? "text-primary" : "text-secondary"}`}>
-                            {agent.displayName}
-                          </div>
-                          <div className="text-2xs text-muted mt-0.5 truncate">{agent.currentActivity}</div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={e => {
-                            e.stopPropagation();
-                            void handleDeleteClick(agent.id, agent.idle);
-                          }}
-                          className="p-1.5 text-muted hover:text-red-500 transition-colors opacity-40 hover:opacity-100 group-focus-within:opacity-100 focus-ring cursor-pointer rounded-md active:scale-[0.98]"
-                          aria-label={`Delete agent ${agent.displayName}`}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
 

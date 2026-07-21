@@ -73,7 +73,6 @@ impl HexColor {
         }
     }
     /// Construct a HexColor from a hex string like "#RRGGBB".
-    #[allow(dead_code)]
     pub fn from_html_rgb(s: &str) -> Result<Self, &'static str> {
         if s.len() != 7 || !s.starts_with('#') {
             return Err("Invalid HTML color format. Expected #RRGGBB.");
@@ -451,8 +450,8 @@ impl Theme {
         let panel_bg = HexColor(0x17, 0x17, 0x17);
         let input_bg = HexColor(0x12, 0x12, 0x12);
         let chip_bg = HexColor(0x26, 0x26, 0x26);
-        let border_default = HexColor(0x26, 0x26, 0x26);
-        let border_subtle = HexColor(0x1c, 0x1c, 0x1c);
+        let border_default = HexColor(0x50, 0x50, 0x50);
+        let border_subtle = HexColor(0x50, 0x50, 0x50);
         let border_chip = HexColor(0x40, 0x40, 0x40);
 
         Self {
@@ -642,15 +641,24 @@ impl Theme {
         theme
     }
 
+    /// Built-in theme preset names (for cycling / docs).
+    pub fn preset_names() -> &'static [&'static str] {
+        &["material-dark", "framed-light"]
+    }
+
+    /// Canonical preset name for a theme (best-effort).
+    pub fn canonical_name(name: &str) -> &'static str {
+        match name.trim().to_ascii_lowercase().replace('_', "-").as_str() {
+            "framed-light" | "framedlight" | "light" => "framed-light",
+            _ => "material-dark",
+        }
+    }
+
     /// Parse a theme name from CLI/config (nice-to-have #2).
     pub fn from_name(name: &str) -> Self {
-        match name.trim().to_ascii_lowercase().replace('_', "-").as_str() {
-            "framed-light" | "framedlight" | "light" => Self::framed_light(),
-            "material-dark" | "materialdark" | "dark" | "default" => Self::material_dark(),
-            other => {
-                let _ = other;
-                Self::material_dark()
-            }
+        match Self::canonical_name(name) {
+            "framed-light" => Self::framed_light(),
+            _ => Self::material_dark(),
         }
     }
 
@@ -679,7 +687,6 @@ impl PanelStyle {
 
 /// Rendering tones (mirrors the TypeScript `ChatRenderUtils.TONE_COLORS`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[allow(dead_code)] // Full tone palette mirrors the TS renderer before each is wired.
 pub enum Tone {
     Chat,
     Reasoning,

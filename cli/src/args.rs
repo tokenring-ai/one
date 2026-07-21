@@ -10,15 +10,16 @@ use tungstenite::http::Uri;
 use crate::config::{FileConfig, NotificationConfig};
 use crate::rpc::SessionAuth;
 use crate::theme::Theme;
+use crate::tui::keybinds::Keybinds;
 
 /// A Ratatui-powered terminal UI for TokenRing.
 ///
 /// Connects to a running TokenRing instance over WebSocket JSON-RPC.
 #[derive(Parser, Debug)]
 #[command(
-    name = "tokenring",
+    name = "tokenring-one-cli",
     version,
-    about = "Ratatui-powered terminal UI for TokenRing"
+    about = "Ratatui-powered terminal UI for TokenRing One"
 )]
 pub struct RawArgs {
     /// URL of the TokenRing instance (ws://, wss://, http:// or https://).
@@ -35,8 +36,10 @@ pub struct RawArgs {
     pub one_binary: Option<PathBuf>,
 
     /// Project directory passed to a locally launched TokenRing One instance.
-    #[arg(long, value_name = "PATH", default_value = ".")]
-    pub project_directory: PathBuf,
+    ///
+    /// Defaults to `.` when neither the flag nor config set a path.
+    #[arg(long, value_name = "PATH")]
+    pub project_directory: Option<PathBuf>,
 
     /// Attach to an existing agent instead of creating a new one.
     #[arg(long, value_name = "ID", env = "TR_AGENT_ID")]
@@ -54,19 +57,19 @@ pub struct RawArgs {
     #[arg(long, action = ArgAction::SetTrue, overrides_with = "select")]
     pub no_select: bool,
 
-    /// Bearer token for HTTP basic/bearer auth on the WS upgrade.
+    /// Bearer token for the WebSocket HTTP upgrade (`Authorization: Bearer`).
     #[arg(long, value_name = "TOKEN", env = "TR_AUTH_BEARER")]
     pub auth_bearer: Option<String>,
 
-    /// Username for HTTP basic auth on the WS upgrade.
+    /// Username for WebSocket session `auth` (JSON-RPC after connect; not HTTP Basic).
     #[arg(long, value_name = "USER", env = "TR_AUTH_USER")]
     pub auth_user: Option<String>,
 
-    /// Password for HTTP basic auth on the WS upgrade.
+    /// Password for WebSocket session `auth` (JSON-RPC after connect).
     #[arg(long, value_name = "PASS", env = "TR_AUTH_PASSWORD")]
     pub auth_password: Option<String>,
 
-    /// Config file path (default: `~/.config/tokenring/cli-rs.toml`).
+    /// Config file path (default: `~/.config/tokenring/cli.toml`).
     #[arg(long, value_name = "PATH")]
     pub config: Option<String>,
 
@@ -132,11 +135,14 @@ pub struct Config {
     pub session_auth: Option<SessionAuth>,
     pub verbose: bool,
     pub theme: Theme,
+    /// Canonical theme preset name (for cycling / status).
+    pub theme_name: String,
     pub prompt: Option<String>,
     /// True when a `--prompt` / config `prompt` is configured (automation run).
     pub prompt_automation: bool,
     pub shutdown_when_done: bool,
     pub notifications: NotificationConfig,
+    pub keybinds: Keybinds,
 }
 
 impl Config {
@@ -157,17 +163,37 @@ impl Config {
             .transpose()?;
 
         let auth_bearer = args.auth_bearer.or(file.auth_bearer);
-        let auth_user = args.auth_user.or(file.auth_user);
-        let auth_password = args.auth_password.or(file.auth_password);
-        let auth_header = build_auth_header(
-            auth_bearer.as_deref(),
-            auth_user.as_deref(),
-            auth_password.as_deref(),
-        )?;
-        let session_auth = auth_user.map(|username| SessionAuth {
-            username,
-            password: auth_password.unwrap_or_default(),
-        });
+        // Username: flag/config → TR_ADMIN_USER → "admin".
+        // Password: flag/config (TR_AUTH_PASSWORD via clap) → TR_ADMIN_PASSWORD → required for remote.
+        let auth_user = args
+            .auth_user
+            .or(file.auth_user)
+            .or_else(|| env_nonempty("TR_ADMIN_USER"))
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "admin".to_string());
+        let auth_password = args
+            .auth_password
+            .or(file.auth_password)
+            .or_else(|| env_nonempty("TR_ADMIN_PASSWORD"))
+            .filter(|s| !s.is_empty());
+        // Bearer may ride the upgrade header only. Username/password use the
+        // WebSocket session `auth` method — never HTTP Basic (avoids dual auth).
+        let auth_header = build_auth_header(auth_bearer.as_deref())?;
+        let session_auth = if ws_url.is_some() {
+            let password = auth_password.ok_or_else(|| {
+                anyhow::anyhow!(
+                    "auth password required for remote connections \
+                     (--auth-password, TR_AUTH_PASSWORD, TR_ADMIN_PASSWORD, or config auth_password)"
+                )
+            })?;
+            Some(SessionAuth {
+                username: auth_user,
+                password,
+            })
+        } else {
+            // Local launch injects generated session credentials.
+            None
+        };
 
         let agent_type = args
             .agent_type
@@ -177,10 +203,13 @@ impl Config {
         let select = merge_bool(args.select, args.no_select, file.select.unwrap_or(true));
         let verbose = merge_bool(args.verbose, args.no_verbose, file.verbose.unwrap_or(false));
 
-        let theme_name = args
-            .theme
-            .or(file.theme)
-            .unwrap_or_else(|| "material-dark".to_string());
+        let theme_name = Theme::canonical_name(
+            args.theme
+                .or(file.theme)
+                .as_deref()
+                .unwrap_or("material-dark"),
+        )
+        .to_string();
         let mut theme = Theme::from_name(&theme_name);
         if let Some(style) = args.panel_style.or(file.panel_style) {
             theme = theme.with_panel_style(&style);
@@ -208,10 +237,21 @@ impl Config {
             hook: file.notifications.hook,
         };
 
+        let mut keybinds = Keybinds::defaults();
+        if !file.keybinds.is_empty() {
+            keybinds.apply_overrides(&file.keybinds);
+        }
+
+        let project_directory = args
+            .project_directory
+            .or(file.project_directory)
+            .unwrap_or_else(|| PathBuf::from("."));
+        let one_binary = args.one_binary.or(file.one_binary);
+
         Ok(Self {
             ws_url,
-            one_binary: args.one_binary,
-            project_directory: args.project_directory,
+            one_binary,
+            project_directory,
             agent_id: args.agent_id.or(file.agent_id),
             agent_type,
             select,
@@ -219,12 +259,18 @@ impl Config {
             session_auth,
             verbose,
             theme,
+            theme_name,
             prompt,
             prompt_automation,
             shutdown_when_done,
             notifications,
+            keybinds,
         })
     }
+}
+
+fn env_nonempty(key: &str) -> Option<String> {
+    std::env::var(key).ok().filter(|s| !s.is_empty())
 }
 
 /// Git-style precedence: explicit CLI true/false beats file default.
@@ -238,24 +284,15 @@ fn merge_bool(cli_true: bool, cli_false: bool, file_default: bool) -> bool {
     file_default
 }
 
-/// Build the `Authorization` header value, preferring bearer, then basic.
-/// Returns `Ok(None)` when no auth credentials were supplied.
-pub(crate) fn build_auth_header(
-    bearer: Option<&str>,
-    user: Option<&str>,
-    password: Option<&str>,
-) -> Result<Option<HeaderValue>> {
-    if let Some(token) = bearer {
-        return Ok(Some(HeaderValue::from_str(&format!("Bearer {token}"))?));
+/// Build an optional `Authorization: Bearer …` header for the WebSocket upgrade.
+/// Username/password are **not** turned into HTTP Basic — they use session auth.
+pub(crate) fn build_auth_header(bearer: Option<&str>) -> Result<Option<HeaderValue>> {
+    match bearer {
+        Some(token) if !token.is_empty() => {
+            Ok(Some(HeaderValue::from_str(&format!("Bearer {token}"))?))
+        }
+        _ => Ok(None),
     }
-    if let Some(user) = user {
-        let password = password.unwrap_or("");
-        let credentials = base64_encode(format!("{user}:{password}").as_bytes());
-        return Ok(Some(HeaderValue::from_str(&format!(
-            "Basic {credentials}"
-        ))?));
-    }
-    Ok(None)
 }
 
 /// Normalise an input URL to a `ws(s)://host/rpc:ws` form.
@@ -287,31 +324,6 @@ pub fn normalize_ws_url(input: &str) -> Result<String> {
     Ok(format!("{scheme}://{authority}{path}{query}"))
 }
 
-/// Minimal RFC 4648 base64 encoder (no extra dependency).
-fn base64_encode(bytes: &[u8]) -> String {
-    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
-    for chunk in bytes.chunks(3) {
-        let b0 = chunk[0];
-        let b1 = chunk.get(1).copied().unwrap_or(0);
-        let b2 = chunk.get(2).copied().unwrap_or(0);
-        let triple = ((b0 as u32) << 16) | ((b1 as u32) << 8) | (b2 as u32);
-        out.push(ALPHABET[((triple >> 18) & 0x3F) as usize] as char);
-        out.push(ALPHABET[((triple >> 12) & 0x3F) as usize] as char);
-        if chunk.len() > 1 {
-            out.push(ALPHABET[((triple >> 6) & 0x3F) as usize] as char);
-        } else {
-            out.push('=');
-        }
-        if chunk.len() > 2 {
-            out.push(ALPHABET[(triple & 0x3F) as usize] as char);
-        } else {
-            out.push('=');
-        }
-    }
-    out
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -320,7 +332,7 @@ mod tests {
         RawArgs {
             url: None,
             one_binary: None,
-            project_directory: PathBuf::from("."),
+            project_directory: None,
             agent_id: None,
             agent_type: None,
             select: false,
@@ -346,7 +358,8 @@ mod tests {
 
     #[test]
     fn no_flags_are_false_when_absent() {
-        let args = RawArgs::try_parse_from(["tokenring", "ws://localhost/rpc:ws"]).unwrap();
+        let args =
+            RawArgs::try_parse_from(["tokenring-one-cli", "ws://localhost/rpc:ws"]).unwrap();
         assert!(!args.no_select);
         assert!(!args.no_verbose);
         assert!(!args.no_shutdown_when_done);
@@ -364,13 +377,14 @@ mod tests {
     #[test]
     fn config_true_booleans_survive_when_no_flag_absent() {
         let path = std::env::temp_dir().join(format!(
-            "tokenring-cli-rs-config-{}.toml",
+            "tokenring-cli-config-{}.toml",
             std::process::id()
         ));
         std::fs::write(
             &path,
             r#"
 url = "ws://localhost/rpc:ws"
+auth_password = "test-secret"
 select = true
 verbose = true
 shutdown_when_done = true
@@ -398,13 +412,14 @@ desktop = true
     #[test]
     fn no_flags_override_config_true_booleans() {
         let path = std::env::temp_dir().join(format!(
-            "tokenring-cli-rs-config-no-{}.toml",
+            "tokenring-cli-config-no-{}.toml",
             std::process::id()
         ));
         std::fs::write(
             &path,
             r#"
 url = "ws://localhost/rpc:ws"
+auth_password = "test-secret"
 select = true
 verbose = true
 shutdown_when_done = true
@@ -467,9 +482,50 @@ desktop = true
     }
 
     #[test]
-    fn base64_encodes_credentials() {
-        assert_eq!(base64_encode(b"user:pass"), "dXNlcjpwYXNz");
-        assert_eq!(base64_encode(b"a"), "YQ==");
+    fn auth_header_is_bearer_only_never_basic() {
+        let header = build_auth_header(Some("secret-token")).unwrap().unwrap();
+        assert_eq!(header.to_str().unwrap(), "Bearer secret-token");
+        // User/password do not produce an Authorization header.
+        assert!(build_auth_header(None).unwrap().is_none());
+        assert!(build_auth_header(Some("")).unwrap().is_none());
+    }
+
+    #[test]
+    fn session_auth_from_user_password() {
+        let mut args = raw_args_with_config(None);
+        args.auth_user = Some("cli".into());
+        args.auth_password = Some("secret".into());
+        args.url = Some("ws://localhost/rpc:ws".into());
+        let config = Config::from_args(args).unwrap();
+        assert!(config.auth_header.is_none());
+        let auth = config.session_auth.expect("session auth");
+        assert_eq!(auth.username, "cli");
+        assert_eq!(auth.password, "secret");
+    }
+
+    #[test]
+    fn remote_url_requires_password() {
+        let mut args = raw_args_with_config(None);
+        args.url = Some("ws://localhost/rpc:ws".into());
+        assert!(Config::from_args(args).is_err());
+    }
+
+    #[test]
+    fn remote_url_defaults_username_to_admin() {
+        let mut args = raw_args_with_config(None);
+        args.url = Some("ws://localhost/rpc:ws".into());
+        args.auth_password = Some("secret".into());
+        let config = Config::from_args(args).unwrap();
+        let auth = config.session_auth.expect("session auth");
+        assert_eq!(auth.username, "admin");
+        assert_eq!(auth.password, "secret");
+    }
+
+    #[test]
+    fn local_startup_does_not_require_password() {
+        let config = Config::from_args(raw_args_with_config(None)).unwrap();
+        assert!(config.ws_url.is_none());
+        assert!(config.session_auth.is_none());
     }
 
     #[test]

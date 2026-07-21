@@ -24,15 +24,13 @@ pub(super) struct EntryRenderProps<'a> {
     pub verbose: bool,
     pub streaming_entry_idx: Option<usize>,
     pub spinner_tick: usize,
-    pub tool_expanded: bool,
     pub show_body_streaming_cursor: bool,
     pub streaming_reasoning: bool,
 }
 
-/// Lines produced for one transcript entry, plus tool-collapse metadata.
+/// Lines produced for one transcript entry.
 pub(super) struct RenderedEntry {
     pub lines: Vec<Line<'static>>,
-    pub collapsible_tool: bool,
 }
 
 pub(super) fn render_transcript_entry(props: &EntryRenderProps<'_>) -> RenderedEntry {
@@ -40,7 +38,7 @@ pub(super) fn render_transcript_entry(props: &EntryRenderProps<'_>) -> RenderedE
         EntryKind::Input => render_input_entry(props),
         EntryKind::Reasoning => render_reasoning_entry(props),
         EntryKind::ToolCall => render_tool_call_entry(props),
-        EntryKind::Artifact => render_artifact_entry(props),
+        EntryKind::Attachment => render_artifact_entry(props),
         EntryKind::Chat => render_chat_entry(props),
         EntryKind::System => render_system_entry(props),
         EntryKind::Info => render_info_entry(props),
@@ -59,7 +57,6 @@ fn render_input_entry(props: &EntryRenderProps<'_>) -> RenderedEntry {
             props.theme,
             props.spacing,
         ),
-        collapsible_tool: false,
     }
 }
 
@@ -72,48 +69,44 @@ fn render_reasoning_entry(props: &EntryRenderProps<'_>) -> RenderedEntry {
         lines.push(Line::default());
         lines.extend(render_body_lines(props, entry_body_source(props)));
     }
-    RenderedEntry {
-        lines,
-        collapsible_tool: false,
-    }
+    RenderedEntry { lines }
 }
 
 fn render_tool_call_entry(props: &EntryRenderProps<'_>) -> RenderedEntry {
-    let body_source = entry_body_source(props);
-    let collapsed = !props.verbose && !props.tool_expanded;
-    let body = if collapsed {
-        collapse_tool_body(body_source)
-    } else {
-        trim_boundary_newlines(body_source)
-    };
-    let collapsible_tool =
-        collapsed && tool_body_has_multiple_actions(body_source);
-
-    let mut lines = Vec::new();
-    if let Some(header) = render_entry_header(props, shows_stripe_in_compact(EntryKind::ToolCall), false) {
-        lines.push(header);
-        lines.push(Line::default())
+    let mut lines = render_body_lines(props, &props.entry.body);
+    if props.verbose {
+        if let Some(actions) = props
+            .entry
+            .verbose_body
+            .as_deref()
+            .map(trim_boundary_newlines)
+            .filter(|actions| !actions.is_empty())
+        {
+            let body_width = props.inner_width.clamp(1, 150);
+            lines.extend(markdown::render_body(
+                &actions,
+                body_width,
+                crate::theme::Tone::Muted.color(props.theme),
+                "",
+                props.theme,
+            ));
+        }
     }
-    lines.extend(render_body_lines(props, &body));
 
-    RenderedEntry {
-        lines,
-        collapsible_tool,
-    }
+    RenderedEntry { lines }
 }
 
 fn render_artifact_entry(props: &EntryRenderProps<'_>) -> RenderedEntry {
     let body_source = entry_body_source(props);
     let mut lines = Vec::new();
-    if let Some(header) = render_entry_header(props, shows_stripe_in_compact(EntryKind::Artifact), false) {
+    if let Some(header) =
+        render_entry_header(props, shows_stripe_in_compact(EntryKind::Attachment), false)
+    {
         lines.push(header);
         lines.push(Line::default())
     }
     lines.extend(render_artifact_body_lines(props, body_source));
-    RenderedEntry {
-        lines,
-        collapsible_tool: false,
-    }
+    RenderedEntry { lines }
 }
 
 fn render_chat_entry(props: &EntryRenderProps<'_>) -> RenderedEntry {
@@ -152,10 +145,7 @@ fn render_standard_entry(props: &EntryRenderProps<'_>, show_stripe: bool) -> Ren
         lines.push(Line::default())
     }
     lines.extend(render_body_lines(props, body_source));
-    RenderedEntry {
-        lines,
-        collapsible_tool: false,
-    }
+    RenderedEntry { lines }
 }
 
 fn entry_body_source<'a>(props: &EntryRenderProps<'a>) -> &'a str {
@@ -174,7 +164,7 @@ fn shows_stripe_in_compact(kind: EntryKind) -> bool {
     matches!(
         kind,
         EntryKind::ToolCall
-            | EntryKind::Artifact
+            | EntryKind::Attachment
             | EntryKind::Error
             | EntryKind::Warning
             | EntryKind::Response
@@ -193,7 +183,8 @@ fn render_entry_header(
     show_stripe: bool,
     append_title_cursor: bool,
 ) -> Option<Line<'static>> {
-    let header_title = candy::entry_header_title(props.entry.kind, &props.entry.title, props.verbose)?;
+    let header_title =
+        candy::entry_header_title(props.entry.kind, &props.entry.title, props.verbose)?;
     let prefix = if !props.verbose && show_stripe {
         candy::entry_stripe_prefix(candy::entry_stripe_tone(props.entry.kind), props.theme)
     } else {
@@ -232,9 +223,13 @@ fn render_artifact_body_lines(props: &EntryRenderProps<'_>, body: &str) -> Vec<L
         return standalone_streaming_cursor_line(props);
     }
     let body_width = props.inner_width.clamp(1, 150);
-    let mut body_lines = if diff::is_diff_artifact_title(&props.entry.title)
-        || diff::looks_like_diff(&body)
-    {
+    // Diff colouring is keyed off the attachment MIME (never content-sniffed).
+    let is_diff = props
+        .entry
+        .mime_type
+        .as_deref()
+        .is_some_and(diff::is_diff_mime);
+    let mut body_lines = if is_diff {
         diff::render_diff_lines(&body, props.theme, "")
     } else {
         markdown::render_body(
@@ -360,65 +355,9 @@ fn input_surface_line(
     Line::from(spans)
 }
 
-/// Whether a tool-call body has multiple actions and can be collapsed.
-fn tool_body_has_multiple_actions(body: &str) -> bool {
-    body.lines()
-        .filter(|line| {
-            let trimmed = line.trim_start();
-            trimmed.starts_with("└ ") || trimmed.starts_with("├ ")
-        })
-        .count()
-        > 1
-}
-
-/// Collapse a multi-action tool body to its first branch (candy #15).
-fn collapse_tool_body(body: &str) -> String {
-    let lines: Vec<&str> = body.lines().collect();
-    let action_starts: Vec<usize> = lines
-        .iter()
-        .enumerate()
-        .filter_map(|(i, l)| {
-            let t = l.trim_start();
-            if t.starts_with("└ ") || t.starts_with("├ ") {
-                Some(i)
-            } else {
-                None
-            }
-        })
-        .collect();
-    if action_starts.len() <= 1 {
-        return trim_boundary_newlines(body);
-    }
-    let first_end = action_starts.get(1).copied().unwrap_or(lines.len());
-    let mut out: Vec<String> = lines[..first_end]
-        .iter()
-        .map(|s| (*s).to_string())
-        .collect();
-    out.push(format!(
-        "   … {} more actions (Enter to expand)",
-        action_starts.len() - 1
-    ));
-    out.join("\n")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn collapse_tool_body_passes_through_single_action() {
-        let body = "└ read file\ncontents here";
-        assert_eq!(collapse_tool_body(body), body);
-    }
-
-    #[test]
-    fn collapse_tool_body_folds_extra_actions() {
-        let body = "└ read foo\nstuff\n└ write bar\nmore";
-        let collapsed = collapse_tool_body(body);
-        assert!(collapsed.contains("└ read foo"));
-        assert!(collapsed.contains("1 more actions"));
-        assert!(!collapsed.contains("└ write bar"));
-    }
 
     #[test]
     fn input_surface_renders_stripe_and_text() {
@@ -432,20 +371,25 @@ mod tests {
             body: "hello world".to_string(),
             verbose_body: None,
             tone: Tone::Input,
+            mime_type: None,
         };
         let lines = render_input_surface_lines(&entry, 40, &theme, spacing);
         let text_line = lines
             .iter()
-            .find(|line| line.spans.iter().any(|s| s.content.as_ref() == "hello world"))
+            .find(|line| {
+                line.spans
+                    .iter()
+                    .any(|s| s.content.as_ref() == "hello world")
+            })
             .expect("message line");
         let spans = &text_line.spans;
         assert!(spans.len() >= 3);
         assert_eq!(spans[0].content.as_ref(), COMPOSER_STRIPE_CHAR);
+        assert_eq!(spans[0].style.fg, Some(theme.composer.stripe_color.color()));
         assert_eq!(
-            spans[0].style.fg,
-            Some(theme.composer.stripe_color.color())
+            spans[0].style.bg,
+            Some(theme.composer.background_color.color())
         );
-        assert_eq!(spans[0].style.bg, Some(theme.composer.background_color.color()));
         assert!(spans.iter().any(|s| s.content.as_ref() == "hello world"));
     }
 
@@ -461,8 +405,112 @@ mod tests {
             body: "abcdefghij".repeat(20),
             verbose_body: None,
             tone: Tone::Input,
+            mime_type: None,
         };
         let lines = render_input_surface_lines(&entry, 20, &theme, spacing);
         assert!(lines.len() > 1);
+    }
+
+    #[test]
+    fn tool_message_uses_status_tone_and_verbose_actions_are_muted() {
+        use super::super::layout::ui_spacing;
+        use crate::theme::Tone;
+
+        let theme = Theme::material_dark();
+        let spacing = ui_spacing(ratatui::layout::Rect::new(0, 0, 80, 24));
+        let entry = TranscriptEntry {
+            kind: EntryKind::ToolCall,
+            title: "filesystem.read".into(),
+            body: "**File** Read 3 files".into(),
+            verbose_body: Some("└  Read a.txt\n└  Read b.txt\n└  Read c.txt".into()),
+            tone: Tone::Success,
+            mime_type: None,
+        };
+        let compact = render_tool_call_entry(&EntryRenderProps {
+            entry: &entry,
+            entry_idx: 0,
+            inner_width: 80,
+            theme: &theme,
+            spacing,
+            verbose: false,
+            streaming_entry_idx: None,
+            spinner_tick: 0,
+            show_body_streaming_cursor: false,
+            streaming_reasoning: false,
+        });
+        assert!(compact
+            .lines
+            .iter()
+            .flat_map(|line| &line.spans)
+            .any(|span| {
+                span.content.as_ref() == "File"
+                    && span.style.add_modifier.contains(Modifier::BOLD)
+                    && span.style.fg == Some(Tone::Success.color(&theme))
+                    && span.style.bg == Some(theme.transcript.background_color.color())
+            }));
+        assert!(!compact
+            .lines
+            .iter()
+            .flat_map(|line| &line.spans)
+            .any(|span| span.content.contains("Read a.txt")));
+
+        let verbose = render_tool_call_entry(&EntryRenderProps {
+            entry: &entry,
+            entry_idx: 0,
+            inner_width: 80,
+            theme: &theme,
+            spacing,
+            verbose: true,
+            streaming_entry_idx: None,
+            spinner_tick: 0,
+            show_body_streaming_cursor: false,
+            streaming_reasoning: false,
+        });
+        assert!(verbose
+            .lines
+            .iter()
+            .flat_map(|line| &line.spans)
+            .any(|span| {
+                span.content.contains("└  Read a.txt")
+                    && span.style.fg == Some(Tone::Muted.color(&theme))
+                    && span.style.bg == Some(theme.transcript.background_color.color())
+            }));
+    }
+
+    #[test]
+    fn compact_tool_diff_uses_diff_colors() {
+        use super::super::layout::ui_spacing;
+        use crate::theme::Tone;
+
+        let theme = Theme::material_dark();
+        let spacing = ui_spacing(ratatui::layout::Rect::new(0, 0, 80, 24));
+        let entry = TranscriptEntry {
+            kind: EntryKind::Attachment,
+            title: "Attachment: change.diff (text/x-diff)".into(),
+            body: "--- a/file\n+++ b/file\n+added".into(),
+            verbose_body: Some("--- a/file\n+++ b/file\n+added".into()),
+            tone: Tone::Info,
+            mime_type: Some("text/x-diff".into()),
+        };
+        let rendered = render_artifact_entry(&EntryRenderProps {
+            entry: &entry,
+            entry_idx: 0,
+            inner_width: 80,
+            theme: &theme,
+            spacing,
+            verbose: false,
+            streaming_entry_idx: None,
+            spinner_tick: 0,
+            show_body_streaming_cursor: false,
+            streaming_reasoning: false,
+        });
+
+        let added = rendered
+            .lines
+            .iter()
+            .flat_map(|line| &line.spans)
+            .find(|span| span.content.as_ref() == "+added")
+            .expect("added diff line");
+        assert_eq!(added.style.fg, Some(theme.diff.added_color.color()));
     }
 }

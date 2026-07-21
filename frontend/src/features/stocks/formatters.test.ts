@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { describe, expect, it } from "bun:test";
 import { changeSign, fmt, fmtMarketCap, fmtPrice, fmtVol, parseHistoryDate, pricePrecision } from "./formatters.ts";
 

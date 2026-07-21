@@ -15,15 +15,34 @@ use anyhow::{bail, Context, Result};
 
 use crate::rpc::SessionAuth;
 
-const SYSTEM_ONE_PATHS: [&str; 2] = ["/usr/bin/tokenring-one", "/usr/local/bin/tokenring-one"];
+const BINARY_NAME: &str = "tokenring-one";
+/// Well-known install locations checked before PATH / `which`.
+const SYSTEM_ONE_PATHS: [&str; 3] = [
+    "/usr/bin/tokenring-one",
+    "/usr/local/bin/tokenring-one",
+    "/opt/homebrew/bin/tokenring-one",
+];
 const STARTUP_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_CAPTURED_LINES: usize = 200;
+
+/// Cloneable view of the bounded stdout/stderr buffer for a launched backend.
+#[derive(Clone, Debug, Default)]
+pub struct CapturedOutput(Arc<Mutex<VecDeque<String>>>);
+
+impl CapturedOutput {
+    pub fn lines(&self) -> Vec<String> {
+        self.0
+            .lock()
+            .map(|lines| lines.iter().cloned().collect())
+            .unwrap_or_default()
+    }
+}
 
 /// A local TokenRing One child process. Dropping the handle terminates the
 /// backend, so the instance lifetime is tied to the CLI session.
 pub struct LocalInstance {
     child: Child,
-    captured_output: Arc<Mutex<VecDeque<String>>>,
+    captured_output: CapturedOutput,
     pub ws_url: String,
     pub session_auth: SessionAuth,
 }
@@ -36,7 +55,7 @@ impl LocalInstance {
         let port = reserve_loopback_port()?;
         let username = "tokenring-cli";
         let password = random_password();
-        let captured_output = Arc::new(Mutex::new(VecDeque::new()));
+        let captured_output = CapturedOutput::default();
 
         let mut child = Command::new(binary)
             .arg("--listen")
@@ -54,14 +73,14 @@ impl LocalInstance {
             .with_context(|| format!("launch TokenRing One at {}", binary.display()))?;
 
         if let Some(stdout) = child.stdout.take() {
-            drain_output(stdout, "stdout", Arc::clone(&captured_output));
+            drain_output(stdout, "stdout", Arc::clone(&captured_output.0));
         }
         if let Some(stderr) = child.stderr.take() {
-            drain_output(stderr, "stderr", Arc::clone(&captured_output));
+            drain_output(stderr, "stderr", Arc::clone(&captured_output.0));
         }
 
         let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
-        if let Err(error) = wait_until_ready(&mut child, address, &captured_output) {
+        if let Err(error) = wait_until_ready(&mut child, address, &captured_output.0) {
             let _ = child.kill();
             let _ = child.wait();
             return Err(error);
@@ -78,26 +97,45 @@ impl LocalInstance {
         })
     }
 
-    #[allow(dead_code)]
-    pub fn captured_output(&self) -> Vec<String> {
-        self.captured_output
-            .lock()
-            .map(|lines| lines.iter().cloned().collect())
-            .unwrap_or_default()
+    pub fn captured_output_handle(&self) -> CapturedOutput {
+        self.captured_output.clone()
     }
 }
 
 impl Drop for LocalInstance {
     fn drop(&mut self) {
-        if matches!(self.child.try_wait(), Ok(None)) {
-            let _ = self.child.kill();
+        if !matches!(self.child.try_wait(), Ok(None)) {
+            let _ = self.child.wait();
+            return;
         }
+
+        // Prefer a graceful SIGTERM so backend shutdown hooks can run.
+        #[cfg(unix)]
+        {
+            let _ = std::process::Command::new("kill")
+                .args(["-TERM", &self.child.id().to_string()])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status();
+            let deadline = Instant::now() + Duration::from_secs(2);
+            while Instant::now() < deadline {
+                match self.child.try_wait() {
+                    Ok(Some(_)) => {
+                        return;
+                    }
+                    Ok(None) => thread::sleep(Duration::from_millis(50)),
+                    Err(_) => break,
+                }
+            }
+        }
+
+        let _ = self.child.kill();
         let _ = self.child.wait();
     }
 }
 
 /// Find the backend supplied explicitly (the npm launcher sets
-/// TOKENRING_ONE_BINARY) or installed by a Debian/RPM package.
+/// TOKENRING_ONE_BINARY), at well-known paths, on `PATH`, or via `which`.
 pub fn discover(explicit: Option<&Path>) -> Result<PathBuf> {
     if let Some(path) = explicit {
         return validate_binary(path);
@@ -105,22 +143,86 @@ pub fn discover(explicit: Option<&Path>) -> Result<PathBuf> {
 
     for candidate in SYSTEM_ONE_PATHS {
         let path = PathBuf::from(candidate);
-        if path.is_file() {
+        if is_usable_binary(&path) {
             return Ok(path);
         }
     }
 
+    if let Some(path) = find_on_path(BINARY_NAME) {
+        return Ok(path);
+    }
+
+    if let Some(path) = which_binary(BINARY_NAME) {
+        return Ok(path);
+    }
+
     bail!(
         "TokenRing One was not found. Install @tokenring/one, install the \
-         tokenring-one system package, or set TOKENRING_ONE_BINARY"
+         tokenring-one system package, place `{BINARY_NAME}` on PATH, or set \
+         TOKENRING_ONE_BINARY"
     )
 }
 
 fn validate_binary(path: &Path) -> Result<PathBuf> {
-    if !path.is_file() {
+    if !is_usable_binary(path) {
         bail!("TokenRing One executable not found: {}", path.display());
     }
     Ok(path.to_path_buf())
+}
+
+fn is_usable_binary(path: &Path) -> bool {
+    if !path.is_file() {
+        return false;
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        path.metadata()
+            .map(|meta| meta.permissions().mode() & 0o111 != 0)
+            .unwrap_or(false)
+    }
+    #[cfg(not(unix))]
+    {
+        true
+    }
+}
+
+/// Walk `$PATH` for an executable named `name`.
+fn find_on_path(name: &str) -> Option<PathBuf> {
+    let path_var = std::env::var_os("PATH")?;
+    for dir in std::env::split_paths(&path_var) {
+        let candidate = dir.join(name);
+        if is_usable_binary(&candidate) {
+            return Some(candidate);
+        }
+        #[cfg(windows)]
+        {
+            let with_exe = dir.join(format!("{name}.exe"));
+            if is_usable_binary(&with_exe) {
+                return Some(with_exe);
+            }
+        }
+    }
+    None
+}
+
+/// Fall back to the `which` utility when PATH walking fails.
+fn which_binary(name: &str) -> Option<PathBuf> {
+    let output = Command::new("which")
+        .arg(name)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if path.is_empty() {
+        return None;
+    }
+    let path = PathBuf::from(path);
+    is_usable_binary(&path).then_some(path)
 }
 
 fn reserve_loopback_port() -> Result<u16> {
@@ -228,5 +330,13 @@ mod tests {
     #[test]
     fn generated_password_has_entropy_length() {
         assert_eq!(random_password().len(), 48);
+    }
+
+    #[test]
+    fn captured_output_handles_share_snapshots() {
+        let output = CapturedOutput::default();
+        let cloned = output.clone();
+        output.0.lock().unwrap().push_back("[stdout] ready".into());
+        assert_eq!(cloned.lines(), vec!["[stdout] ready"]);
     }
 }

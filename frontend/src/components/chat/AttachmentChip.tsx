@@ -1,4 +1,5 @@
-import type { ChatAttachment, SupportedMimeTypes } from "@tokenring-ai/agent/AgentEvents";
+import type { ChatAttachment, ImageMimeTypes, SupportedMimeTypes } from "@tokenring-ai/agent/AgentEvents";
+import { imageMimeTypes, mimeTypeClassifications } from "@tokenring-ai/agent/AgentEvents";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { FocusTrap } from "focus-trap-react";
 import {
@@ -46,26 +47,8 @@ const mimeTypeIcons: Record<SupportedMimeTypes, LucideIcon> = {
   "message/rfc822": Mail,
 };
 
-function isImageAttachment(mimeType: string) {
-  return mimeType.startsWith("image/");
-}
-
-function isAudioAttachment(mimeType: string) {
-  return mimeType.startsWith("audio/");
-}
-
-function isVideoAttachment(mimeType: string) {
-  return mimeType.startsWith("video/");
-}
-
-function isTextAttachment(mimeType: string) {
-  return (
-    mimeType.startsWith("text/") ||
-    mimeType === "application/json" ||
-    mimeType === "message/rfc822" ||
-    mimeType.includes("json") ||
-    mimeType.includes("markdown")
-  );
+function getMimeTypeClassification(mimeType: SupportedMimeTypes) {
+  return mimeTypeClassifications.get(mimeType);
 }
 
 function getAttachmentIcon(mimeType: SupportedMimeTypes): LucideIcon {
@@ -90,9 +73,8 @@ function getMediaSrc(attachment: ChatAttachment): string | null {
 }
 
 function getImagePreviewSrc(attachment: ChatAttachment): string | null {
-  if (!isImageAttachment(attachment.mimeType)) {
-    return null;
-  }
+  if (!imageMimeTypes.includes(attachment.mimeType as ImageMimeTypes)) return null;
+
   return getMediaSrc(attachment);
 }
 
@@ -156,7 +138,8 @@ function formatPreviewText(attachment: ChatAttachment): string {
 
 function AttachmentPreviewOverlay({ attachment, onClose }: { attachment: ChatAttachment; onClose: () => void }) {
   const mediaSrc = useMemo(() => getMediaSrc(attachment), [attachment]);
-  const previewText = useMemo(() => (isTextAttachment(attachment.mimeType) ? formatPreviewText(attachment) : ""), [attachment]);
+  const mimeTypeClassification = useMemo(() => getMimeTypeClassification(attachment.mimeType), [attachment]);
+  const previewText = useMemo(() => (mimeTypeClassification === "text" ? formatPreviewText(attachment) : ""), [attachment]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -208,20 +191,20 @@ function AttachmentPreviewOverlay({ attachment, onClose }: { attachment: ChatAtt
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto p-4">
-            {isImageAttachment(attachment.mimeType) && mediaSrc ? (
+            {mimeTypeClassification === "image" && mediaSrc ? (
               <img src={mediaSrc} alt={attachment.name} className="mx-auto max-h-[70vh] max-w-full rounded-md object-contain" />
-            ) : isAudioAttachment(attachment.mimeType) && mediaSrc ? (
+            ) : mimeTypeClassification === "audio" && mediaSrc ? (
               <audio controls className="w-full" src={mediaSrc}>
                 <track kind="captions" />
               </audio>
-            ) : isVideoAttachment(attachment.mimeType) && mediaSrc ? (
+            ) : mimeTypeClassification === "video" && mediaSrc ? (
               <video controls className="mx-auto max-h-[70vh] max-w-full rounded-md" src={mediaSrc}>
                 <track kind="captions" />
               </video>
             ) : attachment.mimeType === "text/html" ? (
               <iframe title={attachment.name} srcDoc={previewText} sandbox="" className="h-[60vh] w-full rounded-md border border-primary bg-primary" />
             ) : previewText ? (
-              <pre className="overflow-auto whitespace-pre-wrap break-words rounded-md border border-primary bg-tertiary p-3 text-xs text-primary font-mono">
+              <pre className="overflow-auto whitespace-pre-wrap wrap-break-word rounded-md border border-primary bg-tertiary p-3 text-xs text-primary font-mono">
                 {previewText}
               </pre>
             ) : (
@@ -258,12 +241,13 @@ export default function AttachmentChip({ attachment, onRemove, showRemove = fals
 
   const handleCopy = async (e: MouseEvent) => {
     e.stopPropagation();
+    const mimeTypeClassification = getMimeTypeClassification(attachment.mimeType);
     try {
       if (attachment.encoding === "href") {
         await navigator.clipboard.writeText(attachment.body);
-      } else if (isTextAttachment(attachment.mimeType)) {
+      } else if (mimeTypeClassification === "text") {
         await navigator.clipboard.writeText(decodeAttachmentText(attachment));
-      } else if (isImageAttachment(attachment.mimeType) && attachment.encoding === "base64" && typeof ClipboardItem !== "undefined") {
+      } else if (mimeTypeClassification === "image" && attachment.encoding === "base64" && typeof ClipboardItem !== "undefined") {
         const blob = new Blob([base64ToArrayBuffer(attachment.body)], { type: attachment.mimeType });
         await navigator.clipboard.write([new ClipboardItem({ [attachment.mimeType]: blob })]);
       } else {

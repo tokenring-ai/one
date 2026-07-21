@@ -1,0 +1,1327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Terminal RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/terminal",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "listTerminals request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.listTerminals"
+        },
+        "params": {
+          "$ref": "#/$defs/listTerminalsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listTerminals response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listTerminalsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTerminals request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.streamTerminals"
+        },
+        "params": {
+          "$ref": "#/$defs/streamTerminalsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTerminals response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamTerminalsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTerminals stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "spawnTerminal request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.spawnTerminal"
+        },
+        "params": {
+          "$ref": "#/$defs/spawnTerminalParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "spawnTerminal response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/spawnTerminalResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "attachTerminal request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.attachTerminal"
+        },
+        "params": {
+          "$ref": "#/$defs/attachTerminalParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "attachTerminal response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/attachTerminalResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "detachTerminal request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.detachTerminal"
+        },
+        "params": {
+          "$ref": "#/$defs/detachTerminalParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "detachTerminal response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/detachTerminalResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "sendInput request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.sendInput"
+        },
+        "params": {
+          "$ref": "#/$defs/sendInputParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "sendInput response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/sendInputResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "retrieveOutput request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.retrieveOutput"
+        },
+        "params": {
+          "$ref": "#/$defs/retrieveOutputParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "retrieveOutput response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/retrieveOutputResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTerminalOutput request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.streamTerminalOutput"
+        },
+        "params": {
+          "$ref": "#/$defs/streamTerminalOutputParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTerminalOutput response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamTerminalOutputResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTerminalOutput stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getCompleteOutput request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.getCompleteOutput"
+        },
+        "params": {
+          "$ref": "#/$defs/getCompleteOutputParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getCompleteOutput response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getCompleteOutputResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "terminateTerminal request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.terminateTerminal"
+        },
+        "params": {
+          "$ref": "#/$defs/terminateTerminalParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "terminateTerminal response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/terminateTerminalResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "listTerminalsParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      }
+    },
+    "listTerminalsResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "terminals": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "lastInput": {
+                    "type": "string"
+                  },
+                  "providerName": {
+                    "type": "string"
+                  },
+                  "workingDirectory": {
+                    "type": "string"
+                  },
+                  "startTime": {
+                    "type": "number"
+                  },
+                  "running": {
+                    "type": "boolean"
+                  },
+                  "outputLength": {
+                    "type": "number"
+                  },
+                  "exitCode": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "connectedAgentIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "lastPosition": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "name",
+                  "providerName",
+                  "workingDirectory",
+                  "startTime",
+                  "running",
+                  "outputLength",
+                  "exitCode",
+                  "connectedAgentIds"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "terminals"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "streamTerminalsParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      }
+    },
+    "streamTerminalsResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "terminals": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "lastInput": {
+                    "type": "string"
+                  },
+                  "providerName": {
+                    "type": "string"
+                  },
+                  "workingDirectory": {
+                    "type": "string"
+                  },
+                  "startTime": {
+                    "type": "number"
+                  },
+                  "running": {
+                    "type": "boolean"
+                  },
+                  "outputLength": {
+                    "type": "number"
+                  },
+                  "exitCode": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "connectedAgentIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "lastPosition": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "name",
+                  "providerName",
+                  "workingDirectory",
+                  "startTime",
+                  "running",
+                  "outputLength",
+                  "exitCode",
+                  "connectedAgentIds"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "terminals"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "spawnTerminalParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "providerName": {
+          "type": "string"
+        },
+        "connectToAgent": {
+          "type": "boolean"
+        },
+        "isolation": {
+          "default": "auto",
+          "type": "string",
+          "enum": [
+            "none",
+            "sandbox",
+            "container",
+            "auto"
+          ]
+        },
+        "workingDirectory": {
+          "type": "string"
+        }
+      }
+    },
+    "spawnTerminalResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "terminalName": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "terminalName"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "providerNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "attachTerminalParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "terminalName": {
+          "type": "string"
+        },
+        "fromPosition": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "agentId",
+        "terminalName"
+      ]
+    },
+    "attachTerminalResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "detachTerminalParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "terminalName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId",
+        "terminalName"
+      ]
+    },
+    "detachTerminalResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "sendInputParams": {
+      "type": "object",
+      "properties": {
+        "terminalName": {
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "terminalName",
+        "input"
+      ]
+    },
+    "sendInputResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotInteractive"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "retrieveOutputParams": {
+      "type": "object",
+      "properties": {
+        "terminalName": {
+          "type": "string"
+        },
+        "fromPosition": {
+          "default": 0,
+          "type": "number"
+        },
+        "minInterval": {
+          "default": 0,
+          "type": "number"
+        },
+        "settleInterval": {
+          "default": 0,
+          "type": "number"
+        },
+        "maxInterval": {
+          "default": 0,
+          "type": "number"
+        },
+        "cropOutput": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "terminalName"
+      ]
+    },
+    "retrieveOutputResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "output": {
+              "type": "string"
+            },
+            "position": {
+              "type": "number"
+            },
+            "complete": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "status",
+            "output",
+            "position",
+            "complete"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotInteractive"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "streamTerminalOutputParams": {
+      "type": "object",
+      "properties": {
+        "terminalName": {
+          "type": "string"
+        },
+        "fromPosition": {
+          "default": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "terminalName"
+      ]
+    },
+    "streamTerminalOutputResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "output": {
+              "type": "string"
+            },
+            "position": {
+              "type": "number"
+            },
+            "complete": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "status",
+            "output",
+            "position",
+            "complete"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "getCompleteOutputParams": {
+      "type": "object",
+      "properties": {
+        "terminalName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "terminalName"
+      ]
+    },
+    "getCompleteOutputResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "output": {
+              "type": "string"
+            },
+            "newPosition": {
+              "type": "number"
+            },
+            "isComplete": {
+              "type": "boolean"
+            },
+            "exitCode": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "status",
+            "output",
+            "newPosition",
+            "isComplete"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotInteractive"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "terminateTerminalParams": {
+      "type": "object",
+      "properties": {
+        "terminalName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "terminalName"
+      ]
+    },
+    "terminateTerminalResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotInteractive"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Terminal RPC",
+    "path": "/rpc/terminal",
+    "source": "plugin/terminal/rpc/schema.ts",
+    "methods": {
+      "listTerminals": {
+        "type": "query",
+        "params": "#/$defs/listTerminalsParams",
+        "result": "#/$defs/listTerminalsResult"
+      },
+      "streamTerminals": {
+        "type": "stream",
+        "params": "#/$defs/streamTerminalsParams",
+        "result": "#/$defs/streamTerminalsResult"
+      },
+      "spawnTerminal": {
+        "type": "mutation",
+        "params": "#/$defs/spawnTerminalParams",
+        "result": "#/$defs/spawnTerminalResult"
+      },
+      "attachTerminal": {
+        "type": "mutation",
+        "params": "#/$defs/attachTerminalParams",
+        "result": "#/$defs/attachTerminalResult"
+      },
+      "detachTerminal": {
+        "type": "mutation",
+        "params": "#/$defs/detachTerminalParams",
+        "result": "#/$defs/detachTerminalResult"
+      },
+      "sendInput": {
+        "type": "mutation",
+        "params": "#/$defs/sendInputParams",
+        "result": "#/$defs/sendInputResult"
+      },
+      "retrieveOutput": {
+        "type": "query",
+        "params": "#/$defs/retrieveOutputParams",
+        "result": "#/$defs/retrieveOutputResult"
+      },
+      "streamTerminalOutput": {
+        "type": "stream",
+        "params": "#/$defs/streamTerminalOutputParams",
+        "result": "#/$defs/streamTerminalOutputResult"
+      },
+      "getCompleteOutput": {
+        "type": "query",
+        "params": "#/$defs/getCompleteOutputParams",
+        "result": "#/$defs/getCompleteOutputResult"
+      },
+      "terminateTerminal": {
+        "type": "mutation",
+        "params": "#/$defs/terminateTerminalParams",
+        "result": "#/$defs/terminateTerminalResult"
+      }
+    }
+  }
+}

@@ -1,0 +1,496 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Checkpoint RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/checkpoint",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "listCheckpoints request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/checkpoint.listCheckpoints"
+        },
+        "params": {
+          "$ref": "#/$defs/listCheckpointsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listCheckpoints response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listCheckpointsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamCheckpoints request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/checkpoint.streamCheckpoints"
+        },
+        "params": {
+          "$ref": "#/$defs/streamCheckpointsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamCheckpoints response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamCheckpointsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamCheckpoints stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getCheckpoint request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/checkpoint.getCheckpoint"
+        },
+        "params": {
+          "$ref": "#/$defs/getCheckpointParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getCheckpoint response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getCheckpointResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "launchAgentFromCheckpoint request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/checkpoint.launchAgentFromCheckpoint"
+        },
+        "params": {
+          "$ref": "#/$defs/launchAgentFromCheckpointParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "launchAgentFromCheckpoint response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/launchAgentFromCheckpointResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "listCheckpointsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listCheckpointsResult": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "agentId": {
+            "type": "string"
+          },
+          "agentType": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "sessionId",
+          "name",
+          "agentId",
+          "agentType",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "streamCheckpointsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamCheckpointsResult": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "agentId": {
+            "type": "string"
+          },
+          "agentType": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "sessionId",
+          "name",
+          "agentId",
+          "agentType",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "getCheckpointParams": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "getCheckpointResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "checkpoint": {
+              "type": "object",
+              "properties": {
+                "agentId": {
+                  "type": "string"
+                },
+                "sessionId": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "number"
+                },
+                "agentType": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "agentId",
+                "sessionId",
+                "createdAt",
+                "agentType",
+                "state",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "checkpoint"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "checkpointNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "launchAgentFromCheckpointParams": {
+      "type": "object",
+      "properties": {
+        "checkpointId": {
+          "type": "number"
+        },
+        "headless": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "checkpointId"
+      ]
+    },
+    "launchAgentFromCheckpointResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "agentId": {
+              "type": "string"
+            },
+            "agentName": {
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "agentId",
+            "agentName"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "checkpointNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Checkpoint RPC",
+    "path": "/rpc/checkpoint",
+    "source": "plugin/checkpoint/rpc/schema.ts",
+    "methods": {
+      "listCheckpoints": {
+        "type": "query",
+        "params": "#/$defs/listCheckpointsParams",
+        "result": "#/$defs/listCheckpointsResult"
+      },
+      "streamCheckpoints": {
+        "type": "stream",
+        "params": "#/$defs/streamCheckpointsParams",
+        "result": "#/$defs/streamCheckpointsResult"
+      },
+      "getCheckpoint": {
+        "type": "query",
+        "params": "#/$defs/getCheckpointParams",
+        "result": "#/$defs/getCheckpointResult"
+      },
+      "launchAgentFromCheckpoint": {
+        "type": "mutation",
+        "params": "#/$defs/launchAgentFromCheckpointParams",
+        "result": "#/$defs/launchAgentFromCheckpointResult"
+      }
+    }
+  }
+}

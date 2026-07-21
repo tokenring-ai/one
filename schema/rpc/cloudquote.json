@@ -1,0 +1,1496 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CloudQuote RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/cloudquote",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "getQuote request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/cloudquote.getQuote"
+        },
+        "params": {
+          "$ref": "#/$defs/getQuoteParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getQuote response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getQuoteResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getPriceHistory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/cloudquote.getPriceHistory"
+        },
+        "params": {
+          "$ref": "#/$defs/getPriceHistoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getPriceHistory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getPriceHistoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getPriceTicks request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/cloudquote.getPriceTicks"
+        },
+        "params": {
+          "$ref": "#/$defs/getPriceTicksParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getPriceTicks response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getPriceTicksResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getLeaders request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/cloudquote.getLeaders"
+        },
+        "params": {
+          "$ref": "#/$defs/getLeadersParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getLeaders response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getLeadersResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getHeadlinesBySecurity request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/cloudquote.getHeadlinesBySecurity"
+        },
+        "params": {
+          "$ref": "#/$defs/getHeadlinesBySecurityParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getHeadlinesBySecurity response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getHeadlinesBySecurityResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getPriceChart request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/cloudquote.getPriceChart"
+        },
+        "params": {
+          "$ref": "#/$defs/getPriceChartParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getPriceChart response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getPriceChartResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "findStock request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/cloudquote.findStock"
+        },
+        "params": {
+          "$ref": "#/$defs/findStockParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "findStock response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/findStockResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "getQuoteParams": {
+      "type": "object",
+      "properties": {
+        "symbols": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "symbols"
+      ]
+    },
+    "getQuoteResult": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "SymbolID": {
+                "type": "string"
+              },
+              "Symbol": {
+                "type": "string"
+              },
+              "Name": {
+                "type": "string"
+              },
+              "ShortName": {
+                "type": "string"
+              },
+              "Price": {
+                "type": "number"
+              },
+              "PrevClose": {
+                "type": "number"
+              },
+              "Ask": {
+                "type": "number"
+              },
+              "Bid": {
+                "type": "number"
+              },
+              "High": {
+                "type": "number"
+              },
+              "Low": {
+                "type": "number"
+              },
+              "Open": {
+                "type": "number"
+              },
+              "AfterHoursPrice": {
+                "type": "number"
+              },
+              "Change": {
+                "type": "number"
+              },
+              "ChangePercent": {
+                "type": "number"
+              },
+              "AskSize": {
+                "type": "number"
+              },
+              "BidSize": {
+                "type": "number"
+              },
+              "LastTradeTime": {
+                "type": "number"
+              },
+              "AfterHoursTradeTime": {
+                "type": "number"
+              },
+              "Volume": {
+                "type": "number"
+              },
+              "AverageVolume": {
+                "type": "number"
+              },
+              "AvgVolume1M": {
+                "type": "number"
+              },
+              "AvgVolume1W": {
+                "type": "number"
+              },
+              "AvgVolume3M": {
+                "type": "number"
+              },
+              "AvgVolume52": {
+                "type": "number"
+              },
+              "AvgVolume6M": {
+                "type": "number"
+              },
+              "AvgVolumeYTD": {
+                "type": "number"
+              },
+              "AnnualDividend": {
+                "type": "number"
+              },
+              "TTMDividend": {
+                "type": "number"
+              },
+              "YTDDividend": {
+                "type": "number"
+              },
+              "LatestDividendDate": {
+                "type": "number"
+              },
+              "LatestDividend": {
+                "type": "number"
+              },
+              "EPS": {
+                "type": "number"
+              },
+              "SharesOutstanding": {
+                "type": "number"
+              },
+              "ExchangeName": {
+                "type": "string"
+              },
+              "ExchangeShortName": {
+                "type": "string"
+              },
+              "ExchangePrefixCode": {
+                "type": "string"
+              },
+              "ExchangeDefaultCurrency": {
+                "type": "string"
+              },
+              "SecurityTypeName": {
+                "type": "string"
+              },
+              "SecurityTypeCode": {
+                "type": "string"
+              },
+              "NominalCurrencyCode": {
+                "type": "string"
+              },
+              "NominalCurrencyName": {
+                "type": "string"
+              },
+              "StartingPrice1M": {
+                "type": "number"
+              },
+              "StartingPrice1W": {
+                "type": "number"
+              },
+              "StartingPrice3M": {
+                "type": "number"
+              },
+              "StartingPrice52": {
+                "type": "number"
+              },
+              "StartingPrice6M": {
+                "type": "number"
+              },
+              "StartingPriceYTD": {
+                "type": "number"
+              },
+              "Low1MDate": {
+                "type": "number"
+              },
+              "Low1WDate": {
+                "type": "number"
+              },
+              "Low3MDate": {
+                "type": "number"
+              },
+              "Low52Date": {
+                "type": "number"
+              },
+              "Low6MDate": {
+                "type": "number"
+              },
+              "Low1M": {
+                "type": "number"
+              },
+              "Low1W": {
+                "type": "number"
+              },
+              "Low3M": {
+                "type": "number"
+              },
+              "Low52": {
+                "type": "number"
+              },
+              "Low6M": {
+                "type": "number"
+              },
+              "LowYTD": {
+                "type": "number"
+              },
+              "High1MDate": {
+                "type": "number"
+              },
+              "High1WDate": {
+                "type": "number"
+              },
+              "High3MDate": {
+                "type": "number"
+              },
+              "High52Date": {
+                "type": "number"
+              },
+              "High6MDate": {
+                "type": "number"
+              },
+              "High1M": {
+                "type": "number"
+              },
+              "High1W": {
+                "type": "number"
+              },
+              "High3M": {
+                "type": "number"
+              },
+              "High52": {
+                "type": "number"
+              },
+              "High6M": {
+                "type": "number"
+              },
+              "HighYTD": {
+                "type": "number"
+              },
+              "ChartStartTime": {
+                "type": "number"
+              },
+              "ChartEndTime": {
+                "type": "number"
+              },
+              "HolidayName": {
+                "type": "string"
+              },
+              "MovingAverage50": {
+                "type": "number"
+              },
+              "MovingAverage200": {
+                "type": "number"
+              },
+              "MostRecentClose": {
+                "type": "number"
+              },
+              "MostRecentCloseDate": {
+                "type": "number"
+              },
+              "LessRecentClose": {
+                "type": "number"
+              },
+              "LessRecentCloseDate": {
+                "type": "number"
+              },
+              "TodayClose": {
+                "type": "number"
+              },
+              "UpdateTime": {
+                "type": "number"
+              },
+              "ExchangeDelay": {
+                "type": "string"
+              },
+              "CLIconBright128": {
+                "type": "string"
+              },
+              "CLLogoBright128": {
+                "type": "string"
+              },
+              "CLIconDark128": {
+                "type": "string"
+              },
+              "CLLogoDark128": {
+                "type": "string"
+              },
+              "CLWebsite": {
+                "type": "string"
+              },
+              "Delay": {
+                "type": "number"
+              },
+              "CIK": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": {}
+          }
+        }
+      },
+      "required": [
+        "rows"
+      ],
+      "additionalProperties": {}
+    },
+    "getPriceHistoryParams": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "symbol"
+      ]
+    },
+    "getPriceHistoryResult": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number",
+                "description": "Timestamp in epoch milliseconds"
+              },
+              {
+                "type": "number",
+                "description": "Open price"
+              },
+              {
+                "type": "number",
+                "description": "High price"
+              },
+              {
+                "type": "number",
+                "description": "Low price"
+              },
+              {
+                "type": "number",
+                "description": "Close price"
+              },
+              {
+                "type": "number",
+                "description": "Volume"
+              },
+              {
+                "type": "number",
+                "description": "Adjusted close price"
+              }
+            ]
+          }
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "rows"
+      ],
+      "additionalProperties": {}
+    },
+    "getPriceTicksParams": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "symbol"
+      ]
+    },
+    "getPriceTicksResult": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number",
+                "description": "Timestamp in epoch milliseconds"
+              },
+              {
+                "type": "number",
+                "description": "Price"
+              },
+              {
+                "type": "number",
+                "description": "Cumulative Volume"
+              }
+            ]
+          }
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "rows"
+      ],
+      "additionalProperties": {}
+    },
+    "getLeadersParams": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "string",
+          "enum": [
+            "MOSTACTIVE",
+            "PERCENTGAINERS",
+            "PERCENTLOSERS"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "STOCK",
+            "ETF"
+          ]
+        },
+        "limit": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "minPrice": {
+          "type": "number"
+        },
+        "maxPrice": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "list"
+      ]
+    },
+    "getLeadersResult": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "SymbolID": {
+                "type": "string"
+              },
+              "Symbol": {
+                "type": "string"
+              },
+              "Name": {
+                "type": "string"
+              },
+              "ShortName": {
+                "type": "string"
+              },
+              "Price": {
+                "type": "number"
+              },
+              "PrevClose": {
+                "type": "number"
+              },
+              "Ask": {
+                "type": "number"
+              },
+              "Bid": {
+                "type": "number"
+              },
+              "High": {
+                "type": "number"
+              },
+              "Low": {
+                "type": "number"
+              },
+              "Open": {
+                "type": "number"
+              },
+              "AfterHoursPrice": {
+                "type": "number"
+              },
+              "Change": {
+                "type": "number"
+              },
+              "ChangePercent": {
+                "type": "number"
+              },
+              "AskSize": {
+                "type": "number"
+              },
+              "BidSize": {
+                "type": "number"
+              },
+              "LastTradeTime": {
+                "type": "number"
+              },
+              "AfterHoursTradeTime": {
+                "type": "number"
+              },
+              "Volume": {
+                "type": "number"
+              },
+              "AverageVolume": {
+                "type": "number"
+              },
+              "AvgVolume1M": {
+                "type": "number"
+              },
+              "AvgVolume1W": {
+                "type": "number"
+              },
+              "AvgVolume3M": {
+                "type": "number"
+              },
+              "AvgVolume52": {
+                "type": "number"
+              },
+              "AvgVolume6M": {
+                "type": "number"
+              },
+              "AvgVolumeYTD": {
+                "type": "number"
+              },
+              "AnnualDividend": {
+                "type": "number"
+              },
+              "TTMDividend": {
+                "type": "number"
+              },
+              "YTDDividend": {
+                "type": "number"
+              },
+              "LatestDividendDate": {
+                "type": "number"
+              },
+              "LatestDividend": {
+                "type": "number"
+              },
+              "EPS": {
+                "type": "number"
+              },
+              "SharesOutstanding": {
+                "type": "number"
+              },
+              "ExchangeName": {
+                "type": "string"
+              },
+              "ExchangeShortName": {
+                "type": "string"
+              },
+              "ExchangePrefixCode": {
+                "type": "string"
+              },
+              "ExchangeDefaultCurrency": {
+                "type": "string"
+              },
+              "SecurityTypeName": {
+                "type": "string"
+              },
+              "SecurityTypeCode": {
+                "type": "string"
+              },
+              "NominalCurrencyCode": {
+                "type": "string"
+              },
+              "NominalCurrencyName": {
+                "type": "string"
+              },
+              "StartingPrice1M": {
+                "type": "number"
+              },
+              "StartingPrice1W": {
+                "type": "number"
+              },
+              "StartingPrice3M": {
+                "type": "number"
+              },
+              "StartingPrice52": {
+                "type": "number"
+              },
+              "StartingPrice6M": {
+                "type": "number"
+              },
+              "StartingPriceYTD": {
+                "type": "number"
+              },
+              "Low1MDate": {
+                "type": "number"
+              },
+              "Low1WDate": {
+                "type": "number"
+              },
+              "Low3MDate": {
+                "type": "number"
+              },
+              "Low52Date": {
+                "type": "number"
+              },
+              "Low6MDate": {
+                "type": "number"
+              },
+              "Low1M": {
+                "type": "number"
+              },
+              "Low1W": {
+                "type": "number"
+              },
+              "Low3M": {
+                "type": "number"
+              },
+              "Low52": {
+                "type": "number"
+              },
+              "Low6M": {
+                "type": "number"
+              },
+              "LowYTD": {
+                "type": "number"
+              },
+              "High1MDate": {
+                "type": "number"
+              },
+              "High1WDate": {
+                "type": "number"
+              },
+              "High3MDate": {
+                "type": "number"
+              },
+              "High52Date": {
+                "type": "number"
+              },
+              "High6MDate": {
+                "type": "number"
+              },
+              "High1M": {
+                "type": "number"
+              },
+              "High1W": {
+                "type": "number"
+              },
+              "High3M": {
+                "type": "number"
+              },
+              "High52": {
+                "type": "number"
+              },
+              "High6M": {
+                "type": "number"
+              },
+              "HighYTD": {
+                "type": "number"
+              },
+              "ChartStartTime": {
+                "type": "number"
+              },
+              "ChartEndTime": {
+                "type": "number"
+              },
+              "HolidayName": {
+                "type": "string"
+              },
+              "MovingAverage50": {
+                "type": "number"
+              },
+              "MovingAverage200": {
+                "type": "number"
+              },
+              "MostRecentClose": {
+                "type": "number"
+              },
+              "MostRecentCloseDate": {
+                "type": "number"
+              },
+              "LessRecentClose": {
+                "type": "number"
+              },
+              "LessRecentCloseDate": {
+                "type": "number"
+              },
+              "TodayClose": {
+                "type": "number"
+              },
+              "UpdateTime": {
+                "type": "number"
+              },
+              "ExchangeDelay": {
+                "type": "string"
+              },
+              "CLIconBright128": {
+                "type": "string"
+              },
+              "CLLogoBright128": {
+                "type": "string"
+              },
+              "CLIconDark128": {
+                "type": "string"
+              },
+              "CLLogoDark128": {
+                "type": "string"
+              },
+              "CLWebsite": {
+                "type": "string"
+              },
+              "Delay": {
+                "type": "number"
+              },
+              "CIK": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": {}
+          }
+        }
+      },
+      "required": [
+        "rows"
+      ],
+      "additionalProperties": {}
+    },
+    "getHeadlinesBySecurityParams": {
+      "type": "object",
+      "properties": {
+        "symbols": {
+          "type": "string"
+        },
+        "start": {
+          "type": "number"
+        },
+        "count": {
+          "type": "number"
+        },
+        "minDate": {
+          "type": "string"
+        },
+        "maxDate": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "symbols"
+      ]
+    },
+    "getHeadlinesBySecurityResult": {
+      "type": "object",
+      "properties": {
+        "data": {}
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "getPriceChartParams": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string"
+        },
+        "interval": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "symbol",
+        "interval"
+      ]
+    },
+    "getPriceChartResult": {
+      "type": "object",
+      "properties": {
+        "svgDataUri": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "svgDataUri"
+      ],
+      "additionalProperties": false
+    },
+    "findStockParams": {
+      "type": "object",
+      "properties": {
+        "search": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "required": [
+        "search"
+      ]
+    },
+    "findStockResult": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "SymbolID": {
+                "type": "string"
+              },
+              "Symbol": {
+                "type": "string"
+              },
+              "Name": {
+                "type": "string"
+              },
+              "ShortName": {
+                "type": "string"
+              },
+              "Price": {
+                "type": "number"
+              },
+              "PrevClose": {
+                "type": "number"
+              },
+              "Ask": {
+                "type": "number"
+              },
+              "Bid": {
+                "type": "number"
+              },
+              "High": {
+                "type": "number"
+              },
+              "Low": {
+                "type": "number"
+              },
+              "Open": {
+                "type": "number"
+              },
+              "AfterHoursPrice": {
+                "type": "number"
+              },
+              "Change": {
+                "type": "number"
+              },
+              "ChangePercent": {
+                "type": "number"
+              },
+              "AskSize": {
+                "type": "number"
+              },
+              "BidSize": {
+                "type": "number"
+              },
+              "LastTradeTime": {
+                "type": "number"
+              },
+              "AfterHoursTradeTime": {
+                "type": "number"
+              },
+              "Volume": {
+                "type": "number"
+              },
+              "AverageVolume": {
+                "type": "number"
+              },
+              "AvgVolume1M": {
+                "type": "number"
+              },
+              "AvgVolume1W": {
+                "type": "number"
+              },
+              "AvgVolume3M": {
+                "type": "number"
+              },
+              "AvgVolume52": {
+                "type": "number"
+              },
+              "AvgVolume6M": {
+                "type": "number"
+              },
+              "AvgVolumeYTD": {
+                "type": "number"
+              },
+              "AnnualDividend": {
+                "type": "number"
+              },
+              "TTMDividend": {
+                "type": "number"
+              },
+              "YTDDividend": {
+                "type": "number"
+              },
+              "LatestDividendDate": {
+                "type": "number"
+              },
+              "LatestDividend": {
+                "type": "number"
+              },
+              "EPS": {
+                "type": "number"
+              },
+              "SharesOutstanding": {
+                "type": "number"
+              },
+              "ExchangeName": {
+                "type": "string"
+              },
+              "ExchangeShortName": {
+                "type": "string"
+              },
+              "ExchangePrefixCode": {
+                "type": "string"
+              },
+              "ExchangeDefaultCurrency": {
+                "type": "string"
+              },
+              "SecurityTypeName": {
+                "type": "string"
+              },
+              "SecurityTypeCode": {
+                "type": "string"
+              },
+              "NominalCurrencyCode": {
+                "type": "string"
+              },
+              "NominalCurrencyName": {
+                "type": "string"
+              },
+              "StartingPrice1M": {
+                "type": "number"
+              },
+              "StartingPrice1W": {
+                "type": "number"
+              },
+              "StartingPrice3M": {
+                "type": "number"
+              },
+              "StartingPrice52": {
+                "type": "number"
+              },
+              "StartingPrice6M": {
+                "type": "number"
+              },
+              "StartingPriceYTD": {
+                "type": "number"
+              },
+              "Low1MDate": {
+                "type": "number"
+              },
+              "Low1WDate": {
+                "type": "number"
+              },
+              "Low3MDate": {
+                "type": "number"
+              },
+              "Low52Date": {
+                "type": "number"
+              },
+              "Low6MDate": {
+                "type": "number"
+              },
+              "Low1M": {
+                "type": "number"
+              },
+              "Low1W": {
+                "type": "number"
+              },
+              "Low3M": {
+                "type": "number"
+              },
+              "Low52": {
+                "type": "number"
+              },
+              "Low6M": {
+                "type": "number"
+              },
+              "LowYTD": {
+                "type": "number"
+              },
+              "High1MDate": {
+                "type": "number"
+              },
+              "High1WDate": {
+                "type": "number"
+              },
+              "High3MDate": {
+                "type": "number"
+              },
+              "High52Date": {
+                "type": "number"
+              },
+              "High6MDate": {
+                "type": "number"
+              },
+              "High1M": {
+                "type": "number"
+              },
+              "High1W": {
+                "type": "number"
+              },
+              "High3M": {
+                "type": "number"
+              },
+              "High52": {
+                "type": "number"
+              },
+              "High6M": {
+                "type": "number"
+              },
+              "HighYTD": {
+                "type": "number"
+              },
+              "ChartStartTime": {
+                "type": "number"
+              },
+              "ChartEndTime": {
+                "type": "number"
+              },
+              "HolidayName": {
+                "type": "string"
+              },
+              "MovingAverage50": {
+                "type": "number"
+              },
+              "MovingAverage200": {
+                "type": "number"
+              },
+              "MostRecentClose": {
+                "type": "number"
+              },
+              "MostRecentCloseDate": {
+                "type": "number"
+              },
+              "LessRecentClose": {
+                "type": "number"
+              },
+              "LessRecentCloseDate": {
+                "type": "number"
+              },
+              "TodayClose": {
+                "type": "number"
+              },
+              "UpdateTime": {
+                "type": "number"
+              },
+              "ExchangeDelay": {
+                "type": "string"
+              },
+              "CLIconBright128": {
+                "type": "string"
+              },
+              "CLLogoBright128": {
+                "type": "string"
+              },
+              "CLIconDark128": {
+                "type": "string"
+              },
+              "CLLogoDark128": {
+                "type": "string"
+              },
+              "CLWebsite": {
+                "type": "string"
+              },
+              "Delay": {
+                "type": "number"
+              },
+              "CIK": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": {}
+          }
+        }
+      },
+      "required": [
+        "rows"
+      ],
+      "additionalProperties": {}
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "CloudQuote RPC",
+    "path": "/rpc/cloudquote",
+    "source": "plugin/cloudquote/rpc/schema.ts",
+    "methods": {
+      "getQuote": {
+        "type": "query",
+        "params": "#/$defs/getQuoteParams",
+        "result": "#/$defs/getQuoteResult"
+      },
+      "getPriceHistory": {
+        "type": "query",
+        "params": "#/$defs/getPriceHistoryParams",
+        "result": "#/$defs/getPriceHistoryResult"
+      },
+      "getPriceTicks": {
+        "type": "query",
+        "params": "#/$defs/getPriceTicksParams",
+        "result": "#/$defs/getPriceTicksResult"
+      },
+      "getLeaders": {
+        "type": "query",
+        "params": "#/$defs/getLeadersParams",
+        "result": "#/$defs/getLeadersResult"
+      },
+      "getHeadlinesBySecurity": {
+        "type": "query",
+        "params": "#/$defs/getHeadlinesBySecurityParams",
+        "result": "#/$defs/getHeadlinesBySecurityResult"
+      },
+      "getPriceChart": {
+        "type": "query",
+        "params": "#/$defs/getPriceChartParams",
+        "result": "#/$defs/getPriceChartResult"
+      },
+      "findStock": {
+        "type": "query",
+        "params": "#/$defs/findStockParams",
+        "result": "#/$defs/findStockResult"
+      }
+    }
+  }
+}

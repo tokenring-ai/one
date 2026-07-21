@@ -65,7 +65,7 @@ Examples:
   .action(runApp)
   .parse();
 
-async function runApp({ projectDirectory, dataDirectory, frontendDirectory, listen, port, vaultFile }: CommandOptions): Promise<void> {
+async function runApp({ projectDirectory, dataDirectory, listen, port, vaultFile }: CommandOptions): Promise<void> {
   try {
     projectDirectory = path.resolve(projectDirectory);
     dataDirectory = path.resolve(dataDirectory || path.join(projectDirectory, "/.tokenring"));

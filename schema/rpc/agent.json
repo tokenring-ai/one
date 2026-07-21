@@ -1,0 +1,3657 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/agent",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "getAgentConfig request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.getAgentConfig"
+        },
+        "params": {
+          "$ref": "#/$defs/getAgentConfigParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getAgentConfig response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getAgentConfigResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getAgentEvents request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.getAgentEvents"
+        },
+        "params": {
+          "$ref": "#/$defs/getAgentEventsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getAgentEvents response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getAgentEventsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamAgentEvents request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.streamAgentEvents"
+        },
+        "params": {
+          "$ref": "#/$defs/streamAgentEventsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamAgentEvents response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamAgentEventsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamAgentEvents stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listAgents request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.listAgents"
+        },
+        "params": {
+          "$ref": "#/$defs/listAgentsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listAgents response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listAgentsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamAgents request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.streamAgents"
+        },
+        "params": {
+          "$ref": "#/$defs/streamAgentsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamAgents response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamAgentsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamAgents stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getAgentTypes request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.getAgentTypes"
+        },
+        "params": {
+          "$ref": "#/$defs/getAgentTypesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getAgentTypes response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getAgentTypesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createAgent request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.createAgent"
+        },
+        "params": {
+          "$ref": "#/$defs/createAgentParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createAgent response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createAgentResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteAgent request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.deleteAgent"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteAgentParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteAgent response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteAgentResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "sendInput request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.sendInput"
+        },
+        "params": {
+          "$ref": "#/$defs/sendInputParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "sendInput response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/sendInputResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "sendInteractionResponse request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.sendInteractionResponse"
+        },
+        "params": {
+          "$ref": "#/$defs/sendInteractionResponseParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "sendInteractionResponse response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/sendInteractionResponseResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "abortCurrentOperation request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.abortCurrentOperation"
+        },
+        "params": {
+          "$ref": "#/$defs/abortCurrentOperationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "abortCurrentOperation response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/abortCurrentOperationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getCommandHistory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.getCommandHistory"
+        },
+        "params": {
+          "$ref": "#/$defs/getCommandHistoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getCommandHistory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getCommandHistoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getAvailableCommands request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.getAvailableCommands"
+        },
+        "params": {
+          "$ref": "#/$defs/getAvailableCommandsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getAvailableCommands response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getAvailableCommandsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "getAgentConfigParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "getAgentConfigResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "displayName": {
+              "type": "string",
+              "description": "Human-readable name shown in agent pickers"
+            },
+            "description": {
+              "type": "string",
+              "description": "What this agent type is for"
+            },
+            "category": {
+              "type": "string",
+              "description": "Group this agent type appears under in pickers"
+            },
+            "debug": {
+              "default": false,
+              "advanced": true,
+              "description": "Log extra diagnostic output for this agent type",
+              "type": "boolean"
+            },
+            "initialCommands": {
+              "default": [],
+              "description": "Commands run automatically when an agent of this type starts",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "createMessage": {
+              "default": "Agent Created",
+              "advanced": true,
+              "description": "Message logged when an agent of this type is created",
+              "type": "string"
+            },
+            "headless": {
+              "default": false,
+              "description": "Run without an interactive chat surface",
+              "type": "boolean"
+            },
+            "minimumRunning": {
+              "default": 0,
+              "description": "Keep at least this many agents of this type running",
+              "type": "number",
+              "minimum": 0
+            },
+            "idleTimeout": {
+              "default": 0,
+              "unit": "s",
+              "description": "Shut idle agents down after this long (0 disables)",
+              "type": "number",
+              "minimum": 0
+            },
+            "maxRunTime": {
+              "default": 0,
+              "unit": "s",
+              "description": "Hard limit on agent runtime (0 disables)",
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "status",
+            "agentType",
+            "displayName",
+            "description",
+            "category",
+            "debug",
+            "initialCommands",
+            "createMessage",
+            "headless",
+            "minimumRunning",
+            "idleTimeout",
+            "maxRunTime"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "getAgentEventsParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "fromPosition": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "agentId",
+        "fromPosition"
+      ]
+    },
+    "getAgentEventsResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "events": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "agent.created"
+                      },
+                      "details": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "agent.stopped"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "agent.status"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "starting",
+                          "running",
+                          "shutdown"
+                        ]
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "inputExecutionQueue": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "currentActivity": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "status",
+                      "timestamp",
+                      "inputExecutionQueue",
+                      "currentActivity"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string"
+                          },
+                          "timestamp": {
+                            "type": "number"
+                          },
+                          "type": {
+                            "type": "string",
+                            "const": "agent.response"
+                          },
+                          "requestId": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "const": "cancelled"
+                          }
+                        },
+                        "required": [
+                          "message",
+                          "timestamp",
+                          "type",
+                          "requestId",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string"
+                          },
+                          "timestamp": {
+                            "type": "number"
+                          },
+                          "type": {
+                            "type": "string",
+                            "const": "agent.response"
+                          },
+                          "requestId": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "const": "error"
+                          }
+                        },
+                        "required": [
+                          "message",
+                          "timestamp",
+                          "type",
+                          "requestId",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string"
+                          },
+                          "timestamp": {
+                            "type": "number"
+                          },
+                          "type": {
+                            "type": "string",
+                            "const": "agent.response"
+                          },
+                          "requestId": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "const": "success"
+                          },
+                          "attachments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "encoding": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "base64",
+                                    "href"
+                                  ]
+                                },
+                                "body": {
+                                  "type": "string"
+                                },
+                                "mimeType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "audio/wav",
+                                    "audio/mpeg",
+                                    "audio/webm",
+                                    "video/mp4",
+                                    "video/webm",
+                                    "image/png",
+                                    "image/jpeg",
+                                    "text/plain",
+                                    "text/markdown",
+                                    "text/html",
+                                    "text/x-diff",
+                                    "application/json",
+                                    "message/rfc822"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "encoding",
+                                "body",
+                                "mimeType"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "message",
+                          "timestamp",
+                          "type",
+                          "requestId",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "output.chat"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "output.reasoning"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "output.info"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "output.warning"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "output.error"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "input.received"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "input": {
+                        "type": "object",
+                        "properties": {
+                          "from": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "attachments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "encoding": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "base64",
+                                    "href"
+                                  ]
+                                },
+                                "body": {
+                                  "type": "string"
+                                },
+                                "mimeType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "audio/wav",
+                                    "audio/mpeg",
+                                    "audio/webm",
+                                    "video/mp4",
+                                    "video/webm",
+                                    "image/png",
+                                    "image/jpeg",
+                                    "text/plain",
+                                    "text/markdown",
+                                    "text/html",
+                                    "text/x-diff",
+                                    "application/json",
+                                    "message/rfc822"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "encoding",
+                                "body",
+                                "mimeType"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "timestamp": {
+                            "not": {}
+                          }
+                        },
+                        "required": [
+                          "from",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "requestId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "timestamp",
+                      "input",
+                      "requestId"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "cancel"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "requestId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "timestamp",
+                      "requestId"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "input.execution"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "requestId": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "queued",
+                          "running",
+                          "finished"
+                        ]
+                      },
+                      "currentActivity": {
+                        "type": "string"
+                      },
+                      "availableInteractions": {
+                        "type": "array",
+                        "items": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "followup"
+                                },
+                                "interactionId": {
+                                  "type": "string"
+                                },
+                                "timestamp": {
+                                  "type": "number"
+                                },
+                                "message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "interactionId",
+                                "timestamp",
+                                "message"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "question"
+                                },
+                                "interactionId": {
+                                  "type": "string"
+                                },
+                                "timestamp": {
+                                  "type": "number"
+                                },
+                                "message": {
+                                  "type": "string"
+                                },
+                                "question": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "text"
+                                        },
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "description": {
+                                          "type": "string"
+                                        },
+                                        "required": {
+                                          "default": false,
+                                          "type": "boolean"
+                                        },
+                                        "defaultValue": {
+                                          "default": "",
+                                          "type": "string"
+                                        },
+                                        "expectedLines": {
+                                          "default": 1,
+                                          "type": "number"
+                                        },
+                                        "masked": {
+                                          "default": false,
+                                          "type": "boolean"
+                                        },
+                                        "autoSubmitAfter": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "label",
+                                        "required",
+                                        "defaultValue",
+                                        "expectedLines",
+                                        "masked"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "fileSelect"
+                                        },
+                                        "allowFiles": {
+                                          "type": "boolean"
+                                        },
+                                        "allowDirectories": {
+                                          "type": "boolean"
+                                        },
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "description": {
+                                          "type": "string"
+                                        },
+                                        "minimumSelections": {
+                                          "type": "number"
+                                        },
+                                        "maximumSelections": {
+                                          "type": "number"
+                                        },
+                                        "defaultValue": {
+                                          "default": [],
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "allowFiles",
+                                        "allowDirectories",
+                                        "label",
+                                        "defaultValue"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "treeSelect"
+                                        },
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "description": {
+                                          "type": "string"
+                                        },
+                                        "minimumSelections": {
+                                          "type": "number"
+                                        },
+                                        "maximumSelections": {
+                                          "type": "number"
+                                        },
+                                        "defaultValue": {
+                                          "default": [],
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "allowFreeform": {
+                                          "default": false,
+                                          "type": "boolean"
+                                        },
+                                        "tree": {
+                                          "type": "array",
+                                          "items": {
+                                            "$ref": "#/$defs/__schema0"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "label",
+                                        "defaultValue",
+                                        "allowFreeform",
+                                        "tree"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "form"
+                                        },
+                                        "sections": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "name": {
+                                                "type": "string"
+                                              },
+                                              "description": {
+                                                "type": "string"
+                                              },
+                                              "fields": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                  "type": "string"
+                                                },
+                                                "additionalProperties": {
+                                                  "oneOf": [
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "type": {
+                                                          "type": "string",
+                                                          "const": "text"
+                                                        },
+                                                        "label": {
+                                                          "type": "string"
+                                                        },
+                                                        "description": {
+                                                          "type": "string"
+                                                        },
+                                                        "required": {
+                                                          "default": false,
+                                                          "type": "boolean"
+                                                        },
+                                                        "defaultValue": {
+                                                          "default": "",
+                                                          "type": "string"
+                                                        },
+                                                        "expectedLines": {
+                                                          "default": 1,
+                                                          "type": "number"
+                                                        },
+                                                        "masked": {
+                                                          "default": false,
+                                                          "type": "boolean"
+                                                        },
+                                                        "autoSubmitAfter": {
+                                                          "type": "number"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "type",
+                                                        "label",
+                                                        "required",
+                                                        "defaultValue",
+                                                        "expectedLines",
+                                                        "masked"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "type": {
+                                                          "type": "string",
+                                                          "const": "fileSelect"
+                                                        },
+                                                        "allowFiles": {
+                                                          "type": "boolean"
+                                                        },
+                                                        "allowDirectories": {
+                                                          "type": "boolean"
+                                                        },
+                                                        "label": {
+                                                          "type": "string"
+                                                        },
+                                                        "description": {
+                                                          "type": "string"
+                                                        },
+                                                        "minimumSelections": {
+                                                          "type": "number"
+                                                        },
+                                                        "maximumSelections": {
+                                                          "type": "number"
+                                                        },
+                                                        "defaultValue": {
+                                                          "default": [],
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "type",
+                                                        "allowFiles",
+                                                        "allowDirectories",
+                                                        "label",
+                                                        "defaultValue"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "type": {
+                                                          "type": "string",
+                                                          "const": "treeSelect"
+                                                        },
+                                                        "label": {
+                                                          "type": "string"
+                                                        },
+                                                        "description": {
+                                                          "type": "string"
+                                                        },
+                                                        "minimumSelections": {
+                                                          "type": "number"
+                                                        },
+                                                        "maximumSelections": {
+                                                          "type": "number"
+                                                        },
+                                                        "defaultValue": {
+                                                          "default": [],
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        },
+                                                        "allowFreeform": {
+                                                          "default": false,
+                                                          "type": "boolean"
+                                                        },
+                                                        "tree": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "$ref": "#/$defs/__schema0"
+                                                          }
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "type",
+                                                        "label",
+                                                        "defaultValue",
+                                                        "allowFreeform",
+                                                        "tree"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            },
+                                            "required": [
+                                              "name",
+                                              "fields"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "sections"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ]
+                                },
+                                "optional": {
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "autoSubmitAt": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "interactionId",
+                                "timestamp",
+                                "message",
+                                "question",
+                                "optional"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "timestamp",
+                      "requestId",
+                      "status"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "input.interaction"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "requestId": {
+                        "type": "string"
+                      },
+                      "interactionId": {
+                        "type": "string"
+                      },
+                      "result": {}
+                    },
+                    "required": [
+                      "type",
+                      "timestamp",
+                      "requestId",
+                      "interactionId",
+                      "result"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "toolCall"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "The exact name of the tool that was called"
+                      },
+                      "args": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "$ref": "#/$defs/__schema1"
+                        },
+                        "description": "The arguments passed to the tool"
+                      },
+                      "message": {
+                        "type": "string",
+                        "description": "A single line markdown string, with a bolded intent at the beginning, that summarizes what was done i.e. \"**File** Read 3 files\""
+                      },
+                      "actions": {
+                        "description": "An itemized list of actions taken, which is displayed as a list under the item in verbose mode.Should not included the bolded intent, i.e. [\"Read a.txt\", \"Read b.txt\", \"Read c.txt\"]",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "failed": {
+                        "default": false,
+                        "description": "Whether the tool call soft-failed, i.e. was not called properly or returned not-useful results",
+                        "type": "boolean"
+                      },
+                      "result": {
+                        "type": "string",
+                        "description": "The result of the tool call, sent to the LLM"
+                      },
+                      "summary": {
+                        "not": {}
+                      },
+                      "attachments": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "encoding": {
+                              "type": "string",
+                              "enum": [
+                                "text",
+                                "base64",
+                                "href"
+                              ]
+                            },
+                            "body": {
+                              "type": "string"
+                            },
+                            "mimeType": {
+                              "type": "string",
+                              "enum": [
+                                "text/plain",
+                                "text/markdown",
+                                "text/html",
+                                "text/x-diff",
+                                "application/json",
+                                "message/rfc822",
+                                "image/png",
+                                "image/jpeg"
+                              ]
+                            },
+                            "sendToLLM": {
+                              "default": false,
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "encoding",
+                            "body",
+                            "mimeType",
+                            "sendToLLM"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "timestamp",
+                      "name",
+                      "args",
+                      "message",
+                      "failed",
+                      "result"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "position": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "status",
+            "events",
+            "position"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "$defs": {
+        "__schema0": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "value"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "children": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "children"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "__schema1": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema1"
+              }
+            },
+            {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema1"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "streamAgentEventsParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "fromPosition": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "agentId",
+        "fromPosition"
+      ]
+    },
+    "streamAgentEventsResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "events": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "agent.created"
+                      },
+                      "details": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "agent.stopped"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "agent.status"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "starting",
+                          "running",
+                          "shutdown"
+                        ]
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "inputExecutionQueue": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "currentActivity": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "status",
+                      "timestamp",
+                      "inputExecutionQueue",
+                      "currentActivity"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string"
+                          },
+                          "timestamp": {
+                            "type": "number"
+                          },
+                          "type": {
+                            "type": "string",
+                            "const": "agent.response"
+                          },
+                          "requestId": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "const": "cancelled"
+                          }
+                        },
+                        "required": [
+                          "message",
+                          "timestamp",
+                          "type",
+                          "requestId",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string"
+                          },
+                          "timestamp": {
+                            "type": "number"
+                          },
+                          "type": {
+                            "type": "string",
+                            "const": "agent.response"
+                          },
+                          "requestId": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "const": "error"
+                          }
+                        },
+                        "required": [
+                          "message",
+                          "timestamp",
+                          "type",
+                          "requestId",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string"
+                          },
+                          "timestamp": {
+                            "type": "number"
+                          },
+                          "type": {
+                            "type": "string",
+                            "const": "agent.response"
+                          },
+                          "requestId": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "const": "success"
+                          },
+                          "attachments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "encoding": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "base64",
+                                    "href"
+                                  ]
+                                },
+                                "body": {
+                                  "type": "string"
+                                },
+                                "mimeType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "audio/wav",
+                                    "audio/mpeg",
+                                    "audio/webm",
+                                    "video/mp4",
+                                    "video/webm",
+                                    "image/png",
+                                    "image/jpeg",
+                                    "text/plain",
+                                    "text/markdown",
+                                    "text/html",
+                                    "text/x-diff",
+                                    "application/json",
+                                    "message/rfc822"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "encoding",
+                                "body",
+                                "mimeType"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "message",
+                          "timestamp",
+                          "type",
+                          "requestId",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "output.chat"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "output.reasoning"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "output.info"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "output.warning"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "output.error"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "timestamp",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "input.received"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "input": {
+                        "type": "object",
+                        "properties": {
+                          "from": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "attachments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "encoding": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "base64",
+                                    "href"
+                                  ]
+                                },
+                                "body": {
+                                  "type": "string"
+                                },
+                                "mimeType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "audio/wav",
+                                    "audio/mpeg",
+                                    "audio/webm",
+                                    "video/mp4",
+                                    "video/webm",
+                                    "image/png",
+                                    "image/jpeg",
+                                    "text/plain",
+                                    "text/markdown",
+                                    "text/html",
+                                    "text/x-diff",
+                                    "application/json",
+                                    "message/rfc822"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "encoding",
+                                "body",
+                                "mimeType"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "timestamp": {
+                            "not": {}
+                          }
+                        },
+                        "required": [
+                          "from",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "requestId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "timestamp",
+                      "input",
+                      "requestId"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "cancel"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "requestId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "timestamp",
+                      "requestId"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "input.execution"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "requestId": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "queued",
+                          "running",
+                          "finished"
+                        ]
+                      },
+                      "currentActivity": {
+                        "type": "string"
+                      },
+                      "availableInteractions": {
+                        "type": "array",
+                        "items": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "followup"
+                                },
+                                "interactionId": {
+                                  "type": "string"
+                                },
+                                "timestamp": {
+                                  "type": "number"
+                                },
+                                "message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "interactionId",
+                                "timestamp",
+                                "message"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "question"
+                                },
+                                "interactionId": {
+                                  "type": "string"
+                                },
+                                "timestamp": {
+                                  "type": "number"
+                                },
+                                "message": {
+                                  "type": "string"
+                                },
+                                "question": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "text"
+                                        },
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "description": {
+                                          "type": "string"
+                                        },
+                                        "required": {
+                                          "default": false,
+                                          "type": "boolean"
+                                        },
+                                        "defaultValue": {
+                                          "default": "",
+                                          "type": "string"
+                                        },
+                                        "expectedLines": {
+                                          "default": 1,
+                                          "type": "number"
+                                        },
+                                        "masked": {
+                                          "default": false,
+                                          "type": "boolean"
+                                        },
+                                        "autoSubmitAfter": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "label",
+                                        "required",
+                                        "defaultValue",
+                                        "expectedLines",
+                                        "masked"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "fileSelect"
+                                        },
+                                        "allowFiles": {
+                                          "type": "boolean"
+                                        },
+                                        "allowDirectories": {
+                                          "type": "boolean"
+                                        },
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "description": {
+                                          "type": "string"
+                                        },
+                                        "minimumSelections": {
+                                          "type": "number"
+                                        },
+                                        "maximumSelections": {
+                                          "type": "number"
+                                        },
+                                        "defaultValue": {
+                                          "default": [],
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "allowFiles",
+                                        "allowDirectories",
+                                        "label",
+                                        "defaultValue"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "treeSelect"
+                                        },
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "description": {
+                                          "type": "string"
+                                        },
+                                        "minimumSelections": {
+                                          "type": "number"
+                                        },
+                                        "maximumSelections": {
+                                          "type": "number"
+                                        },
+                                        "defaultValue": {
+                                          "default": [],
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "allowFreeform": {
+                                          "default": false,
+                                          "type": "boolean"
+                                        },
+                                        "tree": {
+                                          "type": "array",
+                                          "items": {
+                                            "$ref": "#/$defs/__schema0"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "label",
+                                        "defaultValue",
+                                        "allowFreeform",
+                                        "tree"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "form"
+                                        },
+                                        "sections": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "name": {
+                                                "type": "string"
+                                              },
+                                              "description": {
+                                                "type": "string"
+                                              },
+                                              "fields": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                  "type": "string"
+                                                },
+                                                "additionalProperties": {
+                                                  "oneOf": [
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "type": {
+                                                          "type": "string",
+                                                          "const": "text"
+                                                        },
+                                                        "label": {
+                                                          "type": "string"
+                                                        },
+                                                        "description": {
+                                                          "type": "string"
+                                                        },
+                                                        "required": {
+                                                          "default": false,
+                                                          "type": "boolean"
+                                                        },
+                                                        "defaultValue": {
+                                                          "default": "",
+                                                          "type": "string"
+                                                        },
+                                                        "expectedLines": {
+                                                          "default": 1,
+                                                          "type": "number"
+                                                        },
+                                                        "masked": {
+                                                          "default": false,
+                                                          "type": "boolean"
+                                                        },
+                                                        "autoSubmitAfter": {
+                                                          "type": "number"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "type",
+                                                        "label",
+                                                        "required",
+                                                        "defaultValue",
+                                                        "expectedLines",
+                                                        "masked"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "type": {
+                                                          "type": "string",
+                                                          "const": "fileSelect"
+                                                        },
+                                                        "allowFiles": {
+                                                          "type": "boolean"
+                                                        },
+                                                        "allowDirectories": {
+                                                          "type": "boolean"
+                                                        },
+                                                        "label": {
+                                                          "type": "string"
+                                                        },
+                                                        "description": {
+                                                          "type": "string"
+                                                        },
+                                                        "minimumSelections": {
+                                                          "type": "number"
+                                                        },
+                                                        "maximumSelections": {
+                                                          "type": "number"
+                                                        },
+                                                        "defaultValue": {
+                                                          "default": [],
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "type",
+                                                        "allowFiles",
+                                                        "allowDirectories",
+                                                        "label",
+                                                        "defaultValue"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "type": {
+                                                          "type": "string",
+                                                          "const": "treeSelect"
+                                                        },
+                                                        "label": {
+                                                          "type": "string"
+                                                        },
+                                                        "description": {
+                                                          "type": "string"
+                                                        },
+                                                        "minimumSelections": {
+                                                          "type": "number"
+                                                        },
+                                                        "maximumSelections": {
+                                                          "type": "number"
+                                                        },
+                                                        "defaultValue": {
+                                                          "default": [],
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        },
+                                                        "allowFreeform": {
+                                                          "default": false,
+                                                          "type": "boolean"
+                                                        },
+                                                        "tree": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "$ref": "#/$defs/__schema0"
+                                                          }
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "type",
+                                                        "label",
+                                                        "defaultValue",
+                                                        "allowFreeform",
+                                                        "tree"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            },
+                                            "required": [
+                                              "name",
+                                              "fields"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "sections"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ]
+                                },
+                                "optional": {
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "autoSubmitAt": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "interactionId",
+                                "timestamp",
+                                "message",
+                                "question",
+                                "optional"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "timestamp",
+                      "requestId",
+                      "status"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "input.interaction"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "requestId": {
+                        "type": "string"
+                      },
+                      "interactionId": {
+                        "type": "string"
+                      },
+                      "result": {}
+                    },
+                    "required": [
+                      "type",
+                      "timestamp",
+                      "requestId",
+                      "interactionId",
+                      "result"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "toolCall"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "The exact name of the tool that was called"
+                      },
+                      "args": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "$ref": "#/$defs/__schema1"
+                        },
+                        "description": "The arguments passed to the tool"
+                      },
+                      "message": {
+                        "type": "string",
+                        "description": "A single line markdown string, with a bolded intent at the beginning, that summarizes what was done i.e. \"**File** Read 3 files\""
+                      },
+                      "actions": {
+                        "description": "An itemized list of actions taken, which is displayed as a list under the item in verbose mode.Should not included the bolded intent, i.e. [\"Read a.txt\", \"Read b.txt\", \"Read c.txt\"]",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "failed": {
+                        "default": false,
+                        "description": "Whether the tool call soft-failed, i.e. was not called properly or returned not-useful results",
+                        "type": "boolean"
+                      },
+                      "result": {
+                        "type": "string",
+                        "description": "The result of the tool call, sent to the LLM"
+                      },
+                      "summary": {
+                        "not": {}
+                      },
+                      "attachments": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "encoding": {
+                              "type": "string",
+                              "enum": [
+                                "text",
+                                "base64",
+                                "href"
+                              ]
+                            },
+                            "body": {
+                              "type": "string"
+                            },
+                            "mimeType": {
+                              "type": "string",
+                              "enum": [
+                                "text/plain",
+                                "text/markdown",
+                                "text/html",
+                                "text/x-diff",
+                                "application/json",
+                                "message/rfc822",
+                                "image/png",
+                                "image/jpeg"
+                              ]
+                            },
+                            "sendToLLM": {
+                              "default": false,
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "encoding",
+                            "body",
+                            "mimeType",
+                            "sendToLLM"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "timestamp",
+                      "name",
+                      "args",
+                      "message",
+                      "failed",
+                      "result"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "position": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "status",
+            "events",
+            "position"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "$defs": {
+        "__schema0": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "value"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "children": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "children"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "__schema1": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema1"
+              }
+            },
+            {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema1"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "listAgentsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listAgentsResult": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "number"
+          },
+          "agentType": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "idle": {
+            "type": "boolean"
+          },
+          "currentActivity": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "agentType",
+          "displayName",
+          "description",
+          "idle",
+          "currentActivity"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "streamAgentsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamAgentsResult": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "number"
+          },
+          "agentType": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "idle": {
+            "type": "boolean"
+          },
+          "currentActivity": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "agentType",
+          "displayName",
+          "description",
+          "idle",
+          "currentActivity"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "getAgentTypesParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getAgentTypesResult": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "enabledTools": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "type",
+          "displayName",
+          "description",
+          "enabledTools"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "createAgentParams": {
+      "type": "object",
+      "properties": {
+        "agentType": {
+          "type": "string"
+        },
+        "headless": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "agentType",
+        "headless"
+      ]
+    },
+    "createAgentResult": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "displayName",
+        "description"
+      ],
+      "additionalProperties": false
+    },
+    "deleteAgentParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId",
+        "reason"
+      ]
+    },
+    "deleteAgentResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "sendInputParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "input": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "attachments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "encoding": {
+                    "type": "string",
+                    "enum": [
+                      "text",
+                      "base64",
+                      "href"
+                    ]
+                  },
+                  "body": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "string",
+                    "enum": [
+                      "audio/wav",
+                      "audio/mpeg",
+                      "audio/webm",
+                      "video/mp4",
+                      "video/webm",
+                      "image/png",
+                      "image/jpeg",
+                      "text/plain",
+                      "text/markdown",
+                      "text/html",
+                      "text/x-diff",
+                      "application/json",
+                      "message/rfc822"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "encoding",
+                  "body",
+                  "mimeType"
+                ]
+              }
+            },
+            "timestamp": {
+              "not": {}
+            }
+          },
+          "required": [
+            "from",
+            "message"
+          ]
+        }
+      },
+      "required": [
+        "agentId",
+        "input"
+      ]
+    },
+    "sendInputResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "requestId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "requestId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "sendInteractionResponseParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "response": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "input.interaction"
+            },
+            "timestamp": {
+              "type": "number"
+            },
+            "requestId": {
+              "type": "string"
+            },
+            "interactionId": {
+              "type": "string"
+            },
+            "result": {}
+          },
+          "required": [
+            "type",
+            "timestamp",
+            "requestId",
+            "interactionId",
+            "result"
+          ]
+        }
+      },
+      "required": [
+        "agentId",
+        "response"
+      ]
+    },
+    "sendInteractionResponseResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "abortCurrentOperationParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId",
+        "message"
+      ]
+    },
+    "abortCurrentOperationResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "getCommandHistoryParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "getCommandHistoryResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "history": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "status",
+            "history"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "getAvailableCommandsParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "getAvailableCommandsResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "commands": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "description"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "commands"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Agent RPC",
+    "path": "/rpc/agent",
+    "source": "plugin/agent/rpc/schema.ts",
+    "methods": {
+      "getAgentConfig": {
+        "type": "query",
+        "params": "#/$defs/getAgentConfigParams",
+        "result": "#/$defs/getAgentConfigResult"
+      },
+      "getAgentEvents": {
+        "type": "query",
+        "params": "#/$defs/getAgentEventsParams",
+        "result": "#/$defs/getAgentEventsResult"
+      },
+      "streamAgentEvents": {
+        "type": "stream",
+        "params": "#/$defs/streamAgentEventsParams",
+        "result": "#/$defs/streamAgentEventsResult"
+      },
+      "listAgents": {
+        "type": "query",
+        "params": "#/$defs/listAgentsParams",
+        "result": "#/$defs/listAgentsResult"
+      },
+      "streamAgents": {
+        "type": "stream",
+        "params": "#/$defs/streamAgentsParams",
+        "result": "#/$defs/streamAgentsResult"
+      },
+      "getAgentTypes": {
+        "type": "query",
+        "params": "#/$defs/getAgentTypesParams",
+        "result": "#/$defs/getAgentTypesResult"
+      },
+      "createAgent": {
+        "type": "mutation",
+        "params": "#/$defs/createAgentParams",
+        "result": "#/$defs/createAgentResult"
+      },
+      "deleteAgent": {
+        "type": "mutation",
+        "params": "#/$defs/deleteAgentParams",
+        "result": "#/$defs/deleteAgentResult"
+      },
+      "sendInput": {
+        "type": "mutation",
+        "params": "#/$defs/sendInputParams",
+        "result": "#/$defs/sendInputResult"
+      },
+      "sendInteractionResponse": {
+        "type": "mutation",
+        "params": "#/$defs/sendInteractionResponseParams",
+        "result": "#/$defs/sendInteractionResponseResult"
+      },
+      "abortCurrentOperation": {
+        "type": "mutation",
+        "params": "#/$defs/abortCurrentOperationParams",
+        "result": "#/$defs/abortCurrentOperationResult"
+      },
+      "getCommandHistory": {
+        "type": "query",
+        "params": "#/$defs/getCommandHistoryParams",
+        "result": "#/$defs/getCommandHistoryResult"
+      },
+      "getAvailableCommands": {
+        "type": "query",
+        "params": "#/$defs/getAvailableCommandsParams",
+        "result": "#/$defs/getAvailableCommandsResult"
+      }
+    }
+  }
+}

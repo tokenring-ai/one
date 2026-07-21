@@ -50,7 +50,7 @@ This file maintains knowledge about documentation standards, patterns, and struc
 - **Consistent Terminology**: Uses "Agent", "Service", "Tool", "Command" consistently across all documentation
 - **Type-Safe Examples**: All code examples use proper TypeScript types and imports
 - **YAML Configuration**: Consistent use of YAML for configuration examples
-- **Tech Stack**: Packages use bun, vitest, and typescript
+- **Tech Stack**: Packages use bun, bun test, and typescript
 - **Command Systems**: Detailed documentation of chat command patterns and usage
 
 ### 1. Documentation standards for README.md

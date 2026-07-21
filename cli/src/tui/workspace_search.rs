@@ -19,8 +19,9 @@ pub struct WorkspaceSearch {
 
 impl WorkspaceSearch {
     pub fn clear_picker(&mut self) {
+        // Drop the in-flight receiver so stale results are ignored, but keep
+        // the query cache so reopening `@` with the same query is instant.
         self.rx = None;
-        self.cache.clear();
     }
 
     /// Start or refresh a backend search for `query` when not already cached.
@@ -38,14 +39,22 @@ impl WorkspaceSearch {
         let client = client.clone();
         let provider = provider.to_string();
         let query = query.to_string();
-        thread::Builder::new()
+        let fail_tx = tx.clone();
+        let fail_query = query.clone();
+        if let Err(error) = thread::Builder::new()
             .name("tr-workspace-search".into())
             .spawn(move || {
                 let result = rpc::search_workspace_files(&client, &provider, &query, 48)
                     .map_err(|e| e.to_string());
                 let _ = tx.send((request_id, query, result));
             })
-            .ok();
+        {
+            let _ = fail_tx.send((
+                request_id,
+                fail_query,
+                Err(format!("failed to start search thread: {error}")),
+            ));
+        }
     }
 
     /// Apply a finished search result when it matches the latest request.

@@ -12,7 +12,7 @@ This file maintains knowledge about testing strategies, test suites, and quality
 ### Testing methodology
 - Tests are located in each package
 - To locate tests, search for pkg/*/**.test.*
-- To run the tests in a package, run `npx vitest run` or `bun test`
+- To run the tests in a package, run `bun test`
 - Integration tests are preferred over unit tests
 
 ### How to mock the Agent and TokenRingApp classes

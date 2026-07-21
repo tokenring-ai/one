@@ -1,0 +1,291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Research RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/research",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "startResearch request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/research.startResearch"
+        },
+        "params": {
+          "$ref": "#/$defs/startResearchParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "startResearch response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/startResearchResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getResearchConfig request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/research.getResearchConfig"
+        },
+        "params": {
+          "$ref": "#/$defs/getResearchConfigParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getResearchConfig response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getResearchConfigResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listResearchProjects request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/research.listResearchProjects"
+        },
+        "params": {
+          "$ref": "#/$defs/listResearchProjectsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listResearchProjects response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listResearchProjectsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "startResearchParams": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1
+        },
+        "headless": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "query"
+      ]
+    },
+    "startResearchResult": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "researchDirectory": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId",
+        "researchDirectory"
+      ],
+      "additionalProperties": false
+    },
+    "getResearchConfigParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getResearchConfigResult": {
+      "type": "object",
+      "properties": {
+        "researchDirectory": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "researchDirectory"
+      ],
+      "additionalProperties": false
+    },
+    "listResearchProjectsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listResearchProjectsResult": {
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "modifiedAt": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "path",
+              "modifiedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "projects"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Research RPC",
+    "path": "/rpc/research",
+    "source": "plugin/research/rpc/schema.ts",
+    "methods": {
+      "startResearch": {
+        "type": "mutation",
+        "params": "#/$defs/startResearchParams",
+        "result": "#/$defs/startResearchResult"
+      },
+      "getResearchConfig": {
+        "type": "query",
+        "params": "#/$defs/getResearchConfigParams",
+        "result": "#/$defs/getResearchConfigResult"
+      },
+      "listResearchProjects": {
+        "type": "query",
+        "params": "#/$defs/listResearchProjectsParams",
+        "result": "#/$defs/listResearchProjectsResult"
+      }
+    }
+  }
+}

@@ -258,7 +258,7 @@ pub fn render_quick_reply_chips(
     let chip_bg = theme.quick_reply.chip_background_color.color();
     let chip_border = theme.quick_reply.chip_border_color.color();
     let mut spans: Vec<Span<'static>> = vec![Span::styled(
-        "Quick Reply (Ctrl-R #): ",
+        "Quick Reply (Ctrl-x #): ",
         Style::default().fg(theme.quick_reply.label_color.color()),
     )];
     for (i, label) in chips.iter().enumerate() {
@@ -456,11 +456,11 @@ pub fn auto_submit_countdown(auto_submit_at: f64) -> Option<String> {
 
 /// Path for the one-time narrow-terminal width hint flag (candy #30).
 pub fn width_hint_flag_path() -> Option<PathBuf> {
-    std::env::var("HOME").ok().map(|h| {
-        PathBuf::from(h)
-            .join(".tokenring")
-            .join("cli-rs-width-hint-shown")
-    })
+    // Prefer platform state/data dir; fall back to `~/.tokenring/…`.
+    dirs::state_dir()
+        .or_else(dirs::data_local_dir)
+        .or_else(dirs::home_dir)
+        .map(|base| base.join("tokenring").join("cli-width-hint-shown"))
 }
 
 pub fn width_hint_already_shown() -> bool {
@@ -479,7 +479,7 @@ pub fn mark_width_hint_shown() {
 /// Transcript entry header (candy #11).
 ///
 /// Compact mode shows simplified headers for a subset of kinds; verbose mode
-/// labels every non-input entry with a distinct emoji header.
+/// labels every entry with a plain text header (no emoji prefixes).
 pub fn entry_header_title(
     kind: crate::tui::transcript::EntryKind,
     title: &str,
@@ -497,16 +497,17 @@ pub fn entry_header_title(
             EntryKind::Error => "Error".to_string(),
             EntryKind::Response if title == "Error" => "Error".to_string(),
             EntryKind::Response => "Response".to_string(),
-            EntryKind::Artifact => format!("{title}"),
+            EntryKind::Attachment => format!("{title}"),
             EntryKind::ToolCall => format!("{title}"),
             EntryKind::Interaction => "Interaction".to_string(),
         });
     }
 
     match kind {
-        EntryKind::Reasoning => Some("⚡ Thinking...".to_string()),
+        // Reasoning is fully hidden in compact mode (`hidden_in_compact`).
+        EntryKind::Reasoning => None,
         EntryKind::ToolCall => Some(format!("▸ {title}")),
-        EntryKind::Artifact => Some(format!("▸ {title}")),
+        EntryKind::Attachment => Some(format!("▸ {title}")),
         EntryKind::Input | EntryKind::Chat | EntryKind::System | EntryKind::Info | EntryKind::Warning
         | EntryKind::Error | EntryKind::Response | EntryKind::Interaction => None,
     }
@@ -531,7 +532,7 @@ pub fn entry_stripe_prefix(tone: Tone, _theme: &Theme) -> String {
 pub fn entry_stripe_tone(kind: crate::tui::transcript::EntryKind) -> Tone {
     use crate::tui::transcript::EntryKind;
     match kind {
-        EntryKind::ToolCall | EntryKind::Artifact | EntryKind::Info => Tone::Info,
+        EntryKind::ToolCall | EntryKind::Attachment | EntryKind::Info => Tone::Info,
         EntryKind::Error => Tone::Error,
         EntryKind::Warning => Tone::Warning,
         EntryKind::Response => Tone::Success,
@@ -549,30 +550,31 @@ mod entry_header_tests {
     use crate::tui::transcript::EntryKind;
 
     #[test]
-    fn reasoning_compact_title_is_thinking_placeholder() {
+    fn reasoning_compact_title_is_hidden() {
         assert_eq!(
             entry_header_title(EntryKind::Reasoning, "Reasoning", false).as_deref(),
-            Some("⚡ Thinking...")
+            None
         );
     }
 
     #[test]
     fn verbose_mode_labels_each_kind() {
+        // Verbose titles are plain labels (emoji prefixes are compact-mode only).
         assert_eq!(
             entry_header_title(EntryKind::Chat, "Assistant", true).as_deref(),
-            Some("🤖 Assistant")
+            Some("Assistant")
         );
         assert_eq!(
             entry_header_title(EntryKind::Reasoning, "Reasoning", true).as_deref(),
-            Some("⚡ Reasoning")
+            Some("Reasoning")
         );
         assert_eq!(
             entry_header_title(EntryKind::ToolCall, "read file", true).as_deref(),
-            Some("🔧 read file")
+            Some("read file")
         );
         assert_eq!(
             entry_header_title(EntryKind::Input, "You", true).as_deref(),
-            Some("📥 Input Received")
+            Some("Input Received")
         );
     }
 }

@@ -4,8 +4,6 @@
 //! `Intl.Collator(numeric, base)` tie-breaker is approximated by a
 //! numeric-aware chunk comparison.
 
-use std::cmp::Ordering;
-
 /// A detected `@query` token in the editor buffer.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FileSearchToken {
@@ -138,10 +136,14 @@ pub fn score_file_search_match(file_path: &str, query: &str) -> i64 {
             consecutive_matches = 0;
         }
 
+        // `find` returns a byte index; take the previous Unicode scalar safely.
         let previous_char = if next_match_index == 0 {
             '/'
         } else {
-            normalized_path.as_bytes()[next_match_index - 1] as char
+            normalized_path[..next_match_index]
+                .chars()
+                .next_back()
+                .unwrap_or('/')
         };
         if PATH_SEPARATORS.contains(&previous_char) {
             score += SCORE_PATH_SEPARATOR_BONUS;
@@ -158,102 +160,6 @@ pub fn score_file_search_match(file_path: &str, query: &str) -> i64 {
     score -= get_path_depth(file_path) as i64 * SCORE_DEPTH_PENALTY;
 
     score
-}
-
-/// Numeric-aware string comparison, approximating
-/// `new Intl.Collator(undefined, { numeric: true, sensitivity: "base" })`.
-fn numeric_compare(a: &str, b: &str) -> Ordering {
-    let a = a.to_lowercase();
-    let b = b.to_lowercase();
-    let mut ia = a.chars().peekable();
-    let mut ib = b.chars().peekable();
-
-    loop {
-        match (ia.peek(), ib.peek()) {
-            (None, None) => return Ordering::Equal,
-            (None, Some(_)) => return Ordering::Less,
-            (Some(_), None) => return Ordering::Greater,
-            (Some(&ca), Some(&cb)) => {
-                let a_digit = ca.is_ascii_digit();
-                let b_digit = cb.is_ascii_digit();
-                if a_digit && b_digit {
-                    // Consume digit runs and compare numerically (strip leading zeros).
-                    let mut na = String::new();
-                    while let Some(&c) = ia.peek() {
-                        if c.is_ascii_digit() {
-                            na.push(c);
-                            ia.next();
-                        } else {
-                            break;
-                        }
-                    }
-                    let mut nb = String::new();
-                    while let Some(&c) = ib.peek() {
-                        if c.is_ascii_digit() {
-                            nb.push(c);
-                            ib.next();
-                        } else {
-                            break;
-                        }
-                    }
-                    let va = na.trim_start_matches('0');
-                    let vb = nb.trim_start_matches('0');
-                    let ord = va.len().cmp(&vb.len()).then_with(|| va.cmp(vb));
-                    if ord != Ordering::Equal {
-                        return ord;
-                    }
-                } else {
-                    if ca != cb {
-                        return ca.cmp(&cb);
-                    }
-                    ia.next();
-                    ib.next();
-                }
-            }
-        }
-    }
-}
-
-/// Tie-breaker for browsing order (port of `compareFilePathsForBrowsing`).
-pub fn compare_file_paths_for_browsing(left: &str, right: &str) -> Ordering {
-    let depth = get_path_depth(left).cmp(&get_path_depth(right));
-    if depth != Ordering::Equal {
-        return depth;
-    }
-    let base = numeric_compare(get_base_name(left), get_base_name(right));
-    if base != Ordering::Equal {
-        return base;
-    }
-    let length = left.len().cmp(&right.len());
-    if length != Ordering::Equal {
-        return length;
-    }
-    numeric_compare(left, right)
-}
-
-/// Return the best `limit` matches for a query (port of `getFileSearchMatches`).
-#[allow(dead_code)] // Exercised by unit tests in this module.
-pub fn get_file_search_matches(file_paths: &[String], query: &str, limit: usize) -> Vec<String> {
-    let max_results = limit;
-    if max_results == 0 {
-        return Vec::new();
-    }
-    let normalized_query = query.trim();
-
-    let mut candidates: Vec<(&String, i64)> = file_paths
-        .iter()
-        .map(|path| (path, score_file_search_match(path, normalized_query)))
-        .filter(|(_, score)| *score != i64::MIN)
-        .collect();
-    candidates.sort_by(|(la, sa), (lb, sb)| {
-        sb.cmp(sa)
-            .then_with(|| compare_file_paths_for_browsing(la, lb))
-    });
-    candidates
-        .into_iter()
-        .take(max_results)
-        .map(|(p, _)| p.clone())
-        .collect()
 }
 
 /// Replace a file-search token with a chosen path (port of
@@ -296,20 +202,17 @@ mod tests {
 
     #[test]
     fn exact_base_name_scores_highest() {
-        let paths = vec![
-            "src/main.rs".to_string(),
-            "main.rs".to_string(),
-            "domain/main.rs".to_string(),
-        ];
-        let matches = get_file_search_matches(&paths, "main.rs", 3);
-        assert_eq!(matches[0], "main.rs");
+        let exact = score_file_search_match("main.rs", "main.rs");
+        assert!(exact > score_file_search_match("src/main.rs", "main.rs"));
+        assert!(exact > score_file_search_match("domain/main.rs", "main.rs"));
     }
 
     #[test]
     fn empty_query_ranks_shallow_short_first() {
-        let paths = vec!["a/b/c/deep.txt".to_string(), "x.txt".to_string()];
-        let matches = get_file_search_matches(&paths, "", 2);
-        assert_eq!(matches[0], "x.txt");
+        assert!(
+            score_file_search_match("x.txt", "")
+                > score_file_search_match("a/b/c/deep.txt", "")
+        );
     }
 
     #[test]

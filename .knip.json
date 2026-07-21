@@ -3,7 +3,8 @@
   "ignore": [
     "util/**",
     ".tokenring/*",
-    "docs/**",
+    "packaging/**",
+    "docs/**"
   ],
   "exclude": [
     "dependencies",

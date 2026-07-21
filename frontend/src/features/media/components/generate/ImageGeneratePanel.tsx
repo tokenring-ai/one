@@ -1,18 +1,21 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { WandSparkles } from "lucide-react";
 import { useMemo, useState } from "react";
+import type { KeyboardEvent} from "react";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { imageGenerationRPCClient, useImageGenerationModels } from "../../../../rpc.ts";
-import AspectRatioField from "./AspectRatioField.tsx";
 import GenerateButton from "./GenerateButton.tsx";
 import GeneratePanelShell from "./GeneratePanelShell.tsx";
+import ImageQualityField, { type ImageQuality } from "./ImageQualityField.tsx";
+import ImageShapeField, { type ImageShape } from "./ImageShapeField.tsx";
 import ModelSelectField from "./ModelSelectField.tsx";
 import PromptField from "./PromptField.tsx";
 
 export default function ImageGeneratePanel({ agentId, onGenerated }: { agentId: string | null; onGenerated: () => void }) {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState<string>("");
-  const [aspectRatio, setAspectRatio] = useState<"square" | "tall" | "wide">("square");
+  const [shape, setShape] = useState<ImageShape>("square");
+  const [quality, setQuality] = useState<ImageQuality>("standard");
   const [generating, setGenerating] = useState(false);
   const { data: modelsData } = useImageGenerationModels();
 
@@ -38,14 +41,20 @@ export default function ImageGeneratePanel({ agentId, onGenerated }: { agentId: 
     try {
       await imageGenerationRPCClient.generateImage({
         agentId,
-        prompt: prompt.trim(),
         ...(selectedModel && { model: selectedModel }),
-        aspectRatio,
-        keywords: prompt
-          .trim()
-          .split(/[,\s]+/)
-          .filter(Boolean)
-          .slice(0, 10),
+        request: {
+          prompt: prompt.trim(),
+          sizing: {
+            method: "guided",
+            quality,
+            shape,
+          },
+          keywords: prompt
+            .trim()
+            .split(/[,\s]+/)
+            .filter(Boolean)
+            .slice(0, 10),
+        },
       });
       toastManager.success("Image generated!", { duration: 3000 });
       setPrompt("");
@@ -57,7 +66,7 @@ export default function ImageGeneratePanel({ agentId, onGenerated }: { agentId: 
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void handleGenerate();
   };
 
@@ -69,7 +78,8 @@ export default function ImageGeneratePanel({ agentId, onGenerated }: { agentId: 
       gradient="from-pink-500 to-rose-600"
     >
       <PromptField value={prompt} onChange={setPrompt} onKeyDown={handleKeyDown} placeholder="A serene mountain lake at sunset with reflections..." />
-      <AspectRatioField value={aspectRatio} onChange={setAspectRatio} />
+      <ImageShapeField value={shape} onChange={setShape} />
+      <ImageQualityField value={quality} onChange={setQuality} />
       <ModelSelectField label="Model" value={selectedModel} onChange={setModel} options={availableModels} />
       <GenerateButton onClick={() => void handleGenerate()} disabled={generating || !agentId || !prompt.trim()} loading={generating}>
         Generate Image

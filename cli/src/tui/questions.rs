@@ -3,8 +3,10 @@
 //! handles keys, returning an answer payload on submit.
 
 use std::collections::HashSet;
+use std::sync::mpsc::{self, Receiver, TryRecvError};
+use std::thread;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{json, Value};
 
 use crate::models::questions::{FormSection, Question, TreeLeaf};
@@ -25,20 +27,41 @@ pub enum QuestionAction {
 
 // ---------------- Text ----------------
 
+struct TextQuestionConfig {
+    label: String,
+    description: Option<String>,
+    required: bool,
+    expected_lines: usize,
+    masked: bool,
+}
+
 pub struct TextSession {
-    question: Question,
+    config: TextQuestionConfig,
     editor: InputEditor,
     flash: Option<String>,
 }
 
 impl TextSession {
     pub fn new(question: Question) -> Self {
-        let default_value = match &question {
-            Question::Text { default_value, .. } => default_value.clone(),
-            _ => String::new(),
+        let Question::Text {
+            label,
+            description,
+            required,
+            default_value,
+            expected_lines,
+            masked,
+        } = question
+        else {
+            unreachable!("TextSession requires a text question")
         };
         Self {
-            question,
+            config: TextQuestionConfig {
+                label,
+                description,
+                required,
+                expected_lines,
+                masked,
+            },
             editor: InputEditor::from_text(&default_value),
             flash: None,
         }
@@ -50,30 +73,19 @@ impl TextSession {
     }
 
     pub fn render(&self, width: usize, theme: &Theme) -> Vec<(String, Tone)> {
-        let Question::Text {
-            label,
-            description,
-            required,
-            expected_lines,
-            masked,
-            ..
-        } = &self.question
-        else {
-            return Vec::new();
-        };
         let text_indent = &theme.layout.text_indent;
-        let mut lines = vec![(label.clone(), Tone::Ask)];
-        if let Some(desc) = description {
+        let mut lines = vec![(self.config.label.clone(), Tone::Ask)];
+        if let Some(desc) = &self.config.description {
             for l in wrap_plain_text(desc, width.saturating_sub(text_indent.len())) {
                 lines.push((format!("{text_indent}{l}"), Tone::Muted));
             }
         }
         let inner_width = width.saturating_sub(3).max(10);
-        let max_lines = (*expected_lines).clamp(1, 10);
-        let view = render_editor(&self.editor, inner_width, max_lines, *masked);
+        let max_lines = self.config.expected_lines.clamp(1, 10);
+        let view = render_editor(&self.editor, inner_width, max_lines, self.config.masked);
         for (i, line) in view.lines.iter().enumerate() {
             if view.is_empty && i == 0 {
-                let ph = if *required {
+                let ph = if self.config.required {
                     "Required response"
                 } else {
                     "Optional response"
@@ -87,32 +99,27 @@ impl TextSession {
         if let Some(flash) = &self.flash {
             lines.push((flash.clone(), Tone::Error));
         }
-        let hint = if *expected_lines > 1 {
-            "Enter submit  Alt+Enter newline  Esc cancel"
+        let hint = if self.config.expected_lines > 1 {
+            format!(
+                "{} submit  {} newline  Esc cancel",
+                kb_submit_label(),
+                kb_newline_label()
+            )
         } else {
-            "Enter submit  Esc cancel"
+            format!("{} submit  Esc cancel", kb_submit_label())
         };
-        lines.push((hint.to_string(), Tone::Muted));
+        lines.push((hint, Tone::Muted));
         lines
     }
 
     pub fn cursor(&self, width: usize) -> Option<(usize, usize)> {
-        let Question::Text {
-            expected_lines,
-            masked,
-            ..
-        } = &self.question
-        else {
-            return None;
-        };
         let inner_width = width.saturating_sub(3).max(10);
-        let max_lines = (*expected_lines).clamp(1, 10);
-        let view = render_editor(&self.editor, inner_width, max_lines, *masked);
+        let max_lines = self.config.expected_lines.clamp(1, 10);
+        let view = render_editor(&self.editor, inner_width, max_lines, self.config.masked);
         // row offset = lines before the editor block.
-        let Question::Text { description, .. } = &self.question else {
-            return None;
-        };
-        let header = 1 + description
+        let header = 1 + self
+            .config
+            .description
             .as_ref()
             .map(|d| wrap_plain_text(d, width.saturating_sub(3)).len())
             .unwrap_or(0);
@@ -126,44 +133,63 @@ impl TextSession {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent, kb: &Keybinds) -> Option<QuestionAction> {
-        let Question::Text { required, .. } = &self.question else {
-            return None;
-        };
-        let required = *required;
-        match (key.modifiers, key.code) {
-            (_, KeyCode::Esc) => Some(QuestionAction::Cancel),
-            (m, KeyCode::Enter)
-                if m.contains(KeyModifiers::ALT) || m.contains(KeyModifiers::CONTROL) =>
-            {
-                self.editor.insert_newline();
-                self.flash = None;
-                None
-            }
-            (_, KeyCode::Enter) => {
-                let value = self.editor.text();
-                let trimmed = value.trim();
-                if required && trimmed.is_empty() {
-                    self.flash = Some("A response is required.".to_string());
-                    return None;
-                }
-                let answer = if trimmed.is_empty() {
-                    Value::Null
-                } else {
-                    json!(value.trim_end())
-                };
-                Some(QuestionAction::Submit(answer))
-            }
-            _ => {
-                if apply_editor_keypress(&mut self.editor, key, kb) {
-                    self.flash = None;
-                }
-                None
-            }
+        if matches!(key.code, KeyCode::Esc) || kb.session_interrupt.matches(key) {
+            return Some(QuestionAction::Cancel);
         }
+        if kb.input_newline.matches(key) {
+            self.editor.insert_newline();
+            self.flash = None;
+            return None;
+        }
+        if kb.input_submit.matches(key) {
+            let value = self.editor.text();
+            let trimmed = value.trim();
+            if self.config.required && trimmed.is_empty() {
+                self.flash = Some("A response is required.".to_string());
+                return None;
+            }
+            let answer = if trimmed.is_empty() {
+                Value::Null
+            } else {
+                json!(value.trim_end())
+            };
+            return Some(QuestionAction::Submit(answer));
+        }
+        if apply_editor_keypress(&mut self.editor, key, kb) {
+            self.flash = None;
+        }
+        None
     }
 }
 
+fn kb_submit_label() -> String {
+    Keybinds::defaults().input_submit_label()
+}
+
+fn kb_newline_label() -> String {
+    Keybinds::defaults().input_newline_label()
+}
+
 // ---------------- Tree ----------------
+
+#[derive(Clone, Copy)]
+struct SelectionConstraints {
+    minimum: Option<usize>,
+    maximum: Option<usize>,
+}
+
+impl SelectionConstraints {
+    fn multiple(self) -> bool {
+        self.maximum != Some(1)
+    }
+}
+
+struct TreeQuestionConfig {
+    label: String,
+    description: Option<String>,
+    tree: Vec<TreeLeaf>,
+    constraints: SelectionConstraints,
+}
 
 struct FlatItem {
     key: String,
@@ -175,7 +201,7 @@ struct FlatItem {
 }
 
 pub struct TreeSession {
-    question: Question,
+    config: TreeQuestionConfig,
     selected: usize,
     scroll: usize,
     expanded: HashSet<String>,
@@ -185,12 +211,27 @@ pub struct TreeSession {
 
 impl TreeSession {
     pub fn new(question: Question) -> Self {
-        let (default_value, _) = match &question {
-            Question::TreeSelect { default_value, .. } => (default_value.clone(), ()),
-            _ => (Vec::new(), ()),
+        let Question::TreeSelect {
+            label,
+            description,
+            minimum_selections,
+            maximum_selections,
+            default_value,
+            tree,
+        } = question
+        else {
+            unreachable!("TreeSession requires a tree-select question")
         };
         Self {
-            question,
+            config: TreeQuestionConfig {
+                label,
+                description,
+                tree,
+                constraints: SelectionConstraints {
+                    minimum: minimum_selections,
+                    maximum: maximum_selections,
+                },
+            },
             selected: 0,
             scroll: 0,
             expanded: HashSet::new(),
@@ -200,26 +241,13 @@ impl TreeSession {
     }
 
     fn tree(&self) -> &[TreeLeaf] {
-        match &self.question {
-            Question::TreeSelect { tree, .. } => tree,
-            _ => &[],
-        }
+        &self.config.tree
     }
     fn max_selections(&self) -> Option<usize> {
-        match &self.question {
-            Question::TreeSelect {
-                maximum_selections, ..
-            } => *maximum_selections,
-            _ => None,
-        }
+        self.config.constraints.maximum
     }
     fn min_selections(&self) -> Option<usize> {
-        match &self.question {
-            Question::TreeSelect {
-                minimum_selections, ..
-            } => *minimum_selections,
-            _ => None,
-        }
+        self.config.constraints.minimum
     }
 
     fn flat(&self) -> Vec<FlatItem> {
@@ -274,15 +302,9 @@ impl TreeSession {
     }
 
     pub fn render(&self, width: usize, rows: usize, theme: &Theme) -> Vec<(String, Tone)> {
-        let Question::TreeSelect {
-            label, description, ..
-        } = &self.question
-        else {
-            return Vec::new();
-        };
         let text_indent = &theme.layout.text_indent;
-        let mut lines = vec![(label.clone(), Tone::Ask)];
-        if let Some(desc) = description {
+        let mut lines = vec![(self.config.label.clone(), Tone::Ask)];
+        if let Some(desc) = &self.config.description {
             for l in wrap_plain_text(desc, width.saturating_sub(3)) {
                 lines.push((format!("{text_indent}{l}"), Tone::Muted));
             }
@@ -291,7 +313,7 @@ impl TreeSession {
         let max_visible = flat.len().max(4).min(rows.saturating_sub(8)).max(4);
         let flat_len = flat.len();
         let scroll = self.scroll_for(max_visible, flat_len);
-        let multiple = self.max_selections() != Some(1);
+        let multiple = self.config.constraints.multiple();
         for (i, item) in flat.iter().enumerate().skip(scroll).take(max_visible) {
             let is_selected = i == self.selected;
             let is_checked =
@@ -389,7 +411,7 @@ impl TreeSession {
     pub fn handle_key(&mut self, key: KeyEvent) -> Option<QuestionAction> {
         let flat = self.flat();
         let current = flat.get(self.selected);
-        let multiple = self.max_selections() != Some(1);
+        let multiple = self.config.constraints.multiple();
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => Some(QuestionAction::Cancel),
             KeyCode::Up => {
@@ -564,24 +586,58 @@ struct FileNode {
     children: Vec<FileNode>,
 }
 
+type DirectoryLoadResult = Result<Vec<rpc::methods::DirEntry>, String>;
+
+struct DirectoryLoad {
+    path: String,
+    expand: bool,
+    rx: Receiver<DirectoryLoadResult>,
+}
+
+struct FileQuestionConfig {
+    label: String,
+    description: Option<String>,
+    allow_files: bool,
+    allow_directories: bool,
+    constraints: SelectionConstraints,
+}
+
 pub struct FileSession {
-    question: Question,
+    config: FileQuestionConfig,
     provider: String,
     root: FileNode,
     selected: usize,
     checked: HashSet<String>,
     flash: Option<String>,
     initial_loading: bool,
+    directory_load: Option<DirectoryLoad>,
 }
 
 impl FileSession {
     pub fn new(question: Question, provider: String, working_directory: String) -> Self {
-        let checked = match &question {
-            Question::FileSelect { default_value, .. } => default_value.iter().cloned().collect(),
-            _ => HashSet::new(),
+        let Question::FileSelect {
+            label,
+            description,
+            allow_files,
+            allow_directories,
+            minimum_selections,
+            maximum_selections,
+            default_value,
+        } = question
+        else {
+            unreachable!("FileSession requires a file-select question")
         };
         Self {
-            question,
+            config: FileQuestionConfig {
+                label,
+                description,
+                allow_files,
+                allow_directories,
+                constraints: SelectionConstraints {
+                    minimum: minimum_selections,
+                    maximum: maximum_selections,
+                },
+            },
             provider,
             root: FileNode {
                 name: working_directory.clone(),
@@ -593,33 +649,86 @@ impl FileSession {
                 children: Vec::new(),
             },
             selected: 0,
-            checked,
+            checked: default_value.into_iter().collect(),
             flash: None,
             initial_loading: true,
+            directory_load: None,
         }
     }
 
-    /// Load the root directory on first render. Called from the session loop.
-    pub fn ensure_loaded(&mut self, client: &RpcClient) {
-        if !self.initial_loading {
-            return;
+    /// Start loading the root directory on first use and apply completed loads.
+    /// RPC work stays off the terminal event loop.
+    pub fn ensure_loaded(&mut self, client: &RpcClient) -> bool {
+        let changed = self.poll_load();
+        if !self.initial_loading || self.directory_load.is_some() {
+            return changed;
         }
-        self.initial_loading = false;
+        self.start_load(client, self.root.value.clone(), false);
+        changed
+    }
+
+    fn start_load(&mut self, client: &RpcClient, path: String, expand: bool) {
+        let (tx, rx) = mpsc::channel();
+        let fail_tx = tx.clone();
+        let worker_client = client.clone();
         let provider = self.provider.clone();
-        let allow_files = self.allow_files();
-        if let Err(message) = Self::load_node(client, &provider, allow_files, &mut self.root) {
-            self.flash = Some(message);
+        let worker_path = path.clone();
+        if let Err(error) = thread::Builder::new()
+            .name("tr-question-directory".into())
+            .spawn(move || {
+                let result = rpc::list_directory(&worker_client, &provider, &worker_path, false)
+                    .map_err(|error| format!("Could not load {worker_path}: {error}"));
+                let _ = tx.send(result);
+            })
+        {
+            let _ = fail_tx.send(Err(format!(
+                "Could not start directory load for {path}: {error}"
+            )));
         }
+        self.directory_load = Some(DirectoryLoad { path, expand, rx });
     }
 
-    fn load_node(
-        client: &RpcClient,
-        provider: &str,
-        allow_files: bool,
+    pub fn poll_load(&mut self) -> bool {
+        let result = match self.directory_load.as_ref().map(|load| load.rx.try_recv()) {
+            Some(Ok(result)) => result,
+            Some(Err(TryRecvError::Empty)) | None => return false,
+            Some(Err(TryRecvError::Disconnected)) => {
+                Err("Directory load ended before returning a result.".to_string())
+            }
+        };
+        let load = self.directory_load.take().expect("polled directory load");
+        if load.path == self.root.value {
+            self.initial_loading = false;
+        }
+        match result {
+            Ok(entries) => {
+                let allow_files = self.allow_files();
+                Self::apply_loaded_node(
+                    &mut self.root,
+                    &load.path,
+                    entries,
+                    allow_files,
+                    load.expand,
+                );
+                self.flash = None;
+            }
+            Err(message) => self.flash = Some(message),
+        }
+        true
+    }
+
+    fn apply_loaded_node(
         node: &mut FileNode,
-    ) -> Result<(), String> {
-        let entries = rpc::list_directory(client, provider, &node.value, false)
-            .map_err(|error| format!("Could not load {}: {error}", node.value))?;
+        path: &str,
+        entries: Vec<rpc::methods::DirEntry>,
+        allow_files: bool,
+        expand: bool,
+    ) -> bool {
+        if node.value != path {
+            return node.children.iter_mut().any(|child| {
+                Self::apply_loaded_node(child, path, entries.clone(), allow_files, expand)
+            });
+        }
         let mut children: Vec<FileNode> = entries
             .into_iter()
             .filter(|e| e.is_directory || allow_files)
@@ -640,41 +749,24 @@ impl FileSession {
         children.sort_by_key(|c| !c.is_directory);
         node.children = children;
         node.loaded = true;
-        Ok(())
+        node.is_expanded = expand;
+        true
     }
 
     fn allow_files(&self) -> bool {
-        match &self.question {
-            Question::FileSelect { allow_files, .. } => *allow_files,
-            _ => true,
-        }
+        self.config.allow_files
     }
     fn allow_directories(&self) -> bool {
-        match &self.question {
-            Question::FileSelect {
-                allow_directories, ..
-            } => *allow_directories,
-            _ => false,
-        }
+        self.config.allow_directories
     }
     fn max_selections(&self) -> Option<usize> {
-        match &self.question {
-            Question::FileSelect {
-                maximum_selections, ..
-            } => *maximum_selections,
-            _ => None,
-        }
+        self.config.constraints.maximum
     }
     fn min_selections(&self) -> Option<usize> {
-        match &self.question {
-            Question::FileSelect {
-                minimum_selections, ..
-            } => *minimum_selections,
-            _ => None,
-        }
+        self.config.constraints.minimum
     }
     fn multiple(&self) -> bool {
-        self.max_selections() != Some(1)
+        self.config.constraints.multiple()
     }
     fn is_selectable(&self, node: &FileNode) -> bool {
         (node.is_directory && self.allow_directories())
@@ -682,15 +774,9 @@ impl FileSession {
     }
 
     pub fn render(&self, width: usize, theme: &Theme) -> Vec<(String, Tone)> {
-        let Question::FileSelect {
-            label, description, ..
-        } = &self.question
-        else {
-            return Vec::new();
-        };
         let text_indent = &theme.layout.text_indent;
-        let mut lines = vec![(label.clone(), Tone::Ask)];
-        if let Some(desc) = description {
+        let mut lines = vec![(self.config.label.clone(), Tone::Ask)];
+        if let Some(desc) = &self.config.description {
             for l in wrap_plain_text(desc, width.saturating_sub(3)) {
                 lines.push((format!("{text_indent}{l}"), Tone::Muted));
             }
@@ -902,38 +988,21 @@ impl FileSession {
     }
 
     fn toggle_expand(&mut self, client: &RpcClient, value: &str) {
-        let provider = self.provider.clone();
-        let allow_files = self.allow_files();
-        if let Some(message) =
-            Self::toggle_expand_node(client, &provider, allow_files, &mut self.root, value)
-        {
-            self.flash = Some(message);
+        if self.directory_load.is_some() {
+            self.flash = Some("Another directory is still loading.".to_string());
+            return;
         }
-    }
-    fn toggle_expand_node(
-        client: &RpcClient,
-        provider: &str,
-        allow_files: bool,
-        node: &mut FileNode,
-        value: &str,
-    ) -> Option<String> {
-        if node.value == value && node.is_directory {
-            node.is_expanded = !node.is_expanded;
-            if node.is_expanded && !node.loaded {
-                if let Err(message) = Self::load_node(client, provider, allow_files, node) {
-                    return Some(message);
-                }
-            }
-            return None;
+        let loaded = self
+            .flatten(&self.root)
+            .into_iter()
+            .find(|(_, node)| node.value == value)
+            .is_some_and(|(_, node)| node.loaded);
+        if loaded {
+            self.set_expanded(value, true);
+        } else {
+            self.flash = Some(format!("Loading {value}…"));
+            self.start_load(client, value.to_string(), true);
         }
-        for child in &mut node.children {
-            if let Some(message) =
-                Self::toggle_expand_node(client, provider, allow_files, child, value)
-            {
-                return Some(message);
-            }
-        }
-        None
     }
 }
 
@@ -1007,6 +1076,14 @@ impl FormSession {
         }
     }
 
+    pub fn ensure_loaded(&mut self, client: &RpcClient) -> bool {
+        if let Some(FormSubSession::File(session)) = &mut self.current_sub {
+            session.ensure_loaded(client)
+        } else {
+            false
+        }
+    }
+
     fn current(&self) -> Option<(&FormSection, &(String, Question), usize, usize)> {
         let section = self.sections.get(self.section_index)?;
         let field = section.fields.get(self.field_index)?;
@@ -1076,7 +1153,11 @@ impl FormSession {
             lines.push((flash.clone(), Tone::Error));
         }
         lines.push((
-            "Enter next  Alt+Enter newline  Esc cancel".to_string(),
+            format!(
+                "{} next  {} newline  Esc cancel",
+                kb_submit_label(),
+                kb_newline_label()
+            ),
             Tone::Muted,
         ));
         lines
@@ -1119,21 +1200,25 @@ impl FormSession {
         }
 
         // Text field.
-        match key.code {
-            KeyCode::Esc => Some(QuestionAction::Cancel),
-            KeyCode::Enter => {
-                let editor = &mut self.editors[self.section_index][self.field_index];
-                let val = editor.text().trim_end().to_string();
-                self.values[self.section_index][self.field_index] = json!(val);
-                self.advance()
-            }
-            _ => {
-                let editor = &mut self.editors[self.section_index][self.field_index];
-                apply_editor_keypress(editor, key, kb);
-                self.flash = None;
-                None
-            }
+        if matches!(key.code, KeyCode::Esc) || kb.session_interrupt.matches(key) {
+            return Some(QuestionAction::Cancel);
         }
+        if kb.input_newline.matches(key) {
+            let editor = &mut self.editors[self.section_index][self.field_index];
+            editor.insert_newline();
+            self.flash = None;
+            return None;
+        }
+        if kb.input_submit.matches(key) {
+            let editor = &mut self.editors[self.section_index][self.field_index];
+            let val = editor.text().trim_end().to_string();
+            self.values[self.section_index][self.field_index] = json!(val);
+            return self.advance();
+        }
+        let editor = &mut self.editors[self.section_index][self.field_index];
+        apply_editor_keypress(editor, key, kb);
+        self.flash = None;
+        None
     }
 
     fn advance(&mut self) -> Option<QuestionAction> {
@@ -1203,34 +1288,35 @@ fn confirmation_options(tree: &[TreeLeaf]) -> Vec<(String, String)> {
 }
 
 pub struct ConfirmSession {
-    question: Question,
+    label: String,
+    description: Option<String>,
     options: Vec<(String, String)>,
     selected: ConfirmChoice,
 }
 
 impl ConfirmSession {
     pub fn new(question: Question) -> Self {
-        let options = match &question {
-            Question::TreeSelect { tree, .. } => confirmation_options(tree),
-            _ => Vec::new(),
+        let Question::TreeSelect {
+            label,
+            description,
+            tree,
+            ..
+        } = question
+        else {
+            unreachable!("ConfirmSession requires a tree-select question")
         };
         Self {
-            question,
-            options,
+            label,
+            description,
+            options: confirmation_options(&tree),
             selected: ConfirmChoice::Yes,
         }
     }
 
     pub fn render(&self, width: usize, theme: &Theme) -> Vec<(String, Tone)> {
-        let Question::TreeSelect {
-            label, description, ..
-        } = &self.question
-        else {
-            return Vec::new();
-        };
         let text_indent = &theme.layout.text_indent;
-        let mut lines = vec![(label.clone(), Tone::Ask)];
-        if let Some(desc) = description {
+        let mut lines = vec![(self.label.clone(), Tone::Ask)];
+        if let Some(desc) = &self.description {
             for l in wrap_plain_text(desc, width.saturating_sub(text_indent.len())) {
                 lines.push((format!("{text_indent}{l}"), Tone::Muted));
             }
@@ -1403,5 +1489,38 @@ mod tests {
         assert!(!files_only.is_selectable(&dir));
         assert!(!dirs_only.is_selectable(&file));
         assert!(dirs_only.is_selectable(&dir));
+    }
+
+    #[test]
+    fn completed_directory_load_populates_and_expands_target_node() {
+        let mut session = FileSession::new(
+            file_question(true, false, None, Vec::new()),
+            "posix".to_string(),
+            "/repo".to_string(),
+        );
+        session.root.children.push(FileNode {
+            name: "src".to_string(),
+            value: "/repo/src".to_string(),
+            is_directory: true,
+            depth: 1,
+            is_expanded: false,
+            loaded: false,
+            children: Vec::new(),
+        });
+
+        assert!(FileSession::apply_loaded_node(
+            &mut session.root,
+            "/repo/src",
+            vec![rpc::methods::DirEntry {
+                name: "main.rs".to_string(),
+                is_directory: false,
+            }],
+            true,
+            true,
+        ));
+        let src = &session.root.children[0];
+        assert!(src.loaded);
+        assert!(src.is_expanded);
+        assert_eq!(src.children[0].value, "/repo/src/main.rs");
     }
 }

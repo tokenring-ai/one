@@ -3,6 +3,7 @@
 
 pub mod candy;
 pub mod chat;
+pub mod clipboard;
 pub mod completion;
 pub mod diff;
 pub mod editor;
@@ -12,35 +13,42 @@ pub mod keybinds;
 pub mod markdown;
 pub mod metrics;
 pub mod notify;
+pub mod todos;
 pub mod questions;
 pub mod screens;
 pub mod spinner;
 pub mod text;
 pub mod transcript;
+pub mod tty;
 pub mod ui_layout;
 pub mod workspace_cache;
 pub mod workspace_search;
 
 use crate::config::NotificationConfig;
+use crate::instance::CapturedOutput;
+use crate::tui::keybinds::Keybinds;
 
 use anyhow::{Context, Result};
 use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+    KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
 };
 use crossterm::{
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{
+        disable_raw_mode, enable_raw_mode, supports_keyboard_enhancement, EnterAlternateScreen,
+        LeaveAlternateScreen,
+    },
 };
 use ratatui::{backend::CrosstermBackend, Terminal};
-use std::env;
 use std::io;
 use std::path::Path;
-use std::sync::mpsc::Receiver;
 
-use crate::rpc::{self, RpcClient, StreamItem};
+use crate::rpc::{self, RpcClient};
 use crate::theme::Theme;
 use crate::tui::chat::ChatSession;
 use crate::tui::metrics::MetricsHandle;
+use crate::tui::todos::TodosHandle;
 use crate::tui::screens::{
     run_loading_screen, run_local_instance_screen, run_selection_screen, show_error_screen,
     ErrorScreenAction, SelectionOutcome,
@@ -60,33 +68,44 @@ pub struct RunOptions {
     pub agent_type: String,
     pub select: bool,
     pub theme: Theme,
+    pub theme_name: String,
     pub verbose: bool,
     pub prompt: Option<String>,
     pub prompt_automation: bool,
     pub shutdown_when_done: bool,
     pub notifications: NotificationConfig,
+    pub keybinds: Keybinds,
+    /// Output buffer for a backend launched by this CLI (`None` for remote URLs).
+    pub captured_output: Option<CapturedOutput>,
 }
 
 /// How a chat session ended.
 pub enum ChatExit {
-    /// User requested a full exit (Ctrl+D, leader+q, or double Ctrl+C).
+    /// User requested a full exit (leader+q or double Ctrl+C).
     Quit,
     /// Agent stopped or the user opened agent selection (Alt+A) — re-prompt.
     SelectAgent,
-    /// Delete the agent then re-prompt (reserved).
-    #[allow(dead_code)]
+    /// Delete the current agent then return to agent selection.
     DeleteAgent(String),
 }
 
 /// RAII guard enabling raw mode + alternate screen.
-struct TerminalGuard;
+///
+/// Also pushes the Kitty/CSI-u keyboard enhancement protocol when the
+/// terminal supports it. Without it, most terminals have no legacy escape
+/// sequence for combos like `ctrl+1`..`ctrl+9`, `ctrl+-`, `ctrl+.`, or
+/// `ctrl+shift+<letter>` — they simply never reach the app as distinct
+/// events, no matter how [`Keybinds`] is configured.
+struct TerminalGuard {
+    keyboard_enhancement: bool,
+}
 
 impl TerminalGuard {
     fn enter() -> Result<Self> {
         use std::io::{stdin, stdout, IsTerminal};
         if !stdout().is_terminal() || !stdin().is_terminal() {
             anyhow::bail!(
-                "tokenring requires an interactive terminal (stdin and stdout must be TTYs). \
+                "tokenring-one-cli requires an interactive terminal (stdin and stdout must be TTYs). \
                  Redirecting output or running under CI without a pseudo-TTY is not supported."
             );
         }
@@ -98,12 +117,27 @@ impl TerminalGuard {
             EnableMouseCapture
         )
         .context("enter alternate screen")?;
-        Ok(Self)
+
+        let keyboard_enhancement = supports_keyboard_enhancement().unwrap_or(false);
+        if keyboard_enhancement {
+            execute!(
+                stdout(),
+                PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+            )
+            .context("push keyboard enhancement flags")?;
+        }
+
+        Ok(Self {
+            keyboard_enhancement,
+        })
     }
 }
 
 impl Drop for TerminalGuard {
     fn drop(&mut self) {
+        if self.keyboard_enhancement {
+            let _ = execute!(io::stdout(), PopKeyboardEnhancementFlags);
+        }
         let _ = disable_raw_mode();
         let _ = execute!(
             io::stdout(),
@@ -128,7 +162,6 @@ pub fn confirm_local_instance(
 
 /// Top-level entry point: resolve an initial agent (or show loading + selection),
 /// run the chat session, and re-prompt for a new agent until the user quits.
-#[allow(dead_code)] // Public embedder API; main uses `run_with_options`.
 pub fn run(
     client: RpcClient,
     agent_id: Option<String>,
@@ -142,29 +175,21 @@ pub fn run(
             agent_type,
             select,
             theme: Theme::material_dark(),
+            theme_name: "material-dark".into(),
             verbose: false,
             prompt: None,
             prompt_automation: false,
             shutdown_when_done: false,
             notifications: NotificationConfig::default(),
+            keybinds: Keybinds::defaults(),
+            captured_output: None,
         },
     )
 }
 
 /// Top-level entry with full startup options (nice-to-haves #1–#3, #17).
 pub fn run_with_options(client: RpcClient, options: RunOptions) -> Result<()> {
-    run_with_theme(
-        client,
-        options.agent_id,
-        options.agent_type,
-        options.select,
-        options.theme,
-        options.verbose,
-        options.prompt,
-        options.prompt_automation,
-        options.shutdown_when_done,
-        options.notifications,
-    )
+    run_app(client, options)
 }
 
 /// Same as [`run`] but with an explicit theme — exposed so callers (tests,
@@ -176,29 +201,59 @@ pub fn run_with_theme(
     agent_type: String,
     select: bool,
     theme: Theme,
+    theme_name: String,
     verbose: bool,
     prompt: Option<String>,
     prompt_automation: bool,
     shutdown_when_done: bool,
     notifications: NotificationConfig,
+    keybinds: Keybinds,
 ) -> Result<()> {
+    run_with_options(
+        client,
+        RunOptions {
+            agent_id,
+            agent_type,
+            select,
+            theme,
+            theme_name,
+            verbose,
+            prompt,
+            prompt_automation,
+            shutdown_when_done,
+            notifications,
+            keybinds,
+            captured_output: None,
+        },
+    )
+}
+
+fn run_app(client: RpcClient, options: RunOptions) -> Result<()> {
     let _guard = TerminalGuard::enter()?;
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend).context("create terminal")?;
 
-    let mut current: Option<AgentHandle> = agent_id.map(|id| AgentHandle {
+    let mut current: Option<AgentHandle> = options.agent_id.as_ref().map(|id| AgentHandle {
         label: format!("agent · {id}"),
-        id,
+        id: id.clone(),
     });
     // `--select` only applies to the first agent pick; returning from chat always
     // shows the selection browser.
-    let mut use_selection = select;
+    let mut use_selection = options.select;
+    // `--prompt` is injected only for the first chat session, not after agent switches.
+    let mut pending_prompt = options.prompt.clone();
 
     loop {
         let agent = match current.take() {
             Some(agent) => agent,
             None => {
-                match resolve_agent(&mut terminal, &client, &agent_type, use_selection, &theme)? {
+                match resolve_agent(
+                    &mut terminal,
+                    &client,
+                    &options.agent_type,
+                    use_selection,
+                    &options.theme,
+                )? {
                     Some(agent) => agent,
                     None => break, // user quit the selection screen or error screen
                 }
@@ -209,12 +264,8 @@ pub fn run_with_theme(
             &mut terminal,
             client.clone(),
             agent,
-            theme.clone(),
-            verbose,
-            prompt.clone(),
-            prompt_automation,
-            shutdown_when_done,
-            notifications.clone(),
+            &options,
+            pending_prompt.take(),
         ) {
             Ok(ChatExit::Quit) => break,
             Ok(ChatExit::SelectAgent) => {
@@ -222,7 +273,20 @@ pub fn run_with_theme(
                 continue;
             }
             Ok(ChatExit::DeleteAgent(id)) => {
-                let _ = rpc::delete_agent(&client, &id, "Agent was shut down from the CLI");
+                if let Err(error) =
+                    rpc::delete_agent(&client, &id, "Agent was shut down from the CLI")
+                {
+                    match show_error_screen(
+                        &mut terminal,
+                        "Failed to delete agent",
+                        &format!("{error:#}"),
+                        &options.theme,
+                        false,
+                    )? {
+                        ErrorScreenAction::Quit => break,
+                        ErrorScreenAction::Dismiss | ErrorScreenAction::Retry => {}
+                    }
+                }
                 use_selection = true;
                 continue;
             }
@@ -230,7 +294,7 @@ pub fn run_with_theme(
                 &mut terminal,
                 "Session error",
                 &format!("{e:#}"),
-                &theme,
+                &options.theme,
                 false,
             )? {
                 ErrorScreenAction::Quit => break,
@@ -343,6 +407,15 @@ where
                 label: format!("{display_name} · {id}"),
                 id: id.clone(),
             }),
+            SelectionOutcome::Resume {
+                checkpoint_id,
+                display_name,
+            } => rpc::launch_agent_from_checkpoint(client, *checkpoint_id).map(|created| {
+                AgentHandle {
+                    label: format!("{display_name} · {}", created.id),
+                    id: created.id,
+                }
+            }),
             SelectionOutcome::Workflow {
                 name, display_name, ..
             } => rpc::spawn_workflow(client, name).map(|created| AgentHandle {
@@ -357,6 +430,7 @@ where
                 let title = match &outcome {
                     SelectionOutcome::Spawn { .. } => "Failed to create agent",
                     SelectionOutcome::Connect { .. } => "Failed to connect",
+                    SelectionOutcome::Resume { .. } => "Failed to resume session",
                     SelectionOutcome::Workflow { .. } => "Failed to start workflow",
                 };
                 match show_error_screen(terminal, title, &format!("{e:#}"), theme, true)? {
@@ -370,28 +444,42 @@ where
 }
 
 /// Run a single chat session for one agent until it exits.
-#[allow(clippy::too_many_arguments)]
 fn run_chat<C: ratatui::backend::Backend>(
     terminal: &mut Terminal<C>,
     client: RpcClient,
     agent: AgentHandle,
-    theme: Theme,
-    verbose: bool,
+    options: &RunOptions,
     prompt: Option<String>,
-    prompt_automation: bool,
-    shutdown_when_done: bool,
-    notifications: NotificationConfig,
 ) -> Result<ChatExit>
 where
     <C as ratatui::backend::Backend>::Error: Send + Sync + 'static,
 {
-    // Hydrate transcript state synchronously, then subscribe from that cursor.
-    let snapshot =
-        rpc::get_agent_events(&client, &agent.id, 0).unwrap_or(rpc::AgentEventsSnapshot {
+    // Double-fetch hydration narrows the race window between history load and
+    // stream subscribe (events that land in the gap are picked up by the second
+    // fetch before the live stream attaches).
+    let snapshot = match rpc::get_agent_events(&client, &agent.id, 0) {
+        Ok(snapshot) => snapshot,
+        Err(error) => {
+            // Still attach; surface the miss so it is not silent.
+            let _ = show_error_screen(
+                terminal,
+                "Failed to load agent history",
+                &format!("{error:#}\n\nContinuing with an empty transcript."),
+                &options.theme,
+                false,
+            )?;
+            rpc::AgentEventsSnapshot {
+                events: Vec::new(),
+                position: 0,
+            }
+        }
+    };
+    let catchup = rpc::get_agent_events(&client, &agent.id, snapshot.position)
+        .unwrap_or(rpc::AgentEventsSnapshot {
             events: Vec::new(),
-            position: 0,
+            position: snapshot.position,
         });
-    let stream: Receiver<StreamItem> = client.spawn_event_stream(&agent.id, snapshot.position);
+    let stream = client.spawn_event_stream(&agent.id, catchup.position);
 
     // Best-effort working directory for the status line.
     let fs_state = rpc::get_filesystem_state(&client, &agent.id).unwrap_or_default();
@@ -405,7 +493,7 @@ where
     } else {
         fs_state.provider
     };
-    let home = env::var("HOME").ok();
+    let home = dirs::home_dir().map(|p| p.to_string_lossy().into_owned());
     let history = rpc::get_command_history(&client, &agent.id).unwrap_or_default();
     let commands = rpc::get_available_commands(&client, &agent.id)
         .unwrap_or_default()
@@ -416,7 +504,9 @@ where
         })
         .collect();
 
+    // Metrics and todos use their own long-lived stream sockets and never block interactive RPCs.
     let metrics = MetricsHandle::spawn(client.clone(), agent.id.clone());
+    let todos = TodosHandle::spawn(client.clone(), agent.id.clone());
 
     let mut session = ChatSession::new(
         client,
@@ -428,14 +518,22 @@ where
         commands,
         stream,
         metrics,
-        theme,
-        verbose,
+        todos,
+        options.theme.clone(),
+        options.verbose,
         prompt,
-        prompt_automation,
-        shutdown_when_done,
-        notifications,
+        options.prompt_automation,
+        options.shutdown_when_done,
+        options.notifications.clone(),
+        options.keybinds.clone(),
+        options.theme_name.clone(),
+        options.captured_output.clone(),
     );
     session.hydrate_from_events(snapshot.events, snapshot.position);
+    // Second snapshot closes the gap before stream attach (no-op when empty).
+    if !catchup.events.is_empty() || catchup.position > snapshot.position {
+        session.hydrate_from_events(catchup.events, catchup.position);
+    }
     session.send_initial_prompt();
 
     chat::run_session(terminal, &mut session)

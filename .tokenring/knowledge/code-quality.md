@@ -423,7 +423,7 @@ export default {
 ### Test Structure
 
 ```typescript
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, mock } from "bun:test";
 import EmailService from "./EmailService";
 
 describe("EmailService", () => {

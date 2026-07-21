@@ -2,12 +2,84 @@
 //! Additional services (chat, filesystem, workflow, …) will be added in later
 //! phases as the corresponding TUI features land.
 
-#![allow(dead_code)] // RPC DTOs retain parsed fields for API parity before use.
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{bail, ensure, Context, Result};
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
 use serde_json::{json, Value};
 
 use super::client::RpcClient;
+
+fn decode_response<T: DeserializeOwned>(value: Value, method: &str) -> Result<T> {
+    serde_json::from_value(value).with_context(|| format!("decode {method} response"))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreatedAgentResponse {
+    id: String,
+    #[serde(default)]
+    display_name: String,
+    #[serde(default)]
+    description: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StatusResponse {
+    #[serde(default)]
+    status: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SendInputResponse {
+    #[serde(default)]
+    status: String,
+    #[serde(default)]
+    request_id: String,
+}
+
+#[derive(Deserialize)]
+struct ToolsResponse {
+    #[serde(default)]
+    tools: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct MessagesResponse {
+    #[serde(default)]
+    messages: Vec<Value>,
+}
+
+#[derive(Deserialize)]
+struct HistoryResponse {
+    #[serde(default)]
+    history: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct CommandsResponse {
+    #[serde(default)]
+    commands: Vec<Value>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WorkspaceSearchResponse {
+    #[serde(default)]
+    files: Vec<String>,
+    total_matches: Option<u64>,
+}
+
+/// Current wall-clock time as Unix epoch milliseconds.
+fn now_epoch_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
 
 /// Result of `/rpc/agent.createAgent`.
 #[derive(Clone, Debug)]
@@ -23,22 +95,11 @@ pub fn create_agent(client: &RpcClient, agent_type: &str, headless: bool) -> Res
         "/rpc/agent.createAgent",
         json!({ "agentType": agent_type, "headless": headless }),
     )?;
+    let response: CreatedAgentResponse = decode_response(result, "createAgent")?;
     Ok(CreatedAgent {
-        id: result
-            .get("id")
-            .and_then(Value::as_str)
-            .context("createAgent response missing id")?
-            .to_string(),
-        display_name: result
-            .get("displayName")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_string(),
-        description: result
-            .get("description")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_string(),
+        id: response.id,
+        display_name: response.display_name,
+        description: response.description,
     })
 }
 
@@ -82,16 +143,16 @@ pub fn send_input(client: &RpcClient, agent_id: &str, message: &str) -> Result<S
         "/rpc/agent.sendInput",
         json!({
             "agentId": agent_id,
-            "input": { "from": "CLI-RS user", "message": message }
+            "input": { "from": "CLI", "message": message }
         }),
     )?;
-    let status = result.get("status").and_then(Value::as_str).unwrap_or("");
-    ensure!(status == "success", "sendInput failed: {status}",);
-    Ok(result
-        .get("requestId")
-        .and_then(Value::as_str)
-        .unwrap_or("")
-        .to_string())
+    let response: SendInputResponse = decode_response(result, "sendInput")?;
+    ensure!(
+        response.status == "success",
+        "sendInput failed: {}",
+        response.status
+    );
+    Ok(response.request_id)
 }
 
 /// Abort the agent's current operation.
@@ -100,9 +161,9 @@ pub fn abort_current_operation(client: &RpcClient, agent_id: &str, message: &str
         "/rpc/agent.abortCurrentOperation",
         json!({ "agentId": agent_id, "message": message }),
     )?;
-    let status = result.get("status").and_then(Value::as_str).unwrap_or("");
-    if status != "success" {
-        bail!("abortCurrentOperation failed: {status}");
+    let response: StatusResponse = decode_response(result, "abortCurrentOperation")?;
+    if response.status != "success" {
+        bail!("abortCurrentOperation failed: {}", response.status);
     }
     Ok(())
 }
@@ -113,11 +174,93 @@ pub fn delete_agent(client: &RpcClient, agent_id: &str, reason: &str) -> Result<
         "/rpc/agent.deleteAgent",
         json!({ "agentId": agent_id, "reason": reason }),
     )?;
-    let status = result.get("status").and_then(Value::as_str).unwrap_or("");
-    if status != "success" {
-        bail!("deleteAgent failed: {status}");
+    let response: StatusResponse = decode_response(result, "deleteAgent")?;
+    if response.status != "success" {
+        bail!("deleteAgent failed: {}", response.status);
     }
     Ok(())
+}
+
+/// A saved agent checkpoint (from `/rpc/checkpoint.listCheckpoints`).
+#[derive(Clone, Debug, Default)]
+pub struct CheckpointEntry {
+    pub id: u64,
+    pub session_id: String,
+    pub name: String,
+    pub agent_id: String,
+    pub agent_type: String,
+    pub created_at: i64,
+}
+
+/// List saved checkpoints without loading their full state payloads.
+pub fn list_checkpoints(client: &RpcClient) -> Result<Vec<CheckpointEntry>> {
+    let result = client.call("/rpc/checkpoint.listCheckpoints", json!({}))?;
+    let array = result
+        .as_array()
+        .context("listCheckpoints result is not an array")?;
+    Ok(array
+        .iter()
+        .map(|v| CheckpointEntry {
+            id: v
+                .get("id")
+                .and_then(|id| id.as_u64().or_else(|| id.as_f64().map(|n| n as u64)))
+                .unwrap_or(0),
+            session_id: v
+                .get("sessionId")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string(),
+            name: v
+                .get("name")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string(),
+            agent_id: v
+                .get("agentId")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string(),
+            agent_type: v
+                .get("agentType")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string(),
+            created_at: parse_epoch_ms(v.get("createdAt")),
+        })
+        .collect())
+}
+
+/// Launch a new interactive agent from a saved checkpoint.
+pub fn launch_agent_from_checkpoint(
+    client: &RpcClient,
+    checkpoint_id: u64,
+) -> Result<CreatedAgent> {
+    let result = client.call(
+        "/rpc/checkpoint.launchAgentFromCheckpoint",
+        json!({ "checkpointId": checkpoint_id, "headless": false }),
+    )?;
+    let status = result.get("status").and_then(Value::as_str).unwrap_or("");
+    if status == "checkpointNotFound" {
+        bail!("checkpoint not found: {checkpoint_id}");
+    }
+    ensure!(
+        status == "success",
+        "launchAgentFromCheckpoint failed: {status}"
+    );
+    Ok(CreatedAgent {
+        id: result
+            .get("agentId")
+            .and_then(Value::as_str)
+            .filter(|id| !id.is_empty())
+            .context("launchAgentFromCheckpoint response missing agentId")?
+            .to_string(),
+        display_name: result
+            .get("agentName")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string(),
+        description: String::new(),
+    })
 }
 
 /// A running agent (from `/rpc/agent.listAgents`).
@@ -172,7 +315,8 @@ pub fn list_agents(client: &RpcClient) -> Result<Vec<RunningAgent>> {
 }
 
 /// A spawnable agent type (from `/rpc/agent.getAgentTypes`).
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
 pub struct AgentTypeEntry {
     pub r#type: String,
     pub display_name: String,
@@ -183,44 +327,12 @@ pub struct AgentTypeEntry {
 
 pub fn get_agent_types(client: &RpcClient) -> Result<Vec<AgentTypeEntry>> {
     let result = client.call("/rpc/agent.getAgentTypes", json!({}))?;
-    let array = result
-        .as_array()
-        .context("getAgentTypes result is not an array")?;
-    Ok(array
-        .iter()
-        .map(|v| AgentTypeEntry {
-            r#type: v
-                .get("type")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_string(),
-            display_name: v
-                .get("displayName")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_string(),
-            description: v
-                .get("description")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_string(),
-            category: v.get("category").and_then(Value::as_str).map(String::from),
-            enabled_tools: v
-                .get("enabledTools")
-                .and_then(Value::as_array)
-                .map(|a| {
-                    a.iter()
-                        .filter_map(Value::as_str)
-                        .map(String::from)
-                        .collect()
-                })
-                .unwrap_or_default(),
-        })
-        .collect())
+    decode_response(result, "getAgentTypes")
 }
 
 /// A workflow entry (from `/rpc/workflow.listWorkflows`).
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
 pub struct WorkflowEntry {
     pub name: String,
     pub category: String,
@@ -232,50 +344,13 @@ pub struct WorkflowEntry {
 
 pub fn list_workflows(client: &RpcClient) -> Result<Vec<WorkflowEntry>> {
     let result = client.call("/rpc/workflow.listWorkflows", json!({}))?;
-    let array = result
-        .as_array()
-        .context("listWorkflows result is not an array")?;
-    Ok(array
-        .iter()
-        .map(|v| WorkflowEntry {
-            name: v
-                .get("name")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_string(),
-            category: v
-                .get("category")
-                .and_then(Value::as_str)
-                .filter(|c| !c.is_empty())
-                .unwrap_or("Other")
-                .to_string(),
-            display_name: v
-                .get("displayName")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_string(),
-            description: v
-                .get("description")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_string(),
-            agent_type: v
-                .get("agentType")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_string(),
-            steps: v
-                .get("steps")
-                .and_then(Value::as_array)
-                .map(|a| {
-                    a.iter()
-                        .filter_map(Value::as_str)
-                        .map(String::from)
-                        .collect()
-                })
-                .unwrap_or_default(),
-        })
-        .collect())
+    let mut workflows: Vec<WorkflowEntry> = decode_response(result, "listWorkflows")?;
+    for workflow in &mut workflows {
+        if workflow.category.is_empty() {
+            workflow.category = "Other".to_string();
+        }
+    }
+    Ok(workflows)
 }
 
 /// Spawn a workflow and return the resulting agent (from
@@ -285,22 +360,12 @@ pub fn spawn_workflow(client: &RpcClient, name: &str) -> Result<CreatedAgent> {
         "/rpc/workflow.spawnWorkflow",
         json!({ "name": name, "headless": false }),
     )?;
+    let response: CreatedAgentResponse = decode_response(result, "spawnWorkflow")?;
+    ensure!(!response.id.is_empty(), "spawnWorkflow response missing id");
     Ok(CreatedAgent {
-        id: result
-            .get("id")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_string(),
-        display_name: result
-            .get("displayName")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_string(),
-        description: result
-            .get("description")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_string(),
+        id: response.id,
+        display_name: response.display_name,
+        description: response.description,
     })
 }
 
@@ -309,7 +374,8 @@ pub fn spawn_workflow(client: &RpcClient, name: &str) -> Result<CreatedAgent> {
 // ---------------------------------------------------------------------------
 
 /// The model's spec (costs, context length, capabilities) from `getModel`.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ModelSpec {
     pub max_context_length: u64,
     pub cost_per_million_input_tokens: f64,
@@ -323,49 +389,43 @@ pub struct ModelInfo {
     pub spec: Option<ModelSpec>,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ModelResponse {
+    #[serde(default)]
+    status: String,
+    model: Option<String>,
+    model_spec: Option<Value>,
+}
+
 /// The agent's current model info, or `agentNotFound`.
 pub fn get_model(client: &RpcClient, agent_id: &str) -> Result<ModelInfo> {
     let result = client.call("/rpc/chat.getModel", json!({ "agentId": agent_id }))?;
-    if result.get("status").and_then(Value::as_str) == Some("agentNotFound") {
+    let response: ModelResponse = decode_response(result, "getModel")?;
+    if response.status == "agentNotFound" {
         bail!("agent not found: {agent_id}");
     }
-    let model = result
-        .get("model")
-        .and_then(Value::as_str)
-        .map(String::from);
-    let spec = result.get("modelSpec").and_then(|s| {
-        Some(ModelSpec {
-            max_context_length: s.get("maxContextLength")?.as_u64()?,
-            cost_per_million_input_tokens: s.get("costPerMillionInputTokens")?.as_f64()?,
-            cost_per_million_output_tokens: s.get("costPerMillionOutputTokens")?.as_f64()?,
-        })
-    });
-    Ok(ModelInfo { model, spec })
+    let spec = response
+        .model_spec
+        .and_then(|value| serde_json::from_value(value).ok());
+    Ok(ModelInfo {
+        model: response.model,
+        spec,
+    })
 }
 
 /// The agent's currently enabled tool names.
 pub fn get_enabled_tools(client: &RpcClient, agent_id: &str) -> Result<Vec<String>> {
     let result = client.call("/rpc/chat.getEnabledTools", json!({ "agentId": agent_id }))?;
-    Ok(result
-        .get("tools")
-        .and_then(Value::as_array)
-        .map(|a| {
-            a.iter()
-                .filter_map(Value::as_str)
-                .map(String::from)
-                .collect()
-        })
-        .unwrap_or_default())
+    let response: ToolsResponse = decode_response(result, "getEnabledTools")?;
+    Ok(response.tools)
 }
 
 /// The raw chat-messages array (shapes are opaque/`z.any()` server-side).
 pub fn get_chat_messages(client: &RpcClient, agent_id: &str) -> Result<Vec<Value>> {
     let result = client.call("/rpc/chat.getChatMessages", json!({ "agentId": agent_id }))?;
-    Ok(result
-        .get("messages")
-        .and_then(Value::as_array)
-        .cloned()
-        .unwrap_or_default())
+    let response: MessagesResponse = decode_response(result, "getChatMessages")?;
+    Ok(response.messages)
 }
 
 // ---------------------------------------------------------------------------
@@ -373,10 +433,20 @@ pub fn get_chat_messages(client: &RpcClient, agent_id: &str) -> Result<Vec<Value
 // ---------------------------------------------------------------------------
 
 /// The agent's filesystem state (provider + working directory).
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FilesystemState {
     pub provider: String,
     pub working_directory: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FilesystemResponse {
+    #[serde(default)]
+    status: String,
+    provider: Option<String>,
+    working_directory: Option<String>,
 }
 
 pub fn get_filesystem_state(client: &RpcClient, agent_id: &str) -> Result<FilesystemState> {
@@ -384,20 +454,15 @@ pub fn get_filesystem_state(client: &RpcClient, agent_id: &str) -> Result<Filesy
         "/rpc/filesystem.getFilesystemState",
         json!({ "agentId": agent_id }),
     )?;
-    if result.get("status").and_then(Value::as_str) == Some("agentNotFound") {
+    let response: FilesystemResponse = decode_response(result, "getFilesystemState")?;
+    if response.status == "agentNotFound" {
         return Ok(FilesystemState::default());
     }
     Ok(FilesystemState {
-        provider: result
-            .get("provider")
-            .and_then(Value::as_str)
-            .unwrap_or("posix")
-            .to_string(),
-        working_directory: result
-            .get("workingDirectory")
-            .and_then(Value::as_str)
-            .unwrap_or(".")
-            .to_string(),
+        provider: response.provider.unwrap_or_else(|| "posix".to_string()),
+        working_directory: response
+            .working_directory
+            .unwrap_or_else(|| ".".to_string()),
     })
 }
 
@@ -411,16 +476,8 @@ pub fn get_command_history(client: &RpcClient, agent_id: &str) -> Result<Vec<Str
         "/rpc/agent.getCommandHistory",
         json!({ "agentId": agent_id }),
     )?;
-    Ok(result
-        .get("history")
-        .and_then(Value::as_array)
-        .map(|a| {
-            a.iter()
-                .filter_map(Value::as_str)
-                .map(String::from)
-                .collect()
-        })
-        .unwrap_or_default())
+    let response: HistoryResponse = decode_response(result, "getCommandHistory")?;
+    Ok(response.history)
 }
 
 /// A slash-command definition (name + description) from `getAvailableCommands`.
@@ -436,12 +493,8 @@ pub fn get_available_commands(client: &RpcClient, agent_id: &str) -> Result<Vec<
         "/rpc/agent.getAvailableCommands",
         json!({ "agentId": agent_id }),
     )?;
-    let array = result
-        .get("commands")
-        .and_then(Value::as_array)
-        .cloned()
-        .unwrap_or_default();
-    Ok(parse_command_defs(&array))
+    let response: CommandsResponse = decode_response(result, "getAvailableCommands")?;
+    Ok(parse_command_defs(&response.commands))
 }
 
 fn parse_command_defs(array: &[Value]) -> Vec<CommandDef> {
@@ -487,20 +540,11 @@ pub fn search_workspace_files(
             "limit": limit,
         }),
     )?;
-    let files: Vec<String> = result
-        .get("files")
-        .and_then(Value::as_array)
-        .map(|a| {
-            a.iter()
-                .filter_map(|v| v.as_str().map(String::from))
-                .collect()
-        })
-        .unwrap_or_default();
-    let total = result
-        .get("totalMatches")
-        .and_then(Value::as_u64)
-        .unwrap_or(files.len() as u64) as usize;
-    Ok((files, total))
+    let response: WorkspaceSearchResponse = decode_response(result, "searchWorkspaceFiles")?;
+    let total = response
+        .total_matches
+        .unwrap_or(response.files.len() as u64) as usize;
+    Ok((response.files, total))
 }
 
 /// A directory entry from `/rpc/filesystem.listDirectory`.
@@ -584,19 +628,16 @@ pub fn send_interaction_response(
             "agentId": agent_id,
             "response": {
                 "type": "input.interaction",
-                "timestamp": 0,
+                "timestamp": now_epoch_ms(),
                 "requestId": request_id,
                 "interactionId": interaction_id,
                 "result": result,
             }
         }),
     )?;
-    let status = result_value
-        .get("status")
-        .and_then(Value::as_str)
-        .unwrap_or("");
-    if status != "success" {
-        bail!("sendInteractionResponse failed: {status}");
+    let response: StatusResponse = decode_response(result_value, "sendInteractionResponse")?;
+    if response.status != "success" {
+        bail!("sendInteractionResponse failed: {}", response.status);
     }
     Ok(())
 }
@@ -635,8 +676,14 @@ mod tests {
 
     #[test]
     fn parse_epoch_ms_accepts_integer_and_float() {
-        assert_eq!(parse_epoch_ms(Some(&json!(1_700_000_000_000u64))), 1_700_000_000_000);
-        assert_eq!(parse_epoch_ms(Some(&json!(1_700_000_000_000.0))), 1_700_000_000_000);
+        assert_eq!(
+            parse_epoch_ms(Some(&json!(1_700_000_000_000u64))),
+            1_700_000_000_000
+        );
+        assert_eq!(
+            parse_epoch_ms(Some(&json!(1_700_000_000_000.0))),
+            1_700_000_000_000
+        );
         assert_eq!(parse_epoch_ms(None), 0);
     }
 
@@ -650,5 +697,55 @@ mod tests {
         let names: Vec<&str> = defs.iter().map(|def| def.name.as_str()).collect();
         assert_eq!(names, vec!["model", "help"]);
         assert_eq!(defs[0].description, "first");
+    }
+
+    #[test]
+    fn typed_agent_type_response_uses_defaults() {
+        let entries: Vec<AgentTypeEntry> = decode_response(
+            json!([{ "type": "coding", "displayName": "Coding" }]),
+            "test",
+        )
+        .unwrap();
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].r#type, "coding");
+        assert_eq!(entries[0].display_name, "Coding");
+        assert!(entries[0].description.is_empty());
+        assert!(entries[0].enabled_tools.is_empty());
+    }
+
+    #[test]
+    fn typed_model_spec_uses_camel_case_fields() {
+        let spec: ModelSpec = decode_response(
+            json!({
+                "maxContextLength": 200_000,
+                "costPerMillionInputTokens": 2.5,
+                "costPerMillionOutputTokens": 10.0
+            }),
+            "test",
+        )
+        .unwrap();
+
+        assert_eq!(spec.max_context_length, 200_000);
+        assert_eq!(spec.cost_per_million_input_tokens, 2.5);
+        assert_eq!(spec.cost_per_million_output_tokens, 10.0);
+    }
+
+    #[test]
+    fn created_agent_response_requires_an_id() {
+        let error = match decode_response::<CreatedAgentResponse>(json!({}), "createAgent") {
+            Ok(_) => panic!("missing id should fail to decode"),
+            Err(error) => error.to_string(),
+        };
+
+        assert!(error.contains("decode createAgent response"));
+    }
+
+    #[test]
+    fn now_epoch_ms_is_recent() {
+        let now = now_epoch_ms();
+        // After 2020-01-01 and not absurdly far in the future.
+        assert!(now > 1_577_836_800_000);
+        assert!(now < 4_102_444_800_000);
     }
 }

@@ -1296,7 +1296,7 @@ className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emera
 - `@tailwindcss/typography@^0.5.19` - Typography plugin
 - `@tailwindcss/forms@^0.5.11` - Forms plugin
 - `typescript@^5.9.3` - Type checking
-- `vitest@^4.0.18` - Testing
+- `bun test` - Testing (built-in)
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "@tokenring-ai/one",
-  "version": "0.2.54",
+  "version": "0.2.55",
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
     "@oxlint-tsgolint/darwin-arm64": "0.24.0",
@@ -21,11 +21,13 @@
     "package:cli": "cargo build --release --locked --manifest-path cli/Cargo.toml",
     "package:one:frontend": "bun run --cwd frontend build",
     "package:one:docker": "bun run --cwd packaging/docker/one build",
+    "schema:rpc": "bun util/export-rpc-schemas.ts",
     "check:biome": "biome check --fix",
     "check:oxlint": "oxlint -f stylish --fix",
     "check:knip": "knip",
     "check:tsc": "tsc",
     "run:one": "FRONTEND_DIRECTORY=frontend/dist bun backend/tokenring.ts --port 14008",
+    "run:cli-remote": "cargo run --manifest-path cli/Cargo.toml -- ws://0.0.0.0:14008",
     "run:cli": "FRONTEND_DIRECTORY=frontend/dist TOKENRING_ONE_BINARY=backend/tokenring.ts cargo run --manifest-path cli/Cargo.toml",
     "frontend:watch-build": "bun run --cwd frontend/ watch:build"
   },

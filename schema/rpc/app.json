@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "App RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/app",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "listPlugins request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/app.listPlugins"
+        },
+        "params": {
+          "$ref": "#/$defs/listPluginsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listPlugins response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listPluginsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getLogs request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/app.getLogs"
+        },
+        "params": {
+          "$ref": "#/$defs/getLogsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getLogs response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getLogsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamLogs request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/app.streamLogs"
+        },
+        "params": {
+          "$ref": "#/$defs/streamLogsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamLogs response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamLogsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamLogs stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "listPluginsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listPluginsResult": {
+      "type": "object",
+      "properties": {
+        "plugins": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "hasConfig": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "displayName",
+              "version",
+              "description",
+              "hasConfig"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "plugins"
+      ],
+      "additionalProperties": false
+    },
+    "getLogsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getLogsResult": {
+      "type": "object",
+      "properties": {
+        "logs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "timestamp": {
+                "type": "number"
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "info",
+                  "error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "timestamp",
+              "level",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "logs"
+      ],
+      "additionalProperties": false
+    },
+    "streamLogsParams": {
+      "type": "object",
+      "properties": {
+        "fromPosition": {
+          "default": 0,
+          "type": "number"
+        }
+      }
+    },
+    "streamLogsResult": {
+      "type": "object",
+      "properties": {
+        "logs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "timestamp": {
+                "type": "number"
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "info",
+                  "error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "timestamp",
+              "level",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "position": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "logs",
+        "position"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "App RPC",
+    "path": "/rpc/app",
+    "source": "plugin/app/rpc/schema.ts",
+    "methods": {
+      "listPlugins": {
+        "type": "query",
+        "params": "#/$defs/listPluginsParams",
+        "result": "#/$defs/listPluginsResult"
+      },
+      "getLogs": {
+        "type": "query",
+        "params": "#/$defs/getLogsParams",
+        "result": "#/$defs/getLogsResult"
+      },
+      "streamLogs": {
+        "type": "stream",
+        "params": "#/$defs/streamLogsParams",
+        "result": "#/$defs/streamLogsResult"
+      }
+    }
+  }
+}

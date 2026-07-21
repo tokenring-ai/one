@@ -1,6 +1,6 @@
 import type { ConfigUINode, ConfigUIPluginSchema } from "@tokenring-ai/app/config/uiSchema";
+import { isPlainObject } from "@tokenring-ai/utility/object/isPlainObject";
 import ConfigNodeRenderer, { type ConfigIssue } from "./ConfigNodeRenderer.tsx";
-import { isPlainObject } from "./values.ts";
 
 interface ConfigFormProps {
   plugin: ConfigUIPluginSchema;

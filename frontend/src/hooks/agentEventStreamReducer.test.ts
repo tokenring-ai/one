@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { describe, expect, it } from "bun:test";
 import { createInitialAgentEventStreamState, reduceAgentEventStreamChunk } from "./agentEventStreamReducer.ts";
 

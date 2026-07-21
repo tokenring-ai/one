@@ -1,4 +1,5 @@
 import type { ConfigUIPluginSchema } from "@tokenring-ai/app/config/uiSchema";
+import deepClone from "@tokenring-ai/utility/object/deepClone";
 import { AlertTriangle, KeyRound, RefreshCw, Search, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -7,7 +8,6 @@ import ErrorState from "../../components/ui/ErrorState.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
 import ConfigForm, { nodeHasSensitiveFields } from "../../features/config/ConfigForm.tsx";
 import type { ConfigIssue } from "../../features/config/ConfigNodeRenderer.tsx";
-import { deepCloneValue, deepEqual } from "../../features/config/values.ts";
 import { configRPCClient, useConfigSchema, useConfigValues } from "../../rpc.ts";
 
 export default function ConfigurationApp() {
@@ -27,7 +27,7 @@ export default function ConfigurationApp() {
   // Seed / reseed the draft whenever fresh server overrides arrive and there are no local edits in flight.
   useEffect(() => {
     if (serverOverrides && draft === null) {
-      setDraft(deepCloneValue(serverOverrides));
+      setDraft(deepClone(serverOverrides));
     }
   }, [serverOverrides, draft]);
 

@@ -2,11 +2,10 @@
 //! scrolling, picker navigation, and routing to the active question/follow-up
 //! sessions. Also hosts the pure quick-reply chord helpers.
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::theme::Tone;
 use crate::tui::editor::apply_editor_keypress;
 use crate::tui::ui_layout::MouseAction;
 use crate::tui::ChatExit;
@@ -38,6 +37,17 @@ impl ChatSession {
             return;
         }
 
+        // Too-small terminal: only allow quit / interrupt so users are not stuck.
+        if self.terminal_too_small {
+            if self.keybinds.app_exit.matches(key)
+                || is_ctrl_c(key)
+                || matches!(key.code, KeyCode::Esc | KeyCode::Char('q'))
+            {
+                self.exit = Some(ChatExit::Quit);
+            }
+            return;
+        }
+
         // Global app shortcuts (fire from any state short of a focused
         // question, which captures all keys below).
         if self.help_open {
@@ -49,13 +59,76 @@ impl ChatSession {
                 self.handle_ctrl_c();
                 return;
             }
-            if matches!(key.code, KeyCode::Char('?') | KeyCode::Esc) {
+            if matches!(key.code, KeyCode::Char('?') | KeyCode::Esc)
+                || self.keybinds.which_key_toggle.matches(key)
+            {
                 self.help_open = false;
             }
             return;
         }
 
-        if matches!(key.code, KeyCode::Char('?')) {
+        if self.status_detail_open {
+            if matches!(key.code, KeyCode::Esc)
+                || self.keybinds.status_view.matches(key)
+                || self.keybinds.session_interrupt.matches(key)
+            {
+                self.status_detail_open = false;
+                self.mark_dirty();
+            }
+            return;
+        }
+
+        if self.instance_output_open {
+            if matches!(key.code, KeyCode::Esc)
+                || self.keybinds.instance_output.matches(key)
+                || self.keybinds.session_interrupt.matches(key)
+            {
+                self.instance_output_open = false;
+                self.mark_dirty();
+            }
+            return;
+        }
+
+        if self.command_list_open {
+            if self.keybinds.app_exit.matches(key) {
+                self.exit = Some(ChatExit::Quit);
+                return;
+            }
+            if self.matches_picker_close(key) || self.keybinds.command_list.matches(key) {
+                self.close_command_list();
+                return;
+            }
+            if self.keybinds.dialog_select_submit.matches(key) {
+                self.insert_command_list_selection();
+                return;
+            }
+            if self.keybinds.dialog_select_prev.matches(key) {
+                self.move_command_list_selection(-1);
+                return;
+            }
+            if self.keybinds.dialog_select_next.matches(key) {
+                self.move_command_list_selection(1);
+                return;
+            }
+            if self.keybinds.dialog_select_page_up.matches(key) {
+                self.move_command_list_selection(-8);
+                return;
+            }
+            if self.keybinds.dialog_select_page_down.matches(key) {
+                self.move_command_list_selection(8);
+                return;
+            }
+            return;
+        }
+
+        // `?` opens help only when no text field would consume it (empty
+        // composer, no question/follow-up/picker typing). Otherwise it falls
+        // through and inserts normally.
+        if matches!(key.code, KeyCode::Char('?')) && self.can_open_help_with_question_mark() {
+            self.help_open = true;
+            return;
+        }
+        if self.keybinds.which_key_toggle.matches(key) {
             self.help_open = true;
             return;
         }
@@ -74,11 +147,20 @@ impl ChatSession {
             return;
         }
         if self.keybinds.model_list.matches(key) {
-            self.trigger_shortcut("/model", "Opening model picker…");
+            self.trigger_shortcut("/model", "Opening model…");
             return;
         }
         if self.keybinds.messages_toggle_conceal.matches(key) {
             self.toggle_verbose();
+            return;
+        }
+        if self.keybinds.command_list.matches(key) {
+            self.open_command_list();
+            return;
+        }
+        if self.keybinds.instance_output.matches(key) {
+            self.instance_output_open = true;
+            self.mark_dirty();
             return;
         }
         // CLI-specific extras.
@@ -87,7 +169,7 @@ impl ChatSession {
             return;
         }
 
-        // Transcript scroll (when the composer is idle).
+        // Transcript scroll (when no modal owns the keyboard).
         if self.can_scroll_transcript() {
             if self.keybinds.messages_page_up.matches(key) {
                 self.scroll_transcript(TRANSCRIPT_PAGE_LINES as i32);
@@ -113,15 +195,18 @@ impl ChatSession {
                 self.scroll_transcript(-1);
                 return;
             }
-            if self.keybinds.messages_first.matches(key) {
-                // Jump toward the top by a generous, finite page so subsequent
-                // PgDn never gets "stuck" past the real scroll ceiling.
-                self.scroll_transcript(TRANSCRIPT_PAGE_LINES as i32 * 8);
-                return;
-            }
-            if self.keybinds.messages_last.matches(key) {
-                self.transcript_scroll_back = 0;
-                return;
+            // Home/End double as line start/end in the composer. Only jump the
+            // transcript when the composer is empty so typing is not stolen.
+            if self.editor.is_empty() {
+                if self.keybinds.messages_first.matches(key) {
+                    // Jump to the absolute top (clamped on next draw).
+                    self.transcript_scroll_back = usize::MAX;
+                    return;
+                }
+                if self.keybinds.messages_last.matches(key) {
+                    self.transcript_scroll_back = 0;
+                    return;
+                }
             }
         }
 
@@ -179,14 +264,6 @@ impl ChatSession {
 
         // A focused followup uses its own composer.
         if self.focused_followup().is_some() {
-            if self.can_show_followup_quick_replies()
-                && (self.quick_reply_pending.is_some() || is_quick_reply_leader(key))
-            {
-                if let Some(idx) = self.handle_quick_reply_key(key) {
-                    self.stage_followup_quick_reply(idx);
-                }
-                return;
-            }
             if self.keybinds.input_newline.matches(key) {
                 self.followup_editor.insert_newline();
                 self.clear_stale_selected_chip();
@@ -196,8 +273,10 @@ impl ChatSession {
                 self.submit_followup();
                 return;
             }
+            // Esc cancels the follow-up interaction (null response), matching
+            // questions and the help overlay — not agent interrupt.
             if self.keybinds.session_interrupt.matches(key) {
-                self.interrupt_session();
+                self.cancel_followup();
                 return;
             }
             if apply_editor_keypress(&mut self.followup_editor, key, &self.keybinds) {
@@ -266,16 +345,6 @@ impl ChatSession {
             // re-syncs the picker via `after_edit`.
         }
 
-        // Quick-reply chips (`Ctrl-R`, then `1`/`2`/...) when the composer is idle.
-        if self.can_show_quick_replies()
-            && (self.quick_reply_pending.is_some() || is_quick_reply_leader(key))
-        {
-            if let Some(idx) = self.handle_quick_reply_key(key) {
-                self.stage_quick_reply(idx);
-            }
-            return;
-        }
-
         // Newline insertion
         if self.keybinds.input_newline.matches(key) {
             self.editor.insert_newline();
@@ -287,17 +356,6 @@ impl ChatSession {
         if apply_editor_keypress(&mut self.editor, key, &self.keybinds) {
             self.after_edit();
             return;
-        }
-
-        // Expand/collapse a collapsed multi-action tool call visible in the viewport.
-        if self.can_scroll_transcript()
-            && self.editor.text().trim().is_empty()
-            && self.keybinds.input_submit.matches(key)
-        {
-            if let Some(idx) = self.viewport_collapsible_tool_index {
-                self.toggle_tool_entry(idx);
-                return;
-            }
         }
 
         // Submit / history / interrupt
@@ -334,8 +392,12 @@ impl ChatSession {
             self.exit = Some(ChatExit::SelectAgent);
             return;
         }
+        if self.keybinds.agent_delete.matches_leader(key) {
+            self.confirm_or_delete_agent();
+            return;
+        }
         if self.keybinds.model_list.matches_leader(key) {
-            self.trigger_shortcut("/model", "Opening model picker…");
+            self.trigger_shortcut("/model", "Opening model…");
             return;
         }
         if self.keybinds.messages_toggle_conceal.matches_leader(key)
@@ -344,25 +406,111 @@ impl ChatSession {
             self.toggle_verbose();
             return;
         }
-        // CLI override: leader+t opens the tools picker
+        // Leader+t is tools; theme is leader+Shift+t.
         if self.keybinds.cli_tools_select.matches_leader(key) {
             self.trigger_shortcut("/tools select", "Opening tools picker…");
             return;
         }
+        if self.keybinds.theme_list.matches_leader(key) {
+            self.cycle_theme();
+            return;
+        }
+        if self.keybinds.messages_copy.matches_leader(key) {
+            self.copy_latest_message();
+            return;
+        }
         if self.keybinds.sidebar_toggle.matches_leader(key) {
-            self.flash(
-                "Sidebar toggle (not configured).",
-                Tone::Muted,
-                Duration::from_secs(2),
-            );
+            self.toggle_sidebar();
             return;
         }
         if self.keybinds.status_view.matches_leader(key) {
-            self.flash(
-                "Status view (not configured).",
-                Tone::Muted,
-                Duration::from_secs(2),
-            );
+            self.toggle_status_detail();
+            return;
+        }
+        if self.keybinds.instance_output.matches_leader(key) {
+            self.instance_output_open = true;
+            self.mark_dirty();
+            return;
+        }
+        if self.keybinds.which_key_toggle.matches_leader(key) {
+            self.help_open = true;
+            return;
+        }
+
+        // Legacy-terminal fallbacks below: everything above this point works
+        // fine as a plain `ctrl+<letter>` chord, but the actions here default
+        // to modifier combos (ctrl+digit, ctrl+shift+<letter>, ctrl+alt+<letter>,
+        // super+*) that many terminals — Apple's Terminal.app among them —
+        // cannot report without the Kitty/CSI-u keyboard-enhancement protocol.
+        // Routing them through the leader chord instead means the *combo*
+        // that reaches the app is always just `ctrl+<letter>` followed by a
+        // plain keypress, which every terminal can send.
+        if self.keybinds.input_undo.matches_leader(key) {
+            if self.focused_followup().is_some() {
+                self.followup_editor.undo();
+            } else if self.editor.undo() {
+                self.after_edit();
+            }
+            return;
+        }
+        if self.keybinds.input_redo.matches_leader(key) {
+            if self.focused_followup().is_some() {
+                self.followup_editor.redo();
+            } else if self.editor.redo() {
+                self.after_edit();
+            }
+            return;
+        }
+        if self.keybinds.input_delete_line.matches_leader(key) {
+            if self.focused_followup().is_some() {
+                self.followup_editor.delete_line();
+                self.clear_stale_selected_chip();
+            } else {
+                self.editor.delete_line();
+                self.after_edit();
+            }
+            return;
+        }
+        if self.keybinds.input_select_all.matches_leader(key) {
+            if self.focused_followup().is_some() {
+                self.followup_editor.move_to_end();
+            } else {
+                self.editor.move_to_end();
+            }
+            return;
+        }
+        if self.can_scroll_transcript() {
+            if self.keybinds.messages_line_up.matches_leader(key) {
+                self.scroll_transcript(1);
+                return;
+            }
+            if self.keybinds.messages_line_down.matches_leader(key) {
+                self.scroll_transcript(-1);
+                return;
+            }
+            if self.keybinds.messages_half_page_up.matches_leader(key) {
+                self.scroll_transcript((TRANSCRIPT_PAGE_LINES / 2) as i32);
+                return;
+            }
+            if self.keybinds.messages_half_page_down.matches_leader(key) {
+                self.scroll_transcript(-((TRANSCRIPT_PAGE_LINES / 2) as i32));
+                return;
+            }
+        }
+        // Quick-reply chips: leader+1 / leader+2 / leader+3. Leader-only (no
+        // direct ctrl+digit binding) since ctrl+<digit> has no legacy escape
+        // code at all — most terminals never report it, enhancement protocol
+        // or not — while the leader chord works everywhere.
+        if self.can_show_quick_replies() {
+            if let Some(idx) = quick_reply_index_for_key(key, self.quick_reply_chips().len()) {
+                self.stage_quick_reply(idx);
+                return;
+            }
+        }
+        if self.can_show_followup_quick_replies() {
+            if let Some(idx) = quick_reply_index_for_key(key, self.quick_reply_chips().len()) {
+                self.stage_followup_quick_reply(idx);
+            }
         }
     }
 
@@ -371,26 +519,15 @@ impl ChatSession {
         self.keybinds.session_interrupt.matches(key) || matches!(key.code, KeyCode::Char('q'))
     }
 
-    fn handle_quick_reply_key(&mut self, key: KeyEvent) -> Option<usize> {
-        if self.quick_reply_pending.take().is_some() {
-            let index = quick_reply_index_for_digit_key(key, self.quick_reply_chips().len());
-            if index.is_none() {
-                self.flash("Quick Reply canceled.", Tone::Muted, Duration::from_secs(2));
-                self.mark_dirty();
-            }
-            return index;
-        }
-
-        if is_quick_reply_leader(key) {
-            self.quick_reply_pending = Some(Instant::now());
-            self.flash(
-                "Quick Reply: press 1, 2, or 3.",
-                Tone::Info,
-                Duration::from_secs(3),
-            );
-            self.mark_dirty();
-        }
-        None
+    /// `?` opens the help overlay only when it would not be typed into a field.
+    fn can_open_help_with_question_mark(&self) -> bool {
+        self.active_question.is_none()
+            && self.focused_followup().is_none()
+            && self.filesearch.is_none()
+            && self.completion.is_none()
+            && !self.optional_picker_open
+            && !self.command_list_open
+            && self.editor.is_empty()
     }
 
     pub(super) fn handle_mouse(&mut self, event: crossterm::event::MouseEvent) {
@@ -427,12 +564,11 @@ fn is_ctrl_c(key: KeyEvent) -> bool {
         && matches!(key.code, KeyCode::Char('c') | KeyCode::Char('C'))
 }
 
-fn is_quick_reply_leader(key: KeyEvent) -> bool {
-    key.modifiers.contains(KeyModifiers::CONTROL)
-        && matches!(key.code, KeyCode::Char('r') | KeyCode::Char('R'))
-}
-
-fn quick_reply_index_for_digit_key(key: KeyEvent, chip_count: usize) -> Option<usize> {
+/// Map a plain digit key (`1`..`9`, no modifier required) to a 0-based
+/// quick-reply chip index. Quick replies are leader-only (`<leader>1`, `<leader>2`,
+/// …) so the digit itself never needs Ctrl — the leader chord already
+/// disambiguated the keypress from ordinary typing.
+fn quick_reply_index_for_key(key: KeyEvent, chip_count: usize) -> Option<usize> {
     let KeyCode::Char(c) = key.code else {
         return None;
     };
@@ -461,28 +597,23 @@ mod tests {
     }
 
     #[test]
-    fn quick_reply_chord_uses_ctrl_r_then_digit() {
-        assert!(is_quick_reply_leader(KeyEvent::new(
-            KeyCode::Char('r'),
-            KeyModifiers::CONTROL
-        )));
-        assert!(!is_quick_reply_leader(KeyEvent::new(
-            KeyCode::Char('r'),
-            KeyModifiers::NONE
-        )));
-
+    fn quick_reply_uses_plain_digit() {
+        // Quick replies are leader-only: the digit itself carries no
+        // modifier, since `<leader>` already disambiguated it from typing.
         assert_eq!(
-            quick_reply_index_for_digit_key(
-                KeyEvent::new(KeyCode::Char('1'), KeyModifiers::NONE),
-                3
-            ),
+            quick_reply_index_for_key(KeyEvent::new(KeyCode::Char('1'), KeyModifiers::NONE), 3),
             Some(0)
         );
         assert_eq!(
-            quick_reply_index_for_digit_key(
-                KeyEvent::new(KeyCode::Char('4'), KeyModifiers::NONE),
-                3
-            ),
+            quick_reply_index_for_key(KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE), 3),
+            Some(2)
+        );
+        assert_eq!(
+            quick_reply_index_for_key(KeyEvent::new(KeyCode::Char('4'), KeyModifiers::NONE), 3),
+            None
+        );
+        assert_eq!(
+            quick_reply_index_for_key(KeyEvent::new(KeyCode::Char('0'), KeyModifiers::NONE), 3),
             None
         );
     }

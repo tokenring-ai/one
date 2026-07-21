@@ -4,7 +4,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 
 use crate::theme::{Theme, Tone};
-use crate::tui::keybinds::Keybinds;
+use crate::tui::keybinds::{KeyCombo, Keybinds};
 
 /// UI mode for context-aware help.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -75,6 +75,20 @@ pub fn help_lines(context: HelpContext, kb: &Keybinds, theme: &Theme) -> Vec<Lin
     push(&mut lines, &kb.app_exit_label(), "Quit application");
     push(&mut lines, "Ctrl+C", "Cancel work; press again to exit");
     push(&mut lines, &kb.agent_list_label(), "Agent selection");
+    let leader = kb.leader_label();
+    push(&mut lines, &format!("{leader} d"), "Delete current agent");
+    push(&mut lines, &format!("{leader} t"), "Tools picker");
+    push(&mut lines, &format!("{leader} m"), "Model picker");
+    push(&mut lines, &format!("{leader} S-t"), "Cycle theme");
+    push(&mut lines, &format!("{leader} y"), "Copy latest message");
+    push(&mut lines, &format!("{leader} b"), "Toggle todos/metrics sidebar");
+    push(&mut lines, &format!("{leader} s"), "Status detail");
+    push(
+        &mut lines,
+        &kb.instance_output_label(),
+        "Local instance output",
+    );
+    push(&mut lines, &kb.command_list.first_label(), "Command list");
 
     match context {
         HelpContext::Composer => {
@@ -85,16 +99,17 @@ pub fn help_lines(context: HelpContext, kb: &Keybinds, theme: &Theme) -> Vec<Lin
                 &kb.messages_toggle_conceal_label(),
                 "Toggle verbose",
             );
-            push(&mut lines, "1/2/3", "Quick-reply chips");
+            push(&mut lines, &format!("{leader} 1/2/3"), "Quick-reply chips");
             push(&mut lines, "@query", "Workspace file search");
             push(&mut lines, "/command", "Slash-command picker");
             push(&mut lines, "Tab", "Extend shared command prefix");
+            push(&mut lines, "Up/Down", "History (empty/single line)");
             push(&mut lines, "PgUp/PgDn", "Scroll transcript");
         }
         HelpContext::Followup => {
             push(&mut lines, &kb.input_submit_label(), "Submit follow-up");
             push(&mut lines, &kb.input_newline_label(), "Newline in reply");
-            push(&mut lines, "1/2/3", "Quick-reply chips");
+            push(&mut lines, &format!("{leader} 1/2/3"), "Quick-reply chips");
             push(&mut lines, "Esc", "Cancel follow-up");
         }
         HelpContext::Question => {
@@ -137,4 +152,50 @@ pub fn help_lines(context: HelpContext, kb: &Keybinds, theme: &Theme) -> Vec<Lin
     }
 
     lines
+}
+
+/// Ordered `(key label, description)` pairs for every leader-gated action
+/// wired up in `ChatSession::dispatch_leader`, for the which-key style
+/// overlay shown while a leader chord is pending. `chip_count` is the number
+/// of quick-reply chips currently on screen (0 hides that entry).
+pub fn leader_hint_entries(kb: &Keybinds, chip_count: usize) -> Vec<(String, &'static str)> {
+    let mut entries = Vec::new();
+    let mut push = |combo: &KeyCombo, desc: &'static str| {
+        if let Some(bind) = combo.leader.first() {
+            entries.push((bind.label(), desc));
+        }
+    };
+
+    push(&kb.app_exit, "Quit");
+    push(&kb.agent_list, "Switch agent");
+    push(&kb.agent_delete, "Delete agent");
+    push(&kb.model_list, "Model picker");
+    push(&kb.messages_toggle_conceal, "Toggle verbose");
+    push(&kb.tips_toggle, "Toggle verbose");
+    push(&kb.cli_tools_select, "Tools picker");
+    push(&kb.theme_list, "Cycle theme");
+    push(&kb.messages_copy, "Copy latest message");
+    push(&kb.sidebar_toggle, "Toggle todos/metrics sidebar");
+    push(&kb.status_view, "Status detail");
+    push(&kb.instance_output, "Instance output");
+    push(&kb.which_key_toggle, "Full help");
+    push(&kb.input_undo, "Undo");
+    push(&kb.input_redo, "Redo");
+    push(&kb.input_delete_line, "Delete line");
+    push(&kb.input_select_all, "Jump to end");
+    push(&kb.messages_line_up, "Scroll up");
+    push(&kb.messages_line_down, "Scroll down");
+    push(&kb.messages_half_page_up, "Half page up");
+    push(&kb.messages_half_page_down, "Half page down");
+
+    if chip_count > 0 {
+        let digits = if chip_count == 1 {
+            "1".to_string()
+        } else {
+            format!("1-{chip_count}")
+        };
+        entries.push((digits, "Quick-reply chip"));
+    }
+
+    entries
 }

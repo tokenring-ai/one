@@ -57,8 +57,8 @@ pub(super) fn draw_with_question(frame: &mut Frame, session: &mut ChatSession, a
     };
 
     // +1 for the "Question" title line prepended at render time.
-    let block_height = (lines.len() as u16 + 1 + spacing.pad_v.saturating_mul(2) + 2)
-        .clamp(3, area.height.saturating_sub(4));
+    let block_height = (lines.len() as u16 + spacing.pad_v.saturating_mul(2) + 2)
+    .clamp(3, area.height.saturating_sub(4));
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -82,34 +82,25 @@ pub(super) fn draw_with_question(frame: &mut Frame, session: &mut ChatSession, a
     frame.render_widget(block, chunks[1]);
     candy::render_ascii_shadow(frame, chunks[1], &theme);
 
-    let mut title_spans = vec![Span::styled(
-        format!("{}Question", theme.layout.header_prefix),
-        Style::default()
-            .fg(theme.panel.heading_color.color())
-            .add_modifier(Modifier::BOLD),
-    )];
+    let mut body: Vec<Line> = lines
+        .into_iter()
+        .map(|(text, tone)| Line::from(Span::styled(text, Style::default().fg(tone.color(&theme)))))
+        .collect();
+
     // Surface the server-side auto-submit deadline as a live countdown.
     if let Some(aq) = session.active_question.as_ref() {
         if let Some(ts) = aq.auto_submit_at {
             if let Some(cd) = candy::auto_submit_countdown(ts) {
-                title_spans.push(Span::raw(" "));
-                title_spans.push(Span::styled(
+                body.push(Line::from(Span::styled(
                     format!("auto-submit in {cd}"),
                     Style::default()
                         .fg(theme.panel.warning_color.color())
                         .add_modifier(Modifier::BOLD),
-                ));
+                )));
             }
         }
     }
-    let title = Line::from(title_spans);
-    let body: Vec<Line> = lines
-        .into_iter()
-        .map(|(text, tone)| Line::from(Span::styled(text, Style::default().fg(tone.color(&theme)))))
-        .collect();
-    let mut all = vec![title];
-    all.extend(body);
-    frame.render_widget(Paragraph::new(all), inner);
+    frame.render_widget(Paragraph::new(body), inner);
 
     // Position the terminal cursor for text/form questions.
     if let Some(aq) = session.active_question.as_ref() {
@@ -126,7 +117,7 @@ pub(super) fn draw_with_optional_picker(frame: &mut Frame, session: &mut ChatSes
     let spacing = ui_spacing(area);
     let count = session.optional_questions().len();
     let height = (count as u16 + 3 + spacing.pad_v.saturating_mul(2))
-        .clamp(4, area.height.saturating_sub(4));
+    .clamp(4, area.height.saturating_sub(4));
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -286,9 +277,9 @@ pub(super) fn draw_with_followup(frame: &mut Frame, session: &mut ChatSession, a
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Min(3),              // transcript
-            Constraint::Length(1),           // hint
-            Constraint::Length(chip_lines),  // quick-reply chips
+            Constraint::Min(3),                  // transcript
+            Constraint::Length(1),               // hint
+            Constraint::Length(chip_lines),      // quick-reply chips
             Constraint::Length(composer_height), // followup composer
         ])
         .spacing(spacing.gap)
@@ -299,7 +290,7 @@ pub(super) fn draw_with_followup(frame: &mut Frame, session: &mut ChatSession, a
     frame.render_widget(
         Paragraph::new(truncate(
             &format!(
-                "Follow-up ready · {} send  {} newline  Esc interrupt",
+                "Follow-up ready · {} send  {} newline  Esc cancel",
                 session
                     .keybinds
                     .input_submit

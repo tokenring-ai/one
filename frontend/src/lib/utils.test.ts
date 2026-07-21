@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { describe, expect, it } from "bun:test";
 import { cn } from "./utils.ts";
 

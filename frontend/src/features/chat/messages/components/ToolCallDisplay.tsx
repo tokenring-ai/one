@@ -8,7 +8,7 @@ export default function ToolCallDisplay({ msg }: { msg: Extract<AgentEventEnvelo
   return (
     <div className="cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
       <button type="button" className="flex items-center gap-1.5 w-full text-left hover:opacity-80 transition-opacity">
-        <span className="text-primary font-medium">{msg.summary}</span>
+        <span className={`text-primary font-medium ${msg.failed ? "text-error" : "text-success"}`}>{msg.message}</span>
         <div className={`mr-auto transition-transform duration-150 ${isExpanded ? "rotate-0" : "-rotate-90"}`}>
           <ChevronDown size={13} className="text-dim" />
         </div>
@@ -22,7 +22,7 @@ export default function ToolCallDisplay({ msg }: { msg: Extract<AgentEventEnvelo
         ))}
         {isExpanded && msg.result && (
           <div className="flex gap-1.5 prose-sm text-muted mt-1">
-            <span className="text-secondary whitespace-pre-wrap wrap-break-word">{msg.result}</span>
+            <span className="whitespace-pre-wrap wrap-break-word">{msg.result}</span>
           </div>
         )}
       </div>

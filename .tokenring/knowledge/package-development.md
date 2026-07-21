@@ -451,8 +451,8 @@ cat > pkg/package-name/package.json << 'EOF'
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest watch",
+        "test": "bun test",
+    "test:watch": "bun test --watch",
     "build": "tsc --noEmit"
   },
   "dependencies": {
@@ -462,7 +462,7 @@ cat > pkg/package-name/package.json << 'EOF'
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "vitest": "^4.1.0",
+        "bun": "latest",
     "typescript": "^5.9.3"
   }
 }
@@ -711,7 +711,7 @@ export * from "./schema.ts";
 
 ```typescript
 // pkg/package-name/test/PackageService.test.ts
-import {describe, it, expect, beforeEach} from "vitest";
+import {describe, it, expect, beforeEach} from "bun:test";
 import {PackageService} from "../PackageService";
 import {createMockAgent} from "@tokenring-ai/testing";
 
@@ -862,7 +862,7 @@ MIT
 ### Test Structure
 
 ```typescript
-import {describe, it, expect, beforeEach, afterEach} from "vitest";
+import {describe, it, expect, beforeEach, afterEach} from "bun:test";
 import {MockAgent} from "@tokenring-ai/testing";
 
 describe("PackageName", () => {

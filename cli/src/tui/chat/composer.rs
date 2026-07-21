@@ -6,7 +6,7 @@
 use std::time::{Duration, Instant};
 
 use crate::rpc;
-use crate::theme::Tone;
+use crate::theme::{PanelStyle, Theme, Tone};
 use crate::tui::completion;
 use crate::tui::filesearch;
 use crate::tui::ChatExit;
@@ -240,15 +240,22 @@ impl ChatSession {
         }
     }
 
-    /// Replace the `/query` span with `/{replacement}` and position the cursor
-    /// after it (port of `applyCompletion`).
+    /// Replace the `/query` span with a single slash-prefixed command token
+    /// and position the cursor after it (port of `applyCompletion`).
     fn apply_completion(&mut self, start: usize, end: usize, replacement: &str) {
         let text = self.editor.text();
         let chars: Vec<char> = text.chars().collect();
-        let prefix: String = chars[..start].iter().collect();
-        let suffix: String = chars[end..].iter().collect();
-        let new_text = format!("{prefix}/{replacement}{suffix}");
-        let cursor = start + 1 + replacement.chars().count();
+        let prefix: String = chars[..start.min(chars.len())].iter().collect();
+        let suffix: String = chars[end.min(chars.len())..].iter().collect();
+        // Callers pass bare command names or already-slash-prefixed tokens;
+        // never double-slash.
+        let token = if replacement.starts_with('/') {
+            replacement.to_string()
+        } else {
+            format!("/{replacement}")
+        };
+        let new_text = format!("{prefix}{token}{suffix}");
+        let cursor = start + token.chars().count();
         self.editor.set_text_with_cursor(&new_text, cursor);
         self.history_index = None;
         self.history_draft.clear();
@@ -354,13 +361,122 @@ impl ChatSession {
     /// How long a second Ctrl+C still counts as "press again to exit".
     pub(super) const CTRL_C_EXIT_WINDOW: Duration = Duration::from_secs(2);
 
+    /// Open the full slash-command list overlay (Ctrl+P / `command_list`).
+    pub(super) fn open_command_list(&mut self) {
+        if self.commands.is_empty() {
+            self.flash(
+                "No commands available.",
+                Tone::Muted,
+                Duration::from_secs(2),
+            );
+            return;
+        }
+        self.command_list_open = true;
+        self.command_list_index = 0;
+        self.completion = None;
+        self.filesearch = None;
+        self.mark_dirty();
+    }
+
+    pub(super) fn close_command_list(&mut self) {
+        self.command_list_open = false;
+        self.mark_dirty();
+    }
+
+    pub(super) fn insert_command_list_selection(&mut self) {
+        if !self.command_list_open || self.commands.is_empty() {
+            return;
+        }
+        let idx = self.command_list_index.min(self.commands.len() - 1);
+        let name = self.commands[idx].name.clone();
+        self.command_list_open = false;
+        self.apply_completion(0, self.editor.cursor(), &format!("{name} "));
+    }
+
+    pub(super) fn move_command_list_selection(&mut self, delta: i32) {
+        if self.commands.is_empty() {
+            return;
+        }
+        let n = self.commands.len() as i32;
+        let next = (self.command_list_index as i32 + delta).rem_euclid(n);
+        self.command_list_index = next as usize;
+        self.mark_dirty();
+    }
+
+    /// Copy the latest transcript entry (or a join of recent entries) to the clipboard.
+    pub(super) fn copy_latest_message(&mut self) {
+        let text = self
+            .transcript
+            .entries()
+            .iter()
+            .rev()
+            .find(|e| !e.body.trim().is_empty())
+            .map(|e| {
+                if e.title.is_empty() {
+                    e.body.clone()
+                } else {
+                    format!("{}\n{}", e.title, e.body)
+                }
+            })
+            .unwrap_or_default();
+        match crate::tui::clipboard::copy_text(&text) {
+            Ok(()) => self.flash(
+                "Copied latest message to clipboard.",
+                Tone::Success,
+                Duration::from_secs(2),
+            ),
+            Err(error) => self.flash(
+                format!("Copy failed: {error}"),
+                Tone::Warning,
+                Duration::from_secs(4),
+            ),
+        }
+    }
+
+    /// Cycle built-in themes (`theme_list`).
+    pub(super) fn cycle_theme(&mut self) {
+        let presets = Theme::preset_names();
+        let current = Theme::canonical_name(&self.theme_name);
+        let idx = presets.iter().position(|n| *n == current).unwrap_or(0);
+        let next = presets[(idx + 1) % presets.len()];
+        self.theme_name = next.to_string();
+        let style = self.theme.layout.panel_style;
+        self.theme = Theme::from_name(next).with_panel_style(match style {
+            PanelStyle::Flat => "flat",
+            PanelStyle::Framed => "framed",
+        });
+        self.flash(
+            format!("Theme: {next}"),
+            Tone::Info,
+            Duration::from_secs(2),
+        );
+    }
+
+    pub(super) fn toggle_sidebar(&mut self) {
+        self.sidebar_open = !self.sidebar_open;
+        let label = if !self.sidebar_open {
+            "Sidebar closed"
+        } else if !self.todos.is_empty() {
+            "Sidebar open · todos"
+        } else {
+            "Sidebar open · metrics"
+        };
+        self.flash(label, Tone::Muted, Duration::from_secs(2));
+        self.mark_dirty();
+    }
+
+    pub(super) fn toggle_status_detail(&mut self) {
+        self.status_detail_open = !self.status_detail_open;
+        self.mark_dirty();
+    }
+
     /// Interrupt the running activity, or surface a muted flash when idle.
     pub(super) fn interrupt_session(&mut self) {
-        if self.running {
+        if self.execution.running {
             match rpc::abort_current_operation(
                 &self.client,
                 &self.agent.id,
-                "Cancelled from cli-rs",
+                "Cancelled from tokenring-one-cli",
             ) {
                 Ok(_) => self.flash(
                     "Cancelled the current activity.",
@@ -391,11 +507,11 @@ impl ChatSession {
         self.ctrl_c_pending = Some(Instant::now());
         self.help_open = false;
 
-        if self.running {
+        if self.execution.running {
             match rpc::abort_current_operation(
                 &self.client,
                 &self.agent.id,
-                "Cancelled from cli-rs",
+                "Cancelled from tokenring-one-cli",
             ) {
                 Ok(_) => self.flash(
                     "Cancelled. Press Ctrl+C again to exit.",
@@ -420,10 +536,48 @@ impl ChatSession {
     /// Toggle verbose/conceal filtering and flash the new state.
     pub(super) fn toggle_verbose(&mut self) {
         self.verbose = !self.verbose;
+        if self.verbose {
+            // Backfill live interaction requests that arrived while quiet.
+            let pending: Vec<_> = self
+                .interactions
+                .iter()
+                .filter(|interaction| {
+                    !self
+                        .logged_interactions
+                        .contains(interaction.interaction_id())
+                })
+                .cloned()
+                .collect();
+            for interaction in pending {
+                self.logged_interactions
+                    .insert(interaction.interaction_id().to_string());
+                self.transcript.log_interaction_request(&interaction);
+            }
+        }
         self.flash(
             format!("Verbose mode {}", if self.verbose { "on" } else { "off" }),
             Tone::Info,
             Duration::from_millis(1500),
+        );
+        self.mark_dirty();
+    }
+
+    /// Confirm delete with a second leader+d within the Ctrl+C window.
+    pub(super) fn confirm_or_delete_agent(&mut self) {
+        const WINDOW: Duration = Duration::from_secs(2);
+        if let Some(at) = self.delete_confirm_pending {
+            if at.elapsed() < WINDOW {
+                self.delete_confirm_pending = None;
+                self.exit = Some(ChatExit::DeleteAgent(self.agent.id.clone()));
+                return;
+            }
+        }
+        self.delete_confirm_pending = Some(Instant::now());
+        let leader = self.keybinds.leader_hint_label();
+        self.flash(
+            format!("Delete this agent? Press {leader} d again to confirm."),
+            Tone::Warning,
+            WINDOW,
         );
     }
 }

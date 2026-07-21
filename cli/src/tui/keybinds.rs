@@ -172,14 +172,13 @@ pub struct Keybinds {
 
     // --- Agent / model ---
     pub agent_list: KeyCombo,
+    /// Delete the current agent and return to selection (`<leader>d`).
+    pub agent_delete: KeyCombo,
     pub agent_cycle: KeyCombo,
     pub agent_cycle_reverse: KeyCombo,
     pub model_list: KeyCombo,
     pub model_favorite_toggle: KeyCombo,
     pub model_provider_list: KeyCombo,
-    pub model_cycle_recent: KeyCombo,
-    pub model_cycle_recent_reverse: KeyCombo,
-    pub variant_cycle: KeyCombo,
 
     // --- Messages / transcript ---
     pub messages_page_up: KeyCombo,
@@ -196,6 +195,8 @@ pub struct Keybinds {
     // --- Views ---
     pub sidebar_toggle: KeyCombo,
     pub status_view: KeyCombo,
+    /// Show output captured from the locally launched TokenRing One process.
+    pub instance_output: KeyCombo,
     pub theme_list: KeyCombo,
     pub tips_toggle: KeyCombo,
     pub which_key_toggle: KeyCombo,
@@ -266,7 +267,8 @@ impl Keybinds {
             leader_timeout: DEFAULT_LEADER_TIMEOUT,
 
             // --- App ---
-            app_exit: p("ctrl+d,<leader>q"),
+            // Quit is leader-q (and double Ctrl+C). Ctrl+D is delete-forward.
+            app_exit: p("<leader>q"),
             app_debug: p("none"),
             app_console: p("none"),
             command_list: p("ctrl+p"),
@@ -276,22 +278,26 @@ impl Keybinds {
 
             // --- Agent / model ---
             agent_list: p("<leader>a"),
-            agent_cycle: p("tab"),
-            agent_cycle_reverse: p("shift+tab"),
-            model_list: p("<leader>m"),
-            model_favorite_toggle: p("ctrl+f"),
-            model_provider_list: p("ctrl+a"),
-            model_cycle_recent: p("f2"),
-            model_cycle_recent_reverse: p("shift+f2"),
-            variant_cycle: p("ctrl+t"),
+            agent_delete: p("<leader>d"),
+            // Tab is completion; agent switching is leader+a.
+            agent_cycle: p("none"),
+            agent_cycle_reverse: p("none"),
+            // F2 also opens `/model` (no separate model cycler).
+            model_list: p("<leader>m,f2"),
+            // Unbound by default: ctrl+f / ctrl+a are editor move-right / line-home.
+            model_favorite_toggle: p("none"),
+            model_provider_list: p("none"),
 
             // --- Messages / transcript ---
             messages_page_up: p("pageup,ctrl+alt+b"),
             messages_page_down: p("pagedown,ctrl+alt+f"),
-            messages_line_up: p("ctrl+alt+y"),
-            messages_line_down: p("ctrl+alt+e"),
-            messages_half_page_up: p("ctrl+alt+u"),
-            messages_half_page_down: p("ctrl+alt+d"),
+            // ctrl+alt+<letter> needs Alt-sends-Meta, off by default in terminals
+            // like Apple Terminal; <leader>+arrow/pageup/pagedown are the
+            // legacy-safe alternates (leader is a single ctrl+letter chord).
+            messages_line_up: p("ctrl+alt+y,<leader>up"),
+            messages_line_down: p("ctrl+alt+e,<leader>down"),
+            messages_half_page_up: p("ctrl+alt+u,<leader>pageup"),
+            messages_half_page_down: p("ctrl+alt+d,<leader>pagedown"),
             messages_first: p("ctrl+g,home"),
             messages_last: p("ctrl+alt+g,end"),
             messages_copy: p("<leader>y"),
@@ -300,9 +306,13 @@ impl Keybinds {
             // --- Views ---
             sidebar_toggle: p("<leader>b"),
             status_view: p("<leader>s"),
-            theme_list: p("<leader>t"),
+            instance_output: p("<leader>o"),
+            // Shift+T for themes; plain `t` is tools.
+            theme_list: p("<leader>shift+t"),
             tips_toggle: p("<leader>h"),
-            which_key_toggle: p("ctrl+alt+k"),
+            // ctrl+alt+k needs Alt-sends-Meta, off by default in terminals like
+            // Apple Terminal; <leader>k is the legacy-safe alternate.
+            which_key_toggle: p("ctrl+alt+k,<leader>k"),
 
             // --- Input editing ---
             input_submit: p("return"),
@@ -318,14 +328,24 @@ impl Keybinds {
             input_line_end: p("ctrl+e"),
             input_delete_to_line_end: p("ctrl+k"),
             input_delete_to_line_start: p("ctrl+u"),
-            input_delete_line: p("ctrl+shift+d"),
+            // ctrl+shift+<letter> is indistinguishable from ctrl+<letter> without
+            // the terminal's keyboard-enhancement protocol (Shift is dropped
+            // once Ctrl produces a C0 control code); <leader>shift+d is the
+            // legacy-safe alternate (leader+d is agent_delete, unshifted).
+            input_delete_line: p("ctrl+shift+d,<leader>shift+d"),
             input_word_forward: p("alt+f,alt+right,ctrl+right"),
             input_word_backward: p("alt+b,alt+left,ctrl+left"),
             input_delete_word_forward: p("alt+d,alt+delete,ctrl+delete"),
             input_delete_word_backward: p("ctrl+w,ctrl+backspace,alt+backspace"),
-            input_undo: p("ctrl+-,super+z"),
-            input_redo: p("ctrl+.,super+shift+z"),
-            input_select_all: p("super+a"),
+            // ctrl+- and ctrl+. have no reliable legacy encoding on every
+            // keyboard layout, and super+* is rarely forwarded by terminal
+            // apps at all (macOS reserves Cmd); <leader>z / <leader>shift+z
+            // are the legacy-safe alternates.
+            input_undo: p("ctrl+-,super+z,<leader>z"),
+            input_redo: p("ctrl+.,super+shift+z,<leader>shift+z"),
+            // super+a is rarely forwarded by terminal apps; <leader>shift+a is
+            // the legacy-safe alternate (leader+a is agent_list, unshifted).
+            input_select_all: p("super+a,<leader>shift+a"),
 
             // --- History ---
             history_previous: p("up"),
@@ -387,8 +407,93 @@ impl Keybinds {
         self.messages_toggle_conceal.first_label()
     }
 
+    pub fn instance_output_label(&self) -> String {
+        self.instance_output
+            .direct
+            .first()
+            .map(KeyBind::label)
+            .or_else(|| {
+                self.instance_output
+                    .leader
+                    .first()
+                    .map(|bind| format!("{} {}", self.leader.label(), bind.label()))
+            })
+            .unwrap_or_else(|| "?".to_string())
+    }
+
     pub fn dialog_select_submit_label(&self) -> String {
         self.dialog_select_submit.first_label()
+    }
+
+    /// Apply optional keybind overrides from config (`[keybinds]` table).
+    ///
+    /// Keys are field names (`command_list`, `app_exit`, …) or `leader`.
+    /// Spec strings use the same syntax as defaults (`ctrl+p`, `<leader>y`).
+    pub fn apply_overrides(&mut self, overrides: &std::collections::HashMap<String, String>) {
+        if let Some(spec) = overrides.get("leader") {
+            if let Some(kb) = KeyBind::parse(spec) {
+                self.leader = kb;
+            }
+        }
+        if let Some(ms) = overrides
+            .get("leader_timeout_ms")
+            .and_then(|s| s.parse::<u64>().ok())
+        {
+            self.leader_timeout = Duration::from_millis(ms.max(100));
+        }
+        let leader = self.leader.clone();
+        let p = |spec: &str| KeyCombo::parse(spec, &leader);
+        for (name, spec) in overrides {
+            match name.as_str() {
+                "leader" | "leader_timeout_ms" => {}
+                "app_exit" => self.app_exit = p(spec),
+                "app_debug" => self.app_debug = p(spec),
+                "app_console" => self.app_console = p(spec),
+                "command_list" => self.command_list = p(spec),
+                "session_interrupt" => self.session_interrupt = p(spec),
+                "agent_list" => self.agent_list = p(spec),
+                "agent_delete" => self.agent_delete = p(spec),
+                "agent_cycle" => self.agent_cycle = p(spec),
+                "agent_cycle_reverse" => self.agent_cycle_reverse = p(spec),
+                "model_list" => self.model_list = p(spec),
+                "model_favorite_toggle" => self.model_favorite_toggle = p(spec),
+                "model_provider_list" => self.model_provider_list = p(spec),
+                // Removed cycler binds — ignore leftover config keys.
+                "model_cycle_recent" | "model_cycle_recent_reverse" | "variant_cycle" => {}
+                "messages_page_up" => self.messages_page_up = p(spec),
+                "messages_page_down" => self.messages_page_down = p(spec),
+                "messages_line_up" => self.messages_line_up = p(spec),
+                "messages_line_down" => self.messages_line_down = p(spec),
+                "messages_half_page_up" => self.messages_half_page_up = p(spec),
+                "messages_half_page_down" => self.messages_half_page_down = p(spec),
+                "messages_first" => self.messages_first = p(spec),
+                "messages_last" => self.messages_last = p(spec),
+                "messages_copy" => self.messages_copy = p(spec),
+                "messages_toggle_conceal" => self.messages_toggle_conceal = p(spec),
+                "sidebar_toggle" => self.sidebar_toggle = p(spec),
+                "status_view" => self.status_view = p(spec),
+                "instance_output" => self.instance_output = p(spec),
+                "theme_list" => self.theme_list = p(spec),
+                "tips_toggle" => self.tips_toggle = p(spec),
+                "which_key_toggle" => self.which_key_toggle = p(spec),
+                "input_submit" => self.input_submit = p(spec),
+                "input_newline" => self.input_newline = p(spec),
+                "input_clear" => self.input_clear = p(spec),
+                "input_backspace" => self.input_backspace = p(spec),
+                "input_delete" => self.input_delete = p(spec),
+                "input_move_left" => self.input_move_left = p(spec),
+                "input_move_right" => self.input_move_right = p(spec),
+                "input_move_up" => self.input_move_up = p(spec),
+                "input_move_down" => self.input_move_down = p(spec),
+                "input_line_home" => self.input_line_home = p(spec),
+                "input_line_end" => self.input_line_end = p(spec),
+                "history_previous" => self.history_previous = p(spec),
+                "history_next" => self.history_next = p(spec),
+                "cli_optional_picker" => self.cli_optional_picker = p(spec),
+                "cli_tools_select" => self.cli_tools_select = p(spec),
+                _ => {}
+            }
+        }
     }
 
     /// Whether any action registers a leader-gated binding (i.e. pressing the
@@ -406,14 +511,12 @@ impl Keybinds {
             command_list,
             session_interrupt,
             agent_list,
+            agent_delete,
             agent_cycle,
             agent_cycle_reverse,
             model_list,
             model_favorite_toggle,
             model_provider_list,
-            model_cycle_recent,
-            model_cycle_recent_reverse,
-            variant_cycle,
             messages_page_up,
             messages_page_down,
             messages_line_up,
@@ -426,6 +529,7 @@ impl Keybinds {
             messages_toggle_conceal,
             sidebar_toggle,
             status_view,
+            instance_output,
             theme_list,
             tips_toggle,
             which_key_toggle,
@@ -634,6 +738,74 @@ mod tests {
         assert!(kb
             .agent_list
             .matches_leader(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE)));
+        assert!(kb
+            .agent_delete
+            .matches_leader(KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE)));
+        assert!(kb
+            .instance_output
+            .matches_leader(KeyEvent::new(KeyCode::Char('o'), KeyModifiers::NONE)));
+        assert!(kb
+            .cli_tools_select
+            .matches_leader(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE)));
+        // Theme is leader+Shift+t (not plain t).
+        assert!(kb.theme_list.matches_leader(KeyEvent::new(
+            KeyCode::Char('t'),
+            KeyModifiers::SHIFT
+        )));
+        assert!(kb.agent_cycle.direct.is_empty());
+    }
+
+    /// Actions that default to modifier combos with no reliable legacy escape
+    /// sequence (ctrl+digit, ctrl+shift+letter, ctrl+alt+letter, super+*) must
+    /// also have a `<leader>` alternate, since leader chords only ever need a
+    /// plain `ctrl+letter` followed by a plain keypress — the one combo every
+    /// terminal (including Apple's Terminal.app) can send without the
+    /// Kitty/CSI-u keyboard-enhancement protocol.
+    #[test]
+    fn legacy_fallback_leader_bindings_present() {
+        let kb = Keybinds::defaults();
+        assert!(kb
+            .input_undo
+            .matches_leader(KeyEvent::new(KeyCode::Char('z'), KeyModifiers::NONE)));
+        assert!(kb
+            .input_redo
+            .matches_leader(KeyEvent::new(KeyCode::Char('Z'), KeyModifiers::SHIFT)));
+        assert!(kb
+            .input_delete_line
+            .matches_leader(KeyEvent::new(KeyCode::Char('D'), KeyModifiers::SHIFT)));
+        assert!(kb
+            .input_select_all
+            .matches_leader(KeyEvent::new(KeyCode::Char('A'), KeyModifiers::SHIFT)));
+        assert!(kb
+            .which_key_toggle
+            .matches_leader(KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)));
+        assert!(kb
+            .messages_line_up
+            .matches_leader(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)));
+        assert!(kb
+            .messages_line_down
+            .matches_leader(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)));
+        assert!(kb
+            .messages_half_page_up
+            .matches_leader(KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE)));
+        assert!(kb
+            .messages_half_page_down
+            .matches_leader(KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE)));
+    }
+
+    #[test]
+    fn apply_overrides_rewrites_command_list() {
+        let mut kb = Keybinds::defaults();
+        let mut map = std::collections::HashMap::new();
+        map.insert("command_list".into(), "ctrl+shift+p".into());
+        kb.apply_overrides(&map);
+        assert!(kb.command_list.matches(KeyEvent::new(
+            KeyCode::Char('p'),
+            KeyModifiers::CONTROL | KeyModifiers::SHIFT
+        )));
+        assert!(!kb
+            .command_list
+            .matches(KeyEvent::new(KeyCode::Char('p'), KeyModifiers::CONTROL)));
     }
 
     #[test]

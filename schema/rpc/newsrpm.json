@@ -1,0 +1,1026 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NewsRPM RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/newsrpm",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "searchIndexedData request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsrpm.searchIndexedData"
+        },
+        "params": {
+          "$ref": "#/$defs/searchIndexedDataParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchIndexedData response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/searchIndexedDataResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchArticles request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsrpm.searchArticles"
+        },
+        "params": {
+          "$ref": "#/$defs/searchArticlesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchArticles response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/searchArticlesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getArticleBySlug request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsrpm.getArticleBySlug"
+        },
+        "params": {
+          "$ref": "#/$defs/getArticleBySlugParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getArticleBySlug response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getArticleBySlugResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getBody request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsrpm.getBody"
+        },
+        "params": {
+          "$ref": "#/$defs/getBodyParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getBody response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getBodyResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "renderBody request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsrpm.renderBody"
+        },
+        "params": {
+          "$ref": "#/$defs/renderBodyParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "renderBody response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/renderBodyResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "searchIndexedDataParams": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "count": {
+          "type": "number"
+        },
+        "offset": {
+          "type": "number"
+        },
+        "minDate": {
+          "description": "Unix timestamp in milliseconds",
+          "type": "number"
+        },
+        "maxDate": {
+          "description": "Unix timestamp in milliseconds",
+          "type": "number"
+        },
+        "order": {
+          "type": "string",
+          "enum": [
+            "date",
+            "dateWithQuality"
+          ]
+        }
+      },
+      "required": [
+        "key",
+        "value"
+      ]
+    },
+    "searchIndexedDataResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "providerCode": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "publisher": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "expires": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "updatedAt": {
+                "type": "string"
+              },
+              "headline": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "firstParagraph": {
+                "type": "string"
+              },
+              "link": {
+                "type": "string"
+              },
+              "bodyId": {
+                "type": "string"
+              },
+              "metaData": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              "normalizedData": {
+                "default": {},
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              "language": {
+                "default": "en",
+                "type": "string"
+              },
+              "visiblity": {
+                "default": "published",
+                "type": "string",
+                "enum": [
+                  "published",
+                  "retracted",
+                  "filtered"
+                ]
+              },
+              "quality": {
+                "default": 0,
+                "type": "number"
+              },
+              "type": {
+                "type": "string"
+              },
+              "sponsored": {
+                "default": false,
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "indexedData": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "slug",
+              "provider",
+              "date",
+              "headline",
+              "normalizedData",
+              "language",
+              "visiblity",
+              "quality",
+              "type",
+              "sponsored",
+              "indexedData"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "success",
+        "rows"
+      ],
+      "additionalProperties": false
+    },
+    "searchArticlesParams": {
+      "type": "object",
+      "properties": {
+        "publisher": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "providerCode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "fullText": {
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "sponsored": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "count": {
+          "default": 25,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "default": 0,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "minDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "maxDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "language": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "searchArticlesResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "providerCode": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "publisher": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "expires": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "updatedAt": {
+                "type": "string"
+              },
+              "headline": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "firstParagraph": {
+                "type": "string"
+              },
+              "link": {
+                "type": "string"
+              },
+              "bodyId": {
+                "type": "string"
+              },
+              "metaData": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              "normalizedData": {
+                "default": {},
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              "language": {
+                "default": "en",
+                "type": "string"
+              },
+              "visiblity": {
+                "default": "published",
+                "type": "string",
+                "enum": [
+                  "published",
+                  "retracted",
+                  "filtered"
+                ]
+              },
+              "quality": {
+                "default": 0,
+                "type": "number"
+              },
+              "type": {
+                "type": "string"
+              },
+              "sponsored": {
+                "default": false,
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "indexedData": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "slug",
+              "provider",
+              "date",
+              "headline",
+              "normalizedData",
+              "language",
+              "visiblity",
+              "quality",
+              "type",
+              "sponsored",
+              "indexedData"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "success",
+        "rows"
+      ],
+      "additionalProperties": false
+    },
+    "getArticleBySlugParams": {
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "slug"
+      ]
+    },
+    "getArticleBySlugResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "doc": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "number"
+            },
+            "slug": {
+              "type": "string"
+            },
+            "providerCode": {
+              "type": "string"
+            },
+            "provider": {
+              "type": "string"
+            },
+            "publisher": {
+              "type": "string"
+            },
+            "date": {
+              "type": "string"
+            },
+            "expires": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "headline": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "firstParagraph": {
+              "type": "string"
+            },
+            "link": {
+              "type": "string"
+            },
+            "bodyId": {
+              "type": "string"
+            },
+            "metaData": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            },
+            "normalizedData": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            },
+            "language": {
+              "default": "en",
+              "type": "string"
+            },
+            "visiblity": {
+              "default": "published",
+              "type": "string",
+              "enum": [
+                "published",
+                "retracted",
+                "filtered"
+              ]
+            },
+            "quality": {
+              "default": 0,
+              "type": "number"
+            },
+            "type": {
+              "type": "string"
+            },
+            "sponsored": {
+              "default": false,
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "indexedData": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "key",
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "slug",
+            "provider",
+            "date",
+            "headline",
+            "normalizedData",
+            "language",
+            "visiblity",
+            "quality",
+            "type",
+            "sponsored",
+            "indexedData"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "success",
+        "doc"
+      ],
+      "additionalProperties": false
+    },
+    "getBodyParams": {
+      "type": "object",
+      "properties": {
+        "bodyId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "bodyId"
+      ]
+    },
+    "getBodyResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number"
+            },
+            "chunks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "format": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "format",
+                  "content"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "v",
+            "chunks"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    "renderBodyParams": {
+      "type": "object",
+      "properties": {
+        "bodyId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "bodyId"
+      ]
+    },
+    "renderBodyResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "number"
+            },
+            "chunks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "format": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "format",
+                  "content"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "v",
+            "chunks"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "NewsRPM RPC",
+    "path": "/rpc/newsrpm",
+    "source": "plugin/newsrpm/rpc/schema.ts",
+    "methods": {
+      "searchIndexedData": {
+        "type": "query",
+        "params": "#/$defs/searchIndexedDataParams",
+        "result": "#/$defs/searchIndexedDataResult"
+      },
+      "searchArticles": {
+        "type": "query",
+        "params": "#/$defs/searchArticlesParams",
+        "result": "#/$defs/searchArticlesResult"
+      },
+      "getArticleBySlug": {
+        "type": "query",
+        "params": "#/$defs/getArticleBySlugParams",
+        "result": "#/$defs/getArticleBySlugResult"
+      },
+      "getBody": {
+        "type": "query",
+        "params": "#/$defs/getBodyParams",
+        "result": "#/$defs/getBodyResult"
+      },
+      "renderBody": {
+        "type": "query",
+        "params": "#/$defs/renderBodyParams",
+        "result": "#/$defs/renderBodyResult"
+      }
+    }
+  }
+}

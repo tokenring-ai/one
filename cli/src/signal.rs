@@ -74,6 +74,16 @@ pub fn take_pending() -> Pending {
     }
 }
 
+/// Clear a pending SIGINT without acting on it.
+///
+/// Used when Ctrl+C is already handled as a terminal key event so the same
+/// keystroke is not treated as a second interrupt via the signal flag.
+pub fn clear_interrupt() {
+    if let Some(flag) = INTERRUPT.get() {
+        flag.store(false, Ordering::SeqCst);
+    }
+}
+
 /// True when any signal asks the current screen/loop to stop.
 ///
 /// Screens treat interrupt and terminate the same (leave immediately).

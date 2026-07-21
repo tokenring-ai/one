@@ -1,18 +1,21 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Video as VideoIcon } from "lucide-react";
 import { useMemo, useState } from "react";
+import type { KeyboardEvent} from "react";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { useVideoGenerationModels, videoGenerationRPCClient } from "../../../../rpc.ts";
-import AspectRatioField from "./AspectRatioField.tsx";
 import GenerateButton from "./GenerateButton.tsx";
 import GeneratePanelShell from "./GeneratePanelShell.tsx";
+import ImageShapeField, { type ImageShape } from "./ImageShapeField.tsx";
 import ModelSelectField from "./ModelSelectField.tsx";
 import PromptField from "./PromptField.tsx";
+import VideoQualityField, { type VideoQuality } from "./VideoQualityField.tsx";
 
 export default function VideoGeneratePanel({ agentId, onGenerated }: { agentId: string | null; onGenerated: () => void }) {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState<string>("");
-  const [aspectRatio, setAspectRatio] = useState<"square" | "tall" | "wide">("wide");
+  const [shape, setShape] = useState<ImageShape>("landscape");
+  const [quality, setQuality] = useState<VideoQuality>("standard");
   const [duration, setDuration] = useState<number>(5);
   const [generating, setGenerating] = useState(false);
   const { data: modelsData } = useVideoGenerationModels();
@@ -39,15 +42,21 @@ export default function VideoGeneratePanel({ agentId, onGenerated }: { agentId: 
     try {
       await videoGenerationRPCClient.generateVideo({
         agentId,
-        prompt: prompt.trim(),
         ...(selectedModel && { model: selectedModel }),
-        aspectRatio,
-        ...(duration > 0 && { duration }),
-        keywords: prompt
-          .trim()
-          .split(/[,\s]+/)
-          .filter(Boolean)
-          .slice(0, 10),
+        request: {
+          prompt: prompt.trim(),
+          sizing: {
+            method: "guided",
+            quality,
+            shape,
+          },
+          ...(duration > 0 && { duration }),
+          keywords: prompt
+            .trim()
+            .split(/[,\s]+/)
+            .filter(Boolean)
+            .slice(0, 10),
+        },
       });
       toastManager.success("Video generated!", { duration: 3000 });
       setPrompt("");
@@ -59,7 +68,7 @@ export default function VideoGeneratePanel({ agentId, onGenerated }: { agentId: 
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void handleGenerate();
   };
 
@@ -71,7 +80,8 @@ export default function VideoGeneratePanel({ agentId, onGenerated }: { agentId: 
       gradient="from-purple-500 to-accent-hover"
     >
       <PromptField value={prompt} onChange={setPrompt} onKeyDown={handleKeyDown} placeholder="A drone shot flying over a misty forest at dawn..." />
-      <AspectRatioField value={aspectRatio} onChange={setAspectRatio} />
+      <ImageShapeField value={shape} onChange={setShape} />
+      <VideoQualityField value={quality} onChange={setQuality} />
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-secondary">Duration (seconds)</label>
         <input

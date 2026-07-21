@@ -3,17 +3,21 @@
 //! and status line computation, transcript scroll, quick-reply staging).
 
 use std::collections::HashSet;
-use std::sync::mpsc::Receiver;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
-use crossterm::event::{self, Event};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 
-use ratatui::{style::Style, text::{Line, Span}, Terminal};
+use ratatui::{
+    style::Style,
+    text::{Line, Span},
+    Terminal,
+};
 
 use crate::config::NotificationConfig;
+use crate::instance::CapturedOutput;
 use crate::models::{AgentEvent, Interaction};
-use crate::rpc::{self, RpcClient, StreamItem};
+use crate::rpc::{self, EventStream, RpcClient};
 use crate::theme::{StatusStyle, Theme, Tone};
 use crate::tui::candy::{self, StreamHealth};
 use crate::tui::completion;
@@ -24,9 +28,10 @@ use crate::tui::metrics::MetricsHandle;
 use crate::tui::notify;
 use crate::tui::spinner::spinner_frame;
 use crate::tui::text::{format_compact_number, format_currency, shorten_path, visible_len};
+use crate::tui::todos::TodosHandle;
 use crate::tui::transcript::{EntryKind, Transcript};
-use crate::tui::workspace_search::WorkspaceSearch;
 use crate::tui::ui_layout::UiHitRegions;
+use crate::tui::workspace_search::WorkspaceSearch;
 use crate::tui::{AgentHandle, ChatExit};
 
 use super::interactions::ActiveQuestion;
@@ -47,15 +52,74 @@ pub(super) struct Flash {
     expires_at: Instant,
 }
 
+/// Execution lifecycle reconstructed from agent status and input events.
+///
+/// Keeping these related flags together makes the `running` invariant explicit
+/// and gives idle-edge notification logic a single owner.
+pub(super) struct ExecutionState {
+    pub(super) activity: String,
+    pub(super) running: bool,
+    pub(super) execution_busy: bool,
+    pub(super) queue_busy: bool,
+    pub(super) was_running: bool,
+}
+
+impl Default for ExecutionState {
+    fn default() -> Self {
+        Self {
+            activity: "Ready".to_string(),
+            running: false,
+            execution_busy: false,
+            queue_busy: false,
+            was_running: false,
+        }
+    }
+}
+
+impl ExecutionState {
+    pub(super) fn recompute_running(&mut self) {
+        self.running = self.queue_busy || self.execution_busy;
+    }
+
+    pub(super) fn stop(&mut self) {
+        self.queue_busy = false;
+        self.execution_busy = false;
+        self.running = false;
+    }
+}
+
+/// Live event-stream connection, cursor, and reconnect state.
+pub(super) struct StreamState {
+    pub(super) handle: EventStream,
+    pub(super) position: usize,
+    pub(super) connecting: bool,
+    pub(super) reconnect_at: Option<Instant>,
+    pub(super) reconnect_delay: Duration,
+    pub(super) error: bool,
+}
+
+impl StreamState {
+    fn new(handle: EventStream) -> Self {
+        Self {
+            handle,
+            position: 0,
+            connecting: false,
+            reconnect_at: None,
+            reconnect_delay: super::events::STREAM_RECONNECT_INITIAL,
+            error: false,
+        }
+    }
+}
+
 pub struct ChatSession {
     pub(super) client: RpcClient,
     pub(super) agent: AgentHandle,
     pub(super) transcript: Transcript,
     pub(super) metrics: MetricsHandle,
+    pub(super) todos: TodosHandle,
     pub(super) working_directory: String,
     pub(super) home: Option<String>,
-    pub(super) current_activity: String,
-    pub(super) running: bool,
+    pub(super) execution: ExecutionState,
     pub(super) verbose: bool,
     pub(super) flash: Option<Flash>,
     pub(super) spinner_tick: usize,
@@ -80,11 +144,9 @@ pub struct ChatSession {
     pub(super) optional_index: usize,
     pub(super) followup_editor: InputEditor,
     pub(super) exit: Option<ChatExit>,
-    pub(super) stream_rx: Receiver<StreamItem>,
-    pub(super) stream_position: usize,
-    pub(super) stream_connecting: bool,
-    pub(super) stream_reconnect_at: Option<Instant>,
-    pub(super) stream_reconnect_delay: Duration,
+    pub(super) stream: StreamState,
+    /// Leader+d pressed once; second press within the window confirms delete.
+    pub(super) delete_confirm_pending: Option<Instant>,
     /// Lines scrolled back from the transcript tail (`0` = follow latest).
     pub(super) transcript_scroll_back: usize,
     pub(super) theme: Theme,
@@ -93,18 +155,26 @@ pub struct ChatSession {
     /// When `Some`, the leader key was pressed and we await the chord's second
     /// key (stored with the press time for timeout enforcement).
     pub(super) leader_pending: Option<Instant>,
-    /// Ctrl-R was pressed and we await a quick-reply number key.
-    pub(super) quick_reply_pending: Option<Instant>,
     /// Ctrl+C was pressed recently; a second press within the window exits.
     pub(super) ctrl_c_pending: Option<Instant>,
     /// Quick-reply chip keyboard selection (`1`/`2`/`3`).
     pub(super) selected_chip: Option<usize>,
-    /// Tool-call transcript entries expanded past the collapsed summary.
-    pub(super) expanded_tool_entries: HashSet<usize>,
     /// Whether the one-time narrow-width hint should flash (candy #30).
     pub(super) width_hint_pending: bool,
     /// Shortcut cheat-sheet overlay open (nice-to-have #16).
     pub(super) help_open: bool,
+    /// Full command list overlay (`command_list` / Ctrl+P).
+    pub(super) command_list_open: bool,
+    pub(super) command_list_index: usize,
+    /// Metrics sidebar open (`sidebar_toggle`).
+    pub(super) sidebar_open: bool,
+    /// Expanded status detail overlay (`status_view`).
+    pub(super) status_detail_open: bool,
+    /// Captured stdout/stderr overlay for a locally launched backend.
+    pub(super) instance_output_open: bool,
+    pub(super) captured_output: Option<CapturedOutput>,
+    /// Theme preset name for cycling (`theme_list`).
+    pub(super) theme_name: String,
     /// Send after hydration (nice-to-have #3).
     pub(super) initial_prompt: Option<String>,
     /// Whether this session was started with an automation prompt.
@@ -115,20 +185,20 @@ pub struct ChatSession {
     pub(super) hit_regions: UiHitRegions,
     /// Idle notifications (nice-to-have #17).
     pub(super) notifications: NotificationConfig,
-    /// Previous running flag for idle-edge detection.
-    pub(super) was_running: bool,
-    /// Stream error latch for connection health (nice-to-have #4).
-    pub(super) stream_error: bool,
     /// Interaction IDs already written to the verbose audit trail.
     pub(super) logged_interactions: HashSet<String>,
     /// Skip full-frame redraws when nothing visible changed.
     pub(super) dirty: bool,
     /// Last known terminal size for resize detection.
     pub(super) terminal_size: (u16, u16),
-    /// Bottom-most collapsed multi-action tool call visible in the transcript viewport.
-    pub(super) viewport_collapsible_tool_index: Option<usize>,
     /// Maximum meaningful `transcript_scroll_back` from the last render pass.
     pub(super) transcript_max_scroll_back: usize,
+    /// Line count from the previous transcript render (for scroll pin while streaming).
+    pub(super) prev_transcript_line_count: usize,
+    /// Composer text stashed when a required question steals focus.
+    pub(super) composer_stash: Option<(String, usize)>,
+    /// Last frame reported a terminal too small for the full UI.
+    pub(super) terminal_too_small: bool,
 }
 
 impl ChatSession {
@@ -141,24 +211,28 @@ impl ChatSession {
         home: Option<String>,
         history: Vec<String>,
         commands: Vec<completion::CommandMatch>,
-        stream_rx: Receiver<StreamItem>,
+        stream: EventStream,
         metrics: MetricsHandle,
+        todos: TodosHandle,
         theme: Theme,
         verbose: bool,
         initial_prompt: Option<String>,
         prompt_automation: bool,
         shutdown_when_done: bool,
         notifications: NotificationConfig,
+        keybinds: Keybinds,
+        theme_name: String,
+        captured_output: Option<CapturedOutput>,
     ) -> Self {
         Self {
             client,
             agent,
             transcript: Transcript::new(),
             metrics,
+            todos,
             working_directory,
             home,
-            current_activity: "Ready".to_string(),
-            running: false,
+            execution: ExecutionState::default(),
             verbose,
             flash: None,
             spinner_tick: 0,
@@ -183,33 +257,35 @@ impl ChatSession {
             optional_index: 0,
             followup_editor: InputEditor::new(),
             exit: None,
-            stream_rx,
-            stream_position: 0,
-            stream_connecting: false,
-            stream_reconnect_at: None,
-            stream_reconnect_delay: super::events::STREAM_RECONNECT_INITIAL,
+            stream: StreamState::new(stream),
+            delete_confirm_pending: None,
             transcript_scroll_back: 0,
             theme,
-            keybinds: Keybinds::default(),
+            keybinds,
             leader_pending: None,
-            quick_reply_pending: None,
             ctrl_c_pending: None,
             selected_chip: None,
-            expanded_tool_entries: HashSet::new(),
             width_hint_pending: !candy::width_hint_already_shown(),
             help_open: false,
+            command_list_open: false,
+            command_list_index: 0,
+            sidebar_open: false,
+            status_detail_open: false,
+            instance_output_open: false,
+            captured_output,
+            theme_name,
             initial_prompt,
             prompt_automation,
             shutdown_when_done,
             notifications,
-            was_running: false,
-            stream_error: false,
             logged_interactions: HashSet::new(),
             dirty: true,
             terminal_size: (0, 0),
             hit_regions: UiHitRegions::default(),
-            viewport_collapsible_tool_index: None,
             transcript_max_scroll_back: 0,
+            prev_transcript_line_count: 0,
+            composer_stash: None,
+            terminal_too_small: false,
         }
     }
 
@@ -218,24 +294,30 @@ impl ChatSession {
     }
 
     pub(super) fn needs_redraw(&self) -> bool {
-        self.dirty
-            || self.last_spinner.elapsed() >= SPINNER_INTERVAL
-            || self.running
-            || self
-                .flash
-                .as_ref()
-                .is_some_and(|flash| flash.expires_at > Instant::now())
+        // Spinner ticks mark dirty when the agent is running; avoid full redraws
+        // on every poll while streaming.
+        self.dirty || self.instance_output_open
     }
 
     pub(super) fn handle_resize(&mut self, width: u16, height: u16) {
         let next = (width.max(1), height.max(1));
+        let prev_width = self.terminal_size.0;
         if self.terminal_size == (0, 0) {
             self.terminal_size = next;
+            // Auto-show the sidebar on wide terminals (≥ 80 cols).
+            self.sidebar_open = width >= candy::SPLIT_PANE_WIDTH;
+            self.mark_dirty();
             return;
         }
         if self.terminal_size != next {
             self.terminal_size = next;
             self.transcript_scroll_back = 0;
+            // Cross the 80-col breakpoint → auto open / close the sidebar column.
+            if prev_width < candy::SPLIT_PANE_WIDTH && width >= candy::SPLIT_PANE_WIDTH {
+                self.sidebar_open = true;
+            } else if prev_width >= candy::SPLIT_PANE_WIDTH && width < candy::SPLIT_PANE_WIDTH {
+                self.sidebar_open = false;
+            }
             self.flash("Terminal resized.", Tone::Muted, Duration::from_secs(2));
             self.mark_dirty();
         }
@@ -265,9 +347,9 @@ impl ChatSession {
     }
 
     pub(super) fn stream_health(&self) -> StreamHealth {
-        if self.stream_connecting {
+        if self.stream.connecting {
             StreamHealth::Reconnecting
-        } else if self.stream_error {
+        } else if self.stream.error {
             StreamHealth::Error
         } else {
             StreamHealth::Connected
@@ -275,10 +357,12 @@ impl ChatSession {
     }
 
     pub(super) fn maybe_notify_idle(&mut self) {
-        if self.was_running && !self.running {
-            notify::notify_agent_idle(&self.notifications, &self.agent.label);
+        if self.execution.was_running && !self.execution.running {
+            if let Some(error) = notify::notify_agent_idle(&self.notifications, &self.agent.label) {
+                self.flash(error, Tone::Warning, Duration::from_secs(4));
+            }
         }
-        self.was_running = self.running;
+        self.execution.was_running = self.execution.running;
     }
 
     /// Replay historical agent events before the live stream attaches.
@@ -287,7 +371,7 @@ impl ChatSession {
             self.track_interactions(&event);
             self.apply_event(AgentEvent::from_value(&event));
         }
-        self.stream_position = position;
+        self.stream.position = position;
     }
 
     pub(super) fn flash(&mut self, text: impl Into<String>, tone: Tone, duration: Duration) {
@@ -296,6 +380,32 @@ impl ChatSession {
             tone,
             expires_at: Instant::now() + duration,
         });
+        self.mark_dirty();
+    }
+
+    /// Stash in-progress composer text when a question panel takes focus.
+    pub(super) fn stash_composer_if_needed(&mut self) {
+        if self.composer_stash.is_some() || self.editor.is_empty() {
+            return;
+        }
+        self.composer_stash = Some((self.editor.text(), self.editor.cursor()));
+        // Clear without growing undo history for a buffer the user cannot edit
+        // while the question owns the footer.
+        self.editor.set_text("");
+        self.clear_composer_pickers();
+        self.mark_dirty();
+    }
+
+    /// Restore stashed composer text when no question panel is focused.
+    pub(super) fn restore_composer_stash_if_idle(&mut self) {
+        if self.active_question.is_some() {
+            return;
+        }
+        let Some((text, cursor)) = self.composer_stash.take() else {
+            return;
+        };
+        self.editor.set_text_with_cursor(&text, cursor);
+        self.mark_dirty();
     }
 
     pub(super) fn take_expired_flash(&mut self) {
@@ -330,11 +440,6 @@ impl ChatSession {
         if let Some(at) = self.leader_pending {
             if at.elapsed() > self.keybinds.leader_timeout {
                 self.leader_pending = None;
-            }
-        }
-        if let Some(at) = self.quick_reply_pending {
-            if at.elapsed() > self.keybinds.leader_timeout {
-                self.quick_reply_pending = None;
             }
         }
     }
@@ -374,17 +479,20 @@ impl ChatSession {
     }
 
     pub(super) fn activity_label(&self) -> String {
-        if self.stream_connecting {
+        if self.stream.connecting {
             return format!(
                 "{} Reconnecting to agent stream…",
                 spinner_frame(self.spinner_tick)
             );
         }
-        if self.running && !self.current_activity.is_empty() && self.current_activity != "Ready" {
+        if self.execution.running
+            && !self.execution.activity.is_empty()
+            && self.execution.activity != "Ready"
+        {
             format!(
                 "{} {}",
                 spinner_frame(self.spinner_tick),
-                self.current_activity
+                self.execution.activity
             )
         } else {
             "Ready".to_string()
@@ -397,7 +505,9 @@ impl ChatSession {
         let plain = |text: String, tone: Tone| {
             Line::from(Span::styled(
                 text,
-                Style::default().fg(tone.color(theme)).bg(theme.hint.background_color.color()),
+                Style::default()
+                    .fg(tone.color(theme))
+                    .bg(theme.hint.background_color.color()),
             ))
         };
 
@@ -405,8 +515,8 @@ impl ChatSession {
             return plain(truncate("Help open · ? or Esc close", width), Tone::Info);
         }
 
-        if let Some(hint) = candy::parse_rate_limit_hint(&self.current_activity) {
-            if self.running {
+        if let Some(hint) = candy::parse_rate_limit_hint(&self.execution.activity) {
+            if self.execution.running {
                 return plain(truncate(&hint, width), Tone::Warning);
             }
         }
@@ -418,13 +528,6 @@ impl ChatSession {
                     &format!("{} … awaiting key", self.keybinds.leader_label()),
                     width,
                 ),
-                Tone::Info,
-            );
-        }
-
-        if self.quick_reply_pending.is_some() {
-            return plain(
-                truncate("Quick Reply · press 1, 2, or 3", width),
                 Tone::Info,
             );
         }
@@ -499,7 +602,7 @@ impl ChatSession {
         let muted = Style::default()
             .fg(Tone::Muted.color(theme))
             .bg(theme.hint.background_color.color());
-        let hotkeys = if self.running {
+        let hotkeys = if self.execution.running {
             format!(
                 "{} · Hotkeys: {leader} + [a] Agents · Esc interrupt{optional_hint}",
                 self.activity_label(),
@@ -511,11 +614,8 @@ impl ChatSession {
             )
         };
 
-        if self.running {
-            return Line::from(Span::styled(
-                truncate(&hotkeys, width),
-                muted,
-            ));
+        if self.execution.running {
+            return Line::from(Span::styled(truncate(&hotkeys, width), muted));
         }
 
         let verbose_key = "[v] Verbose";
@@ -602,7 +702,7 @@ impl ChatSession {
 
     /// Whether quick-reply chips should show above the composer.
     pub(super) fn can_show_quick_replies(&self) -> bool {
-        !self.running
+        !self.execution.running
             && self.active_question.is_none()
             && self.focused_followup().is_none()
             && !self.optional_picker_open
@@ -613,7 +713,7 @@ impl ChatSession {
 
     /// Whether quick-reply chips should show above the follow-up composer.
     pub(super) fn can_show_followup_quick_replies(&self) -> bool {
-        !self.running && self.followup_editor.text().trim().is_empty()
+        !self.execution.running && self.followup_editor.text().trim().is_empty()
     }
 
     /// Whether transcript scroll keys should be handled (composer idle).
@@ -639,27 +739,6 @@ impl ChatSession {
         }
     }
 
-    /// Toggle expansion of a tool-call transcript entry (candy #15).
-    pub(super) fn toggle_tool_entry(&mut self, index: usize) {
-        if self.expanded_tool_entries.contains(&index) {
-            self.expanded_tool_entries.remove(&index);
-        } else {
-            self.expanded_tool_entries.insert(index);
-        }
-    }
-
-    /// Shift tool-expand indices after the transcript drops leading entries.
-    pub(super) fn reconcile_expanded_tool_entries(&mut self, drained: usize) {
-        if drained == 0 {
-            return;
-        }
-        self.expanded_tool_entries = self
-            .expanded_tool_entries
-            .iter()
-            .filter_map(|&idx| (idx >= drained).then_some(idx - drained))
-            .collect();
-    }
-
     /// Tear down slash-completion and `@` file-search picker state.
     pub(super) fn clear_composer_pickers(&mut self) {
         self.completion = None;
@@ -676,10 +755,30 @@ pub fn run_session<C: ratatui::backend::Backend>(
     session: &mut ChatSession,
 ) -> Result<ChatExit> {
     loop {
+        // Terminal hangup / orphaned session: exit before event::poll so we do
+        // not spend another timeout spinning on a dead TTY (see tui::tty).
+        if !crate::tui::tty::is_alive() {
+            return Ok(ChatExit::Quit);
+        }
+
         session.take_expired_flash();
         session.expire_leader();
         session.maybe_reconnect_stream();
         session.drain_stream();
+        if session.metrics.refresh() {
+            session.mark_dirty();
+        }
+        let had_todos = !session.todos.is_empty();
+        if session.todos.refresh() {
+            // Auto-open the sidebar when a todo list first appears (if wide enough).
+            if !had_todos
+                && !session.todos.is_empty()
+                && session.terminal_size.0 >= candy::SPLIT_PANE_WIDTH
+            {
+                session.sidebar_open = true;
+            }
+            session.mark_dirty();
+        }
         session.drain_search();
         session.maybe_notify_idle();
         session.refresh_active_question();
@@ -704,25 +803,19 @@ pub fn run_session<C: ratatui::backend::Backend>(
             return Ok(exit);
         }
 
-        match crate::signal::take_pending() {
-            crate::signal::Pending::Terminate => {
-                return Ok(ChatExit::Quit);
-            }
-            crate::signal::Pending::Interrupt => {
-                session.handle_ctrl_c();
-                session.mark_dirty();
-                if let Some(exit) = session.exit.take() {
-                    return Ok(exit);
-                }
-            }
-            crate::signal::Pending::None => {}
-        }
-
-        // Block for a fixed, non-zero interval so background work (stream
-        // drains, spinner ticks, flash expiry) runs at a bounded rate and the
-        // loop never busy-spins on a zero-timeout poll.
+        // Prefer terminal key events for Ctrl+C. SIGINT from the same keystroke
+        // is cleared when the key is handled so we do not double-count as
+        // "press again to exit". External `kill -INT` still reaches the signal path.
+        let mut handled_ctrl_c_key = false;
         if event::poll(POLL_INTERVAL)? {
             match event::read()? {
+                Event::Key(key) if is_ctrl_c_key(key) => {
+                    // Drop any concurrent SIGINT from this keystroke.
+                    crate::signal::clear_interrupt();
+                    session.handle_ctrl_c();
+                    session.mark_dirty();
+                    handled_ctrl_c_key = true;
+                }
                 Event::Key(key) => {
                     session.handle_key(key);
                     session.mark_dirty();
@@ -740,12 +833,73 @@ pub fn run_session<C: ratatui::backend::Backend>(
             }
         }
 
+        match crate::signal::take_pending() {
+            crate::signal::Pending::Terminate => {
+                return Ok(ChatExit::Quit);
+            }
+            crate::signal::Pending::Interrupt if !handled_ctrl_c_key => {
+                session.handle_ctrl_c();
+                session.mark_dirty();
+                if let Some(exit) = session.exit.take() {
+                    return Ok(exit);
+                }
+            }
+            crate::signal::Pending::Interrupt | crate::signal::Pending::None => {}
+        }
+
+        if let Some(exit) = session.exit.take() {
+            return Ok(exit);
+        }
+
         if session.last_spinner.elapsed() >= SPINNER_INTERVAL {
             session.spinner_tick = session.spinner_tick.wrapping_add(1);
             session.last_spinner = Instant::now();
-            if session.running {
+            if session.execution.running {
                 session.mark_dirty();
             }
         }
+    }
+}
+
+fn is_ctrl_c_key(key: KeyEvent) -> bool {
+    key.modifiers.contains(KeyModifiers::CONTROL)
+        && matches!(key.code, KeyCode::Char('c') | KeyCode::Char('C'))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ExecutionState;
+
+    #[test]
+    fn execution_state_combines_queue_and_input_activity() {
+        let mut state = ExecutionState {
+            queue_busy: true,
+            ..ExecutionState::default()
+        };
+        state.recompute_running();
+        assert!(state.running);
+
+        state.queue_busy = false;
+        state.execution_busy = true;
+        state.recompute_running();
+        assert!(state.running);
+
+        state.execution_busy = false;
+        state.recompute_running();
+        assert!(!state.running);
+    }
+
+    #[test]
+    fn stopping_execution_clears_all_busy_flags() {
+        let mut state = ExecutionState {
+            running: true,
+            queue_busy: true,
+            execution_busy: true,
+            ..ExecutionState::default()
+        };
+        state.stop();
+        assert!(!state.running);
+        assert!(!state.queue_busy);
+        assert!(!state.execution_busy);
     }
 }

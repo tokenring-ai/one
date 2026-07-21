@@ -723,7 +723,7 @@ interface LogEntry {
 - Integration tests for service interactions
 - End-to-end tests for workflows
 - Auto-repair for test failures
-- Vitest testing framework
+- Bun test testing framework (built-in)
 
 ### Documentation
 - README files for each package

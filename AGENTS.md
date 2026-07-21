@@ -35,7 +35,7 @@ TokenRing One is a local-first, multi-agent workspace that bundles five purpose-
 **Development Dependencies**:
 
 - @biomejs/biome: Code formatting and linting
-- vitest: Testing framework
+- bun test: Testing framework
 - husky: Git hooks management
 
 ## Build & Installation
@@ -74,9 +74,9 @@ docker run -ti --net host -v ./:/repo:rw tokenring-ai/one:latest
 
 ## Testing
 
-**Framework**: Vitest
+**Framework**: Bun test
 **Test Location**: pkg/*/test directories
-**Configuration**: Individual vitest.config.js/ts files in package directories
+**Configuration**: Test files follow the `*.test.ts` naming convention and import from `bun:test`
 **Run Command**:
 
 ```bash

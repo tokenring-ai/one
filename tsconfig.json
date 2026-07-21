@@ -24,10 +24,10 @@
     "rootDir": "."
   },
   "include": [
-    "backend/*.ts",
-    "backend/*.tsx",
-    "frontend/*.ts",
-    "frontend/*.tsx",
+    "backend/**/*.ts",
+    "backend/**/*.tsx",
+    "frontend/**/*.ts",
+    "frontend/**/*.tsx",
     "plugin/**/*.ts",
     "plugin/**/*.tsx"
   ],

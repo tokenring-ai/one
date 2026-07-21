@@ -3,8 +3,9 @@ import formatError from "@tokenring-ai/utility/error/formatError";
 import { AnimatePresence, motion } from "framer-motion";
 import { FileAudio, FileCode, File as FileIcon, FileText, FolderOpen, History, Image, Mic, Paperclip, Send, Square, X } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { agentRPCClient } from "../../rpc.ts";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { formatUsd } from "../../features/metrics/formatters.ts";
+import { agentRPCClient, useChatUsage, useFilesystemState } from "../../rpc.ts";
 import HookSelector from "../HookSelector.tsx";
 import ModelSelector from "../ModelSelector.tsx";
 import SkillSelector from "../SkillSelector.tsx";
@@ -92,6 +93,45 @@ function recordingFileName(mimeType: string): string {
   return `recording-${stamp}.${extensionForMimeType(mimeType)}`;
 }
 
+/** Percent of context window remaining, or null when max is unknown. */
+function contextPercentLeft(contextLength: number, maxContextLength: number | null | undefined): number | null {
+  if (maxContextLength == null || maxContextLength <= 0) return null;
+  const usedPercent = Math.min(100, Math.floor((contextLength * 100) / maxContextLength));
+  return Math.max(0, 100 - usedPercent);
+}
+
+/** Compact token counts for the status strip (e.g. 1.2k, 3.4m). */
+function formatCompactTokens(value: number): string {
+  if (value < 1_000) return String(value);
+  if (value < 1_000_000) {
+    const scaled = value / 1_000;
+    return `${scaled >= 10 ? scaled.toFixed(0) : scaled.toFixed(1).replace(/\.0$/, "")}k`;
+  }
+  const scaled = value / 1_000_000;
+  return `${scaled >= 10 ? scaled.toFixed(0) : scaled.toFixed(1).replace(/\.0$/, "")}m`;
+}
+
+/** Shorten paths for the footer: collapse deep trees to `…/parent/leaf`. */
+function shortenWorkingDirectory(path: string, maxLen = 28): string {
+  if (!path) return "";
+  if (path.length <= maxLen) return path;
+
+  const parts = path.split(/[/\\]/).filter(Boolean);
+  if (parts.length <= 2) {
+    return `…${path.slice(-(maxLen - 1))}`;
+  }
+  const tail = parts.slice(-2).join("/");
+  if (tail.length + 2 <= maxLen) return `…/${tail}`;
+  return `…${tail.slice(-(maxLen - 1))}`;
+}
+
+function contextToneClass(percentLeft: number | null): string {
+  if (percentLeft == null) return "text-muted";
+  if (percentLeft <= 10) return "text-error";
+  if (percentLeft <= 25) return "text-warning";
+  return "text-muted";
+}
+
 function createRecordingFile(bytes: Uint8Array, name: string, mimeType: string): File {
   // Copy into a standalone ArrayBuffer so the view is a valid BlobPart under
   // stricter lib types (Uint8Array may be backed by SharedArrayBuffer).
@@ -145,6 +185,36 @@ export default function ChatFooter({
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDurationMs, setRecordingDurationMs] = useState(0);
   const isNavigatingHistoryRef = useRef(false);
+
+  const chatUsage = useChatUsage(agentId);
+  const filesystemState = useFilesystemState(agentId);
+
+  const usageSnapshot = chatUsage.data?.status === "success" ? chatUsage.data : null;
+  const fsSnapshot = filesystemState.data?.status === "success" ? filesystemState.data : null;
+
+  const footerMetrics = useMemo(() => {
+    const contextLength = usageSnapshot?.contextLength ?? 0;
+    const maxContextLength = usageSnapshot?.maxContextLength ?? null;
+    const percentLeft = contextPercentLeft(contextLength, maxContextLength);
+    const costTotal = usageSnapshot?.cost.total ?? null;
+    const workingDirectory = fsSnapshot?.workingDirectory ?? null;
+
+    return {
+      percentLeft,
+      contextLabel:
+        percentLeft != null ? `${percentLeft}% ctx` : maxContextLength == null && contextLength === 0 ? null : `${formatCompactTokens(contextLength)} tok`,
+      contextTitle:
+        percentLeft != null && maxContextLength != null
+          ? `${formatCompactTokens(contextLength)} / ${formatCompactTokens(maxContextLength)} tokens · ${percentLeft}% context left`
+          : contextLength > 0
+            ? `${formatCompactTokens(contextLength)} tokens in context`
+            : "Context usage unavailable",
+      costLabel: costTotal != null ? formatUsd(costTotal) : null,
+      costTitle: costTotal != null ? `Session cost ${formatUsd(costTotal)}` : "Cost unavailable",
+      cwdLabel: workingDirectory ? shortenWorkingDirectory(workingDirectory) : null,
+      cwdTitle: workingDirectory ? `Working directory: ${workingDirectory}` : "Working directory unavailable",
+    };
+  }, [usageSnapshot, fsSnapshot]);
 
   // Reset history navigation when user manually types
   useEffect(() => {
@@ -920,7 +990,17 @@ export default function ChatFooter({
               <SubAgentSelector agentId={agentId} triggerVariant="icon" />
             </div>
 
-            <div className="flex items-center gap-2 order-1 sm:order-2" aria-live="polite" aria-atomic="true">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 order-1 sm:order-2" aria-live="polite" aria-atomic="true">
+              {/* Keyboard hints — sit with the toolbar status row */}
+              <div className="flex items-center gap-2 text-xs text-dim mr-1">
+                <span className="hidden md:inline">
+                  <kbd className="px-1.5 py-0.5 bg-tertiary rounded-md text-primary font-mono">↑/↓</kbd> History •{" "}
+                  <kbd className="px-1.5 py-0.5 bg-tertiary rounded-md text-primary font-mono">Enter</kbd> Send •{" "}
+                  <kbd className="px-1.5 py-0.5 bg-tertiary rounded-md text-primary font-mono">Shift+Enter</kbd> New line
+                </span>
+                <span className="md:hidden">↑/↓ History • Enter for new line • Tap send to submit</span>
+              </div>
+
               {/* Right side - status indicator */}
               <div
                 className={`w-2 h-2 ${idle ? "bg-accent" : "bg-warning"} rounded-full animate-pulse`}
@@ -991,22 +1071,50 @@ export default function ChatFooter({
           </AnimatePresence>
         </div>
 
-        <div className="h-6 bg-tertiary flex items-center justify-between px-6 select-none">
-          <div className="flex items-center gap-4">
+        <div className="h-6 bg-tertiary flex items-center justify-between px-6 select-none gap-3">
+          <div className="flex items-center gap-4 min-w-0">
             <span className="text-xs text-muted font-mono line-clamp-1">{statusMessage}</span>
-            <span className="text-xs text-dim font-mono">{input.length} chars</span>
+            <span className="text-xs text-dim font-mono shrink-0">{input.length} chars</span>
             {submitFeedback && (
-              <span className={`text-xs font-mono ${submitFeedback.type === "success" ? "text-success" : "text-error"}`}>{submitFeedback.message}</span>
+              <span className={`text-xs font-mono shrink-0 ${submitFeedback.type === "success" ? "text-success" : "text-error"}`}>
+                {submitFeedback.message}
+              </span>
             )}
           </div>
-          <div className="flex items-center gap-2 text-xs text-dim mt-0.5">
-            <span className="hidden md:inline">
-              <kbd className="px-1.5 py-0.5 bg-tertiary rounded-md text-primary font-mono">↑/↓</kbd> History •{" "}
-              <kbd className="px-1.5 py-0.5 bg-tertiary rounded-md text-primary font-mono">Enter</kbd> Send •{" "}
-              <kbd className="px-1.5 py-0.5 bg-tertiary rounded-md text-primary font-mono">Shift+Enter</kbd> New line
-            </span>
-            <span className="md:hidden">↑/↓ History • Enter for new line • Tap send to submit</span>
-          </div>
+          {/* Live chat usage + workspace indicators */}
+          {(footerMetrics.contextLabel || footerMetrics.costLabel || footerMetrics.cwdLabel) && (
+            <div className="flex items-center gap-x-2 min-w-0 shrink mt-0.5" data-testid="chat-footer-metrics" aria-live="polite" aria-atomic="true">
+              {footerMetrics.contextLabel && (
+                <span className={`text-xs font-mono tabular-nums shrink-0 ${contextToneClass(footerMetrics.percentLeft)}`} title={footerMetrics.contextTitle}>
+                  {footerMetrics.contextLabel}
+                </span>
+              )}
+              {footerMetrics.costLabel && (
+                <>
+                  {footerMetrics.contextLabel && (
+                    <span className="text-xs text-muted/50 font-mono" aria-hidden="true">
+                      ·
+                    </span>
+                  )}
+                  <span className="text-xs font-mono tabular-nums text-muted shrink-0" title={footerMetrics.costTitle}>
+                    {footerMetrics.costLabel}
+                  </span>
+                </>
+              )}
+              {footerMetrics.cwdLabel && (
+                <>
+                  {(footerMetrics.contextLabel || footerMetrics.costLabel) && (
+                    <span className="text-xs text-muted/50 font-mono" aria-hidden="true">
+                      ·
+                    </span>
+                  )}
+                  <span className="text-xs font-mono text-muted max-w-36 sm:max-w-56 truncate" title={footerMetrics.cwdTitle}>
+                    {footerMetrics.cwdLabel}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </footer>

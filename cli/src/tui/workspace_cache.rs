@@ -1,7 +1,7 @@
 //! Ephemeral `@` search result cache (nice-to-have #18).
 //!
-//! Results are keyed by `(provider, query)` and cleared when the file-search
-//! picker closes — no process-wide workspace glob index.
+//! Results are keyed by `(provider, query)` and retained across picker dismissals
+//! so repeated `@` queries stay fast. Call [`SearchCache::clear`] for a full reset.
 
 use std::collections::HashMap;
 

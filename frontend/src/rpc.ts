@@ -22,6 +22,7 @@ import SchedulerRpcSchema from "@tokenring-ai/scheduler/rpc/schema";
 import SkillsRpcSchema from "@tokenring-ai/skills/rpc/schema";
 import TasksRpcSchema from "@tokenring-ai/tasks/rpc/schema";
 import TerminalRpcSchema from "@tokenring-ai/terminal/rpc/schema";
+import TodoRpcSchema from "@tokenring-ai/todo/rpc/schema";
 import { arrayableToArray } from "@tokenring-ai/utility/array/arrayable";
 import { stripUndefinedKeys } from "@tokenring-ai/utility/object/stripObject";
 import VaultRpcSchema from "@tokenring-ai/vault/rpc/schema";
@@ -67,6 +68,7 @@ export const metricsRPCClient = createWsRPCClient(baseURL, MetricsRpcSchema, rpc
 export const schedulerRPCClient = createWsRPCClient(baseURL, SchedulerRpcSchema, rpcAuth);
 export const queueRPCClient = createWsRPCClient(baseURL, QueueRpcSchema, rpcAuth);
 export const skillsRPCClient = createWsRPCClient(baseURL, SkillsRpcSchema, rpcAuth);
+export const todoRPCClient = createWsRPCClient(baseURL, TodoRpcSchema, rpcAuth);
 export const researchRPCClient = createWsRPCClient(baseURL, ResearchRpcSchema, rpcAuth);
 export const configRPCClient = createWsRPCClient(baseURL, ConfigRpcSchema, rpcAuth);
 
@@ -148,6 +150,14 @@ export function useAvailableTools() {
 
 export function useEnabledTools(agentId: string) {
   return useAgentStatusStream(agentId ? `enabled-tools:${agentId}` : null, signal => chatRPCClient.streamEnabledTools({ agentId }, signal));
+}
+
+export function useChatUsage(agentId: string) {
+  return useAgentStatusStream(agentId ? `chat-usage:${agentId}` : null, signal => chatRPCClient.streamChatUsage({ agentId }, signal));
+}
+
+export function useTodos(agentId: string | undefined) {
+  return useAgentStatusStream(agentId ? `todos:${agentId}` : null, signal => todoRPCClient.streamTodos({ agentId: agentId! }, signal));
 }
 
 export function useAvailableHooks() {

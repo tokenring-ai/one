@@ -41,6 +41,14 @@ impl ActiveSession {
             _ => None,
         }
     }
+
+    fn poll(&mut self, client: &crate::rpc::RpcClient) -> bool {
+        match self {
+            ActiveSession::File(session) => session.ensure_loaded(client),
+            ActiveSession::Form(session) => session.ensure_loaded(client),
+            _ => false,
+        }
+    }
 }
 
 impl ChatSession {
@@ -111,12 +119,17 @@ impl ChatSession {
             ..
         }) = focused
         else {
+            // No focused question — restore any draft that was stashed for one.
+            self.restore_composer_stash_if_idle();
             return;
         };
 
         if let Some(active) = self.active_question.as_mut() {
             if active.id == interaction_id {
                 active.auto_submit_at = auto_submit_at;
+                if active.session.poll(&self.client) {
+                    self.dirty = true;
+                }
                 if active.question == question {
                     return;
                 }
@@ -128,8 +141,11 @@ impl ChatSession {
             return;
         }
 
+        // Any question panel steals the main composer — stash the draft first.
+        self.stash_composer_if_needed();
+
         let question_snapshot = question.clone();
-        let session = match question {
+        let mut session = match question {
             Question::Text { .. } => ActiveSession::Text(TextSession::new(question)),
             Question::TreeSelect { .. } if is_confirmation_question(&question_snapshot) => {
                 ActiveSession::Confirm(ConfirmSession::new(question))
@@ -150,6 +166,7 @@ impl ChatSession {
                 self.working_directory.clone(),
             )),
         };
+        session.poll(&self.client);
         self.active_question = Some(ActiveQuestion {
             id: interaction_id,
             auto_submit_at,
@@ -181,6 +198,7 @@ impl ChatSession {
                 }
                 self.optional_picker_open = false;
                 self.followup_editor.clear();
+                self.restore_composer_stash_if_idle();
                 true
             }
             Err(e) => {
@@ -254,6 +272,15 @@ impl ChatSession {
             return;
         }
         self.respond(&interaction_id, serde_json::Value::String(value));
+    }
+
+    /// Cancel the focused follow-up by sending a null interaction response.
+    pub(super) fn cancel_followup(&mut self) {
+        let Some(Interaction::Followup { interaction_id, .. }) = self.focused_followup().cloned()
+        else {
+            return;
+        };
+        self.respond(&interaction_id, serde_json::Value::Null);
     }
 
     /// Open the optional question at `index`, closing the picker.

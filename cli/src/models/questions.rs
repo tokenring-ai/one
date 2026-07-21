@@ -4,8 +4,6 @@
 //! All fields are parsed defensively from raw JSON so that unknown shapes never
 //! break rendering.
 
-#![allow(dead_code)] // Defensive parsing retains fields for API parity before use.
-
 use serde_json::Value;
 
 /// A tree node: either a value leaf or a branch with children.

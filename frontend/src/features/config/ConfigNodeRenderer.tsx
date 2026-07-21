@@ -7,9 +7,10 @@ import type {
   ConfigUINode,
   ConfigVariantNode,
 } from "@tokenring-ai/app/config/uiSchema";
+import { isPlainObject } from "@tokenring-ai/utility/object/isPlainObject";
 import { ChevronRight, Plus, RotateCcw, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { isPlainObject, isRedactedSensitiveValue } from "./values.ts";
+import { isRedactedSensitiveValue } from "../../lib/utils.ts";
 
 export interface ConfigIssue {
   path: (string | number)[];

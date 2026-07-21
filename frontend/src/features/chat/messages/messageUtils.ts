@@ -15,7 +15,7 @@ export function getMessageText(msg: ChatMessage): string | null {
     case "output.error":
       return msg.message.trim() || "[empty message]";
     case "toolCall":
-      return msg.summary;
+      return msg.message;
     default:
       return null;
   }

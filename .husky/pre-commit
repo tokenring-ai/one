@@ -1,3 +1,4 @@
+bun util/export-rpc-schemas.ts
 tsc
 biome check --fix
 oxlint --fix

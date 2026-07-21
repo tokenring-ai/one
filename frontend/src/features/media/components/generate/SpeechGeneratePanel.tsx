@@ -3,6 +3,7 @@ import { Mic } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { audioRPCClient, useSpeechModels } from "../../../../rpc.ts";
+import type { KeyboardEvent} from "react";
 import GenerateButton from "./GenerateButton.tsx";
 import GeneratePanelShell from "./GeneratePanelShell.tsx";
 import ModelSelectField from "./ModelSelectField.tsx";
@@ -57,7 +58,7 @@ export default function SpeechGeneratePanel({ agentId, onGenerated }: { agentId:
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void handleGenerate();
   };
 

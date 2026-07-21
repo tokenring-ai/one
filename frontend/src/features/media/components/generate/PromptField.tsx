@@ -1,3 +1,5 @@
+import type { KeyboardEvent} from "react";
+
 export default function PromptField({
   value,
   onChange,
@@ -6,7 +8,7 @@ export default function PromptField({
 }: {
   value: string;
   onChange: (v: string) => void;
-  onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
   placeholder: string;
 }) {
   return (

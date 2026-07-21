@@ -1,7 +1,7 @@
 {
   "name": "@tokenring-ai/one-frontend",
   "description": "TokenRing One Web Frontend",
-  "version": "0.2.54",
+  "version": "0.2.55",
   "private": true,
   "type": "module",
   "scripts": {
@@ -60,6 +60,7 @@
     "@tokenring-ai/skills": "workspace:*",
     "@tokenring-ai/tasks": "workspace:*",
     "@tokenring-ai/terminal": "workspace:*",
+    "@tokenring-ai/todo": "workspace:*",
     "@tokenring-ai/utility": "workspace:*",
     "@tokenring-ai/vault": "workspace:*",
     "@tokenring-ai/video": "workspace:*",

@@ -12,11 +12,12 @@
 //! Both channels apply the same optional HTTP authorization header and
 //! WebSocket-session username/password login.
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::net::{Shutdown, TcpStream};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::{json, Value};
@@ -49,6 +50,9 @@ struct RpcClientInner {
     session_auth: Option<SessionAuth>,
     next_id: AtomicU64,
     request_tx: Sender<WorkerRequest>,
+    /// Cloned TCP handle for the active RPC socket; shut down on call timeout
+    /// so a stuck `read` unblocks and the worker can process later calls.
+    io_abort: Arc<Mutex<Option<TcpStream>>>,
 }
 
 enum WorkerRequest {
@@ -58,6 +62,109 @@ enum WorkerRequest {
         params: Value,
         reply: Sender<Result<Value>>,
     },
+    Shutdown,
+}
+
+/// Live agent event stream with cooperative cancellation.
+pub struct EventStream {
+    rx: Receiver<StreamItem>,
+    cancel: Arc<AtomicBool>,
+    io_abort: Arc<Mutex<Option<TcpStream>>>,
+}
+
+/// A raw JSON-RPC stream on its own cancellable WebSocket connection.
+pub struct JsonStream {
+    rx: Receiver<JsonStreamItem>,
+    cancel: Arc<AtomicBool>,
+    io_abort: Arc<Mutex<Option<TcpStream>>>,
+}
+
+impl JsonStream {
+    pub fn try_recv(&self) -> Result<JsonStreamItem, std::sync::mpsc::TryRecvError> {
+        self.rx.try_recv()
+    }
+
+    pub fn cancel(&self) {
+        self.cancel.store(true, Ordering::SeqCst);
+        abort_io(&self.io_abort);
+    }
+}
+
+impl Drop for JsonStream {
+    fn drop(&mut self) {
+        self.cancel();
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum JsonStreamItem {
+    Data {
+        value: Value,
+        /// Request-to-first-result latency; subsequent stream items omit it.
+        latency_ms: Option<u64>,
+    },
+    Ended,
+    Error(String),
+}
+
+struct StreamParts<T> {
+    rx: Receiver<T>,
+    cancel: Arc<AtomicBool>,
+    io_abort: Arc<Mutex<Option<TcpStream>>>,
+}
+
+fn spawn_stream_worker<T, F>(
+    thread_name: &str,
+    error_item: fn(String) -> T,
+    worker: F,
+) -> StreamParts<T>
+where
+    T: Send + 'static,
+    F: FnOnce(&Sender<T>, &AtomicBool, &Mutex<Option<TcpStream>>) -> Result<()> + Send + 'static,
+{
+    let (tx, rx) = mpsc::channel();
+    let cancel = Arc::new(AtomicBool::new(false));
+    let cancel_worker = Arc::clone(&cancel);
+    let io_abort = Arc::new(Mutex::new(None));
+    let io_abort_worker = Arc::clone(&io_abort);
+    let tx_for_worker = tx.clone();
+    if let Err(error) = thread::Builder::new()
+        .name(thread_name.into())
+        .spawn(move || {
+            if let Err(error) = worker(&tx_for_worker, &cancel_worker, &io_abort_worker) {
+                if !cancel_worker.load(Ordering::SeqCst) {
+                    let _ = tx_for_worker.send(error_item(error.to_string()));
+                }
+            }
+        })
+    {
+        let _ = tx.send(error_item(format!(
+            "failed to start {thread_name} thread: {error}"
+        )));
+    }
+    StreamParts {
+        rx,
+        cancel,
+        io_abort,
+    }
+}
+
+impl EventStream {
+    pub fn try_recv(&self) -> Result<StreamItem, std::sync::mpsc::TryRecvError> {
+        self.rx.try_recv()
+    }
+
+    /// Stop the background stream thread and close its socket.
+    pub fn cancel(&self) {
+        self.cancel.store(true, Ordering::SeqCst);
+        abort_io(&self.io_abort);
+    }
+}
+
+impl Drop for EventStream {
+    fn drop(&mut self) {
+        self.cancel();
+    }
 }
 
 impl RpcClient {
@@ -67,26 +174,47 @@ impl RpcClient {
         ws_url: String,
         auth_header: Option<HeaderValue>,
         session_auth: Option<SessionAuth>,
-    ) -> Self {
+    ) -> Result<Self> {
         let (request_tx, request_rx) = mpsc::channel();
+        let io_abort = Arc::new(Mutex::new(None));
+        let io_abort_worker = Arc::clone(&io_abort);
         let inner = Arc::new(RpcClientInner {
             ws_url: ws_url.clone(),
             auth_header: auth_header.clone(),
             session_auth: session_auth.clone(),
             next_id: AtomicU64::new(1),
             request_tx,
+            io_abort,
         });
         thread::Builder::new()
             .name("tr-rpc-worker".into())
-            .spawn(move || rpc_worker_loop(ws_url, auth_header, session_auth, request_rx))
-            .ok();
-        Self { inner }
+            .spawn(move || {
+                rpc_worker_loop(ws_url, auth_header, session_auth, request_rx, io_abort_worker)
+            })
+            .context("start rpc worker thread")?;
+        Ok(Self { inner })
     }
 
     /// The WS URL this client targets.
-    #[allow(dead_code)] // Public accessor for embedders and diagnostics.
     pub fn ws_url(&self) -> &str {
         &self.inner.ws_url
+    }
+
+    /// A separate client (own worker thread) sharing the same endpoint/auth.
+    /// Used so background metrics polls cannot block interactive RPCs.
+    pub fn isolated(&self) -> Result<Self> {
+        Self::new(
+            self.inner.ws_url.clone(),
+            self.inner.auth_header.clone(),
+            self.inner.session_auth.clone(),
+        )
+    }
+
+    /// Ask the RPC worker to exit after finishing the current call (if any).
+    /// Remaining clones become unusable once the worker stops.
+    pub fn shutdown(&self) {
+        let _ = self.inner.request_tx.send(WorkerRequest::Shutdown);
+        abort_io(&self.inner.io_abort);
     }
 
     /// Perform a request/response JSON-RPC call on the shared socket.
@@ -105,6 +233,9 @@ impl RpcClient {
         match reply_rx.recv_timeout(RPC_CALL_TIMEOUT) {
             Ok(result) => result,
             Err(RecvTimeoutError::Timeout) => {
+                // Unblock the worker's stuck read so later RPCs are not queued
+                // behind a dead call.
+                abort_io(&self.inner.io_abort);
                 bail!(
                     "rpc call timed out after {}s: {method}",
                     RPC_CALL_TIMEOUT.as_secs()
@@ -119,29 +250,34 @@ impl RpcClient {
     /// Open the `/rpc/agent.streamAgentEvents` stream on a dedicated background
     /// thread. Each batch of events is delivered over the returned channel.
     ///
-    /// Items are [`StreamItem::Events`] for successful batches,
-    /// [`StreamItem::AgentNotFound`], or [`StreamItem::Error`]. The channel
-    /// closes when the stream ends or the worker exits.
-    pub fn spawn_event_stream(&self, agent_id: &str, from_position: usize) -> Receiver<StreamItem> {
-        let (tx, rx) = mpsc::channel();
+    /// Dropping or [`EventStream::cancel`] stops the worker and closes the socket.
+    pub fn spawn_event_stream(&self, agent_id: &str, from_position: usize) -> EventStream {
         let client = self.clone();
         let agent_id = agent_id.to_string();
-        let tx_for_worker = tx.clone();
-        if let Err(error) = thread::Builder::new()
-            .name("tr-event-stream".into())
-            .spawn(move || {
-                if let Err(error) =
-                    run_event_stream(&client, &agent_id, from_position, &tx_for_worker)
-                {
-                    let _ = tx_for_worker.send(StreamItem::Error(error.to_string()));
-                }
-            })
-        {
-            let _ = tx.send(StreamItem::Error(format!(
-                "failed to start event stream thread: {error}"
-            )));
+        let parts = spawn_stream_worker("tr-event-stream", StreamItem::Error, move |tx, cancel, io| {
+            run_event_stream(&client, &agent_id, from_position, tx, cancel, io)
+        });
+        EventStream {
+            rx: parts.rx,
+            cancel: parts.cancel,
+            io_abort: parts.io_abort,
         }
-        rx
+    }
+
+    /// Open an arbitrary JSON-RPC stream on a dedicated background thread.
+    pub fn spawn_json_stream(&self, method: &str, params: Value) -> JsonStream {
+        let client = self.clone();
+        let method = method.to_string();
+        let parts = spawn_stream_worker(
+            "tr-json-stream",
+            JsonStreamItem::Error,
+            move |tx, cancel, io| run_json_stream(&client, &method, params, tx, cancel, io),
+        );
+        JsonStream {
+            rx: parts.rx,
+            cancel: parts.cancel,
+            io_abort: parts.io_abort,
+        }
     }
 
     fn connect(&self) -> Result<WsSocket> {
@@ -158,25 +294,35 @@ fn rpc_worker_loop(
     auth_header: Option<HeaderValue>,
     session_auth: Option<SessionAuth>,
     request_rx: Receiver<WorkerRequest>,
+    io_abort: Arc<Mutex<Option<TcpStream>>>,
 ) {
     let mut socket: Option<WsSocket> = None;
 
     while let Ok(request) = request_rx.recv() {
-        let WorkerRequest::Call {
-            id,
-            method,
-            params,
-            reply,
-        } = request;
+        let (id, method, params, reply) = match request {
+            WorkerRequest::Shutdown => break,
+            WorkerRequest::Call {
+                id,
+                method,
+                params,
+                reply,
+            } => (id, method, params, reply),
+        };
 
         if socket.is_none() {
             match connect_socket(&ws_url, auth_header.as_ref(), session_auth.as_ref()) {
-                Ok(connected) => socket = Some(connected),
+                Ok(connected) => {
+                    register_io_abort(&connected, &io_abort);
+                    socket = Some(connected);
+                }
                 Err(error) => {
+                    clear_io_abort(&io_abort);
                     let _ = reply.send(Err(anyhow::anyhow!("{error:#}")));
                     continue;
                 }
             }
+        } else if let Some(connected) = socket.as_ref() {
+            register_io_abort(connected, &io_abort);
         }
 
         let result = match socket.as_mut() {
@@ -188,16 +334,19 @@ fn rpc_worker_loop(
                 id,
                 &method,
                 params,
+                &io_abort,
             ),
             None => unreachable!("socket was just initialized"),
         };
         if result.is_err() {
+            clear_io_abort(&io_abort);
             socket = None;
         }
-        if reply.send(result).is_err() {
-            break;
-        }
+        // Caller may have timed out and dropped the reply channel. Keep the
+        // worker alive so later RPCs (send, abort, metrics, search) still work.
+        let _ = reply.send(result);
     }
+    clear_io_abort(&io_abort);
 }
 
 fn execute_call(
@@ -208,6 +357,7 @@ fn execute_call(
     id: u64,
     method: &str,
     params: Value,
+    io_abort: &Mutex<Option<TcpStream>>,
 ) -> Result<Value> {
     let payload = json!({
         "jsonrpc": "2.0",
@@ -220,6 +370,7 @@ fn execute_call(
     let send_result = socket.send(Message::Text(Utf8Bytes::from(payload)));
     if send_result.is_err() {
         *socket = connect_socket(ws_url, auth_header, session_auth)?;
+        register_io_abort(socket, io_abort);
         socket
             .send(Message::Text(
                 Utf8Bytes::from(
@@ -236,7 +387,7 @@ fn execute_call(
     }
 
     loop {
-        let text = match read_text(socket) {
+        let text = match read_text(socket, false) {
             Ok(text) => text,
             Err(error) => {
                 return Err(error);
@@ -301,7 +452,8 @@ fn authenticate_socket(socket: &mut WsSocket, auth: &SessionAuth) -> Result<()> 
         .context("send websocket authentication")?;
 
     loop {
-        let text = read_text(socket).context("read websocket authentication response")?;
+        let text =
+            read_text(socket, false).context("read websocket authentication response")?;
         let response: Value =
             serde_json::from_str(&text).context("decode websocket authentication response")?;
         if response.get("id").and_then(Value::as_u64) != Some(id) {
@@ -342,6 +494,31 @@ fn set_socket_timeouts(socket: &mut WsSocket) -> Result<()> {
     Ok(())
 }
 
+fn register_io_abort(socket: &WsSocket, slot: &Mutex<Option<TcpStream>>) {
+    let clone = match socket.get_ref() {
+        MaybeTlsStream::Plain(stream) => stream.try_clone().ok(),
+        MaybeTlsStream::NativeTls(stream) => stream.get_ref().try_clone().ok(),
+        _ => None,
+    };
+    if let Ok(mut guard) = slot.lock() {
+        *guard = clone;
+    }
+}
+
+fn clear_io_abort(slot: &Mutex<Option<TcpStream>>) {
+    if let Ok(mut guard) = slot.lock() {
+        *guard = None;
+    }
+}
+
+fn abort_io(slot: &Mutex<Option<TcpStream>>) {
+    if let Ok(mut guard) = slot.lock() {
+        if let Some(stream) = guard.take() {
+            let _ = stream.shutdown(Shutdown::Both);
+        }
+    }
+}
+
 /// A single item pushed from the background event-stream worker.
 #[derive(Clone, Debug)]
 pub enum StreamItem {
@@ -360,8 +537,12 @@ fn run_event_stream(
     agent_id: &str,
     from_position: usize,
     tx: &Sender<StreamItem>,
+    cancel: &AtomicBool,
+    io_abort: &Mutex<Option<TcpStream>>,
 ) -> Result<()> {
     let mut socket = client.connect()?;
+    register_io_abort(&socket, io_abort);
+    let mut cursor = from_position;
     socket.send(Message::Text(Utf8Bytes::from(
         json!({
             "jsonrpc": "2.0",
@@ -376,7 +557,20 @@ fn run_event_stream(
     )))?;
 
     loop {
-        let text = read_text(&mut socket)?;
+        if cancel.load(Ordering::SeqCst) {
+            return Ok(());
+        }
+
+        // Keepalive on idle so proxies/NAT do not drop the long-lived stream.
+        let text = match read_text(&mut socket, true) {
+            Ok(text) => text,
+            Err(_) if cancel.load(Ordering::SeqCst) => return Ok(()),
+            Err(error) => return Err(error),
+        };
+        if cancel.load(Ordering::SeqCst) {
+            return Ok(());
+        }
+
         let response: Value = serde_json::from_str(&text).context("decode stream response")?;
 
         if let Some(error) = response.get("error") {
@@ -403,7 +597,13 @@ fn run_event_stream(
             .and_then(Value::as_array)
             .cloned()
             .unwrap_or_default();
-        let position = result.get("position").and_then(Value::as_u64).unwrap_or(0) as usize;
+        // Never regress the cursor when the server omits `position`.
+        let position = result
+            .get("position")
+            .and_then(Value::as_u64)
+            .map(|p| p as usize)
+            .unwrap_or(cursor);
+        cursor = position;
 
         if tx.send(StreamItem::Events { events, position }).is_err() {
             return Ok(());
@@ -411,17 +611,100 @@ fn run_event_stream(
     }
 }
 
-fn read_text(socket: &mut WsSocket) -> Result<String> {
+fn run_json_stream(
+    client: &RpcClient,
+    method: &str,
+    params: Value,
+    tx: &Sender<JsonStreamItem>,
+    cancel: &AtomicBool,
+    io_abort: &Mutex<Option<TcpStream>>,
+) -> Result<()> {
+    let mut socket = client.connect()?;
+    register_io_abort(&socket, io_abort);
+    let started = Instant::now();
+    let mut first_result = true;
+    socket.send(Message::Text(Utf8Bytes::from(
+        json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": method,
+            "params": params,
+        })
+        .to_string(),
+    )))?;
+
     loop {
-        let message = socket.read().context("read websocket message")?;
-        match message {
-            Message::Text(text) => return Ok(text.to_string()),
-            Message::Binary(bytes) => {
+        if cancel.load(Ordering::SeqCst) {
+            return Ok(());
+        }
+        let text = match read_text(&mut socket, true) {
+            Ok(text) => text,
+            Err(_) if cancel.load(Ordering::SeqCst) => return Ok(()),
+            Err(error) => return Err(error),
+        };
+        let response: Value = serde_json::from_str(&text).context("decode JSON stream response")?;
+        if let Some(error) = response.get("error") {
+            bail!("{}", format_rpc_error(error));
+        }
+        if response.get("stream").and_then(Value::as_str) == Some("end") {
+            let _ = tx.send(JsonStreamItem::Ended);
+            return Ok(());
+        }
+        let Some(value) = response.get("result").cloned() else {
+            continue;
+        };
+        let latency_ms =
+            first_result.then(|| started.elapsed().as_millis().min(u128::from(u64::MAX)) as u64);
+        first_result = false;
+        if tx.send(JsonStreamItem::Data { value, latency_ms }).is_err() {
+            return Ok(());
+        }
+    }
+}
+
+/// Read the next text/binary WebSocket payload.
+///
+/// Always answers peer `Ping` with a flushed auto-`Pong` (tungstenite queues it).
+/// When `keepalive` is true (event stream), idle read timeouts send a client
+/// `Ping` and continue. When false (RPC request/response), timeouts surface as
+/// errors so the worker can fail/reconnect the call.
+fn read_text(socket: &mut WsSocket, keepalive: bool) -> Result<String> {
+    loop {
+        match socket.read() {
+            Ok(Message::Text(text)) => return Ok(text.to_string()),
+            Ok(Message::Binary(bytes)) => {
                 return String::from_utf8(bytes.to_vec()).context("decode binary message")
             }
-            Message::Close(_) => bail!("websocket stream closed"),
-            _ => continue,
+            Ok(Message::Close(_)) => bail!("websocket stream closed"),
+            Ok(Message::Ping(_)) => {
+                // tungstenite queues an automatic Pong; flush so the peer sees it.
+                socket.flush().context("flush websocket pong")?;
+            }
+            Ok(Message::Pong(_)) => {
+                // Keepalive reply from the peer — ignore payload.
+            }
+            Ok(Message::Frame(_)) => {}
+            Err(error) if keepalive && is_io_timeout(&error) => {
+                socket
+                    .send(Message::Ping(Vec::new().into()))
+                    .context("send websocket keepalive ping")?;
+                socket.flush().context("flush websocket keepalive ping")?;
+            }
+            Err(error) => {
+                return Err(error).context("read websocket message");
+            }
         }
+    }
+}
+
+/// Whether a tungstenite error is a socket read/write timeout (idle, not fatal).
+fn is_io_timeout(error: &tungstenite::Error) -> bool {
+    match error {
+        tungstenite::Error::Io(io) => matches!(
+            io.kind(),
+            std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+        ),
+        _ => false,
     }
 }
 
@@ -495,7 +778,7 @@ mod tests {
         let addr = probe.local_addr().unwrap();
         drop(probe);
 
-        let client = RpcClient::new(format!("ws://{addr}/rpc:ws"), None, None);
+        let client = RpcClient::new(format!("ws://{addr}/rpc:ws"), None, None).unwrap();
         assert!(client.call("/rpc/test", json!({})).is_err());
 
         let listener = match std::net::TcpListener::bind(addr) {
@@ -564,9 +847,66 @@ mod tests {
                 username: "cli".into(),
                 password: "secret".into(),
             }),
-        );
+        )
+        .unwrap();
         let result = client.call("/rpc/test", json!({})).unwrap();
         assert_eq!(result["ok"], true);
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn json_stream_delivers_results_and_end() {
+        let listener = match std::net::TcpListener::bind("127.0.0.1:0") {
+            Ok(listener) => listener,
+            Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied => return,
+            Err(error) => panic!("failed to bind local test listener: {error}"),
+        };
+        let addr = listener.local_addr().unwrap();
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let mut socket = tungstenite::accept(stream).unwrap();
+            let request = read_request(&mut socket);
+            assert_eq!(request["method"], "/rpc/chat.streamChatUsage");
+            assert_eq!(request["params"]["agentId"], "agent-1");
+            socket
+                .send(Message::Text(Utf8Bytes::from(
+                    json!({
+                        "jsonrpc": "2.0",
+                        "id": request["id"],
+                        "stream": "data",
+                        "result": { "status": "success", "contextLength": 42 }
+                    })
+                    .to_string(),
+                )))
+                .unwrap();
+            socket
+                .send(Message::Text(Utf8Bytes::from(
+                    json!({
+                        "jsonrpc": "2.0",
+                        "id": request["id"],
+                        "stream": "end"
+                    })
+                    .to_string(),
+                )))
+                .unwrap();
+        });
+
+        let client = RpcClient::new(format!("ws://{addr}/rpc:ws"), None, None).unwrap();
+        let stream = client.spawn_json_stream(
+            "/rpc/chat.streamChatUsage",
+            json!({ "agentId": "agent-1" }),
+        );
+        match stream.rx.recv_timeout(Duration::from_secs(2)).unwrap() {
+            JsonStreamItem::Data { value, latency_ms } => {
+                assert_eq!(value["contextLength"], 42);
+                assert!(latency_ms.is_some());
+            }
+            other => panic!("unexpected stream item: {other:?}"),
+        }
+        assert!(matches!(
+            stream.rx.recv_timeout(Duration::from_secs(2)).unwrap(),
+            JsonStreamItem::Ended
+        ));
         server.join().unwrap();
     }
 

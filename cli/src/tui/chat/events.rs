@@ -28,11 +28,14 @@ fn reconnect_flash_duration(delay: Duration) -> Duration {
 impl ChatSession {
     /// Drain all buffered stream items.
     pub(super) fn drain_stream(&mut self) {
-        while let Ok(item) = self.stream_rx.try_recv() {
+        while let Ok(item) = self.stream.handle.try_recv() {
             match item {
                 StreamItem::Events { events, position } => {
                     self.on_stream_connected();
-                    self.stream_position = position;
+                    // Never regress the hydration/stream cursor.
+                    if position >= self.stream.position {
+                        self.stream.position = position;
+                    }
                     for event in events {
                         self.track_interactions(&event);
                         self.apply_event(AgentEvent::from_value(&event));
@@ -50,7 +53,7 @@ impl ChatSession {
                     self.schedule_stream_reconnect("Event stream closed.".to_string());
                 }
                 StreamItem::Error(message) => {
-                    self.stream_error = true;
+                    self.stream.error = true;
                     self.schedule_stream_reconnect(message);
                 }
             }
@@ -59,24 +62,24 @@ impl ChatSession {
 
     /// Reset reconnect backoff after a successful stream batch.
     fn on_stream_connected(&mut self) {
-        self.stream_connecting = false;
-        self.stream_reconnect_at = None;
-        self.stream_reconnect_delay = STREAM_RECONNECT_INITIAL;
-        self.stream_error = false;
+        self.stream.connecting = false;
+        self.stream.reconnect_at = None;
+        self.stream.reconnect_delay = STREAM_RECONNECT_INITIAL;
+        self.stream.error = false;
     }
 
-    /// Schedule a reconnect from the last known [`stream_position`].
+    /// Schedule a reconnect from the last known stream position.
     pub(super) fn schedule_stream_reconnect(&mut self, message: String) {
         if self.exit.is_some() {
             return;
         }
-        self.stream_connecting = true;
-        let delay = self.stream_reconnect_delay;
-        self.stream_reconnect_delay = Duration::from_secs_f64(
+        self.stream.connecting = true;
+        let delay = self.stream.reconnect_delay;
+        self.stream.reconnect_delay = Duration::from_secs_f64(
             (delay.as_secs_f64() * STREAM_RECONNECT_BACKOFF)
                 .min(STREAM_RECONNECT_MAX.as_secs_f64()),
         );
-        self.stream_reconnect_at = Some(Instant::now() + delay);
+        self.stream.reconnect_at = Some(Instant::now() + delay);
         let flash_duration = reconnect_flash_duration(delay);
         self.flash(
             format!("{message} Reconnecting in {}s…", delay.as_secs().max(1)),
@@ -91,15 +94,18 @@ impl ChatSession {
             return;
         }
         let reconnect_due = self
-            .stream_reconnect_at
+            .stream
+            .reconnect_at
             .is_some_and(|at| Instant::now() >= at);
         if !reconnect_due {
             return;
         }
-        self.stream_reconnect_at = None;
-        self.stream_rx = self
+        self.stream.reconnect_at = None;
+        // Cancel the previous stream socket/thread before opening a new one.
+        self.stream.handle.cancel();
+        self.stream.handle = self
             .client
-            .spawn_event_stream(&self.agent.id, self.stream_position);
+            .spawn_event_stream(&self.agent.id, self.stream.position);
         self.flash(
             "Reconnecting to agent event stream…",
             Tone::Info,
@@ -128,6 +134,7 @@ impl ChatSession {
             self.followup_editor.clear();
             self.clear_composer_pickers();
             self.clamp_optional_picker();
+            self.restore_composer_stash_if_idle();
             return;
         }
         if event.get("availableInteractions").is_some() {
@@ -168,6 +175,7 @@ impl ChatSession {
             if let Some(aq) = self.active_question.as_ref() {
                 if !live.contains(&aq.id) {
                     self.active_question = None;
+                    self.restore_composer_stash_if_idle();
                 }
             }
 
@@ -180,6 +188,7 @@ impl ChatSession {
             if has_required {
                 self.optional_picker_open = false;
                 self.active_optional_id = None;
+                self.stash_composer_if_needed();
             }
 
             self.clamp_optional_picker();
@@ -204,8 +213,9 @@ impl ChatSession {
                 input_execution_queue,
                 ..
             } => {
-                self.running = !input_execution_queue.is_empty();
-                self.current_activity = if current_activity.is_empty() {
+                self.execution.queue_busy = !input_execution_queue.is_empty();
+                self.execution.recompute_running();
+                self.execution.activity = if current_activity.is_empty() {
                     "Ready".to_string()
                 } else {
                     current_activity.clone()
@@ -216,23 +226,38 @@ impl ChatSession {
                 current_activity,
                 ..
             } => {
-                self.running = status != "finished";
+                self.execution.execution_busy = status != "finished";
+                self.execution.recompute_running();
                 if let Some(activity) = current_activity {
-                    self.current_activity = activity.clone();
+                    self.execution.activity = activity.clone();
                 }
             }
             AgentEvent::AgentStopped { .. } => {
+                self.execution.stop();
                 if self.shutdown_when_done && self.prompt_automation {
                     self.exit = Some(ChatExit::Quit);
                 } else {
-                    self.exit = Some(ChatExit::SelectAgent);
+                    // Stay on the finished transcript; pick another agent explicitly.
+                    self.execution.activity = "Stopped".to_string();
+                    let leader = self.keybinds.leader_hint_label();
+                    self.flash(
+                        format!("Agent stopped · {leader} a to pick another agent"),
+                        Tone::Warning,
+                        Duration::from_secs(8),
+                    );
                 }
+            }
+            AgentEvent::Unknown { type_name, .. } => {
+                // Surface schema drift immediately; transcript also records it.
+                self.flash(
+                    format!("Unknown agent event: {type_name}"),
+                    Tone::Muted,
+                    Duration::from_secs(5),
+                );
             }
             _ => {}
         }
         self.transcript.apply(&event, self.verbose);
-        let drained = self.transcript.take_last_drain();
-        self.reconcile_expanded_tool_entries(drained);
         Ok(())
     }
 }

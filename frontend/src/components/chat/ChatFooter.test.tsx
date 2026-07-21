@@ -17,6 +17,36 @@ void mock.module("../../rpc.ts", () => ({
   agentRPCClient: {
     abortCurrentOperation: mock(),
   },
+  useChatUsage: () => ({
+    data: {
+      status: "success",
+      model: "openai:gpt-5",
+      cost: { input: 0.1, cachedInput: 0, output: 0.3, reasoning: 0, total: 0.42 },
+      contextLength: 26_000,
+      maxContextLength: 200_000,
+      lastStepUsage: {},
+      totalUsage: {},
+      toolCount: 12,
+    },
+    error: undefined,
+    isLoading: false,
+    isValidating: false,
+    mutate: mock(),
+  }),
+  useFilesystemState: () => ({
+    data: {
+      status: "success",
+      provider: "local",
+      workingDirectory: "/Users/example/projects/tokenring/one",
+      selectedFiles: [],
+      readFiles: {},
+      dirty: false,
+    },
+    error: undefined,
+    isLoading: false,
+    isValidating: false,
+    mutate: mock(),
+  }),
 }));
 
 void mock.module("../HookSelector.tsx", () => ({ default: () => null }));
@@ -99,6 +129,27 @@ function restoreMediaGlobals() {
   }
   globalThis.FileReader = originalFileReader;
 }
+
+describe("ChatFooter usage metrics", () => {
+  beforeEach(() => {
+    mock.clearAllMocks();
+  });
+
+  afterEach(() => {
+    restoreMediaGlobals();
+  });
+
+  it("renders context, cost, and working directory indicators", () => {
+    renderChatFooter();
+
+    const metrics = screen.getByTestId("chat-footer-metrics");
+    expect(metrics).toHaveTextContent("87% ctx");
+    expect(metrics).toHaveTextContent("$0.42");
+    expect(metrics).toHaveTextContent("…/tokenring/one");
+    expect(screen.getByLabelText(/26k \/ 200k tokens/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Working directory: \/Users\/example\/projects\/tokenring\/one/)).toBeInTheDocument();
+  });
+});
 
 describe("ChatFooter file attachments", () => {
   beforeEach(() => {

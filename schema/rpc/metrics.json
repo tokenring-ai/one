@@ -1,0 +1,557 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Metrics RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/metrics",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "getCostSummary request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/metrics.getCostSummary"
+        },
+        "params": {
+          "$ref": "#/$defs/getCostSummaryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getCostSummary response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getCostSummaryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamCostSummary request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/metrics.streamCostSummary"
+        },
+        "params": {
+          "$ref": "#/$defs/streamCostSummaryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamCostSummary response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamCostSummaryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamCostSummary stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getAgentCosts request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/metrics.getAgentCosts"
+        },
+        "params": {
+          "$ref": "#/$defs/getAgentCostsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getAgentCosts response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getAgentCostsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "resetAgentCosts request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/metrics.resetAgentCosts"
+        },
+        "params": {
+          "$ref": "#/$defs/resetAgentCostsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "resetAgentCosts response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/resetAgentCostsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "getCostSummaryParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getCostSummaryResult": {
+      "type": "object",
+      "properties": {
+        "agents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "agentId": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "idle": {
+                "type": "boolean"
+              },
+              "costs": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "number"
+                }
+              },
+              "total": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "agentId",
+              "displayName",
+              "agentType",
+              "idle",
+              "costs",
+              "total"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "totalsByCategory": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "grandTotal": {
+          "type": "number"
+        },
+        "agentCount": {
+          "type": "number"
+        },
+        "activeAgentCount": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "agents",
+        "totalsByCategory",
+        "grandTotal",
+        "agentCount",
+        "activeAgentCount"
+      ],
+      "additionalProperties": false
+    },
+    "streamCostSummaryParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamCostSummaryResult": {
+      "type": "object",
+      "properties": {
+        "agents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "agentId": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "idle": {
+                "type": "boolean"
+              },
+              "costs": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "number"
+                }
+              },
+              "total": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "agentId",
+              "displayName",
+              "agentType",
+              "idle",
+              "costs",
+              "total"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "totalsByCategory": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "grandTotal": {
+          "type": "number"
+        },
+        "agentCount": {
+          "type": "number"
+        },
+        "activeAgentCount": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "agents",
+        "totalsByCategory",
+        "grandTotal",
+        "agentCount",
+        "activeAgentCount"
+      ],
+      "additionalProperties": false
+    },
+    "getAgentCostsParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "getAgentCostsResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "agent": {
+              "type": "object",
+              "properties": {
+                "agentId": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "agentType": {
+                  "type": "string"
+                },
+                "idle": {
+                  "type": "boolean"
+                },
+                "costs": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "number"
+                  }
+                },
+                "total": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "agentId",
+                "displayName",
+                "agentType",
+                "idle",
+                "costs",
+                "total"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "agent"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "resetAgentCostsParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "resetAgentCostsResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Metrics RPC",
+    "path": "/rpc/metrics",
+    "source": "plugin/metrics/rpc/schema.ts",
+    "methods": {
+      "getCostSummary": {
+        "type": "query",
+        "params": "#/$defs/getCostSummaryParams",
+        "result": "#/$defs/getCostSummaryResult"
+      },
+      "streamCostSummary": {
+        "type": "stream",
+        "params": "#/$defs/streamCostSummaryParams",
+        "result": "#/$defs/streamCostSummaryResult"
+      },
+      "getAgentCosts": {
+        "type": "query",
+        "params": "#/$defs/getAgentCostsParams",
+        "result": "#/$defs/getAgentCostsResult"
+      },
+      "resetAgentCosts": {
+        "type": "mutation",
+        "params": "#/$defs/resetAgentCostsParams",
+        "result": "#/$defs/resetAgentCostsResult"
+      }
+    }
+  }
+}

@@ -1,9 +1,15 @@
-//! TOML configuration for `~/.config/tokenring/cli-rs.toml` (nice-to-have #1).
+//! TOML configuration for the platform config dir (`cli.toml`) (nice-to-have #1).
 //!
-//! CLI flags take precedence over file values (git-style). Profiles overlay the
-//! root table via `[profile.<name>]`.
+//! Default path is `{dirs::config_dir()}/tokenring/cli.toml` (XDG on Linux,
+//! Application Support on macOS, RoamingAppData on Windows). CLI flags take
+//! precedence over file values (git-style). Profiles overlay the root table via
+//! `[profile.<name>]`.
+//!
+//! On load, existing config files are forced to mode `0600` (Unix) so secrets
+//! are not world-readable.
 
 use std::collections::HashMap;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
@@ -35,6 +41,13 @@ pub struct FileConfig {
     pub prompt: Option<String>,
     pub shutdown_when_done: Option<bool>,
     pub notifications: NotificationConfig,
+    /// Optional path to the TokenRing One binary for local launch.
+    pub one_binary: Option<PathBuf>,
+    /// Project directory for local launch (default `.` when unset).
+    pub project_directory: Option<PathBuf>,
+    /// Optional keybind overrides (`command_list = "ctrl+p"`, `leader = "ctrl+x"`, …).
+    #[serde(default)]
+    pub keybinds: HashMap<String, String>,
     #[serde(default)]
     pub profile: HashMap<String, ProfileConfig>,
 }
@@ -56,29 +69,69 @@ pub struct ProfileConfig {
     pub prompt: Option<String>,
     pub shutdown_when_done: Option<bool>,
     pub notifications: Option<NotificationConfig>,
+    pub one_binary: Option<PathBuf>,
+    pub project_directory: Option<PathBuf>,
+    #[serde(default)]
+    pub keybinds: HashMap<String, String>,
 }
 
 impl FileConfig {
-    /// Default config path: `~/.config/tokenring/cli-rs.toml`.
+    /// Preferred config path: `{config_dir}/tokenring/cli.toml`.
     pub fn default_path() -> Option<PathBuf> {
-        std::env::var("HOME").ok().map(|h| {
-            PathBuf::from(h)
-                .join(".config")
-                .join("tokenring")
-                .join("cli-rs.toml")
-        })
+        Self::config_dir().map(|dir| dir.join("cli.toml"))
+    }
+
+    /// Legacy path from the `cli-rs` branding era (same config dir).
+    pub fn legacy_path() -> Option<PathBuf> {
+        Self::config_dir().map(|dir| dir.join("cli-rs.toml"))
+    }
+
+    /// Extra legacy path under `$HOME/.config/tokenring` when `dirs` resolves
+    /// elsewhere (e.g. macOS Application Support) so older installs still load.
+    fn home_dot_config_legacy_paths() -> Vec<PathBuf> {
+        let Some(home) = dirs::home_dir() else {
+            return Vec::new();
+        };
+        let base = home.join(".config").join("tokenring");
+        vec![base.join("cli.toml"), base.join("cli-rs.toml")]
+    }
+
+    fn config_dir() -> Option<PathBuf> {
+        dirs::config_dir().map(|dir| dir.join("tokenring"))
+    }
+
+    /// Resolve which default file to load: platform `cli.toml`, then legacy names.
+    fn resolve_default_path() -> Option<PathBuf> {
+        if let Some(path) = Self::default_path() {
+            if path.exists() {
+                return Some(path);
+            }
+        }
+        if let Some(legacy) = Self::legacy_path() {
+            if legacy.exists() {
+                return Some(legacy);
+            }
+        }
+        for path in Self::home_dot_config_legacy_paths() {
+            if path.exists() {
+                return Some(path);
+            }
+        }
+        Self::default_path()
     }
 
     /// Load from an explicit path or the default location. Missing files → empty config.
+    /// Existing files are forced to mode `0600` on Unix (secrets at rest).
     pub fn load(path: Option<&Path>) -> Result<Self> {
         let path = path
             .map(PathBuf::from)
-            .or_else(Self::default_path)
-            .context("could not resolve config path (HOME unset?)")?;
+            .or_else(Self::resolve_default_path)
+            .context("could not resolve config path (home/config dir unavailable)")?;
         if !path.exists() {
             return Ok(Self::default());
         }
-        let text = std::fs::read_to_string(&path)
+        enforce_private_mode(&path)?;
+        let text = fs::read_to_string(&path)
             .with_context(|| format!("read config {}", path.display()))?;
         toml::from_str(&text).with_context(|| format!("parse config {}", path.display()))
     }
@@ -127,8 +180,38 @@ impl FileConfig {
         if let Some(n) = profile.notifications {
             self.notifications = n;
         }
+        if let Some(v) = profile.one_binary {
+            self.one_binary = Some(v);
+        }
+        if let Some(v) = profile.project_directory {
+            self.project_directory = Some(v);
+        }
+        if !profile.keybinds.is_empty() {
+            self.keybinds.extend(profile.keybinds);
+        }
         Ok(self)
     }
+}
+
+/// Force `0600` on a config file so bearer tokens / passwords are not group- or
+/// world-readable. No-op on non-Unix platforms.
+fn enforce_private_mode(path: &Path) -> Result<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let metadata =
+            fs::metadata(path).with_context(|| format!("stat config {}", path.display()))?;
+        let mode = metadata.permissions().mode() & 0o777;
+        if mode != 0o600 {
+            fs::set_permissions(path, fs::Permissions::from_mode(0o600))
+                .with_context(|| format!("set mode 0600 on config {}", path.display()))?;
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = path;
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -170,5 +253,25 @@ hook = "echo done"
         .unwrap();
         assert!(cfg.notifications.bell);
         assert_eq!(cfg.notifications.hook.as_deref(), Some("echo done"));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn load_forces_private_mode() {
+        use std::os::unix::fs::PermissionsExt;
+        let path = std::env::temp_dir().join(format!(
+            "tokenring-cli-perms-{}-{}.toml",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::write(&path, "verbose = true\n").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
+        FileConfig::load(Some(&path)).unwrap();
+        let mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        let _ = fs::remove_file(&path);
+        assert_eq!(mode, 0o600);
     }
 }
