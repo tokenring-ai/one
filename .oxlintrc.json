@@ -15,7 +15,8 @@
     "frontend/src/test/*",
     "util/**",
     "deps/**",
-    "docs/**"
+    "docs/**",
+    "website/**"
   ],
   "options": {
     "typeAware": true,

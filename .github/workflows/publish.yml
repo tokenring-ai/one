@@ -303,6 +303,8 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
+
       - uses: actions/download-artifact@v7
         with:
           pattern: tokenring-one-*
@@ -327,6 +329,16 @@ jobs:
           path: ./artifacts
           merge-multiple: true
 
+      - uses: actions/download-artifact@v7
+        with:
+          name: one-frontend
+          path: ./artifacts/one-frontend
+
+      - name: Stage install assets
+        run: |
+          install -m 755 packaging/install.sh artifacts/install.sh
+          tar -czf artifacts/one-frontend.tar.gz -C artifacts/one-frontend .
+
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
@@ -334,6 +346,8 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
+            artifacts/install.sh
+            artifacts/one-frontend.tar.gz
             artifacts/tokenring-one-macos-*
             artifacts/tokenring-one-linux-*
             artifacts/tokenring-cli-macos-*
