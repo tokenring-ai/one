@@ -1,9 +1,9 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Mic } from "lucide-react";
+import type { KeyboardEvent } from "react";
 import { useMemo, useState } from "react";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { audioRPCClient, useSpeechModels } from "../../../../rpc.ts";
-import type { KeyboardEvent} from "react";
 import GenerateButton from "./GenerateButton.tsx";
 import GeneratePanelShell from "./GeneratePanelShell.tsx";
 import ModelSelectField from "./ModelSelectField.tsx";

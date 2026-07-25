@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { sanitizeBlogHtml, sanitizeCanvasHtml } from "./sanitizeHtml.ts";
+import { sanitizeBlogHtml, sanitizeDesignHtml } from "./sanitizeHtml.ts";
 
 describe("sanitizeBlogHtml", () => {
   it("preserves safe blog markup", () => {
@@ -18,10 +18,10 @@ describe("sanitizeBlogHtml", () => {
   });
 });
 
-describe("sanitizeCanvasHtml", () => {
+describe("sanitizeDesignHtml", () => {
   it("preserves inline scripts and styles for live preview", () => {
     const html = "<style>body{color:red}</style><p>Hi</p><script>console.log(1)</script>";
-    const sanitized = sanitizeCanvasHtml(html);
+    const sanitized = sanitizeDesignHtml(html);
     expect(sanitized).toContain("<style>");
     expect(sanitized).toContain("<script>");
     expect(sanitized).toContain("Hi");
@@ -29,7 +29,7 @@ describe("sanitizeCanvasHtml", () => {
 
   it("strips inline event handlers and nested iframes", () => {
     const html = '<p onclick="alert(1)">Hi</p><iframe src="https://evil.test"></iframe>';
-    const sanitized = sanitizeCanvasHtml(html);
+    const sanitized = sanitizeDesignHtml(html);
     expect(sanitized).not.toContain("onclick");
     expect(sanitized).not.toContain("<iframe");
     expect(sanitized).toContain("Hi");
@@ -37,6 +37,6 @@ describe("sanitizeCanvasHtml", () => {
 
   it("blocks javascript: URLs", () => {
     const html = '<a href="javascript:alert(1)">bad</a>';
-    expect(sanitizeCanvasHtml(html)).not.toContain("javascript:");
+    expect(sanitizeDesignHtml(html)).not.toContain("javascript:");
   });
 });

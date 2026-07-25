@@ -1,3 +1,4 @@
+import type { TodoItem, TodoStatus } from "@tokenring-ai/todo";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import {
   AlertTriangle,
@@ -7,6 +8,7 @@ import {
   DollarSign,
   FileText,
   FolderOpen,
+  Frame,
   GitBranch,
   Image,
   ListOrdered,
@@ -17,7 +19,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Pause,
-  PenTool,
   Plug,
   Search,
   Settings,
@@ -59,14 +60,8 @@ const SIDEBAR_TODO_MAX = 7;
 /** When trimming an over-long list, keep at most this many completed items at the top. */
 const SIDEBAR_TODO_MAX_COMPLETED = 3;
 
-type SidebarTodo = {
-  id: string;
-  content: string;
-  status: string;
-};
-
 /** Completed first (stable), then in-progress, then pending. */
-function statusRank(status: string): number {
+function statusRank(status: TodoStatus): number {
   switch (status) {
     case "completed":
       return 0;
@@ -85,8 +80,8 @@ function statusRank(status: string): number {
  * 2. If still over the max, drop from the bottom.
  * Returns counts of hidden items for "+N more" labels above/below.
  */
-function capTodos(todos: SidebarTodo[]): {
-  items: SidebarTodo[];
+function capTodos(todos: TodoItem[]): {
+  items: TodoItem[];
   moreAbove: number;
   moreBelow: number;
 } {
@@ -153,7 +148,7 @@ const APP_NAV_ITEMS: AppNavItem[] = [
   { path: "/scheduler", icon: <Timer className="w-4 h-4" />, label: "Scheduler", color: "text-indigo-400" },
   { path: "/queue", icon: <ListOrdered className="w-4 h-4" />, label: "Queue", color: "text-sky-400" },
   { path: "/skills", icon: <Sparkles className="w-4 h-4" />, label: "Skills", color: "text-violet-400" },
-  { path: "/canvas", icon: <PenTool className="w-4 h-4" />, label: "Canvas", color: "text-purple-400" },
+  { path: "/web-design", icon: <Frame className="w-4 h-4" />, label: "Web Design", color: "text-purple-400" },
   { path: "/documents", icon: <FileText className="w-4 h-4" />, label: "Documents", color: "text-lime-400" },
   { path: "/research", icon: <Search className="w-4 h-4" />, label: "Research", color: "text-indigo-400" },
   { path: "/blog", icon: <BookOpen className="w-4 h-4" />, label: "Blog", color: "text-rose-400" },
@@ -183,7 +178,7 @@ export default function Sidebar({ currentAgentId, agents, workflows, agentTypes 
 
   const cappedTodos = useMemo(() => {
     if (todosStream.data?.status !== "success") {
-      return { items: [] as SidebarTodo[], moreAbove: 0, moreBelow: 0 };
+      return { items: [] as TodoItem[], moreAbove: 0, moreBelow: 0 };
     }
     // Completed at top (green), then in-progress, then pending — original order preserved within each status.
     const todos = [...todosStream.data.todos];

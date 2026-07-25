@@ -27,6 +27,7 @@ import { arrayableToArray } from "@tokenring-ai/utility/array/arrayable";
 import { stripUndefinedKeys } from "@tokenring-ai/utility/object/stripObject";
 import VaultRpcSchema from "@tokenring-ai/vault/rpc/schema";
 import VideoRpcSchema from "@tokenring-ai/video/rpc/schema";
+import WebDesignRpcSchema from "@tokenring-ai/web-design/rpc/schema";
 import createWsRPCClient from "@tokenring-ai/web-host/createWsRPCClient";
 import WorkflowRpcSchema from "@tokenring-ai/workflow/rpc/schema";
 import { useEffect, useRef } from "react";
@@ -60,6 +61,7 @@ export const lifecycleRPCClient = createWsRPCClient(baseURL, LifecycleRpcSchema,
 export const mediaLibraryRPCClient = createWsRPCClient(baseURL, MediaLibraryRpcSchema, rpcAuth);
 export const workflowRPCClient = createWsRPCClient(baseURL, WorkflowRpcSchema, rpcAuth);
 export const calendarRPCClient = createWsRPCClient(baseURL, CalendarRpcSchema, rpcAuth);
+export const webDesignRPCClient = createWsRPCClient(baseURL, WebDesignRpcSchema, rpcAuth);
 export const emailRPCClient = createWsRPCClient(baseURL, EmailRpcSchema, rpcAuth);
 export const terminalRPCClient = createWsRPCClient(baseURL, TerminalRpcSchema, rpcAuth);
 export const vaultRPCClient = createWsRPCClient(baseURL, VaultRpcSchema, rpcAuth);
@@ -450,4 +452,32 @@ export function useAudios(search?: string, limit?: number) {
 
 export function useSpeechModels() {
   return useTypedSWR("/ai-client/listSpeechModels", () => aiRPCClient.listSpeechModels({}));
+}
+
+export function useFlows() {
+  return useRPCStreamSWR({
+    key: "web-design-flows",
+    subscribe: signal => webDesignRPCClient.streamFlows({}, signal),
+  });
+}
+
+export function useDesigns(flowName: string | null) {
+  return useRPCStreamSWR({
+    key: flowName ? `web-design-designs:${flowName}` : null,
+    subscribe: signal => webDesignRPCClient.streamDesigns({ flowName: flowName! }, signal),
+  });
+}
+
+export function useTopics() {
+  return useRPCStreamSWR({
+    key: "research-topics",
+    subscribe: signal => researchRPCClient.streamTopics({}, signal),
+  });
+}
+
+export function useItems(topicName: string | null) {
+  return useRPCStreamSWR({
+    key: topicName ? `research-items:${topicName}` : null,
+    subscribe: signal => researchRPCClient.streamItems({ topicName: topicName! }, signal),
+  });
 }

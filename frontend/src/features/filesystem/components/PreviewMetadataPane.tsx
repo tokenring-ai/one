@@ -91,14 +91,14 @@ export default function PreviewMetadataPane({ file, provider, selectedPaths, onT
             onClick={async () => {
               try {
                 const result = await filesystemRPCClient.readTextFile({ path: file, provider });
-                void navigate("/canvas", { state: { filePath: file, fileContent: result.content ?? "", provider } });
+                void navigate("/web-design", { state: { fileContent: result.content ?? "" } });
               } catch {
                 toastManager.error("Could not read file", { duration: 3000 });
               }
             }}
             className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-primary text-xs font-medium text-muted hover:text-primary hover:bg-hover transition-all focus-ring cursor-pointer"
           >
-            <Code className="w-3.5 h-3.5" /> Open in Canvas
+            <Code className="w-3.5 h-3.5" /> Open in Web Design
           </button>
         )}
         {isDirty && (

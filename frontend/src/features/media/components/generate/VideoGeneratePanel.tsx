@@ -1,7 +1,7 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Video as VideoIcon } from "lucide-react";
+import type { KeyboardEvent } from "react";
 import { useMemo, useState } from "react";
-import type { KeyboardEvent} from "react";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { useVideoGenerationModels, videoGenerationRPCClient } from "../../../../rpc.ts";
 import GenerateButton from "./GenerateButton.tsx";

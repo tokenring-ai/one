@@ -42,5 +42,5 @@ export default {
       webHostService.registerResource("Agent Web Interface", new FallbackResource({ file: indexFile }));
     });
   },
-  config: packageConfigSchema,
+  configSchema: packageConfigSchema,
 } satisfies TokenRingPlugin<typeof packageConfigSchema>;

@@ -4,9 +4,12 @@ import type {
   ConfigListNode,
   ConfigMapNode,
   ConfigOpaqueNode,
+  ConfigSecretNode,
   ConfigUINode,
   ConfigVariantNode,
 } from "@tokenring-ai/app/config/uiSchema";
+// Deep import: the package root re-exports SecretService, which is server-only.
+import { type SecretSource, secretSourceOf } from "@tokenring-ai/secrets/secret";
 import { isPlainObject } from "@tokenring-ai/utility/object/isPlainObject";
 import { ChevronRight, Plus, RotateCcw, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -50,6 +53,8 @@ export default function ConfigNodeRenderer(props: NodeRendererProps) {
       return <MapRenderer {...props} node={props.node} />;
     case "variant":
       return <VariantRenderer {...props} node={props.node} />;
+    case "secret":
+      return <SecretRenderer {...props} node={props.node} />;
     case "opaque":
       return <OpaqueRenderer {...props} node={props.node} />;
   }
@@ -658,6 +663,163 @@ function VariantRenderer(props: NodeRendererProps & { node: ConfigVariantNode })
         />
       )}
     </section>
+  );
+}
+
+/* ---------------------------------- secret --------------------------------- */
+
+const SECRET_SOURCE_LABELS: Record<SecretSource, string> = {
+  value: "Value",
+  env: "Environment variable",
+  vault: "Vault entry",
+};
+
+function describeSecretDefault(defaultValue: unknown): string | undefined {
+  if (typeof defaultValue === "string") return defaultValue === "" ? undefined : "a value set in the configuration";
+  if (!isPlainObject(defaultValue)) return undefined;
+  if (defaultValue.source === "env" && typeof defaultValue.env === "string") return `the ${defaultValue.env} environment variable`;
+  if (defaultValue.source === "vault" && typeof defaultValue.category === "string" && typeof defaultValue.key === "string") {
+    return `vault entry ${defaultValue.category}/${defaultValue.key}`;
+  }
+  return undefined;
+}
+
+/**
+ * A secret: the user picks where the value comes from — typed in directly, read
+ * from an environment variable, or read from the credential vault — and only
+ * the typed-in form is ever masked.
+ */
+function SecretRenderer(props: NodeRendererProps & { node: ConfigSecretNode }) {
+  const { node } = props;
+  const overridden = props.overrideValue !== undefined;
+  const displayed = overridden ? props.overrideValue : props.effectiveValue;
+  const nodeIssues = issuesWithin(props.issues, props.absPath);
+
+  // The chosen source sticks even before the new source has a usable value.
+  const [pickedSource, setPickedSource] = useState<SecretSource | null>(null);
+  const source: SecretSource | null = pickedSource ?? (displayed === undefined ? null : secretSourceOf(displayed));
+
+  const record = isPlainObject(displayed) ? displayed : {};
+  const envName = source === "env" && typeof record.env === "string" ? record.env : "";
+  const vaultCategory = source === "vault" && typeof record.category === "string" ? record.category : "";
+  const vaultKey = source === "vault" && typeof record.key === "string" ? record.key : "";
+  const isSet = isRedactedSensitiveValue(displayed) ? displayed.isSet : typeof displayed === "string" && displayed.length > 0;
+
+  const emitEnv = (name: string) => props.onChange(name === "" ? undefined : { source: "env", env: name });
+  const emitVault = (category: string, key: string) => props.onChange(category === "" && key === "" ? undefined : { source: "vault", category, key });
+
+  const changeSource = (next: string) => {
+    if (next === "") {
+      setPickedSource(null);
+      props.onChange(undefined);
+      return;
+    }
+    setPickedSource(next as SecretSource);
+    props.onChange(undefined); // the new source has no value until it's filled in
+  };
+
+  const defaultDescription = describeSecretDefault(node.defaultValue);
+
+  return (
+    <div className="py-1.5" data-testid={`config-secret-${props.absPath.join(".")}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-sm font-medium text-primary">{node.label}</span>
+            {node.required && <span className="text-2xs text-red-400">*</span>}
+            {overridden && <span className="text-2xs px-1.5 py-px bg-accent/10 text-accent rounded-full">modified</span>}
+            {node.restartRequired && (
+              <span className="text-2xs px-1.5 py-px bg-amber-500/10 text-amber-500 rounded-full" title="Changing this requires a restart">
+                restart
+              </span>
+            )}
+          </div>
+          {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
+          {!overridden && defaultDescription && <p className="text-2xs text-muted mt-0.5">Defaults to {defaultDescription}</p>}
+          {nodeIssues.map(issue => (
+            <p key={issue.message} className="text-2xs text-red-400 mt-0.5" role="alert">
+              {issue.message}
+            </p>
+          ))}
+        </div>
+        <div className="flex items-start gap-1.5 shrink-0">
+          <div className="flex flex-col gap-1.5 items-end">
+            <select
+              className="px-2.5 py-1.5 bg-tertiary border border-primary rounded-lg text-sm text-primary focus-ring cursor-pointer w-full sm:w-56"
+              value={source ?? ""}
+              onChange={event => changeSource(event.target.value)}
+              aria-label={`${node.label} source`}
+            >
+              <option value="">(not set)</option>
+              {(Object.keys(SECRET_SOURCE_LABELS) as SecretSource[]).map(candidate => (
+                <option key={candidate} value={candidate}>
+                  {SECRET_SOURCE_LABELS[candidate]}
+                </option>
+              ))}
+            </select>
+
+            {source === "value" && (
+              <input
+                type={node.sensitive ? "password" : "text"}
+                className={inputClass + (overridden ? "" : " opacity-70")}
+                value={typeof displayed === "string" ? displayed : ""}
+                placeholder={
+                  node.sensitive ? (isSet ? "•••••••• (set — type to replace)" : (node.placeholder ?? "Secret value")) : (node.placeholder ?? "Value")
+                }
+                onChange={event => props.onChange(event.target.value === "" ? undefined : event.target.value)}
+                aria-label={`${node.label} value`}
+              />
+            )}
+
+            {source === "env" && (
+              <input
+                type="text"
+                className={inputClass + (overridden ? "" : " opacity-70") + " font-mono"}
+                value={envName}
+                placeholder="SERVICE_API_KEY"
+                onChange={event => emitEnv(event.target.value)}
+                aria-label={`${node.label} environment variable`}
+              />
+            )}
+
+            {source === "vault" && (
+              <>
+                <input
+                  type="text"
+                  className={inputClass + (overridden ? "" : " opacity-70") + " font-mono"}
+                  value={vaultCategory}
+                  placeholder="Vault category"
+                  onChange={event => emitVault(event.target.value, vaultKey)}
+                  aria-label={`${node.label} vault category`}
+                />
+                <input
+                  type="text"
+                  className={inputClass + (overridden ? "" : " opacity-70") + " font-mono"}
+                  value={vaultKey}
+                  placeholder="Vault key"
+                  onChange={event => emitVault(vaultCategory, event.target.value)}
+                  aria-label={`${node.label} vault key`}
+                />
+              </>
+            )}
+          </div>
+          {overridden && (
+            <button
+              type="button"
+              onClick={() => {
+                setPickedSource(null);
+                props.onChange(undefined);
+              }}
+              className="p-1 text-muted hover:text-primary transition-colors cursor-pointer"
+              title="Reset to default"
+              aria-label={`Reset ${node.label}`}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

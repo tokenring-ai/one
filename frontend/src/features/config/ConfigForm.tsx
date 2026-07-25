@@ -16,6 +16,8 @@ export function nodeHasSensitiveFields(node: ConfigUINode): boolean {
     case "field":
     case "opaque":
       return node.sensitive === true;
+    case "secret":
+      return true;
     case "group":
       return node.children.some(nodeHasSensitiveFields);
     case "list":

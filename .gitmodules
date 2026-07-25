@@ -230,3 +230,11 @@
 	path = plugin/cdn
 	url = ../cdn.git
 	branch = main
+[submodule "plugin/web-design"]
+	path = plugin/web-design
+	url = ../web-design.git
+	branch = main
+[submodule "plugin/secrets"]
+	path = plugin/secrets
+	url = ../secrets.git
+	branch = main

@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Research RPC",
-  "description": "JSON-RPC 2.0 messages for /rpc/research",
+  "title": "Web Design RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/web-design",
   "anyOf": [
     {
       "$ref": "#/$defs/JSONRPCError"
     },
     {
-      "title": "listTopics request",
+      "title": "listFlows request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -17,10 +17,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/research.listTopics"
+          "const": "/rpc/web-design.listFlows"
         },
         "params": {
-          "$ref": "#/$defs/listTopicsParams"
+          "$ref": "#/$defs/listFlowsParams"
         }
       },
       "required": [
@@ -32,7 +32,7 @@
       "additionalProperties": false
     },
     {
-      "title": "listTopics response",
+      "title": "listFlows response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -42,7 +42,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/listTopicsResult"
+          "$ref": "#/$defs/listFlowsResult"
         }
       },
       "required": [
@@ -53,7 +53,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamTopics request",
+      "title": "streamFlows request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -63,10 +63,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/research.streamTopics"
+          "const": "/rpc/web-design.streamFlows"
         },
         "params": {
-          "$ref": "#/$defs/streamTopicsParams"
+          "$ref": "#/$defs/streamFlowsParams"
         }
       },
       "required": [
@@ -78,7 +78,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamTopics response",
+      "title": "streamFlows response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -88,7 +88,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/streamTopicsResult"
+          "$ref": "#/$defs/streamFlowsResult"
         }
       },
       "required": [
@@ -99,7 +99,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamTopics stream end response",
+      "title": "streamFlows stream end response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -124,7 +124,7 @@
       "additionalProperties": false
     },
     {
-      "title": "createTopic request",
+      "title": "createFlow request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -134,10 +134,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/research.createTopic"
+          "const": "/rpc/web-design.createFlow"
         },
         "params": {
-          "$ref": "#/$defs/createTopicParams"
+          "$ref": "#/$defs/createFlowParams"
         }
       },
       "required": [
@@ -149,7 +149,7 @@
       "additionalProperties": false
     },
     {
-      "title": "createTopic response",
+      "title": "createFlow response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -159,7 +159,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/createTopicResult"
+          "$ref": "#/$defs/createFlowResult"
         }
       },
       "required": [
@@ -170,7 +170,7 @@
       "additionalProperties": false
     },
     {
-      "title": "deleteTopic request",
+      "title": "deleteFlow request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -180,10 +180,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/research.deleteTopic"
+          "const": "/rpc/web-design.deleteFlow"
         },
         "params": {
-          "$ref": "#/$defs/deleteTopicParams"
+          "$ref": "#/$defs/deleteFlowParams"
         }
       },
       "required": [
@@ -195,7 +195,7 @@
       "additionalProperties": false
     },
     {
-      "title": "deleteTopic response",
+      "title": "deleteFlow response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -205,7 +205,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/deleteTopicResult"
+          "$ref": "#/$defs/deleteFlowResult"
         }
       },
       "required": [
@@ -216,7 +216,7 @@
       "additionalProperties": false
     },
     {
-      "title": "listItems request",
+      "title": "listDesigns request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -226,10 +226,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/research.listItems"
+          "const": "/rpc/web-design.listDesigns"
         },
         "params": {
-          "$ref": "#/$defs/listItemsParams"
+          "$ref": "#/$defs/listDesignsParams"
         }
       },
       "required": [
@@ -241,7 +241,7 @@
       "additionalProperties": false
     },
     {
-      "title": "listItems response",
+      "title": "listDesigns response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -251,7 +251,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/listItemsResult"
+          "$ref": "#/$defs/listDesignsResult"
         }
       },
       "required": [
@@ -262,7 +262,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamItems request",
+      "title": "streamDesigns request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -272,10 +272,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/research.streamItems"
+          "const": "/rpc/web-design.streamDesigns"
         },
         "params": {
-          "$ref": "#/$defs/streamItemsParams"
+          "$ref": "#/$defs/streamDesignsParams"
         }
       },
       "required": [
@@ -287,7 +287,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamItems response",
+      "title": "streamDesigns response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -297,7 +297,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/streamItemsResult"
+          "$ref": "#/$defs/streamDesignsResult"
         }
       },
       "required": [
@@ -308,7 +308,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamItems stream end response",
+      "title": "streamDesigns stream end response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -333,7 +333,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getItem request",
+      "title": "getDesign request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -343,10 +343,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/research.getItem"
+          "const": "/rpc/web-design.getDesign"
         },
         "params": {
-          "$ref": "#/$defs/getItemParams"
+          "$ref": "#/$defs/getDesignParams"
         }
       },
       "required": [
@@ -358,7 +358,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getItem response",
+      "title": "getDesign response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -368,7 +368,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getItemResult"
+          "$ref": "#/$defs/getDesignResult"
         }
       },
       "required": [
@@ -379,7 +379,7 @@
       "additionalProperties": false
     },
     {
-      "title": "createItem request",
+      "title": "createDesign request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -389,10 +389,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/research.createItem"
+          "const": "/rpc/web-design.createDesign"
         },
         "params": {
-          "$ref": "#/$defs/createItemParams"
+          "$ref": "#/$defs/createDesignParams"
         }
       },
       "required": [
@@ -404,7 +404,7 @@
       "additionalProperties": false
     },
     {
-      "title": "createItem response",
+      "title": "createDesign response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -414,7 +414,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/createItemResult"
+          "$ref": "#/$defs/createDesignResult"
         }
       },
       "required": [
@@ -425,7 +425,7 @@
       "additionalProperties": false
     },
     {
-      "title": "updateItem request",
+      "title": "updateDesign request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -435,10 +435,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/research.updateItem"
+          "const": "/rpc/web-design.updateDesign"
         },
         "params": {
-          "$ref": "#/$defs/updateItemParams"
+          "$ref": "#/$defs/updateDesignParams"
         }
       },
       "required": [
@@ -450,7 +450,7 @@
       "additionalProperties": false
     },
     {
-      "title": "updateItem response",
+      "title": "updateDesign response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -460,7 +460,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/updateItemResult"
+          "$ref": "#/$defs/updateDesignResult"
         }
       },
       "required": [
@@ -471,7 +471,7 @@
       "additionalProperties": false
     },
     {
-      "title": "deleteItem request",
+      "title": "deleteDesign request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -481,10 +481,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/research.deleteItem"
+          "const": "/rpc/web-design.deleteDesign"
         },
         "params": {
-          "$ref": "#/$defs/deleteItemParams"
+          "$ref": "#/$defs/deleteDesignParams"
         }
       },
       "required": [
@@ -496,7 +496,7 @@
       "additionalProperties": false
     },
     {
-      "title": "deleteItem response",
+      "title": "deleteDesign response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -506,7 +506,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/deleteItemResult"
+          "$ref": "#/$defs/deleteDesignResult"
         }
       },
       "required": [
@@ -554,14 +554,14 @@
       ],
       "additionalProperties": false
     },
-    "listTopicsParams": {
+    "listFlowsParams": {
       "type": "object",
       "properties": {}
     },
-    "listTopicsResult": {
+    "listFlowsResult": {
       "type": "object",
       "properties": {
-        "topics": {
+        "flows": {
           "type": "array",
           "items": {
             "type": "object",
@@ -569,7 +569,7 @@
               "name": {
                 "type": "string"
               },
-              "itemCount": {
+              "designCount": {
                 "type": "number"
               },
               "updatedAt": {
@@ -578,7 +578,7 @@
             },
             "required": [
               "name",
-              "itemCount",
+              "designCount",
               "updatedAt"
             ],
             "additionalProperties": false
@@ -586,18 +586,18 @@
         }
       },
       "required": [
-        "topics"
+        "flows"
       ],
       "additionalProperties": false
     },
-    "streamTopicsParams": {
+    "streamFlowsParams": {
       "type": "object",
       "properties": {}
     },
-    "streamTopicsResult": {
+    "streamFlowsResult": {
       "type": "object",
       "properties": {
-        "topics": {
+        "flows": {
           "type": "array",
           "items": {
             "type": "object",
@@ -605,7 +605,7 @@
               "name": {
                 "type": "string"
               },
-              "itemCount": {
+              "designCount": {
                 "type": "number"
               },
               "updatedAt": {
@@ -614,7 +614,7 @@
             },
             "required": [
               "name",
-              "itemCount",
+              "designCount",
               "updatedAt"
             ],
             "additionalProperties": false
@@ -622,11 +622,11 @@
         }
       },
       "required": [
-        "topics"
+        "flows"
       ],
       "additionalProperties": false
     },
-    "createTopicParams": {
+    "createFlowParams": {
       "type": "object",
       "properties": {
         "name": {
@@ -637,16 +637,16 @@
         "name"
       ]
     },
-    "createTopicResult": {
+    "createFlowResult": {
       "type": "object",
       "properties": {
-        "topic": {
+        "flow": {
           "type": "object",
           "properties": {
             "name": {
               "type": "string"
             },
-            "itemCount": {
+            "designCount": {
               "type": "number"
             },
             "updatedAt": {
@@ -655,18 +655,18 @@
           },
           "required": [
             "name",
-            "itemCount",
+            "designCount",
             "updatedAt"
           ],
           "additionalProperties": false
         }
       },
       "required": [
-        "topic"
+        "flow"
       ],
       "additionalProperties": false
     },
-    "deleteTopicParams": {
+    "deleteFlowParams": {
       "type": "object",
       "properties": {
         "name": {
@@ -677,7 +677,7 @@
         "name"
       ]
     },
-    "deleteTopicResult": {
+    "deleteFlowResult": {
       "type": "object",
       "properties": {
         "success": {
@@ -689,26 +689,26 @@
       ],
       "additionalProperties": false
     },
-    "listItemsParams": {
+    "listDesignsParams": {
       "type": "object",
       "properties": {
-        "topicName": {
+        "flowName": {
           "type": "string"
         }
       },
       "required": [
-        "topicName"
+        "flowName"
       ]
     },
-    "listItemsResult": {
+    "listDesignsResult": {
       "type": "object",
       "properties": {
-        "items": {
+        "designs": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
-              "topicName": {
+              "flowName": {
                 "type": "string"
               },
               "name": {
@@ -722,7 +722,7 @@
               }
             },
             "required": [
-              "topicName",
+              "flowName",
               "name",
               "size",
               "updatedAt"
@@ -732,30 +732,30 @@
         }
       },
       "required": [
-        "items"
+        "designs"
       ],
       "additionalProperties": false
     },
-    "streamItemsParams": {
+    "streamDesignsParams": {
       "type": "object",
       "properties": {
-        "topicName": {
+        "flowName": {
           "type": "string"
         }
       },
       "required": [
-        "topicName"
+        "flowName"
       ]
     },
-    "streamItemsResult": {
+    "streamDesignsResult": {
       "type": "object",
       "properties": {
-        "items": {
+        "designs": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
-              "topicName": {
+              "flowName": {
                 "type": "string"
               },
               "name": {
@@ -769,7 +769,7 @@
               }
             },
             "required": [
-              "topicName",
+              "flowName",
               "name",
               "size",
               "updatedAt"
@@ -779,14 +779,14 @@
         }
       },
       "required": [
-        "items"
+        "designs"
       ],
       "additionalProperties": false
     },
-    "getItemParams": {
+    "getDesignParams": {
       "type": "object",
       "properties": {
-        "topicName": {
+        "flowName": {
           "type": "string"
         },
         "name": {
@@ -794,19 +794,19 @@
         }
       },
       "required": [
-        "topicName",
+        "flowName",
         "name"
       ]
     },
-    "getItemResult": {
+    "getDesignResult": {
       "type": "object",
       "properties": {
-        "item": {
+        "design": {
           "anyOf": [
             {
               "type": "object",
               "properties": {
-                "topicName": {
+                "flowName": {
                   "type": "string"
                 },
                 "name": {
@@ -823,7 +823,7 @@
                 }
               },
               "required": [
-                "topicName",
+                "flowName",
                 "name",
                 "size",
                 "updatedAt",
@@ -838,14 +838,14 @@
         }
       },
       "required": [
-        "item"
+        "design"
       ],
       "additionalProperties": false
     },
-    "createItemParams": {
+    "createDesignParams": {
       "type": "object",
       "properties": {
-        "topicName": {
+        "flowName": {
           "type": "string"
         },
         "name": {
@@ -857,17 +857,17 @@
         }
       },
       "required": [
-        "topicName",
+        "flowName",
         "name"
       ]
     },
-    "createItemResult": {
+    "createDesignResult": {
       "type": "object",
       "properties": {
-        "item": {
+        "design": {
           "type": "object",
           "properties": {
-            "topicName": {
+            "flowName": {
               "type": "string"
             },
             "name": {
@@ -884,7 +884,7 @@
             }
           },
           "required": [
-            "topicName",
+            "flowName",
             "name",
             "size",
             "updatedAt",
@@ -894,14 +894,14 @@
         }
       },
       "required": [
-        "item"
+        "design"
       ],
       "additionalProperties": false
     },
-    "updateItemParams": {
+    "updateDesignParams": {
       "type": "object",
       "properties": {
-        "topicName": {
+        "flowName": {
           "type": "string"
         },
         "name": {
@@ -912,18 +912,18 @@
         }
       },
       "required": [
-        "topicName",
+        "flowName",
         "name",
         "content"
       ]
     },
-    "updateItemResult": {
+    "updateDesignResult": {
       "type": "object",
       "properties": {
-        "item": {
+        "design": {
           "type": "object",
           "properties": {
-            "topicName": {
+            "flowName": {
               "type": "string"
             },
             "name": {
@@ -940,7 +940,7 @@
             }
           },
           "required": [
-            "topicName",
+            "flowName",
             "name",
             "size",
             "updatedAt",
@@ -950,14 +950,14 @@
         }
       },
       "required": [
-        "item"
+        "design"
       ],
       "additionalProperties": false
     },
-    "deleteItemParams": {
+    "deleteDesignParams": {
       "type": "object",
       "properties": {
-        "topicName": {
+        "flowName": {
           "type": "string"
         },
         "name": {
@@ -965,11 +965,11 @@
         }
       },
       "required": [
-        "topicName",
+        "flowName",
         "name"
       ]
     },
-    "deleteItemResult": {
+    "deleteDesignResult": {
       "type": "object",
       "properties": {
         "success": {
@@ -983,59 +983,59 @@
     }
   },
   "x-tokenring-rpc": {
-    "name": "Research RPC",
-    "path": "/rpc/research",
-    "source": "plugin/research/rpc/schema.ts",
+    "name": "Web Design RPC",
+    "path": "/rpc/web-design",
+    "source": "plugin/web-design/rpc/schema.ts",
     "methods": {
-      "listTopics": {
+      "listFlows": {
         "type": "query",
-        "params": "#/$defs/listTopicsParams",
-        "result": "#/$defs/listTopicsResult"
+        "params": "#/$defs/listFlowsParams",
+        "result": "#/$defs/listFlowsResult"
       },
-      "streamTopics": {
+      "streamFlows": {
         "type": "stream",
-        "params": "#/$defs/streamTopicsParams",
-        "result": "#/$defs/streamTopicsResult"
+        "params": "#/$defs/streamFlowsParams",
+        "result": "#/$defs/streamFlowsResult"
       },
-      "createTopic": {
+      "createFlow": {
         "type": "mutation",
-        "params": "#/$defs/createTopicParams",
-        "result": "#/$defs/createTopicResult"
+        "params": "#/$defs/createFlowParams",
+        "result": "#/$defs/createFlowResult"
       },
-      "deleteTopic": {
+      "deleteFlow": {
         "type": "mutation",
-        "params": "#/$defs/deleteTopicParams",
-        "result": "#/$defs/deleteTopicResult"
+        "params": "#/$defs/deleteFlowParams",
+        "result": "#/$defs/deleteFlowResult"
       },
-      "listItems": {
+      "listDesigns": {
         "type": "query",
-        "params": "#/$defs/listItemsParams",
-        "result": "#/$defs/listItemsResult"
+        "params": "#/$defs/listDesignsParams",
+        "result": "#/$defs/listDesignsResult"
       },
-      "streamItems": {
+      "streamDesigns": {
         "type": "stream",
-        "params": "#/$defs/streamItemsParams",
-        "result": "#/$defs/streamItemsResult"
+        "params": "#/$defs/streamDesignsParams",
+        "result": "#/$defs/streamDesignsResult"
       },
-      "getItem": {
+      "getDesign": {
         "type": "query",
-        "params": "#/$defs/getItemParams",
-        "result": "#/$defs/getItemResult"
+        "params": "#/$defs/getDesignParams",
+        "result": "#/$defs/getDesignResult"
       },
-      "createItem": {
+      "createDesign": {
         "type": "mutation",
-        "params": "#/$defs/createItemParams",
-        "result": "#/$defs/createItemResult"
+        "params": "#/$defs/createDesignParams",
+        "result": "#/$defs/createDesignResult"
       },
-      "updateItem": {
+      "updateDesign": {
         "type": "mutation",
-        "params": "#/$defs/updateItemParams",
-        "result": "#/$defs/updateItemResult"
+        "params": "#/$defs/updateDesignParams",
+        "result": "#/$defs/updateDesignResult"
       },
-      "deleteItem": {
+      "deleteDesign": {
         "type": "mutation",
-        "params": "#/$defs/deleteItemParams",
-        "result": "#/$defs/deleteItemResult"
+        "params": "#/$defs/deleteDesignParams",
+        "result": "#/$defs/deleteDesignResult"
       }
     }
   }

@@ -11,7 +11,7 @@ describe("buildConfigUISchema against all installed plugins", () => {
   for (const plugin of plugins) {
     it(`introspects ${plugin.name}`, () => {
       const uiSchema = buildConfigUISchema(plugin);
-      if (!("config" in plugin)) {
+      if (!("configSchema" in plugin)) {
         expect(uiSchema).toBeNull();
         return;
       }

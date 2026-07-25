@@ -14,7 +14,6 @@ import { notificationManager, ToastContainer, type ToastItem } from "./component
 import AgentsApp from "./pages/apps/AgentsApp.tsx";
 import BlogApp from "./pages/apps/BlogApp.tsx";
 import CalendarApp from "./pages/apps/CalendarApp.tsx";
-import CanvasApp from "./pages/apps/CanvasApp.tsx";
 import ConfigurationApp from "./pages/apps/ConfigurationApp.tsx";
 import DocumentsApp from "./pages/apps/DocumentsApp.tsx";
 import EmailApp from "./pages/apps/EmailApp.tsx";
@@ -33,6 +32,7 @@ import SocialApp from "./pages/apps/SocialApp.tsx";
 import StocksApp from "./pages/apps/StocksApp.tsx";
 import TerminalApp from "./pages/apps/TerminalApp.tsx";
 import VaultApp from "./pages/apps/VaultApp.tsx";
+import WebDesignApp from "./pages/apps/WebDesignApp.tsx";
 import WorkflowsApp from "./pages/apps/WorkflowsApp.tsx";
 import ChatPage from "./pages/ChatPage.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
@@ -125,9 +125,10 @@ export default function App() {
                     <Route path="/scheduler" element={<SchedulerApp />} />
                     <Route path="/queue" element={<QueueApp />} />
                     <Route path="/skills" element={<SkillsApp />} />
-                    <Route path="/canvas" element={<CanvasApp />} />
+                    {/* Optional params keep the app mounted while navigating between designs */}
+                    <Route path="/web-design/:flowName?/:designName?" element={<WebDesignApp />} />
                     <Route path="/documents" element={<DocumentsApp />} />
-                    <Route path="/research" element={<ResearchApp />} />
+                    <Route path="/research/:topicName?/:itemName?" element={<ResearchApp />} />
                     <Route path="/blog" element={<BlogApp />} />
                     <Route path="/files" element={<FilesApp />} />
                     <Route path="/terminal" element={<TerminalApp />} />

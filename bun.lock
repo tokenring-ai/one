@@ -18,7 +18,7 @@
     },
     "backend": {
       "name": "@tokenring-ai/one-backend",
-      "version": "0.2.54",
+      "version": "0.2.55",
       "devDependencies": {
         "@tokenring-ai/agent": "workspace:*",
         "@tokenring-ai/ai-client": "workspace:*",
@@ -61,6 +61,7 @@
         "@tokenring-ai/scheduler": "workspace:*",
         "@tokenring-ai/scraperapi": "workspace:*",
         "@tokenring-ai/scripting": "workspace:*",
+        "@tokenring-ai/secrets": "workspace:*",
         "@tokenring-ai/serper": "workspace:*",
         "@tokenring-ai/skills": "workspace:*",
         "@tokenring-ai/slack": "workspace:*",
@@ -73,6 +74,7 @@
         "@tokenring-ai/utility": "workspace:*",
         "@tokenring-ai/vault": "workspace:*",
         "@tokenring-ai/video": "workspace:*",
+        "@tokenring-ai/web-design": "workspace:*",
         "@tokenring-ai/web-host": "workspace:*",
         "@tokenring-ai/websearch": "workspace:*",
         "@tokenring-ai/workflow": "workspace:*",
@@ -85,10 +87,11 @@
     },
     "frontend": {
       "name": "@tokenring-ai/one-frontend",
-      "version": "0.2.54",
+      "version": "0.2.55",
       "dependencies": {
         "@monaco-editor/react": "^4.7.0",
         "@radix-ui/react-dropdown-menu": "^2.1.20",
+        "@tokenring-ai/secrets": "workspace:*",
         "@uiw/react-md-editor": "^4.1.1",
         "clsx": "^2.1.1",
         "dompurify": "^3.4.12",
@@ -137,6 +140,7 @@
         "@tokenring-ai/utility": "workspace:*",
         "@tokenring-ai/vault": "workspace:*",
         "@tokenring-ai/video": "workspace:*",
+        "@tokenring-ai/web-design": "workspace:*",
         "@tokenring-ai/web-host": "workspace:*",
         "@tokenring-ai/workflow": "workspace:*",
         "@types/jsdom": "^28.0.3",
@@ -188,6 +192,7 @@
         "@tokenring-ai/app": "workspace:*",
         "@tokenring-ai/metrics": "workspace:*",
         "@tokenring-ai/rpc": "workspace:*",
+        "@tokenring-ai/secrets": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "ai": "^7.0.28",
         "zod": "^4.4.3",
@@ -368,6 +373,7 @@
         "@tokenring-ai/app": "workspace:*",
         "@tokenring-ai/chat": "workspace:*",
         "@tokenring-ai/rpc": "workspace:*",
+        "@tokenring-ai/secrets": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "date-fns-tz": "^3.2.0",
         "zod": "^4.4.3",
@@ -430,6 +436,7 @@
         "@tokenring-ai/app": "workspace:*",
         "@tokenring-ai/chat": "workspace:*",
         "@tokenring-ai/sandbox": "workspace:*",
+        "@tokenring-ai/secrets": "workspace:*",
         "@tokenring-ai/terminal": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "execa": "^9.6.1",
@@ -704,6 +711,7 @@
       "dependencies": {
         "@tokenring-ai/app": "workspace:*",
         "@tokenring-ai/database": "workspace:*",
+        "@tokenring-ai/secrets": "workspace:*",
         "zod": "^4.4.3",
       },
       "devDependencies": {
@@ -720,6 +728,7 @@
         "@tokenring-ai/filesystem": "workspace:*",
         "@tokenring-ai/rpc": "workspace:*",
         "@tokenring-ai/scripting": "workspace:*",
+        "@tokenring-ai/secrets": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "zod": "^4.4.3",
       },
@@ -767,9 +776,7 @@
         "@tokenring-ai/agent": "workspace:*",
         "@tokenring-ai/app": "workspace:*",
         "@tokenring-ai/chat": "workspace:*",
-        "@tokenring-ai/filesystem": "workspace:*",
         "@tokenring-ai/rpc": "workspace:*",
-        "@tokenring-ai/scripting": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "zod": "^4.4.3",
       },
@@ -824,6 +831,7 @@
       "version": "0.2.0",
       "dependencies": {
         "@tokenring-ai/app": "workspace:*",
+        "@tokenring-ai/secrets": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "@tokenring-ai/websearch": "workspace:*",
         "zod": "^4.4.3",
@@ -846,11 +854,23 @@
         "typescript": "^7.0.2",
       },
     },
+    "plugin/secrets": {
+      "name": "@tokenring-ai/secrets",
+      "version": "0.2.0",
+      "dependencies": {
+        "@tokenring-ai/app": "workspace:*",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "typescript": "^7.0.2",
+      },
+    },
     "plugin/serper": {
       "name": "@tokenring-ai/serper",
       "version": "0.2.0",
       "dependencies": {
         "@tokenring-ai/app": "workspace:*",
+        "@tokenring-ai/secrets": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "@tokenring-ai/websearch": "workspace:*",
         "zod": "^4.4.3",
@@ -882,6 +902,7 @@
         "@tokenring-ai/agent": "workspace:*",
         "@tokenring-ai/app": "workspace:*",
         "@tokenring-ai/escalation": "workspace:*",
+        "@tokenring-ai/secrets": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "zod": "^4.4.3",
       },
@@ -914,6 +935,7 @@
         "@tokenring-ai/agent": "workspace:*",
         "@tokenring-ai/app": "workspace:*",
         "@tokenring-ai/escalation": "workspace:*",
+        "@tokenring-ai/secrets": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "node-telegram-bot-api": "^1.2.0",
         "zod": "^4.4.3",
@@ -1002,6 +1024,7 @@
         "@tokenring-ai/agent": "workspace:*",
         "@tokenring-ai/app": "workspace:*",
         "@tokenring-ai/rpc": "workspace:*",
+        "@tokenring-ai/secrets": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "@types/fs-extra": "^11.0.4",
         "commander": "^15.0.0",
@@ -1021,6 +1044,21 @@
         "@tokenring-ai/app": "workspace:*",
         "@tokenring-ai/chat": "workspace:*",
         "@tokenring-ai/media-library": "workspace:*",
+        "@tokenring-ai/rpc": "workspace:*",
+        "@tokenring-ai/utility": "workspace:*",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "typescript": "^7.0.2",
+      },
+    },
+    "plugin/web-design": {
+      "name": "@tokenring-ai/web-design",
+      "version": "0.1.0",
+      "dependencies": {
+        "@tokenring-ai/agent": "workspace:*",
+        "@tokenring-ai/app": "workspace:*",
+        "@tokenring-ai/chat": "workspace:*",
         "@tokenring-ai/rpc": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "zod": "^4.4.3",
@@ -1754,6 +1792,8 @@
 
     "@tokenring-ai/scripting": ["@tokenring-ai/scripting@workspace:plugin/scripting"],
 
+    "@tokenring-ai/secrets": ["@tokenring-ai/secrets@workspace:plugin/secrets"],
+
     "@tokenring-ai/serper": ["@tokenring-ai/serper@workspace:plugin/serper"],
 
     "@tokenring-ai/skills": ["@tokenring-ai/skills@workspace:plugin/skills"],
@@ -1777,6 +1817,8 @@
     "@tokenring-ai/vault": ["@tokenring-ai/vault@workspace:plugin/vault"],
 
     "@tokenring-ai/video": ["@tokenring-ai/video@workspace:plugin/video"],
+
+    "@tokenring-ai/web-design": ["@tokenring-ai/web-design@workspace:plugin/web-design"],
 
     "@tokenring-ai/web-host": ["@tokenring-ai/web-host@workspace:plugin/web-host"],
 

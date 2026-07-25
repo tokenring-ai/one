@@ -7,7 +7,7 @@ const BLOG_HTML_CONFIG: Config = {
 };
 
 /** Allows scripts/styles for live preview while stripping XSS vectors. */
-const CANVAS_HTML_CONFIG: Config = {
+const DESIGN_HTML_CONFIG: Config = {
   WHOLE_DOCUMENT: true,
   ADD_TAGS: ["script", "style", "link", "meta", "head", "body", "html", "title"],
   FORBID_TAGS: ["base", "object", "embed", "applet", "iframe", "frame", "frameset"],
@@ -18,6 +18,6 @@ export function sanitizeBlogHtml(html: string): string {
   return DOMPurify.sanitize(html, BLOG_HTML_CONFIG);
 }
 
-export function sanitizeCanvasHtml(html: string): string {
-  return DOMPurify.sanitize(html, CANVAS_HTML_CONFIG);
+export function sanitizeDesignHtml(html: string): string {
+  return DOMPurify.sanitize(html, DESIGN_HTML_CONFIG);
 }

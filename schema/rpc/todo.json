@@ -197,7 +197,8 @@
                     "enum": [
                       "pending",
                       "in_progress",
-                      "completed"
+                      "completed",
+                      "cancelled"
                     ]
                   }
                 },
@@ -267,7 +268,8 @@
                     "enum": [
                       "pending",
                       "in_progress",
-                      "completed"
+                      "completed",
+                      "cancelled"
                     ]
                   }
                 },

@@ -125,8 +125,15 @@ async function runApp({ projectDirectory, dataDirectory, listen, port, vaultFile
           outputDirectory: path.join(dataDirectory, "media-library"),
         },
       },
+      webDesign: {
+        agentDefaults: {
+          webDesignDirectory: path.join(dataDirectory, "web-design"),
+        },
+      },
       research: {
-        researchDirectory: path.join(dataDirectory, "research"),
+        agentDefaults: {
+          researchDirectory: path.join(dataDirectory, "research"),
+        },
       },
       imageGeneration: {
         agentDefaults: {},
@@ -170,16 +177,18 @@ async function runApp({ projectDirectory, dataDirectory, listen, port, vaultFile
     const parsedConfig = configSchema.parse(mergedConfig);
 
     const userOverridesFile = path.join(os.homedir(), ".tokenring", "config.yaml");
-    const { config: appConfig, baseConfig, overrides, overlayError } = await buildTokenRingAppConfigLayers(configSchema, parsedConfig, { userOverridesFile });
+    const projectOverridesFile = path.join(projectDirectory, ".tokenring", "config.yaml");
+    const { appConfig, userConfig, projectConfig, overlayError } = await buildTokenRingAppConfigLayers(configSchema, parsedConfig, {
+      userOverridesFile,
+      projectOverridesFile,
+    });
 
-    const app = new TokenRingApp(appConfig);
+    const app = new TokenRingApp(appConfig, { userConfig, projectConfig });
 
     app.addServices(
       new ConfigurationService(app, {
         configSchema,
-        baseConfig,
-        overridesFile: userOverridesFile,
-        overrides,
+        overridesFiles: { user: userOverridesFile, project: projectOverridesFile },
         overlayError,
       }),
     );

@@ -55,6 +55,7 @@
     "@tokenring-ai/typescript": "workspace:*",
     "@tokenring-ai/utility": "workspace:*",
     "@tokenring-ai/video": "workspace:*",
+    "@tokenring-ai/web-design": "workspace:*",
     "@tokenring-ai/web-host": "workspace:*",
     "@tokenring-ai/workflow": "workspace:*",
     "@tokenring-ai/websearch": "workspace:*",
@@ -63,7 +64,8 @@
     "chalk": "^5.6.2",
     "commander": "^15.0.0",
     "typescript": "^7.0.2",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "@tokenring-ai/secrets": "workspace:*"
   },
   "repository": {
     "type": "git",

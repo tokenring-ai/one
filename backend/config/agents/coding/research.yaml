@@ -1,29 +1,36 @@
 agents:
   research:
     displayName: Deep Research
-    description: Multi-file deep research reports using web search, todos, and filesystem.
+    description: Multi-file deep research reports using web search, todos, and research topic tools.
     category: Research
     chat:
       systemPrompt: |
-        You are a deep research agent. Your job is to produce thorough, verified, multi-file research dossiers on disk.
+        You are a deep research agent. Your job is to produce thorough, verified, multi-file research dossiers.
+
+        Research is organized as:
+        - Topics: named collections of related research (directories under the research directory)
+        - Items: individual markdown files within a topic (SUMMARY, TOC, deep-dives, notes)
 
         For every research request, follow this process:
-        1. Create a new subdirectory under the current working directory for this research project.
-           Use a slug/date-friendly name derived from the topic (e.g. 2026-07-09-solid-state-batteries).
-        2. Plan the work with the todo tool: outline topics, search tasks, writing tasks, and review.
+        1. Create a topic for this research project (use topic_create, or item_write which auto-creates topics).
+           Use a slug/date-friendly name derived from the subject (e.g. solid-state-batteries).
+        2. Plan the work with the todo tool: outline sections, search tasks, writing tasks, and review.
         3. Use web search and page fetch tools to gather factual, verified information from reputable sources.
            Cite specific URLs for every claim. Prefer verbatim extraction of key data. No speculation.
            If sources conflict, report both sides and note the discrepancy.
-        4. Write markdown outputs inside the project subdirectory:
-           - SUMMARY.md — executive summary of findings
-           - TOC.md — table of contents linking to each topic file
-           - One markdown file per major topic/section with a deep dive
-        5. Finish only when SUMMARY.md, TOC.md, and all topic files are complete and consistent.
+        4. Write markdown items inside the topic using item_write:
+           - summary — executive summary of findings
+           - toc — table of contents linking to each item
+           - One item per major section with a deep dive
+        5. Finish only when summary, toc, and all section items are complete and consistent.
 
-        Do not leave the research incomplete. Prefer multiple focused files over one giant blob.
+        Prefer the research topic/item tools (topic_*, item_*) over raw filesystem writes for research output.
+        Do not leave the research incomplete. Prefer multiple focused items over one giant blob.
       enabledTools:
         - websearch_*
         - todo
+        - topic_*
+        - item_*
         - file_*
 commands:
   deep research:
@@ -31,13 +38,13 @@ commands:
     requireNewAgent: false
     description: Perform deep multi-file research on a topic or goal
     help: |
-      Starts a deep research run that writes a structured markdown dossier to disk.
+      Starts a deep research run that writes a structured markdown dossier.
 
       The agent will:
-      - Create a project subdirectory under its working directory
+      - Create a research topic under the research directory
       - Plan with todos
       - Search and cite web sources
-      - Write SUMMARY.md, TOC.md, and per-topic deep-dive files
+      - Write markdown items (summary, toc, and per-section deep-dives)
 
       ## Usage
       /deep research <topic or goal>
@@ -56,15 +63,15 @@ commands:
         ------
         {{ prompt }}
         ------
-        Create a new project directory under the working directory for this topic.
+        Create a research topic for this subject (topic_create or item_write).
         Use the todo tool to plan outline, search, writing, and review steps.
         Use web search and page fetch to gather verified sources with citations.
-        Write SUMMARY.md, TOC.md (with links to topic files), and individual
-        markdown deep-dive files for each major topic. Begin now.
+        Write markdown items via item_write: summary, toc (with links to other items),
+        and individual deep-dive items for each major section. Begin now.
 tools:
   deep_research:
     agentType: research
-    description: Start a deep multi-file research project on a topic. Writes SUMMARY.md, TOC.md, and topic files under the research working directory.
+    description: Start a deep multi-file research project on a topic. Writes markdown items under a research topic.
     displayName: Research Agents/Deep Research
     inputArguments:
       prompt:
@@ -80,8 +87,8 @@ tools:
         Important context:
         {{ context }}
         ------
-        Create a new project directory under the working directory for this topic.
+        Create a research topic for this subject (topic_create or item_write).
         Use the todo tool to plan outline, search, writing, and review steps.
         Use web search and page fetch to gather verified sources with citations.
-        Write SUMMARY.md, TOC.md (with links to topic files), and individual
-        markdown deep-dive files for each major topic. Begin now.
+        Write markdown items via item_write: summary, toc (with links to other items),
+        and individual deep-dive items for each major section. Begin now.
