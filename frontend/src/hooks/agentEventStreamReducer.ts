@@ -1,4 +1,5 @@
 import type { AgentEventEnvelope, AgentStatusSchema, InputExecutionStateSchema } from "@tokenring-ai/agent/AgentEvents";
+import EnhancedMap from "@tokenring-ai/utility/map/enhancedMap";
 import type { z } from "zod";
 import type { ChatMessage, QuestionInteraction } from "../types/agent-events.ts";
 
@@ -17,7 +18,7 @@ export type AgentEventStreamState = {
   position: number;
   currentExecutionState: InputExecutionState | null | undefined;
   agentNotFound: boolean;
-  inputExecutions: Map<string, InputExecutionState>;
+  inputExecutions: EnhancedMap<string, InputExecutionState>;
 };
 
 export const INITIAL_AGENT_STATUS: RemoteAgentStatus = {
@@ -35,7 +36,7 @@ export function createInitialAgentEventStreamState(): AgentEventStreamState {
     position: 0,
     currentExecutionState: null,
     agentNotFound: false,
-    inputExecutions: new Map(),
+    inputExecutions: new EnhancedMap(),
   };
 }
 
@@ -51,7 +52,7 @@ export function reduceAgentEventStreamChunk(prev: AgentEventStreamState, chunk: 
   const currentMessages = [...prev.messages];
   let currentAgentStatus = prev.agentStatus;
   let currentExecutionState = prev.currentExecutionState;
-  const inputExecutions = new Map(prev.inputExecutions);
+  const inputExecutions = prev.inputExecutions.clone();
 
   const appendMessage = (event: ChatMessage) => {
     currentMessages.push(event);

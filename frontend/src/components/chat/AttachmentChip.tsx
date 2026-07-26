@@ -38,6 +38,7 @@ const mimeTypeIcons: Record<SupportedMimeTypes, LucideIcon> = {
   "video/mp4": FileVideo,
   "video/webm": FileVideo,
   "image/png": ImageIcon,
+  "image/webp": ImageIcon,
   "image/jpeg": ImageIcon,
   "text/plain": FileText,
   "text/markdown": FileText,

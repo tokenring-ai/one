@@ -1,0 +1,19 @@
+# TokenRing workflow definition. The file name is the workflow name.
+displayName: Chat Frontend UX Improver
+category: Frontend
+description: This agent will find and implement a small UX improvement for each .tsx file in the chat frontend
+agentType: leader
+steps: 
+  - "/function define js getChatTsxFiles() { return (await import('fs')).globSync('frontend/chat/src/**/*.tsx') }"
+  - /list @files = getChatTsxFiles()
+  - "/for $file in @files {\n  /eval /agent run --neverFail --type ui-ux-designer Review $file and identify one small, focused user experience improvement that can be made, then implement it\n}\n"
+subAgent: 
+  forwardChatOutput: false
+  forwardStatusMessages: true
+  forwardSystemOutput: false
+  forwardHumanRequests: true
+  forwardReasoning: false
+  forwardInputCommands: true
+  timeout: 0
+  maxResponseLength: 10000
+  minContextLength: 1000

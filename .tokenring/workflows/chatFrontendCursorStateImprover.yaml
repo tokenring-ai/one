@@ -1,0 +1,19 @@
+# TokenRing workflow definition. The file name is the workflow name.
+displayName: Chat Frontend Cursor & Hover State Improver
+category: Frontend
+description: "Audits and improves cursor, hover, and pointer states across interactive elements in the chat frontend"
+agentType: leader
+steps: 
+  - "/function define js getChatTsxFiles() { return (await import('fs')).globSync('frontend/chat/src/**/*.tsx') }"
+  - /list @files = getChatTsxFiles()
+  - "/for $file in @files {\n  /eval /agent run --neverFail --type ui-ux-designer Audit $file for all interactive elements — buttons, anchors, clickable divs, icons, and any element with onClick or onHover handlers. Check that each has an appropriate cursor style (e.g. cursor-pointer), visible hover/focus states, and active press feedback. Implement any missing or incorrect states.\n}\n"
+subAgent: 
+  forwardChatOutput: false
+  forwardStatusMessages: true
+  forwardSystemOutput: false
+  forwardHumanRequests: true
+  forwardReasoning: false
+  forwardInputCommands: true
+  timeout: 0
+  maxResponseLength: 10000
+  minContextLength: 1000

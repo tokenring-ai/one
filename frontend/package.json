@@ -5,13 +5,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "watch:build": "vite build --watch --minify false",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
-    "test:coverage": "bun test --coverage"
+    "dev": "bun ./index.html --port=5173",
+    "build": "bun ./build.ts",
+    "preview": "bun ./preview.ts",
+    "watch:build": "bun ./build.ts --watch --no-minify",
+    "test": "bun test --isolate",
+    "test:watch": "bun test --isolate --watch",
+    "test:coverage": "bun test --isolate --coverage"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -34,7 +34,7 @@
     "@tokenring-ai/secrets": "workspace:*"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.2",
+    "@tailwindcss/postcss": "^4.3.3",
     "@tailwindcss/typography": "^0.5.20",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -71,12 +71,10 @@
     "@types/jsdom": "^28.0.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.3",
     "jsdom": "^29.1.1",
-    "postcss": "^8.5.19",
+    "postcss": "^8.5.20",
     "tailwindcss": "^4.3.2",
-    "typescript": "^7.0.2",
-    "vite": "8.1.4"
+    "typescript": "^7.0.2"
   },
   "license": "MIT",
   "exports": {

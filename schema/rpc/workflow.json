@@ -53,6 +53,52 @@
       "additionalProperties": false
     },
     {
+      "title": "getWorkflowDirectory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/workflow.getWorkflowDirectory"
+        },
+        "params": {
+          "$ref": "#/$defs/getWorkflowDirectoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getWorkflowDirectory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getWorkflowDirectoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "getWorkflow request",
       "type": "object",
       "properties": {
@@ -95,6 +141,215 @@
         "jsonrpc",
         "id",
         "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createWorkflow request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/workflow.createWorkflow"
+        },
+        "params": {
+          "$ref": "#/$defs/createWorkflowParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createWorkflow response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createWorkflowResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateWorkflow request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/workflow.updateWorkflow"
+        },
+        "params": {
+          "$ref": "#/$defs/updateWorkflowParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateWorkflow response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateWorkflowResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteWorkflow request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/workflow.deleteWorkflow"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteWorkflowParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteWorkflow response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteWorkflowResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamWorkflowRuns request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/workflow.streamWorkflowRuns"
+        },
+        "params": {
+          "$ref": "#/$defs/streamWorkflowRunsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamWorkflowRuns response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamWorkflowRunsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamWorkflowRuns stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
       ],
       "additionalProperties": false
     },
@@ -191,38 +446,115 @@
       "items": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string"
-          },
-          "category": {
-            "type": "string"
-          },
           "displayName": {
             "type": "string"
           },
+          "category": {
+            "default": "User-Created Workflows",
+            "type": "string"
+          },
           "description": {
+            "default": "",
             "type": "string"
           },
           "agentType": {
             "type": "string"
           },
           "steps": {
+            "default": [],
             "type": "array",
             "items": {
               "type": "string"
             }
+          },
+          "subAgent": {
+            "type": "object",
+            "properties": {
+              "forwardChatOutput": {
+                "default": false,
+                "type": "boolean"
+              },
+              "forwardStatusMessages": {
+                "default": true,
+                "type": "boolean"
+              },
+              "forwardSystemOutput": {
+                "default": false,
+                "type": "boolean"
+              },
+              "forwardHumanRequests": {
+                "default": true,
+                "type": "boolean"
+              },
+              "forwardReasoning": {
+                "default": false,
+                "type": "boolean"
+              },
+              "forwardInputCommands": {
+                "default": true,
+                "type": "boolean"
+              },
+              "timeout": {
+                "default": 0,
+                "type": "number"
+              },
+              "maxResponseLength": {
+                "default": 10000,
+                "type": "number"
+              },
+              "minContextLength": {
+                "default": 1000,
+                "type": "number"
+              }
+            },
+            "required": [
+              "forwardChatOutput",
+              "forwardStatusMessages",
+              "forwardSystemOutput",
+              "forwardHumanRequests",
+              "forwardReasoning",
+              "forwardInputCommands",
+              "timeout",
+              "maxResponseLength",
+              "minContextLength"
+            ],
+            "additionalProperties": false
+          },
+          "name": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
           }
         },
         "required": [
-          "name",
-          "category",
           "displayName",
+          "category",
           "description",
           "agentType",
-          "steps"
+          "steps",
+          "subAgent",
+          "name",
+          "updatedAt"
         ],
         "additionalProperties": false
       }
+    },
+    "getWorkflowDirectoryParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getWorkflowDirectoryResult": {
+      "type": "object",
+      "properties": {
+        "directory": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "directory"
+      ],
+      "additionalProperties": false
     },
     "getWorkflowParams": {
       "type": "object",
@@ -238,31 +570,610 @@
     "getWorkflowResult": {
       "type": "object",
       "properties": {
-        "displayName": {
+        "workflow": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "displayName": {
+                  "type": "string"
+                },
+                "category": {
+                  "default": "User-Created Workflows",
+                  "type": "string"
+                },
+                "description": {
+                  "default": "",
+                  "type": "string"
+                },
+                "agentType": {
+                  "type": "string"
+                },
+                "steps": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "subAgent": {
+                  "type": "object",
+                  "properties": {
+                    "forwardChatOutput": {
+                      "default": false,
+                      "type": "boolean"
+                    },
+                    "forwardStatusMessages": {
+                      "default": true,
+                      "type": "boolean"
+                    },
+                    "forwardSystemOutput": {
+                      "default": false,
+                      "type": "boolean"
+                    },
+                    "forwardHumanRequests": {
+                      "default": true,
+                      "type": "boolean"
+                    },
+                    "forwardReasoning": {
+                      "default": false,
+                      "type": "boolean"
+                    },
+                    "forwardInputCommands": {
+                      "default": true,
+                      "type": "boolean"
+                    },
+                    "timeout": {
+                      "default": 0,
+                      "type": "number"
+                    },
+                    "maxResponseLength": {
+                      "default": 10000,
+                      "type": "number"
+                    },
+                    "minContextLength": {
+                      "default": 1000,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "forwardChatOutput",
+                    "forwardStatusMessages",
+                    "forwardSystemOutput",
+                    "forwardHumanRequests",
+                    "forwardReasoning",
+                    "forwardInputCommands",
+                    "timeout",
+                    "maxResponseLength",
+                    "minContextLength"
+                  ],
+                  "additionalProperties": false
+                },
+                "name": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "displayName",
+                "category",
+                "description",
+                "agentType",
+                "steps",
+                "subAgent",
+                "name",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "workflow"
+      ],
+      "additionalProperties": false
+    },
+    "createWorkflowParams": {
+      "type": "object",
+      "properties": {
+        "name": {
           "type": "string"
         },
-        "category": {
+        "workflow": {
+          "type": "object",
+          "properties": {
+            "displayName": {
+              "type": "string"
+            },
+            "category": {
+              "default": "User-Created Workflows",
+              "type": "string"
+            },
+            "description": {
+              "default": "",
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "steps": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "subAgent": {
+              "default": {},
+              "type": "object",
+              "properties": {
+                "forwardChatOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardStatusMessages": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardSystemOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardHumanRequests": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardReasoning": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardInputCommands": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "timeout": {
+                  "default": 0,
+                  "type": "number"
+                },
+                "maxResponseLength": {
+                  "default": 10000,
+                  "type": "number"
+                },
+                "minContextLength": {
+                  "default": 1000,
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "required": [
+            "displayName",
+            "agentType"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "workflow"
+      ]
+    },
+    "createWorkflowResult": {
+      "type": "object",
+      "properties": {
+        "workflow": {
+          "type": "object",
+          "properties": {
+            "displayName": {
+              "type": "string"
+            },
+            "category": {
+              "default": "User-Created Workflows",
+              "type": "string"
+            },
+            "description": {
+              "default": "",
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "steps": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "subAgent": {
+              "type": "object",
+              "properties": {
+                "forwardChatOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardStatusMessages": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardSystemOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardHumanRequests": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardReasoning": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardInputCommands": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "timeout": {
+                  "default": 0,
+                  "type": "number"
+                },
+                "maxResponseLength": {
+                  "default": 10000,
+                  "type": "number"
+                },
+                "minContextLength": {
+                  "default": 1000,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "forwardChatOutput",
+                "forwardStatusMessages",
+                "forwardSystemOutput",
+                "forwardHumanRequests",
+                "forwardReasoning",
+                "forwardInputCommands",
+                "timeout",
+                "maxResponseLength",
+                "minContextLength"
+              ],
+              "additionalProperties": false
+            },
+            "name": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "displayName",
+            "category",
+            "description",
+            "agentType",
+            "steps",
+            "subAgent",
+            "name",
+            "updatedAt"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "workflow"
+      ],
+      "additionalProperties": false
+    },
+    "updateWorkflowParams": {
+      "type": "object",
+      "properties": {
+        "name": {
           "type": "string"
         },
-        "description": {
+        "workflow": {
+          "type": "object",
+          "properties": {
+            "displayName": {
+              "type": "string"
+            },
+            "category": {
+              "default": "User-Created Workflows",
+              "type": "string"
+            },
+            "description": {
+              "default": "",
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "steps": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "subAgent": {
+              "default": {},
+              "type": "object",
+              "properties": {
+                "forwardChatOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardStatusMessages": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardSystemOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardHumanRequests": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardReasoning": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardInputCommands": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "timeout": {
+                  "default": 0,
+                  "type": "number"
+                },
+                "maxResponseLength": {
+                  "default": 10000,
+                  "type": "number"
+                },
+                "minContextLength": {
+                  "default": 1000,
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "required": [
+            "displayName",
+            "agentType"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "workflow"
+      ]
+    },
+    "updateWorkflowResult": {
+      "type": "object",
+      "properties": {
+        "workflow": {
+          "type": "object",
+          "properties": {
+            "displayName": {
+              "type": "string"
+            },
+            "category": {
+              "default": "User-Created Workflows",
+              "type": "string"
+            },
+            "description": {
+              "default": "",
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "steps": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "subAgent": {
+              "type": "object",
+              "properties": {
+                "forwardChatOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardStatusMessages": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardSystemOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardHumanRequests": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardReasoning": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardInputCommands": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "timeout": {
+                  "default": 0,
+                  "type": "number"
+                },
+                "maxResponseLength": {
+                  "default": 10000,
+                  "type": "number"
+                },
+                "minContextLength": {
+                  "default": 1000,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "forwardChatOutput",
+                "forwardStatusMessages",
+                "forwardSystemOutput",
+                "forwardHumanRequests",
+                "forwardReasoning",
+                "forwardInputCommands",
+                "timeout",
+                "maxResponseLength",
+                "minContextLength"
+              ],
+              "additionalProperties": false
+            },
+            "name": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "displayName",
+            "category",
+            "description",
+            "agentType",
+            "steps",
+            "subAgent",
+            "name",
+            "updatedAt"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "workflow"
+      ],
+      "additionalProperties": false
+    },
+    "deleteWorkflowParams": {
+      "type": "object",
+      "properties": {
+        "name": {
           "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "deleteWorkflowResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
+      ],
+      "additionalProperties": false
+    },
+    "streamWorkflowRunsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamWorkflowRunsResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "success"
         },
-        "agentType": {
-          "type": "string"
-        },
-        "steps": {
+        "runs": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "workflowName": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "agentId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "currentStep": {
+                "type": "number"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "starting",
+                  "running",
+                  "completed",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "startedAt": {
+                "type": "number"
+              },
+              "finishedAt": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "workflowName",
+              "displayName",
+              "agentType",
+              "agentId",
+              "steps",
+              "currentStep",
+              "status",
+              "message",
+              "startedAt",
+              "finishedAt"
+            ],
+            "additionalProperties": false
           }
         }
       },
       "required": [
-        "displayName",
-        "category",
-        "description",
-        "agentType",
-        "steps"
+        "status",
+        "runs"
       ],
       "additionalProperties": false
     },
@@ -312,10 +1223,35 @@
         "params": "#/$defs/listWorkflowsParams",
         "result": "#/$defs/listWorkflowsResult"
       },
+      "getWorkflowDirectory": {
+        "type": "query",
+        "params": "#/$defs/getWorkflowDirectoryParams",
+        "result": "#/$defs/getWorkflowDirectoryResult"
+      },
       "getWorkflow": {
         "type": "query",
         "params": "#/$defs/getWorkflowParams",
         "result": "#/$defs/getWorkflowResult"
+      },
+      "createWorkflow": {
+        "type": "mutation",
+        "params": "#/$defs/createWorkflowParams",
+        "result": "#/$defs/createWorkflowResult"
+      },
+      "updateWorkflow": {
+        "type": "mutation",
+        "params": "#/$defs/updateWorkflowParams",
+        "result": "#/$defs/updateWorkflowResult"
+      },
+      "deleteWorkflow": {
+        "type": "mutation",
+        "params": "#/$defs/deleteWorkflowParams",
+        "result": "#/$defs/deleteWorkflowResult"
+      },
+      "streamWorkflowRuns": {
+        "type": "stream",
+        "params": "#/$defs/streamWorkflowRunsParams",
+        "result": "#/$defs/streamWorkflowRunsResult"
       },
       "spawnWorkflow": {
         "type": "mutation",

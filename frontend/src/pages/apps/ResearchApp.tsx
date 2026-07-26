@@ -473,15 +473,7 @@ function TopicsSidebar({
 
 // ─── EmptyState ────────────────────────────────────────────────────────────────
 
-function EmptyState({
-  hasTopics,
-  hasAgent,
-  onStartResearch,
-}: {
-  hasTopics: boolean;
-  hasAgent: boolean;
-  onStartResearch: (query: string) => Promise<boolean>;
-}) {
+function EmptyState({ hasTopics, hasAgent, onStartResearch }: { hasTopics: boolean; hasAgent: boolean; onStartResearch: (query: string) => Promise<boolean> }) {
   const [query, setQuery] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -514,12 +506,13 @@ function EmptyState({
             <p className="text-sm text-muted mt-1.5 max-w-md mx-auto leading-relaxed">
               {hasTopics ? (
                 <>
-                  Select existing research from the <span className="font-medium text-secondary">Topics</span> menu on the left to view it, or describe a new topic
-                  below to start a research agent.
+                  Select existing research from the <span className="font-medium text-secondary">Topics</span> menu on the left to view it, or describe a new
+                  topic below to start a research agent.
                 </>
               ) : (
                 <>
-                  Describe what you want to research below. A research agent will search the web and write markdown findings into topics in the menu on the left.
+                  Describe what you want to research below. A research agent will search the web and write markdown findings into topics in the menu on the
+                  left.
                 </>
               )}
             </p>

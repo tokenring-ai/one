@@ -34,10 +34,9 @@ import TerminalApp from "./pages/apps/TerminalApp.tsx";
 import VaultApp from "./pages/apps/VaultApp.tsx";
 import WebDesignApp from "./pages/apps/WebDesignApp.tsx";
 import WorkflowsApp from "./pages/apps/WorkflowsApp.tsx";
-import ChatPage from "./pages/ChatPage.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import NotFoundPage from "./pages/NotFoundPage.tsx";
-import { useAgentList, useAgentTypes, useWorkflows } from "./rpc.ts";
+import { useAgentList } from "./rpc.ts";
 
 export default function App() {
   const location = useLocation();
@@ -45,10 +44,8 @@ export default function App() {
   const [showLoadingBar, setShowLoadingBar] = useState(false);
   const loadingBarTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // These are used by Sidebar and TopBar — load them at app level for shared access
+  // Used by TopBar; each app loads whatever else it needs itself.
   const agents = useAgentList();
-  const agentTypes = useAgentTypes();
-  const workflows = useWorkflows();
 
   useEffect(() => {
     const cleanup = notificationManager.subscribeToasts(setToasts);
@@ -112,7 +109,7 @@ export default function App() {
             {/* Storage error banner - shows when localStorage is unavailable */}
             <StorageErrorBanner />
             <div className="flex flex-1 min-h-0">
-              <Sidebar currentAgentId={currentAgentId || ""} agents={agents} workflows={workflows} agentTypes={agentTypes} />
+              <Sidebar />
               <main id="main-content" className="flex-1 min-w-0 relative">
                 <ErrorBoundary>
                   <Routes>
@@ -120,8 +117,10 @@ export default function App() {
                     <Route path="/" element={<Dashboard />} />
 
                     {/* App routes */}
-                    <Route path="/agents" element={<AgentsApp />} />
-                    <Route path="/workflows" element={<WorkflowsApp />} />
+                    {/* Optional param keeps the app mounted while browsing between agent types */}
+                    <Route path="/agents/:agentType?" element={<AgentsApp />} />
+                    {/* Optional param keeps the app mounted while navigating between workflows */}
+                    <Route path="/workflows/:workflowName?" element={<WorkflowsApp />} />
                     <Route path="/scheduler" element={<SchedulerApp />} />
                     <Route path="/queue" element={<QueueApp />} />
                     <Route path="/skills" element={<SkillsApp />} />
@@ -145,8 +144,8 @@ export default function App() {
                     <Route path="/settings" element={<SettingsApp />} />
                     <Route path="/vault" element={<VaultApp />} />
 
-                    {/* Agent chat */}
-                    <Route path="/agent/:agentId/*" element={<ChatPage key={currentAgentId ?? "chat"} />} />
+                    {/* Agent chat — rendered by the Agents app so its sidebar stays alongside the chat */}
+                    <Route path="/agent/:agentId/*" element={<AgentsApp />} />
 
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>

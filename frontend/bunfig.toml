@@ -1,2 +1,5 @@
 [test]
 preload = ["./src/test/jsdom-preload.ts", "./src/test/setup.ts"]
+
+[serve.static]
+plugins = ["./tailwind-plugin.ts"]

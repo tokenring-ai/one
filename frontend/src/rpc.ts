@@ -114,6 +114,14 @@ export function useWorkflows() {
   return useTypedSWR("/workflow/listWorkflows", () => workflowRPCClient.listWorkflows({}));
 }
 
+/** Live view of every tracked workflow run: which agent is running it and which step it is on. */
+export function useWorkflowRuns() {
+  return useRPCStreamSWR({
+    key: "workflow-runs",
+    subscribe: signal => workflowRPCClient.streamWorkflowRuns({}, signal),
+  });
+}
+
 export function useFilesystemProviders() {
   return useTypedSWR("/filesystem/getFilesystemProviders", () => filesystemRPCClient.getFilesystemProviders({}));
 }

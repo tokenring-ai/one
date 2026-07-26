@@ -163,12 +163,168 @@ When a package generates artifacts (e.g., research results, search results):
 - Provide the artifact structure or format
 - Explain when and how artifacts are generated
 
+#### Tool Display Name Documentation
+When tools define a `displayName` property that differs from the tool `name`:
+- Include a "Display Name" column in the Tools table
+- Document the display name in the tool implementation details
+- The display name is used in UI presentations while the name is used programmatically
+
 #### State Management Documentation
 When documenting service state:
 - Document whether the service maintains persistent state
 - List any state that is maintained and how it is managed
 - Document state serialization/deserialization if applicable
 - Note if the service is stateless (each request processed independently)
+
+#### RPC Endpoint Documentation
+When a package defines RPC endpoints:
+- Document the RPC path (e.g., `/rpc/metrics`)
+- Include a table of all methods with their type (query, mutation, stream)
+- Document input schemas and result types for each method
+- Document discriminated union results (e.g., success vs error states)
+- Document any streaming behavior (polling intervals, etc.)
+- Include RPC schema types (Zod schemas) in the Schema Documentation section
+- Provide usage examples showing how to call each endpoint
+
+#### Infrastructure Plugin Documentation
+When a plugin provides foundational services rather than user-facing features
+(e.g., secrets resolution, service registration, configuration utilities):
+- Still include Chat Commands and Tools sections, noting the package defines none
+- Emphasize the service interface and how other plugins integrate with it
+- Document the installation order requirements if the plugin must be installed
+  before others
+- Focus the User Guide on how plugin developers use the API rather than end-user
+  workflows
+- Include resolution order, fallback behavior, and error handling details
+
+#### Tool Activation Documentation
+When tools define an `adjustActivation` function that conditionally enables or disables
+the tool based on runtime conditions:
+- Document the activation conditions in the tool description
+- Note when the tool will be unavailable (e.g., "Only activates when the active provider
+  supports interactive sessions")
+- Explain what conditions must be met for the tool to be available
+
+#### Discriminated Union Result Types
+When service methods return discriminated union types (e.g., success vs error states):
+- Document all possible status values and their meanings
+- Include the discriminated field name (e.g., "Discriminated union on `status`")
+- List each variant with its additional fields
+- Common patterns include: `{ status: "success" }`, `{ status: "notFound" }`,
+  `{ status: "error" }`
+
+#### Async Generator Methods
+When services provide async generator methods for streaming data:
+- Document the method as returning `AsyncGenerator<T>`
+- Explain when chunks are yielded and what triggers new data
+- Document the abort signal parameter for cancellation
+- Include example usage with `for await...of` loops
+
+#### Lifecycle Hooks Documentation
+
+When a package defines lifecycle hooks (classes extending or implementing hook
+patterns, typically with a `type = "hook"` property):
+
+- Document each hook class with its location and purpose
+- Include the constructor parameters and their types
+- Note when and how the hook is triggered (e.g., "Triggered after input is
+  received", "Triggered after sub-agent completes")
+- Document which service or component executes the hook
+- Include in the Developer Reference section under "Lifecycle Hooks"
+
+Example:
+
+```typescript
+class AfterInputReceived {
+  readonly type = "hook";
+  constructor(readonly input: InputMessage) {}
+}
+```
+
+#### Utility Functions Documentation
+
+When a package exports utility functions that are used by other packages or
+plugin developers:
+
+- Document each utility with its location, purpose, and signature
+- Include example usage showing how to import and call the function
+- Document return types and any error conditions
+- Group related utilities together in a "Utility Functions" section
+
+#### Tool Result Properties Documentation
+
+When tools return results with additional properties beyond `message` and
+`result` (e.g., `actions`, `attachments`):
+
+- Document each additional property with its type and purpose
+- Include the property in the tool behavior description
+- Note when properties are conditionally included
+
+#### Unexported Tools Documentation
+
+When a package contains tool implementations that are not exported in the main
+tools array:
+
+- Note the existence of unexported tools in the Tools section
+- List them separately from exported tools
+- Explain why they are not exported (if known)
+
+#### Schema Strictness Documentation
+
+When documenting tool input schemas:
+
+- Note when schemas use `.strict()` to reject unknown properties
+- This is relevant for users constructing tool calls programmatically
+
+#### Test File Documentation
+
+When documenting the Testing section:
+
+- List all test files in the package, not just primary test files
+- Include utility function tests and service-level tests
+- Group test files by what they test (e.g., "Tests for the edit tool")
+
+#### Schema Metadata Documentation
+
+When schemas use `.meta()` annotations for configuration UI integration:
+
+- Document the metadata in a "Schema Metadata" subsection under Configuration
+- Include label, description, and advanced flags from the metadata
+- This helps users understand how configuration options appear in UI tools
+
+Example:
+
+```typescript
+z.string().meta({ description: "Provider name", advanced: true })
+```
+
+#### ToolCallError Documentation
+
+When tools throw `ToolCallError` for validation or precondition failures:
+
+- Document the error conditions in the tool description
+- Note what state or conditions must be met before the tool can succeed
+- Include the error message text for reference
+
+Example:
+
+```typescript
+throw new ToolCallError(toolName, "No post is currently selected");
+```
+
+#### State Inheritance Documentation
+
+When agent state implements `transferStateFromParent`:
+
+- Document which state properties are inherited from parent agents
+- Note the inheritance conditions (e.g., "only if child has no value set")
+- Include in the State Management section under the state class documentation
+
+#### Directory Path Convention
+
+- Plugin packages are located under `plugin/<package-name>/` (not `pkg/`)
+- Use `plugin/` prefix in all file path references in documentation
+- Package structure documentation should reflect the actual directory layout
 
 ### 3. Documentation Maintenance
 

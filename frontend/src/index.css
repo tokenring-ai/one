@@ -25,7 +25,11 @@
   --text-muted: #78716c;
   --text-dim: #a8a29e;
   --selection: rgba(99, 102, 241, 0.3);
+   --text-error: #ef4444;
+   --text-warning: #f59e0b;
+   --text-success: #028e32;
  }
+
 
  .dark {
   /* Dark mode - Charcoal theme */
@@ -46,6 +50,9 @@
   --text-muted: #a3a3a3;
   --text-dim: #737373;
   --selection: rgba(99, 102, 241, 0.5);
+   --text-error: #ef4444;
+   --text-warning: #f59e0b;
+   --text-success: #22c55e;
  }
 
  html,
@@ -274,15 +281,15 @@
 
  /* Semantic text colors */
  .text-error {
-  @apply text-red-500;
+  color: var(--text-error);
  }
 
  .text-warning {
-  @apply text-amber-500;
+  color: var(--text-warning);
  }
 
  .text-success {
-  @apply text-emerald-500;
+  color: var(--text-success);
  }
 
  /* Toast-specific color utilities with proper contrast ratios */

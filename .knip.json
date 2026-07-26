@@ -4,7 +4,8 @@
     "util/**",
     ".tokenring/*",
     "packaging/**",
-    "docs/**"
+    "docs/**",
+    "website/**"
   ],
   "exclude": [
     "dependencies",

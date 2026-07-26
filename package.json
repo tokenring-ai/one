@@ -26,7 +26,7 @@
     "check:oxlint": "oxlint -f stylish --fix",
     "check:knip": "knip",
     "check:tsc": "tsc",
-    "run:one": "FRONTEND_DIRECTORY=frontend/dist bun backend/tokenring.ts --port 14008",
+    "run:one": "FRONTEND_DIRECTORY=frontend/dist bun backend/tokenring.ts --port 14008 --listen 0.0.0.0",
     "run:cli-remote": "cargo run --manifest-path cli/Cargo.toml -- ws://0.0.0.0:14008",
     "run:cli": "FRONTEND_DIRECTORY=frontend/dist TOKENRING_ONE_BINARY=backend/tokenring.ts cargo run --manifest-path cli/Cargo.toml",
     "frontend:watch-build": "bun run --cwd frontend/ watch:build"

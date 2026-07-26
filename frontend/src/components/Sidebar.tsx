@@ -1,5 +1,3 @@
-import type { TodoItem, TodoStatus } from "@tokenring-ai/todo";
-import formatError from "@tokenring-ai/utility/error/formatError";
 import {
   AlertTriangle,
   BookOpen,
@@ -18,7 +16,6 @@ import {
   Package,
   PanelLeftClose,
   PanelLeftOpen,
-  Pause,
   Plug,
   Search,
   Settings,
@@ -27,119 +24,19 @@ import {
   Sparkles,
   Terminal,
   Timer,
-  Trash2,
   TrendingUp,
-  User,
   X,
 } from "lucide-react";
 import type React from "react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { agentRPCClient, type useAgentList, type useAgentTypes, useTodos, type useWorkflows, workflowRPCClient } from "../rpc";
-import ConfirmDialog from "./overlay/confirm-dialog.tsx";
 import { useSidebar } from "./SidebarContext";
-import ErrorState from "./ui/ErrorState.tsx";
-import LoadingState from "./ui/LoadingState.tsx";
-import { toastManager } from "./ui/toast";
-
-interface SidebarProps {
-  currentAgentId: string;
-  agents: ReturnType<typeof useAgentList>;
-  workflows: ReturnType<typeof useWorkflows>;
-  agentTypes: ReturnType<typeof useAgentTypes>;
-}
 
 interface AppNavItem {
   path: string;
   icon: React.ReactNode;
   label: string;
   color: string;
-}
-
-const SIDEBAR_TODO_MAX = 7;
-/** When trimming an over-long list, keep at most this many completed items at the top. */
-const SIDEBAR_TODO_MAX_COMPLETED = 3;
-
-/** Completed first (stable), then in-progress, then pending. */
-function statusRank(status: TodoStatus): number {
-  switch (status) {
-    case "completed":
-      return 0;
-    case "in_progress":
-      return 1;
-    case "pending":
-      return 2;
-    default:
-      return 3;
-  }
-}
-
-/**
- * Cap a sorted todo list to {@link SIDEBAR_TODO_MAX} items.
- * 1. If over the max, drop completed items from the top until ≤3 remain (or under max).
- * 2. If still over the max, drop from the bottom.
- * Returns counts of hidden items for "+N more" labels above/below.
- */
-function capTodos(todos: TodoItem[]): {
-  items: TodoItem[];
-  moreAbove: number;
-  moreBelow: number;
-} {
-  if (todos.length <= SIDEBAR_TODO_MAX) {
-    return { items: todos, moreAbove: 0, moreBelow: 0 };
-  }
-
-  const items = [...todos];
-  let moreAbove = 0;
-  let moreBelow = 0;
-
-  const completedCount = () => items.filter(t => t.status === "completed").length;
-
-  while (items.length > SIDEBAR_TODO_MAX && completedCount() > SIDEBAR_TODO_MAX_COMPLETED && items[0]?.status === "completed") {
-    items.shift();
-    moreAbove += 1;
-  }
-
-  while (items.length > SIDEBAR_TODO_MAX) {
-    items.pop();
-    moreBelow += 1;
-  }
-
-  return { items, moreAbove, moreBelow };
-}
-
-/** Active marker is `>`; completed show a checkmark; pending show none. */
-function todoStatusMarker(status: string): string {
-  switch (status) {
-    case "in_progress":
-      return ">";
-    case "completed":
-      return "✓";
-    default:
-      return "";
-  }
-}
-
-function todoStatusClass(status: string): string {
-  switch (status) {
-    case "completed":
-      return "text-emerald-500";
-    case "in_progress":
-      return "text-accent";
-    default:
-      return "text-secondary";
-  }
-}
-
-function todoContentClass(status: string): string {
-  switch (status) {
-    case "completed":
-      return "text-emerald-500";
-    case "in_progress":
-      return "text-secondary";
-    default:
-      return "text-secondary";
-  }
 }
 
 const APP_NAV_ITEMS: AppNavItem[] = [
@@ -168,85 +65,22 @@ const APP_NAV_ITEMS: AppNavItem[] = [
   { path: "/vault", icon: <Lock className="w-4 h-4" />, label: "Vault", color: "text-amber-400" },
 ];
 
-export default function Sidebar({ currentAgentId, agents, workflows, agentTypes }: SidebarProps) {
+/** App navigation only — each app owns whatever contextual list or detail view it needs. */
+export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isSidebarExpanded, toggleSidebar, isMobileOpen, setMobileOpen, localStorageAvailable } = useSidebar();
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [storageBannerDismissed, setStorageBannerDismissed] = useState(false);
-  const todosStream = useTodos(currentAgentId || undefined);
-
-  const cappedTodos = useMemo(() => {
-    if (todosStream.data?.status !== "success") {
-      return { items: [] as TodoItem[], moreAbove: 0, moreBelow: 0 };
-    }
-    // Completed at top (green), then in-progress, then pending — original order preserved within each status.
-    const todos = [...todosStream.data.todos];
-    todos.sort((a, b) => statusRank(a.status) - statusRank(b.status));
-    return capTodos(todos);
-  }, [todosStream.data]);
 
   const navigateAndClose = (path: string) => {
     void navigate(path);
     setMobileOpen(false);
   };
 
-  // Determine active app from current pathname
+  // Determine active app from current pathname; a chat page counts as the Agents app.
   const activeApp =
     APP_NAV_ITEMS.find(item => location.pathname === item.path || location.pathname.startsWith(item.path + "/"))?.path ??
     (location.pathname.startsWith("/agent/") ? "/agents" : null);
-
-  const createAgent = async (type: string) => {
-    try {
-      const { id } = await agentRPCClient.createAgent({ agentType: type, headless: false });
-      await agents.mutate();
-      navigateAndClose(`/agent/${id}`);
-    } catch (error) {
-      toastManager.error(formatError(error), { duration: 5000 });
-    }
-  };
-
-  const spawnWorkflow = async (name: string) => {
-    try {
-      const { id } = await workflowRPCClient.spawnWorkflow({ name, headless: false });
-      await agents.mutate();
-      navigateAndClose(`/agent/${id}`);
-    } catch (error) {
-      toastManager.error(formatError(error), { duration: 5000 });
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!confirmDelete) return;
-    const agentId = confirmDelete;
-    setConfirmDelete(null);
-    await agentRPCClient.deleteAgent({ agentId, reason: "User initiated agent deletion from sidebar in Chat Web UI" });
-    await agents.mutate();
-    if (currentAgentId === agentId) navigateAndClose("/agents");
-  };
-
-  const handleDeleteClick = async (agentId: string, isIdle: boolean) => {
-    if (isIdle) {
-      await agentRPCClient.deleteAgent({ agentId, reason: "User initiated agent deletion from sidebar in Chat Web UI" });
-      await agents.mutate();
-      if (currentAgentId === agentId) navigateAndClose("/agents");
-    } else {
-      setConfirmDelete(agentId);
-    }
-  };
-
-  const groupedTemplates = (agentTypes.data || []).reduce(
-    (acc, t) => {
-      const cat = t.category || "Uncategorized";
-      (acc[cat] ??= []).push(t);
-      return acc;
-    },
-    {} as Record<string, typeof agentTypes.data & {}>,
-  );
-
-  // Context panel: what to show below the nav based on active app
-  const showAgentPanel = activeApp === "/agents" || location.pathname.startsWith("/agent/");
-  const showWorkflowPanel = activeApp === "/workflows";
 
   return (
     <>
@@ -257,7 +91,7 @@ export default function Sidebar({ currentAgentId, agents, workflows, agentTypes 
 
       <aside
         aria-label="Navigation sidebar"
-        className={`fixed md:relative border-r border-primary bg-sidebar flex flex-col shrink-0 overflow-hidden h-[calc(100vh-3rem)] md:h-full transition-all duration-300 ease-in-out md:translate-x-0 ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} ${isSidebarExpanded ? "w-72" : "w-12"} top-12 left-0 md:top-auto md:left-auto z-40`}
+        className={`fixed md:relative border-r border-primary bg-sidebar flex flex-col shrink-0 overflow-hidden h-[calc(100vh-3rem)] md:h-full transition-all duration-300 ease-in-out md:translate-x-0 ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} ${isSidebarExpanded ? "w-56" : "w-12"} top-12 left-0 md:top-auto md:left-auto z-40`}
       >
         {!localStorageAvailable && !storageBannerDismissed && isSidebarExpanded && (
           <div role="alert" aria-live="polite" className="shrink-0 border-b border-warning/30 bg-warning/10 px-3 py-2 flex items-start gap-2">
@@ -274,34 +108,15 @@ export default function Sidebar({ currentAgentId, agents, workflows, agentTypes 
           </div>
         )}
 
-        {/* App nav rail + collapse toggle */}
-        <div className={`flex shrink-0 border-b border-primary ${isSidebarExpanded ? "items-center" : "flex-col items-center py-2 gap-0.5"}`}>
+        {/* Header: label + collapse/expand toggle */}
+        <div className={`flex shrink-0 items-center border-b border-primary ${isSidebarExpanded ? "px-3 py-2" : "justify-center py-2"}`}>
           {isSidebarExpanded ? (
-            /* Expanded: horizontal nav items */
-            <div className="flex-1 flex items-center overflow-x-auto px-1 gap-0.5 scrollbar-none">
-              {APP_NAV_ITEMS.slice(0, 6).map(item => {
-                const isActive = activeApp === item.path;
-                return (
-                  <button
-                    type="button"
-                    key={item.path}
-                    onClick={() => navigateAndClose(item.path)}
-                    className={`flex items-center gap-1 px-2 py-2 text-xs font-medium transition-colors border-b-2 -mb-px shrink-0 focus-ring cursor-pointer rounded-t-md ${
-                      isActive ? "border-accent text-primary" : "border-transparent text-muted hover:text-primary"
-                    }`}
-                    title={item.label}
-                    aria-label={item.label}
-                    aria-current={isActive ? "page" : undefined}
-                  >
-                    <span className={isActive ? item.color : ""}>{item.icon}</span>
-                  </button>
-                );
-              })}
-              <div className="flex-1" />
+            <>
+              <span className="flex-1 text-2xs font-bold text-muted uppercase tracking-widest">Apps</span>
               <button
                 type="button"
                 onClick={toggleSidebar}
-                className="p-1.5 mr-1 text-muted hover:text-primary transition-colors focus-ring hidden md:block cursor-pointer rounded-md active:scale-[0.98]"
+                className="p-1.5 text-muted hover:text-primary transition-colors focus-ring hidden md:block cursor-pointer rounded-md active:scale-[0.98]"
                 aria-label="Collapse sidebar"
               >
                 <PanelLeftClose className="w-4 h-4" />
@@ -309,245 +124,62 @@ export default function Sidebar({ currentAgentId, agents, workflows, agentTypes 
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="p-1.5 mr-1 text-muted hover:text-primary md:hidden focus-ring cursor-pointer rounded-md active:scale-[0.98]"
+                className="p-1.5 text-muted hover:text-primary md:hidden focus-ring cursor-pointer rounded-md active:scale-[0.98]"
                 aria-label="Close sidebar"
               >
                 <X className="w-4 h-4" />
               </button>
-            </div>
-          ) : (
-            /* Collapsed: vertical icon rail */
-            <>
-              {APP_NAV_ITEMS.map(item => {
-                const isActive = activeApp === item.path;
-                return (
-                  <button
-                    type="button"
-                    key={item.path}
-                    onClick={() => {
-                      navigateAndClose(item.path);
-                    }}
-                    className={`p-1.5 rounded-md transition-colors focus-ring cursor-pointer active:scale-[0.98] ${isActive ? `${item.color} bg-active` : "text-muted hover:text-primary hover:bg-hover"}`}
-                    aria-label={item.label}
-                    title={item.label}
-                    tabIndex={0}
-                  >
-                    {item.icon}
-                  </button>
-                );
-              })}
-              <div className="w-8 h-px bg-primary my-1" />
-              <button
-                type="button"
-                onClick={toggleSidebar}
-                className="p-1.5 text-muted hover:text-primary transition-colors focus-ring cursor-pointer rounded-md active:scale-[0.98]"
-                aria-label="Expand sidebar"
-                tabIndex={0}
-              >
-                <PanelLeftOpen className="w-4 h-4" />
-              </button>
             </>
+          ) : (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="p-1.5 text-muted hover:text-primary transition-colors focus-ring cursor-pointer rounded-md active:scale-[0.98]"
+              aria-label="Expand sidebar"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
           )}
         </div>
 
-        {/* Context panel (only shown when expanded) */}
-        {isSidebarExpanded && (
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-3 md:py-4">
-            {/* Agents panel: shown on /agents or /agent/:id */}
-            {showAgentPanel && (
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between px-2 mb-2">
-                    <span className="text-2xs font-bold text-amber-600 dark:text-amber-500/90 uppercase tracking-widest">Active Agents</span>
-                    <span className="text-2xs text-muted" aria-live="polite">
-                      {agents.data?.length ?? 0} running
-                    </span>
-                  </div>
-                  {agents.isLoading ? (
-                    <LoadingState size="sm" className="py-8" />
-                  ) : agents.error ? (
-                    <ErrorState title="Failed to load agents" error={agents.error} onRetry={() => void agents.mutate()} variant="inline" />
-                  ) : (agents.data?.length ?? 0) === 0 ? (
-                    <div className="px-3 py-4 text-center text-muted text-2xs italic">No active agents</div>
-                  ) : (
-                    agents.data!.map(agent => {
-                      const isSelected = currentAgentId === agent.id;
-                      return (
-                        <div
-                          key={agent.id}
-                          onClick={() => navigateAndClose(`/agent/${agent.id}`)}
-                          onKeyDown={e => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              navigateAndClose(`/agent/${agent.id}`);
-                            }
-                          }}
-                          className={`group px-3 py-2 rounded-md transition-all cursor-pointer focus-ring ${
-                            isSelected ? "bg-active border border-primary" : "hover:bg-hover border border-transparent"
-                          }`}
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`Open agent ${agent.displayName}`}
-                          aria-current={isSelected ? "page" : undefined}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="shrink-0" aria-hidden="true">
-                              {agent.idle ? (
-                                <Pause className="w-3.5 h-3.5 text-muted" />
-                              ) : (
-                                <div className="w-3.5 h-3.5 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className={`text-sm font-medium truncate ${isSelected ? "text-primary" : "text-secondary"}`}>{agent.displayName}</div>
-                              <div className="text-2xs text-muted mt-0.5 truncate">{agent.currentActivity}</div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={e => {
-                                e.stopPropagation();
-                                void handleDeleteClick(agent.id, agent.idle);
-                              }}
-                              className="p-1.5 text-muted hover:text-red-500 transition-colors opacity-40 hover:opacity-100 group-focus-within:opacity-100 focus-ring cursor-pointer rounded-md active:scale-[0.98]"
-                              aria-label={`Delete agent ${agent.displayName}`}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          {/* Live todos for the selected agent — inside the selection bubble */}
-                          {isSelected && cappedTodos.items.length > 0 && (
-                            <ul className="mt-2 ml-6 space-y-1 border-t border-primary/40 pt-2" aria-label={`Todos for ${agent.displayName}`}>
-                              {cappedTodos.moreAbove > 0 && <li className="text-2xs text-muted font-mono leading-snug">{cappedTodos.moreAbove} more</li>}
-                              {cappedTodos.items.map(todo => {
-                                const marker = todoStatusMarker(todo.status);
-                                return (
-                                  <li
-                                    key={todo.id}
-                                    className={`relative min-w-0 text-2xs font-mono leading-snug ${todoContentClass(todo.status)}`}
-                                    title={todo.content}
-                                  >
-                                    {/* Marker hangs left of the text column so rows align with "N more". */}
-                                    {marker ? (
-                                      <span className={`absolute top-0 right-full mr-2 select-none ${todoStatusClass(todo.status)}`} aria-hidden="true">
-                                        {marker}
-                                      </span>
-                                    ) : null}
-                                    <span className="line-clamp-2">{todo.content}</span>
-                                  </li>
-                                );
-                              })}
-                              {cappedTodos.moreBelow > 0 && <li className="text-2xs text-muted font-mono leading-snug">{cappedTodos.moreBelow} more</li>}
-                            </ul>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* Launch Agent */}
-                <div className="space-y-3">
-                  <span className="text-2xs font-bold text-accent/90 uppercase tracking-widest px-2 block">Launch Agent</span>
-                  {agentTypes.isLoading ? (
-                    <LoadingState size="sm" className="py-4" />
-                  ) : agentTypes.error ? (
-                    <ErrorState title="Failed to load agent types" error={agentTypes.error} onRetry={() => void agentTypes.mutate()} variant="inline" />
-                  ) : (
-                    Object.entries(groupedTemplates).map(([category, templates]) => (
-                      <div key={category}>
-                        <h3 className="text-2xs font-semibold text-muted uppercase tracking-wider mb-1 px-2">{category}</h3>
-                        <div className="space-y-1">
-                          {templates.map(template => (
-                            <button
-                              type="button"
-                              key={template.type}
-                              onClick={() => createAgent(template.type)}
-                              className="flex items-start gap-3 px-3 py-2 rounded-md hover:bg-hover transition-all text-left group w-full focus-ring cursor-pointer active:scale-[0.98]"
-                              aria-label={`Create new agent: ${template.displayName}`}
-                            >
-                              <User className="w-3.5 h-3.5 text-accent/70 group-hover:text-accent shrink-0 mt-0.5" />
-                              <div className="min-w-0">
-                                <div className="text-sm font-medium text-secondary group-hover:text-primary truncate">{template.displayName}</div>
-                                <div className="text-2xs text-muted line-clamp-1 mt-0.5">{template.description}</div>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Workflows panel */}
-            {showWorkflowPanel && (
-              <div className="space-y-1">
-                <span className="text-2xs font-bold text-cyan-600 dark:text-cyan-500/90 uppercase tracking-widest px-2 block mb-2">Workflows</span>
-                {workflows.isLoading ? (
-                  <LoadingState size="sm" className="py-8" />
-                ) : workflows.error ? (
-                  <ErrorState title="Failed to load workflows" error={workflows.error} onRetry={() => void workflows.mutate()} variant="inline" />
-                ) : (workflows.data?.length ?? 0) === 0 ? (
-                  <div className="px-3 py-4 text-center text-muted text-2xs italic">No workflows available</div>
-                ) : (
-                  workflows.data!.map(workflow => (
-                    <button
-                      type="button"
-                      key={workflow.name}
-                      onClick={() => spawnWorkflow(workflow.name)}
-                      className="flex items-start gap-3 px-3 py-2 rounded-md hover:bg-hover transition-all text-left group w-full focus-ring cursor-pointer active:scale-[0.98]"
-                      aria-label={`Spawn workflow: ${workflow.displayName}`}
-                    >
-                      <GitBranch className="w-3.5 h-3.5 text-cyan-500 shrink-0 mt-0.5 opacity-70 group-hover:opacity-100" />
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium text-secondary group-hover:text-primary truncate">{workflow.displayName}</div>
-                        <div className="text-2xs text-muted line-clamp-1 mt-0.5">{workflow.description}</div>
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-
-            {/* Other apps: show expanded nav list for secondary navigation */}
-            {!showAgentPanel && !showWorkflowPanel && (
-              <div className="space-y-0.5">
-                <span className="text-2xs font-bold text-muted uppercase tracking-widest px-2 block mb-2">Apps</span>
-                {APP_NAV_ITEMS.map(item => {
-                  const isActive = activeApp === item.path;
-                  return (
-                    <button
-                      type="button"
-                      key={item.path}
-                      onClick={() => navigateAndClose(item.path)}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-md transition-all w-full text-left focus-ring cursor-pointer active:scale-[0.98] ${
-                        isActive ? "bg-active border border-primary" : "hover:bg-hover border border-transparent"
-                      }`}
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      <span className={isActive ? item.color : "text-muted"}>{item.icon}</span>
-                      <span className={`text-sm font-medium ${isActive ? "text-primary" : "text-secondary"}`}>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+        <nav
+          aria-label="Apps"
+          className={`flex-1 overflow-y-auto custom-scrollbar py-2 ${isSidebarExpanded ? "px-2 space-y-0.5" : "px-1 flex flex-col items-center gap-0.5"}`}
+        >
+          {APP_NAV_ITEMS.map(item => {
+            const isActive = activeApp === item.path;
+            return isSidebarExpanded ? (
+              <button
+                type="button"
+                key={item.path}
+                onClick={() => navigateAndClose(item.path)}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md transition-all w-full text-left focus-ring cursor-pointer active:scale-[0.98] ${
+                  isActive ? "bg-active border border-primary" : "hover:bg-hover border border-transparent"
+                }`}
+                title={item.label}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <span className={isActive ? item.color : "text-muted"}>{item.icon}</span>
+                <span className={`text-sm font-medium ${isActive ? "text-primary" : "text-secondary"}`}>{item.label}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                key={item.path}
+                onClick={() => navigateAndClose(item.path)}
+                className={`p-1.5 rounded-md transition-colors focus-ring cursor-pointer active:scale-[0.98] ${
+                  isActive ? `${item.color} bg-active` : "text-muted hover:text-primary hover:bg-hover"
+                }`}
+                aria-label={item.label}
+                title={item.label}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {item.icon}
+              </button>
+            );
+          })}
+        </nav>
       </aside>
-
-      {confirmDelete && (
-        <ConfirmDialog
-          title="Delete Running Agent"
-          message="This agent is currently running. Are you sure you want to delete it? This action cannot be undone."
-          confirmText="Delete"
-          onConfirm={handleConfirmDelete}
-          onCancel={() => setConfirmDelete(null)}
-          variant="danger"
-        />
-      )}
     </>
   );
 }

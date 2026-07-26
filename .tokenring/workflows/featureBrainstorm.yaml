@@ -1,0 +1,19 @@
+# TokenRing workflow definition. The file name is the workflow name.
+displayName: All-Package Feature Brainstorm
+category: Brainstorming
+description: "This agent will automatically create BRAINSTORM.md files in each package directory, brainstorming new features"
+agentType: leader
+steps: 
+  - "/function define js getPackageDirectories() { return (await import('fs')).globSync('pkg/*') }"
+  - /list @packages = getPackageDirectories()
+  - "/for $pkg in @packages {\n  /eval /agent run --neverFail product-design-engineer Search for all the files in $pkg/, understand the current functionality of the package, and create or update $pkg/BRAINSTORM.md with brainstormed new features that would enhance this package\n}\n"
+subAgent: 
+  forwardChatOutput: false
+  forwardStatusMessages: true
+  forwardSystemOutput: false
+  forwardHumanRequests: true
+  forwardReasoning: false
+  forwardInputCommands: true
+  timeout: 0
+  maxResponseLength: 10000
+  minContextLength: 1000

@@ -8,24 +8,27 @@ From the monorepo root:
 
 ```bash
 bun install
-cd frontend/one
+cd frontend
 bun run dev
 ```
 
-Or from `frontend/one` after dependencies are installed:
+Or from `frontend` after dependencies are installed:
 
 ```bash
 bun run dev
 ```
 
-The Vite dev server runs on port 5173 by default. In production, built assets in `dist/` are served by the WebFrontendServer.
+The Bun frontend dev server runs on port 5173 by default. In production, built assets in `dist/` are served by the WebFrontendServer.
 
 ## Build
 
 ```bash
 bun run build
 bun run preview   # optional: preview production build locally
+bun run watch:build  # rebuild on changes (unminified)
 ```
+
+Production builds use Bun's bundler (`Bun.build` via `build.ts`) with Tailwind processed through PostCSS, and write hashed assets under `dist/assets/`.
 
 ## Test
 

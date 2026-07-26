@@ -817,7 +817,12 @@ function WebDesignWorkspace({ initialContent }: { initialContent: string | undef
         {isDocumentReady && (
           <>
             <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
-              <input type="checkbox" checked={autoPreview} onChange={e => setAutoPreview(e.target.checked)} className="w-3.5 h-3.5 accent-control cursor-pointer" />
+              <input
+                type="checkbox"
+                checked={autoPreview}
+                onChange={e => setAutoPreview(e.target.checked)}
+                className="w-3.5 h-3.5 accent-control cursor-pointer"
+              />
               <span className="text-2xs text-muted select-none">Auto-preview</span>
             </label>
 

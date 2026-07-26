@@ -135,6 +135,9 @@ async function runApp({ projectDirectory, dataDirectory, listen, port, vaultFile
           researchDirectory: path.join(dataDirectory, "research"),
         },
       },
+      workflows: {
+        workflowDirectory: path.join(dataDirectory, "workflows"),
+      },
       imageGeneration: {
         agentDefaults: {},
       },

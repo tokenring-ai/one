@@ -1,0 +1,19 @@
+# TokenRing workflow definition. The file name is the workflow name.
+displayName: All-Package Unit Test Updater
+category: Testing
+description: This agent automatically updates unit tests for each package in the TokenRing monorepo using the testEngineer agent.
+agentType: leader
+steps: 
+  - "/function define js getPackageDirectories() { return (await import('fs')).globSync('pkg/*') }"
+  - /list @packages = getPackageDirectories()
+  - "/for $pkg in @packages {\n  /eval /agent run --neverFail --type test-engineer Scan the source code in $pkg/, run the test suite with 'bun run vitest', remove any tests that are no longer relevant, and add new tests where necessary to match the current code\n}\n"
+subAgent: 
+  forwardChatOutput: false
+  forwardStatusMessages: true
+  forwardSystemOutput: false
+  forwardHumanRequests: true
+  forwardReasoning: false
+  forwardInputCommands: true
+  timeout: 0
+  maxResponseLength: 10000
+  minContextLength: 1000
