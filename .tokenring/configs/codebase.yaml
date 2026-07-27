@@ -48,6 +48,12 @@ codebase:
       items: 
         - path: ./plugin/blog
           include: \.(txt|tsx?|jsx?|md|json|yaml)$
+    repoMap/plugin/bot: 
+      type: repoMap
+      description: plugin/bot Repo Map
+      items: 
+        - path: ./plugin/bot
+          include: \.(txt|tsx?|jsx?|md|json|yaml)$
     repoMap/plugin/bun-storage: 
       type: repoMap
       description: plugin/bun-storage Repo Map
@@ -120,12 +126,6 @@ codebase:
       items: 
         - path: ./plugin/email
           include: \.(txt|tsx?|jsx?|md|json|yaml)$
-    repoMap/plugin/escalation: 
-      type: repoMap
-      description: plugin/escalation Repo Map
-      items: 
-        - path: ./plugin/escalation
-          include: \.(txt|tsx?|jsx?|md|json|yaml)$
     repoMap/plugin/feedback: 
       type: repoMap
       description: plugin/feedback Repo Map
@@ -143,6 +143,12 @@ codebase:
       description: plugin/filesystem Repo Map
       items: 
         - path: ./plugin/filesystem
+          include: \.(txt|tsx?|jsx?|md|json|yaml)$
+    repoMap/plugin/ghost-io: 
+      type: repoMap
+      description: plugin/ghost-io Repo Map
+      items: 
+        - path: ./plugin/ghost-io
           include: \.(txt|tsx?|jsx?|md|json|yaml)$
     repoMap/plugin/git: 
       type: repoMap
@@ -270,6 +276,12 @@ codebase:
       items: 
         - path: ./plugin/scripting
           include: \.(txt|tsx?|jsx?|md|json|yaml)$
+    repoMap/plugin/secrets: 
+      type: repoMap
+      description: plugin/secrets Repo Map
+      items: 
+        - path: ./plugin/secrets
+          include: \.(txt|tsx?|jsx?|md|json|yaml)$
     repoMap/plugin/serper: 
       type: repoMap
       description: plugin/serper Repo Map
@@ -342,6 +354,12 @@ codebase:
       items: 
         - path: ./plugin/video
           include: \.(txt|tsx?|jsx?|md|json|yaml)$
+    repoMap/plugin/web-design: 
+      type: repoMap
+      description: plugin/web-design Repo Map
+      items: 
+        - path: ./plugin/web-design
+          include: \.(txt|tsx?|jsx?|md|json|yaml)$
     repoMap/plugin/web-host: 
       type: repoMap
       description: plugin/web-host Repo Map
@@ -353,6 +371,12 @@ codebase:
       description: plugin/websearch Repo Map
       items: 
         - path: ./plugin/websearch
+          include: \.(txt|tsx?|jsx?|md|json|yaml)$
+    repoMap/plugin/wordpress: 
+      type: repoMap
+      description: plugin/wordpress Repo Map
+      items: 
+        - path: ./plugin/wordpress
           include: \.(txt|tsx?|jsx?|md|json|yaml)$
     repoMap/plugin/workflow: 
       type: repoMap
@@ -462,6 +486,19 @@ codebase:
       description: plugin/blog Source Files
       items: 
         - path: ./plugin/blog
+          include: \.(txt|tsx?|jsx?|md|json)$
+          exclude: /test/|\.test\.
+    fileTree/plugin/bot: 
+      type: fileTree
+      description: plugin/bot File Tree
+      items: 
+        - path: ./plugin/bot
+          include: \.(txt|tsx?|jsx?|md|json|yaml)$
+    wholeFile/plugin/bot: 
+      type: wholeFile
+      description: plugin/bot Source Files
+      items: 
+        - path: ./plugin/bot
           include: \.(txt|tsx?|jsx?|md|json)$
           exclude: /test/|\.test\.
     fileTree/plugin/bun-storage: 
@@ -620,19 +657,6 @@ codebase:
         - path: ./plugin/email
           include: \.(txt|tsx?|jsx?|md|json)$
           exclude: /test/|\.test\.
-    fileTree/plugin/escalation: 
-      type: fileTree
-      description: plugin/escalation File Tree
-      items: 
-        - path: ./plugin/escalation
-          include: \.(txt|tsx?|jsx?|md|json|yaml)$
-    wholeFile/plugin/escalation: 
-      type: wholeFile
-      description: plugin/escalation Source Files
-      items: 
-        - path: ./plugin/escalation
-          include: \.(txt|tsx?|jsx?|md|json)$
-          exclude: /test/|\.test\.
     fileTree/plugin/feedback: 
       type: fileTree
       description: plugin/feedback File Tree
@@ -670,6 +694,19 @@ codebase:
       description: plugin/filesystem Source Files
       items: 
         - path: ./plugin/filesystem
+          include: \.(txt|tsx?|jsx?|md|json)$
+          exclude: /test/|\.test\.
+    fileTree/plugin/ghost-io: 
+      type: fileTree
+      description: plugin/ghost-io File Tree
+      items: 
+        - path: ./plugin/ghost-io
+          include: \.(txt|tsx?|jsx?|md|json|yaml)$
+    wholeFile/plugin/ghost-io: 
+      type: wholeFile
+      description: plugin/ghost-io Source Files
+      items: 
+        - path: ./plugin/ghost-io
           include: \.(txt|tsx?|jsx?|md|json)$
           exclude: /test/|\.test\.
     fileTree/plugin/git: 
@@ -945,6 +982,19 @@ codebase:
         - path: ./plugin/scripting
           include: \.(txt|tsx?|jsx?|md|json)$
           exclude: /test/|\.test\.
+    fileTree/plugin/secrets: 
+      type: fileTree
+      description: plugin/secrets File Tree
+      items: 
+        - path: ./plugin/secrets
+          include: \.(txt|tsx?|jsx?|md|json|yaml)$
+    wholeFile/plugin/secrets: 
+      type: wholeFile
+      description: plugin/secrets Source Files
+      items: 
+        - path: ./plugin/secrets
+          include: \.(txt|tsx?|jsx?|md|json)$
+          exclude: /test/|\.test\.
     fileTree/plugin/serper: 
       type: fileTree
       description: plugin/serper File Tree
@@ -1101,6 +1151,19 @@ codebase:
         - path: ./plugin/video
           include: \.(txt|tsx?|jsx?|md|json)$
           exclude: /test/|\.test\.
+    fileTree/plugin/web-design: 
+      type: fileTree
+      description: plugin/web-design File Tree
+      items: 
+        - path: ./plugin/web-design
+          include: \.(txt|tsx?|jsx?|md|json|yaml)$
+    wholeFile/plugin/web-design: 
+      type: wholeFile
+      description: plugin/web-design Source Files
+      items: 
+        - path: ./plugin/web-design
+          include: \.(txt|tsx?|jsx?|md|json)$
+          exclude: /test/|\.test\.
     fileTree/plugin/web-host: 
       type: fileTree
       description: plugin/web-host File Tree
@@ -1125,6 +1188,19 @@ codebase:
       description: plugin/websearch Source Files
       items: 
         - path: ./plugin/websearch
+          include: \.(txt|tsx?|jsx?|md|json)$
+          exclude: /test/|\.test\.
+    fileTree/plugin/wordpress: 
+      type: fileTree
+      description: plugin/wordpress File Tree
+      items: 
+        - path: ./plugin/wordpress
+          include: \.(txt|tsx?|jsx?|md|json|yaml)$
+    wholeFile/plugin/wordpress: 
+      type: wholeFile
+      description: plugin/wordpress Source Files
+      items: 
+        - path: ./plugin/wordpress
           include: \.(txt|tsx?|jsx?|md|json)$
           exclude: /test/|\.test\.
     fileTree/plugin/workflow: 

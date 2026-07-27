@@ -719,7 +719,8 @@
                       "video/mp4",
                       "video/webm",
                       "image/png",
-                      "image/jpeg"
+                      "image/jpeg",
+                      "image/webp"
                     ]
                   }
                 },

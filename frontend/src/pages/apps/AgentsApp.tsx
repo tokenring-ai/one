@@ -205,11 +205,7 @@ function AgentSidebar({
                           title={agentType.description || `Launch ${agentType.displayName || agentType.type}`}
                           aria-label={`Launch ${agentType.displayName || agentType.type}`}
                         >
-                          {isLaunching ? (
-                            <Loader2 className="w-3 h-3 shrink-0 animate-spin opacity-70" />
-                          ) : (
-                            <User className="w-3 h-3 shrink-0 opacity-70" />
-                          )}
+                          {isLaunching ? <Loader2 className="w-3 h-3 shrink-0 animate-spin opacity-70" /> : <User className="w-3 h-3 shrink-0 opacity-70" />}
                           <span className="flex-1 min-w-0 truncate text-xs">{agentType.displayName || agentType.type}</span>
                         </button>
                         <button

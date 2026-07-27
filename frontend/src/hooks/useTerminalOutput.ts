@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { terminalRPCClient } from "../rpc.ts";
 import { useRPCStreamSWR } from "./useRPCStreamSWR.ts";
 
@@ -11,11 +11,16 @@ export type TerminalOutputState = {
 export function useTerminalOutput(terminalName: string | null, resume?: TerminalOutputState) {
   const positionRef = useRef(resume?.position ?? 0);
   const baseOutputRef = useRef(resume?.output ?? "");
+  const nameRef = useRef(terminalName);
 
-  useEffect(() => {
+  // Rebase during render, before the stream below reseeds itself: an effect would run after the
+  // stream had already resumed the new terminal from the previous terminal's buffer and position.
+  // Only a change of terminal rebases — within one session the reducer owns these.
+  if (nameRef.current !== terminalName) {
+    nameRef.current = terminalName;
     positionRef.current = resume?.position ?? 0;
     baseOutputRef.current = resume?.output ?? "";
-  }, [terminalName, resume?.position, resume?.output]);
+  }
 
   return useRPCStreamSWR({
     key: terminalName ? `terminal-output:${terminalName}` : null,

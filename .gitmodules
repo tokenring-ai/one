@@ -59,8 +59,8 @@
 	url = ../bun-storage.git
 	branch = main
 [submodule "plugin/escalation"]
-	path = plugin/escalation
-	url = ../escalation.git
+	path = plugin/bot
+	url = ../bot.git
 	branch = main
 [submodule "plugin/email"]
 	path = plugin/email
@@ -237,4 +237,12 @@
 [submodule "plugin/secrets"]
 	path = plugin/secrets
 	url = ../secrets.git
+	branch = main
+[submodule "plugin/ghost-io"]
+	path = plugin/ghost-io
+	url = ../ghost-io.git
+	branch = main
+[submodule "plugin/wordpress"]
+	path = plugin/wordpress
+	url = ../wordpress.git
 	branch = main

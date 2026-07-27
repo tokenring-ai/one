@@ -90,13 +90,22 @@ export function useRPCStream<TChunk, TData = TChunk>(options: UseRPCStreamOption
   shouldStopRef.current = shouldStop;
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
-  const initialDataRef = useRef(initialData);
-  initialDataRef.current = initialData;
 
   const dataRef = useRef(data);
   dataRef.current = data;
 
   const prevKeyRef = useRef(key);
+
+  // Reseed during render rather than in the effect below: an effect leaves one commit where
+  // `data` still belongs to the previous key, and consumers render that stale value.
+  if (prevKeyRef.current !== key) {
+    prevKeyRef.current = key;
+    const seed = resolveInitialData(initialData);
+    dataRef.current = seed;
+    setData(seed);
+    setReconnectAttempts(0);
+    setError(null);
+  }
 
   useEffect(() => {
     if (!pauseWhenHidden) return;
@@ -118,15 +127,6 @@ export function useRPCStream<TChunk, TData = TChunk>(options: UseRPCStreamOption
     let reconnectDelay = reconnectOpts.initialDelay;
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     let stopped: boolean = false;
-
-    if (prevKeyRef.current !== key) {
-      const seed = resolveInitialData(initialDataRef.current);
-      dataRef.current = seed;
-      setData(seed);
-      setReconnectAttempts(0);
-      setError(null);
-      prevKeyRef.current = key;
-    }
 
     const applyChunk = (chunk: TChunk) => {
       const reducer = reduceRef.current ?? defaultReduce<TChunk, TData>;

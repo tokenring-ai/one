@@ -697,7 +697,7 @@ async publishPost(agent: Agent): Promise<void> {
       const regex = new RegExp(pattern, 'i');
       if (regex.test(currentPost.content)) {
         // Trigger escalation workflow
-        const escalationService = agent.requireServiceByType(EscalationService);
+        const escalationService = agent.requireServiceByType(CommunicationService);
         await using channel = await escalationService.initiateContactWithUser(state.reviewEscalationTarget, agent);
         // Wait for approve/reject response
       }
@@ -3012,7 +3012,7 @@ The plugin automatically registers:
 - **With @tokenring-ai/agent**: State management and checkpoint preservation
 - **With @tokenring-ai/memory**: Memory about queue preferences and patterns
 - **With @tokenring-ai/feedback**: Notification and alert workflows
-- **With @tokenring-ai/escalation**: Escalation workflows for failed items
+- **With @tokenring-ai/communication**: Escalation workflows for failed items
 - **With @tokenring-ai/codebase**: Memory about code structure for queue tasks
 - **With @tokenring-ai/git**: Version control for queue templates
 - **With @tokenring-ai/cloudquote**: Financial data integration for scheduled tasks
@@ -3042,7 +3042,7 @@ The package depends on the following core packages:
 - **@tokenring-ai/chat**: Command execution and tool registration
 - **@tokenring-ai/memory**: Memory for queue preferences
 - **@tokenring-ai/feedback**: Notification workflows
-- **@tokenring-ai/escalation**: Escalation for failed items
+- **@tokenring-ai/communication**: Escalation for failed items
 
 ### Limitations and Considerations
 
@@ -3602,7 +3602,7 @@ The plugin automatically registers:
 - **With @tokenring-ai/memory**: Store search preferences and patterns
 - **With @tokenring-ai/feedback**: Request user feedback on search results
 - **With @tokenring-ai/queue**: Queue-based search processing
-- **With @tokenring-ai/escalation**: Escalate for insufficient results
+- **With @tokenring-ai/communication**: Escalate for insufficient results
 - **With @tokenring-ai/utility**: HTTP utilities and object manipulation
 
 ### Best Practices
@@ -3633,7 +3633,7 @@ The package depends on the following core packages:
 - **@tokenring-ai/memory**: Memory for search preferences
 - **@tokenring-ai/feedback**: Interactive feedback workflows
 - **@tokenring-ai/queue**: Queue-based search processing
-- **@tokenring-ai/escalation**: Escalation for insufficient results
+- **@tokenring-ai/communication**: Escalation for insufficient results
 - **@tokenring-ai/utility**: Shared utilities and helpers
 
 ### Limitations and Considerations

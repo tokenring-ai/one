@@ -308,6 +308,52 @@
       "additionalProperties": false
     },
     {
+      "title": "resizeTerminal request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.resizeTerminal"
+        },
+        "params": {
+          "$ref": "#/$defs/resizeTerminalParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "resizeTerminal response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/resizeTerminalResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "retrieveOutput request",
       "type": "object",
       "properties": {
@@ -1001,6 +1047,72 @@
         }
       ]
     },
+    "resizeTerminalParams": {
+      "type": "object",
+      "properties": {
+        "terminalName": {
+          "type": "string"
+        },
+        "cols": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "rows": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "terminalName",
+        "cols",
+        "rows"
+      ]
+    },
+    "resizeTerminalResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotInteractive"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
     "retrieveOutputParams": {
       "type": "object",
       "properties": {
@@ -1301,6 +1413,11 @@
         "type": "mutation",
         "params": "#/$defs/sendInputParams",
         "result": "#/$defs/sendInputResult"
+      },
+      "resizeTerminal": {
+        "type": "mutation",
+        "params": "#/$defs/resizeTerminalParams",
+        "result": "#/$defs/resizeTerminalResult"
       },
       "retrieveOutput": {
         "type": "query",

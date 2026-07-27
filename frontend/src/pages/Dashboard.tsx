@@ -1,6 +1,7 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import {
   BookOpen,
+  Bot,
   CalendarDays,
   Cpu,
   DollarSign,
@@ -46,6 +47,14 @@ const APPS: AppCardDef[] = [
     description: "Launch and monitor automated workflows",
     icon: <GitBranch />,
     gradient: "from-cyan-500 to-teal-600",
+  },
+  {
+    id: "bots",
+    path: "/bots",
+    label: "Bots",
+    description: "Run bots in Slack and Telegram channels",
+    icon: <Bot />,
+    gradient: "from-teal-500 to-emerald-600",
   },
   {
     id: "scheduler",

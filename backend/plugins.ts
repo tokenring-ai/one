@@ -3,6 +3,7 @@ import AIClientPlugin from "@tokenring-ai/ai-client/plugin";
 import { TokenRingAppConfigSchema } from "@tokenring-ai/app/schema";
 import AudioPlugin from "@tokenring-ai/audio/plugin";
 import AWSPlugin from "@tokenring-ai/aws/plugin";
+import BotPlugin from "@tokenring-ai/bot/plugin";
 import BunStoragePlugin from "@tokenring-ai/bun-storage/plugin";
 import ChatPlugin from "@tokenring-ai/chat/plugin";
 import CheckpointPlugin from "@tokenring-ai/checkpoint/plugin";
@@ -13,10 +14,10 @@ import CodeBasePlugin from "@tokenring-ai/codebase/plugin";
 import DatabasePlugin from "@tokenring-ai/database/plugin";
 import DockerPlugin from "@tokenring-ai/docker/plugin";
 import EmailPlugin from "@tokenring-ai/email/plugin";
-import EscalationPlugin from "@tokenring-ai/escalation/plugin";
 import FeedbackPlugin from "@tokenring-ai/feedback/plugin";
 import FileIndexPlugin from "@tokenring-ai/file-index/plugin";
 import FilesystemPlugin from "@tokenring-ai/filesystem/plugin";
+import GhostIOPlugin from "@tokenring-ai/ghost-io/plugin";
 import GitPlugin from "@tokenring-ai/git/plugin";
 import GithubPlugin from "@tokenring-ai/github/plugin";
 import ImageGenerationPlugin from "@tokenring-ai/image/plugin";
@@ -54,6 +55,7 @@ import VideoGenerationPlugin from "@tokenring-ai/video/plugin";
 import WebDesignPlugin from "@tokenring-ai/web-design/plugin";
 import WebHostPlugin from "@tokenring-ai/web-host/plugin";
 import WebSearchPlugin from "@tokenring-ai/websearch/plugin";
+import WordPressPlugin from "@tokenring-ai/wordpress/plugin";
 import WorkflowPlugin from "@tokenring-ai/workflow/plugin";
 import { z } from "zod";
 
@@ -74,10 +76,11 @@ export const plugins = [
   DockerPlugin,
   BunStoragePlugin,
   EmailPlugin,
-  EscalationPlugin,
+  BotPlugin,
   FeedbackPlugin,
   FileIndexPlugin,
   FilesystemPlugin,
+  GhostIOPlugin,
   GitPlugin,
   GithubPlugin,
   MediaLibraryPlugin,
@@ -113,6 +116,7 @@ export const plugins = [
   WebDesignPlugin,
   WebHostPlugin,
   WebSearchPlugin,
+  WordPressPlugin,
   WorkflowPlugin,
 ];
 export const configSchema = z.object({
@@ -131,10 +135,11 @@ export const configSchema = z.object({
   ...DatabasePlugin.configSchema.shape,
   ...DockerPlugin.configSchema.shape,
   ...BunStoragePlugin.configSchema.shape,
-  ...EscalationPlugin.configSchema.shape,
+  ...BotPlugin.configSchema.shape,
   ...FeedbackPlugin.configSchema.shape,
   ...FileIndexPlugin.configSchema.shape,
   ...FilesystemPlugin.configSchema.shape,
+  ...GhostIOPlugin.configSchema.shape,
   ...GitPlugin.configSchema.shape,
   ...GithubPlugin.configSchema.shape,
   ...MediaLibraryPlugin.configSchema.shape,
@@ -170,5 +175,6 @@ export const configSchema = z.object({
   ...WebDesignPlugin.configSchema.shape,
   ...WebHostPlugin.configSchema.shape,
   ...WebSearchPlugin.configSchema.shape,
+  ...WordPressPlugin.configSchema.shape,
   ...WorkflowPlugin.configSchema.shape,
 });

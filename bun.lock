@@ -25,6 +25,7 @@
         "@tokenring-ai/app": "workspace:*",
         "@tokenring-ai/audio": "workspace:*",
         "@tokenring-ai/aws": "workspace:*",
+        "@tokenring-ai/bot": "workspace:*",
         "@tokenring-ai/bun-storage": "workspace:*",
         "@tokenring-ai/chat": "workspace:*",
         "@tokenring-ai/checkpoint": "workspace:*",
@@ -35,10 +36,10 @@
         "@tokenring-ai/database": "workspace:*",
         "@tokenring-ai/docker": "workspace:*",
         "@tokenring-ai/email": "workspace:*",
-        "@tokenring-ai/escalation": "workspace:*",
         "@tokenring-ai/feedback": "workspace:*",
         "@tokenring-ai/file-index": "workspace:*",
         "@tokenring-ai/filesystem": "workspace:*",
+        "@tokenring-ai/ghost-io": "workspace:*",
         "@tokenring-ai/git": "workspace:*",
         "@tokenring-ai/github": "workspace:*",
         "@tokenring-ai/image": "workspace:*",
@@ -77,6 +78,7 @@
         "@tokenring-ai/web-design": "workspace:*",
         "@tokenring-ai/web-host": "workspace:*",
         "@tokenring-ai/websearch": "workspace:*",
+        "@tokenring-ai/wordpress": "workspace:*",
         "@tokenring-ai/workflow": "workspace:*",
         "@types/bun": "^1.3.14",
         "chalk": "^5.6.2",
@@ -93,6 +95,8 @@
         "@radix-ui/react-dropdown-menu": "^2.1.20",
         "@tokenring-ai/secrets": "workspace:*",
         "@uiw/react-md-editor": "^4.1.1",
+        "@xterm/addon-fit": "^0.10.0",
+        "@xterm/xterm": "^5.5.0",
         "clsx": "^2.1.1",
         "dompurify": "^3.4.12",
         "focus-trap-react": "^12.0.3",
@@ -119,6 +123,7 @@
         "@tokenring-ai/app": "workspace:*",
         "@tokenring-ai/audio": "workspace:*",
         "@tokenring-ai/blog": "workspace:*",
+        "@tokenring-ai/bot": "workspace:*",
         "@tokenring-ai/calendar": "workspace:*",
         "@tokenring-ai/chat": "workspace:*",
         "@tokenring-ai/checkpoint": "workspace:*",
@@ -252,15 +257,29 @@
         "@tokenring-ai/agent": "workspace:*",
         "@tokenring-ai/ai-client": "workspace:*",
         "@tokenring-ai/app": "workspace:*",
+        "@tokenring-ai/bot": "workspace:*",
         "@tokenring-ai/cdn": "workspace:*",
         "@tokenring-ai/chat": "workspace:*",
-        "@tokenring-ai/escalation": "workspace:*",
         "@tokenring-ai/image": "workspace:*",
         "@tokenring-ai/rpc": "workspace:*",
         "@tokenring-ai/scripting": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "marked": "^18.0.6",
         "uuid": "14.0.1",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "typescript": "^7.0.2",
+      },
+    },
+    "plugin/bot": {
+      "name": "@tokenring-ai/bot",
+      "version": "0.2.0",
+      "dependencies": {
+        "@tokenring-ai/agent": "workspace:*",
+        "@tokenring-ai/app": "workspace:*",
+        "@tokenring-ai/rpc": "workspace:*",
+        "@tokenring-ai/utility": "workspace:*",
         "zod": "^4.4.3",
       },
       "devDependencies": {
@@ -460,19 +479,6 @@
         "typescript": "^7.0.2",
       },
     },
-    "plugin/escalation": {
-      "name": "@tokenring-ai/escalation",
-      "version": "0.2.0",
-      "dependencies": {
-        "@tokenring-ai/agent": "workspace:*",
-        "@tokenring-ai/app": "workspace:*",
-        "@tokenring-ai/utility": "workspace:*",
-        "zod": "^4.4.3",
-      },
-      "devDependencies": {
-        "typescript": "^7.0.2",
-      },
-    },
     "plugin/feedback": {
       "name": "@tokenring-ai/feedback",
       "version": "0.2.0",
@@ -529,6 +535,23 @@
       },
       "devDependencies": {
         "@types/mime-types": "^3.0.1",
+        "typescript": "^7.0.2",
+      },
+    },
+    "plugin/ghost-io": {
+      "name": "@tokenring-ai/ghost-io",
+      "version": "0.2.0",
+      "dependencies": {
+        "@tokenring-ai/app": "workspace:*",
+        "@tokenring-ai/blog": "workspace:*",
+        "@tokenring-ai/cdn": "workspace:*",
+        "@tokenring-ai/utility": "workspace:*",
+        "@tryghost/admin-api": "^1.14.11",
+        "form-data": "^4.0.6",
+        "uuid": "14.0.1",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
         "typescript": "^7.0.2",
       },
     },
@@ -897,7 +920,7 @@
         "@slack/bolt": "^4.7.3",
         "@tokenring-ai/agent": "workspace:*",
         "@tokenring-ai/app": "workspace:*",
-        "@tokenring-ai/escalation": "workspace:*",
+        "@tokenring-ai/bot": "workspace:*",
         "@tokenring-ai/secrets": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "zod": "^4.4.3",
@@ -930,7 +953,7 @@
       "dependencies": {
         "@tokenring-ai/agent": "workspace:*",
         "@tokenring-ai/app": "workspace:*",
-        "@tokenring-ai/escalation": "workspace:*",
+        "@tokenring-ai/bot": "workspace:*",
         "@tokenring-ai/secrets": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
         "node-telegram-bot-api": "^1.2.0",
@@ -1086,6 +1109,23 @@
         "@tokenring-ai/chat": "workspace:*",
         "@tokenring-ai/scripting": "workspace:*",
         "@tokenring-ai/utility": "workspace:*",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "typescript": "^7.0.2",
+      },
+    },
+    "plugin/wordpress": {
+      "name": "@tokenring-ai/wordpress",
+      "version": "0.2.0",
+      "dependencies": {
+        "@tokenring-ai/app": "workspace:*",
+        "@tokenring-ai/blog": "workspace:*",
+        "@tokenring-ai/cdn": "workspace:*",
+        "@tokenring-ai/utility": "workspace:*",
+        "marked": "^18.0.6",
+        "uuid": "14.0.1",
+        "wordpress-api-client": "^0.4.9",
         "zod": "^4.4.3",
       },
       "devDependencies": {
@@ -1678,6 +1718,8 @@
 
     "@tokenring-ai/blog": ["@tokenring-ai/blog@workspace:plugin/blog"],
 
+    "@tokenring-ai/bot": ["@tokenring-ai/bot@workspace:plugin/bot"],
+
     "@tokenring-ai/bun-storage": ["@tokenring-ai/bun-storage@workspace:plugin/bun-storage"],
 
     "@tokenring-ai/calendar": ["@tokenring-ai/calendar@workspace:plugin/calendar"],
@@ -1702,13 +1744,13 @@
 
     "@tokenring-ai/email": ["@tokenring-ai/email@workspace:plugin/email"],
 
-    "@tokenring-ai/escalation": ["@tokenring-ai/escalation@workspace:plugin/escalation"],
-
     "@tokenring-ai/feedback": ["@tokenring-ai/feedback@workspace:plugin/feedback"],
 
     "@tokenring-ai/file-index": ["@tokenring-ai/file-index@workspace:plugin/file-index"],
 
     "@tokenring-ai/filesystem": ["@tokenring-ai/filesystem@workspace:plugin/filesystem"],
+
+    "@tokenring-ai/ghost-io": ["@tokenring-ai/ghost-io@workspace:plugin/ghost-io"],
 
     "@tokenring-ai/git": ["@tokenring-ai/git@workspace:plugin/git"],
 
@@ -1788,7 +1830,13 @@
 
     "@tokenring-ai/websearch": ["@tokenring-ai/websearch@workspace:plugin/websearch"],
 
+    "@tokenring-ai/wordpress": ["@tokenring-ai/wordpress@workspace:plugin/wordpress"],
+
     "@tokenring-ai/workflow": ["@tokenring-ai/workflow@workspace:plugin/workflow"],
+
+    "@tool-belt/type-predicates": ["@tool-belt/type-predicates@1.2.2", "", {}, "sha512-IuUa3c0fOEJ6YnzMvfPA5BZ2gLafPgSU9YJmXV3hozlxbQGNPMVHrTiMoAERklhssxVQ5AtfEUI6r+6kS4npKw=="],
+
+    "@tryghost/admin-api": ["@tryghost/admin-api@1.14.11", "", { "dependencies": { "axios": "1.18.1", "form-data": "4.0.6", "jsonwebtoken": "9.0.3" } }, "sha512-dI4buzO/oR4Hop8R9KowNgjqyVUs0wC+/j6g8vFmOOmSEtGaAT1OF22SW09f9c/Ab7eY0CXXPLIDM9bbgAZjVQ=="],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.3", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg=="],
 
@@ -1942,6 +1990,10 @@
 
     "@workflow/serde": ["@workflow/serde@4.1.0", "", {}, "sha512-pav4F2BoirECWR7Nf1TKt+2eETcBj7jj4cBefQ8VXQCA6NPkaKeLfj/zMgi+3zYV5ZIBT4GuUiphsj0/b9hPQQ=="],
 
+    "@xterm/addon-fit": ["@xterm/addon-fit@0.10.0", "", { "peerDependencies": { "@xterm/xterm": "^5.0.0" } }, "sha512-UFYkDm4HUahf2lnEyHvio51TNGiLK66mqP2JoATy7hRZeXaGMRDr00JiSF7m63vR5WKATF605yEggJKsw0JpMQ=="],
+
+    "@xterm/xterm": ["@xterm/xterm@5.5.0", "", {}, "sha512-hqJHYaQb5OptNunnyAnkHyM8aCjZ1MEIDTQu1iIbbTD/xops91NB5yq1ZK/dC2JDbVWtF23zUtl9JE2NqwT87A=="],
+
     "abort-controller": ["abort-controller@3.0.0", "", { "dependencies": { "event-target-shim": "^5.0.0" } }, "sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg=="],
 
     "accepts": ["accepts@2.0.0", "", { "dependencies": { "mime-types": "^3.0.0", "negotiator": "^1.0.0" } }, "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng=="],
@@ -2089,6 +2141,8 @@
     "crc-32": ["crc-32@1.2.2", "", { "bin": { "crc32": "bin/crc32.njs" } }, "sha512-ROmzCKrTnOwybPcJApAA6WBWij23HVfGVNKqqrZpuyZOHqK2CwHSvpGuyt/UNNvaIjEd8X5IFGp4Mh+Ie1IHJQ=="],
 
     "crc32-stream": ["crc32-stream@6.0.0", "", { "dependencies": { "crc-32": "^1.2.0", "readable-stream": "^4.0.0" } }, "sha512-piICUB6ei4IlTv1+653yq5+KoqfBYmj9bw6LqXoOneTMDXk5nM1qt12mFW1caG3LlJXEKW1Bp0WggEmIfQB34g=="],
+
+    "cross-fetch": ["cross-fetch@3.1.5", "", { "dependencies": { "node-fetch": "2.6.7" } }, "sha512-lvb1SBsI0Z7GDwmuid+mU3kWVBwTVUbe7S0H52yaaAdQOXq2YktTCZdlAcNKFzE6QtRz0snpw9bNiPeOIkkQvw=="],
 
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA=="],
 
@@ -3086,6 +3140,10 @@
 
     "word-wrap": ["word-wrap@1.2.5", "", {}, "sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA=="],
 
+    "wordpress-api-client": ["wordpress-api-client@0.4.9", "", { "dependencies": { "@tool-belt/type-predicates": "1.2.2", "cross-fetch": "3.1.5", "wp-types": "3.61.0" } }, "sha512-5YcLXjTykTjHKzBynbQ0IQ9KScY/hBhh46kH67A/+CgJW/U3NI1qK77YQogd+mR/cSci4RhiwgJ5PfcHiz5/yg=="],
+
+    "wp-types": ["wp-types@3.61.0", "", { "dependencies": { "typescript": ">=3" } }, "sha512-3u7g4n+c5QugHar1R/3PLTQLv4NTIi2Lmjh+IjrDZJNRpU40sQtGCc3jLjLYQlaLVUpPNwMAedIAryQfUbQFRw=="],
+
     "wrap-ansi": ["wrap-ansi@9.0.2", "", { "dependencies": { "ansi-styles": "^6.2.1", "string-width": "^7.0.0", "strip-ansi": "^7.1.0" } }, "sha512-42AtmgqjV+X1VpdOfyTGOYRi0/zsoLqtXQckTmqTeybT+BDIbM/Guxo7x3pE2vtpr1ok6xRqM9OpBe+Jyoqyww=="],
 
     "wrap-ansi-cjs": ["wrap-ansi@7.0.0", "", { "dependencies": { "ansi-styles": "^4.0.0", "string-width": "^4.1.0", "strip-ansi": "^6.0.0" } }, "sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q=="],
@@ -3177,6 +3235,8 @@
     "cliui/string-width": ["string-width@7.2.0", "", { "dependencies": { "emoji-regex": "^10.3.0", "get-east-asian-width": "^1.0.0", "strip-ansi": "^7.1.0" } }, "sha512-tsaTIkKW9b4N+AEj+SVA+WhJzV7/zMhcSu78mLKWSk7cXMOSHsBKFWUs0fWwq8QyK3MgJBQRX6Gbi4kYbdvGkQ=="],
 
     "compress-commons/is-stream": ["is-stream@2.0.1", "", {}, "sha512-hFoiJiTl63nn+kstHGBtewWSKnQLpyb155KHheA1l39uvtO9nWIop1p3udqPcUd/xbF1VLMO4n7OI6p7RbngDg=="],
+
+    "cross-fetch/node-fetch": ["node-fetch@2.6.7", "", { "dependencies": { "whatwg-url": "^5.0.0" }, "peerDependencies": { "encoding": "^0.1.0" }, "optionalPeers": ["encoding"] }, "sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ=="],
 
     "docker-modem/readable-stream": ["readable-stream@3.6.2", "", { "dependencies": { "inherits": "^2.0.3", "string_decoder": "^1.1.1", "util-deprecate": "^1.0.1" } }, "sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA=="],
 
@@ -3270,6 +3330,8 @@
 
     "ajv-formats/ajv/json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
 
+    "cross-fetch/node-fetch/whatwg-url": ["whatwg-url@5.0.0", "", { "dependencies": { "tr46": "~0.0.3", "webidl-conversions": "^3.0.0" } }, "sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw=="],
+
     "dockerode/tar-fs/tar-stream": ["tar-stream@2.2.0", "", { "dependencies": { "bl": "^4.0.3", "end-of-stream": "^1.4.1", "fs-constants": "^1.0.0", "inherits": "^2.0.3", "readable-stream": "^3.1.1" } }, "sha512-ujeqbceABgwMZxEJnk2HDY2DlnUZ+9oEcb1KzTVfYHio0UE6dG71n60d8D2I4qNvleWrrXpmjpt7vZeF1LnMZQ=="],
 
     "form-data/mime-types/mime-db": ["mime-db@1.52.0", "", {}, "sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg=="],
@@ -3311,6 +3373,10 @@
     "@grpc/proto-loader/yargs/string-width/emoji-regex": ["emoji-regex@8.0.0", "", {}, "sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A=="],
 
     "@grpc/proto-loader/yargs/string-width/strip-ansi": ["strip-ansi@6.0.1", "", { "dependencies": { "ansi-regex": "^5.0.1" } }, "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A=="],
+
+    "cross-fetch/node-fetch/whatwg-url/tr46": ["tr46@0.0.3", "", {}, "sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw=="],
+
+    "cross-fetch/node-fetch/whatwg-url/webidl-conversions": ["webidl-conversions@3.0.1", "", {}, "sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ=="],
 
     "dockerode/tar-fs/tar-stream/readable-stream": ["readable-stream@3.6.2", "", { "dependencies": { "inherits": "^2.0.3", "string_decoder": "^1.1.1", "util-deprecate": "^1.0.1" } }, "sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA=="],
 

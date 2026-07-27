@@ -13,6 +13,7 @@ import TopBar from "./components/TopBar.tsx";
 import { notificationManager, ToastContainer, type ToastItem } from "./components/ui/toast.tsx";
 import AgentsApp from "./pages/apps/AgentsApp.tsx";
 import BlogApp from "./pages/apps/BlogApp.tsx";
+import BotsApp from "./pages/apps/BotsApp.tsx";
 import CalendarApp from "./pages/apps/CalendarApp.tsx";
 import ConfigurationApp from "./pages/apps/ConfigurationApp.tsx";
 import DocumentsApp from "./pages/apps/DocumentsApp.tsx";
@@ -121,6 +122,7 @@ export default function App() {
                     <Route path="/agents/:agentType?" element={<AgentsApp />} />
                     {/* Optional param keeps the app mounted while navigating between workflows */}
                     <Route path="/workflows/:workflowName?" element={<WorkflowsApp />} />
+                    <Route path="/bots" element={<BotsApp />} />
                     <Route path="/scheduler" element={<SchedulerApp />} />
                     <Route path="/queue" element={<QueueApp />} />
                     <Route path="/skills" element={<SkillsApp />} />
@@ -130,7 +132,7 @@ export default function App() {
                     <Route path="/research/:topicName?/:itemName?" element={<ResearchApp />} />
                     <Route path="/blog" element={<BlogApp />} />
                     <Route path="/files" element={<FilesApp />} />
-                    <Route path="/terminal" element={<TerminalApp />} />
+                    <Route path="/terminal/:terminalId?" element={<TerminalApp />} />
                     <Route path="/email" element={<EmailApp />} />
                     <Route path="/calendar" element={<CalendarApp />} />
                     <Route path="/media" element={<MediaApp />} />

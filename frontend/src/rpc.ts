@@ -4,6 +4,7 @@ import ConfigRpcSchema from "@tokenring-ai/app/rpc/configSchema";
 import AppRpcSchema from "@tokenring-ai/app/rpc/schema";
 import AudioRpcSchema from "@tokenring-ai/audio/rpc/schema";
 import BlogRpcSchema from "@tokenring-ai/blog/rpc/schema";
+import BotRpcSchema from "@tokenring-ai/bot/rpc/schema";
 import CalendarRpcSchema from "@tokenring-ai/calendar/rpc/schema";
 import ChatRpcSchema from "@tokenring-ai/chat/rpc/schema";
 import CheckpointRpcSchema from "@tokenring-ai/checkpoint/rpc/schema";
@@ -48,6 +49,7 @@ const baseURL = new URL("/rpc:ws", window.location.origin);
 export const agentRPCClient = createWsRPCClient(baseURL, AgentRpcSchema, rpcAuth);
 export const audioRPCClient = createWsRPCClient(baseURL, AudioRpcSchema, rpcAuth);
 export const blogRPCClient = createWsRPCClient(baseURL, BlogRpcSchema, rpcAuth);
+export const botRPCClient = createWsRPCClient(baseURL, BotRpcSchema, rpcAuth);
 export const imageGenerationRPCClient = createWsRPCClient(baseURL, ImageGenerationRpcSchema, rpcAuth);
 export const videoGenerationRPCClient = createWsRPCClient(baseURL, VideoRpcSchema, rpcAuth);
 export const appRPCClient = createWsRPCClient(baseURL, AppRpcSchema, rpcAuth);
@@ -417,6 +419,10 @@ export function useSchedulerHistory(agentId: string | undefined, taskName?: stri
     },
     { refreshInterval: 5000 },
   );
+}
+
+export function useBots() {
+  return useTypedSWR("/bot/listBots", () => botRPCClient.listBots({}), { refreshInterval: 5000 });
 }
 
 export function useQueues() {

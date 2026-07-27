@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   BookOpen,
+  Bot,
   CalendarDays,
   Cpu,
   DollarSign,
@@ -42,6 +43,7 @@ interface AppNavItem {
 const APP_NAV_ITEMS: AppNavItem[] = [
   { path: "/agents", icon: <Cpu className="w-4 h-4" />, label: "Agents", color: "text-amber-500" },
   { path: "/workflows", icon: <GitBranch className="w-4 h-4" />, label: "Workflows", color: "text-cyan-500" },
+  { path: "/bots", icon: <Bot className="w-4 h-4" />, label: "Bots", color: "text-teal-400" },
   { path: "/scheduler", icon: <Timer className="w-4 h-4" />, label: "Scheduler", color: "text-indigo-400" },
   { path: "/queue", icon: <ListOrdered className="w-4 h-4" />, label: "Queue", color: "text-sky-400" },
   { path: "/skills", icon: <Sparkles className="w-4 h-4" />, label: "Skills", color: "text-violet-400" },

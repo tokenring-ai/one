@@ -1031,6 +1031,7 @@
                                     "video/webm",
                                     "image/png",
                                     "image/jpeg",
+                                    "image/webp",
                                     "text/plain",
                                     "text/markdown",
                                     "text/html",
@@ -1217,6 +1218,7 @@
                                     "video/webm",
                                     "image/png",
                                     "image/jpeg",
+                                    "image/webp",
                                     "text/plain",
                                     "text/markdown",
                                     "text/html",
@@ -1792,7 +1794,8 @@
                                 "application/json",
                                 "message/rfc822",
                                 "image/png",
-                                "image/jpeg"
+                                "image/jpeg",
+                                "image/webp"
                               ]
                             },
                             "sendToLLM": {
@@ -2150,6 +2153,7 @@
                                     "video/webm",
                                     "image/png",
                                     "image/jpeg",
+                                    "image/webp",
                                     "text/plain",
                                     "text/markdown",
                                     "text/html",
@@ -2336,6 +2340,7 @@
                                     "video/webm",
                                     "image/png",
                                     "image/jpeg",
+                                    "image/webp",
                                     "text/plain",
                                     "text/markdown",
                                     "text/html",
@@ -2911,7 +2916,8 @@
                                 "application/json",
                                 "message/rfc822",
                                 "image/png",
-                                "image/jpeg"
+                                "image/jpeg",
+                                "image/webp"
                               ]
                             },
                             "sendToLLM": {
@@ -3293,6 +3299,7 @@
                       "video/webm",
                       "image/png",
                       "image/jpeg",
+                      "image/webp",
                       "text/plain",
                       "text/markdown",
                       "text/html",

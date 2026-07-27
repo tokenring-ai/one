@@ -34,9 +34,9 @@ You can also open the **web UI** in a browser against the same backend. Multiple
 
 ### Communication and Collaboration
 
-- **Escalation Service**: Multi-provider support with group broadcasting and communication channels
-- **Slack Integration**: Bot functionality and workspace management
-- **Telegram Integration**: Chat management and message handling
+- **Bot Service**: Channel-agnostic bots with per-conversation agents, group broadcasting, and human-in-the-loop channels
+- **Slack Integration**: Slack transport for bots
+- **Telegram Integration**: Telegram transport for bots
 - **Human Feedback Tools**: File reviews, React component previews, and interactive Q&A
 - **Real-time Communication**: WebSocket API for browser clients
 
@@ -442,9 +442,9 @@ TokenRing One is built as a modular TypeScript monorepo with specialized package
 
 ### Communication and Collaboration
 
-- **@tokenring-ai/escalation**: Escalation service with multi-provider support and group broadcasting
-- **@tokenring-ai/slack**: Slack bot integration for workspace communication
-- **@tokenring-ai/telegram**: Telegram bot integration for chat and message handling
+- **@tokenring-ai/bot**: Bots that span messaging platforms, with per-conversation agents and group broadcasting
+- **@tokenring-ai/slack**: Slack transport for bots
+- **@tokenring-ai/telegram**: Telegram transport for bots
 - **@tokenring-ai/feedback**: Human feedback tools for file reviews and React component previews
 
 ### Audio and Media
@@ -713,9 +713,9 @@ The TokenRing One ecosystem consists of specialized packages organized into func
 
 #### Communication and Collaboration
 
-- **escalation**: Escalation service with communication channels
-- **slack**: Slack bot integration
-- **telegram**: Telegram bot integration
+- **bot**: Bots that span messaging platforms, with per-conversation agents
+- **slack**: Slack transport for bots
+- **telegram**: Telegram transport for bots
 - **feedback**: Human feedback tools
 
 #### Audio and Media
