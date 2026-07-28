@@ -20,7 +20,10 @@ export default {
   displayName: "TokenRing One Web Frontend",
   version: packageJSON.version,
   description: packageJSON.description,
-  install(app, config) {
+  install(_app) {
+    // Resources are registered in reconfigure once the SPA directory is known.
+  },
+  reconfigure(app, config) {
     const spaDirectory = path.resolve(config.frontend.directory);
     const indexFile = path.join(spaDirectory, "index.html");
     if (!fs.existsSync(indexFile)) {
@@ -28,19 +31,18 @@ export default {
     }
 
     const assetsDir = path.join(spaDirectory, "assets");
+    const webHostService = app.requireService(WebHostService);
 
-    app.waitForService(WebHostService, webHostService => {
-      webHostService.registerResource(
-        "Static Assets",
-        new StaticResource({
-          prefix: "/assets",
-          root: assetsDir,
-          indexFile: "index.html",
-        }),
-      );
+    webHostService.registerResource(
+      "Static Assets",
+      new StaticResource({
+        prefix: "/assets",
+        root: assetsDir,
+        indexFile: "index.html",
+      }),
+    );
 
-      webHostService.registerResource("Agent Web Interface", new FallbackResource({ file: indexFile }));
-    });
+    webHostService.registerResource("Agent Web Interface", new FallbackResource({ file: indexFile }));
   },
   configSchema: packageConfigSchema,
 } satisfies TokenRingPlugin<typeof packageConfigSchema>;

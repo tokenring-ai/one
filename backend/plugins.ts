@@ -3,8 +3,10 @@ import AIClientPlugin from "@tokenring-ai/ai-client/plugin";
 import { TokenRingAppConfigSchema } from "@tokenring-ai/app/schema";
 import AudioPlugin from "@tokenring-ai/audio/plugin";
 import AWSPlugin from "@tokenring-ai/aws/plugin";
+import BlogPlugin from "@tokenring-ai/blog/plugin";
 import BotPlugin from "@tokenring-ai/bot/plugin";
 import BunStoragePlugin from "@tokenring-ai/bun-storage/plugin";
+import CDNPlugin from "@tokenring-ai/cdn/plugin";
 import ChatPlugin from "@tokenring-ai/chat/plugin";
 import CheckpointPlugin from "@tokenring-ai/checkpoint/plugin";
 import ChromePlugin from "@tokenring-ai/chrome/plugin";
@@ -66,6 +68,8 @@ export const plugins = [
   AudioPlugin,
   AWSPlugin,
   OneFrontendPlugin,
+  BlogPlugin,
+  CDNPlugin,
   ChatPlugin,
   CloudQuotePlugin,
   CheckpointPlugin,
@@ -126,6 +130,7 @@ export const configSchema = z.object({
   ...AudioPlugin.configSchema.shape,
   ...AWSPlugin.configSchema.shape,
   ...OneFrontendPlugin.configSchema.shape,
+  ...BlogPlugin.configSchema.shape,
   ...ChatPlugin.configSchema.shape,
   ...CloudQuotePlugin.configSchema.shape,
   ...CheckpointPlugin.configSchema.shape,
@@ -136,26 +141,20 @@ export const configSchema = z.object({
   ...DockerPlugin.configSchema.shape,
   ...BunStoragePlugin.configSchema.shape,
   ...BotPlugin.configSchema.shape,
-  ...FeedbackPlugin.configSchema.shape,
   ...FileIndexPlugin.configSchema.shape,
   ...FilesystemPlugin.configSchema.shape,
   ...GhostIOPlugin.configSchema.shape,
-  ...GitPlugin.configSchema.shape,
   ...GithubPlugin.configSchema.shape,
   ...MediaLibraryPlugin.configSchema.shape,
   ...ImageGenerationPlugin.configSchema.shape,
-  ...JavascriptPlugin.configSchema.shape,
   ...KubernetesPlugin.configSchema.shape,
   ...LifecyclePlugin.configSchema.shape,
   ...PosixSystemPlugin.configSchema.shape,
   ...MarkdownPlugin.configSchema.shape,
   ...MetricsPlugin.configSchema.shape,
   ...MCPPlugin.configSchema.shape,
-  ...MemoryPlugin.configSchema.shape,
-  ...MySQLPlugin.configSchema.shape,
   ...NewsRPMPlugin.configSchema.shape,
   ...ResearchPlugin.configSchema.shape,
-  ...RPCPlugin.configSchema.shape,
   ...QueuePlugin.configSchema.shape,
   ...SandboxPlugin.configSchema.shape,
   ...SchedulerPlugin.configSchema.shape,
@@ -169,8 +168,7 @@ export const configSchema = z.object({
   ...TerminalPlugin.configSchema.shape,
   ...TestingPlugin.configSchema.shape,
   ...TodoPlugin.configSchema.shape,
-  ...TypescriptPlugin.configSchema.shape,
-  ...VaultPlugin.configSchema.shape,
+  ...VaultPlugin.immutableConfigSchema.shape,
   ...VideoGenerationPlugin.configSchema.shape,
   ...WebDesignPlugin.configSchema.shape,
   ...WebHostPlugin.configSchema.shape,

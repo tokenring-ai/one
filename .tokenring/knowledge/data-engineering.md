@@ -11,7 +11,7 @@ TokenRing AI follows a **modular, agent-centric data architecture** where data p
 ### Database Abstraction Layer
 
 #### @tokenring-ai/database Package
-- **Abstract Database Provider Pattern**: Provides `DatabaseProvider` base class for implementing database-specific functionality
+- **Abstract Database Provider Pattern**: Provides `DataSource` base class for implementing database-specific functionality
 - **Multi-Database Support**: Enables agents to work with multiple databases simultaneously through a registry system
 - **Core Services**:
   - `DatabaseService`: Central manager for database providers with registration/retrieval

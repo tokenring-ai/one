@@ -27,6 +27,7 @@
         "@tokenring-ai/aws": "workspace:*",
         "@tokenring-ai/bot": "workspace:*",
         "@tokenring-ai/bun-storage": "workspace:*",
+        "@tokenring-ai/cdn": "workspace:*",
         "@tokenring-ai/chat": "workspace:*",
         "@tokenring-ai/checkpoint": "workspace:*",
         "@tokenring-ai/chrome": "workspace:*",
@@ -733,6 +734,7 @@
         "@tokenring-ai/app": "workspace:*",
         "@tokenring-ai/database": "workspace:*",
         "@tokenring-ai/secrets": "workspace:*",
+        "@tokenring-ai/utility": "workspace:*",
         "zod": "^4.4.3",
       },
       "devDependencies": {
