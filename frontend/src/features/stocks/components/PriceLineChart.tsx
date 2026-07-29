@@ -40,7 +40,8 @@ export default function PriceLineChart({ rows }: PriceLineChartProps) {
   const isUp = closes[closes.length - 1]! >= closes[0]!;
   const lineColor = isUp ? "#10b981" : "#ef4444";
   const fillColor = lineColor;
-  const gradId = `grad-${isUp ? "up" : "dn"}`;
+  // Unique gradient id so multiple charts on the same page don't clash.
+  const gradId = `pl-grad-${isUp ? "up" : "dn"}-${closes.length}-${Math.round(minP * 100)}-${Math.round(maxP * 100)}`;
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-48 select-none" aria-label="Price chart">

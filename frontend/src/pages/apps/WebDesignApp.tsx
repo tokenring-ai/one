@@ -1,17 +1,17 @@
 import Editor from "@monaco-editor/react";
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { ChevronDown, ChevronRight, FileCode2, Frame, Loader2, Play, Plus, Save, Trash2, Workflow, X } from "lucide-react";
+import { ChevronDown, ChevronRight, FileCode2, Frame, Loader2, Play, Plus, Save, Send, Trash2, Workflow, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
-import ChatPanel from "../../components/chat/ChatPanel.tsx";
+import ChatDock from "../../components/chat/ChatDock.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { useOwnedAgent } from "../../hooks/useOwnedAgent.ts";
 import { useTheme } from "../../hooks/useTheme.ts";
 import { sanitizeDesignHtml } from "../../lib/sanitizeHtml.ts";
-import { useFlows, webDesignRPCClient } from "../../rpc.ts";
+import { agentRPCClient, useDesigns, useFlows, webDesignRPCClient } from "../../rpc.ts";
 
 const DEFAULT_HTML = `<!DOCTYPE html>
 <html lang="en">
@@ -47,13 +47,6 @@ const designPath = (flowName: string, designName: string) => `${WEB_DESIGN_ROOT}
 interface FlowSummary {
   name: string;
   designCount: number;
-  updatedAt: string;
-}
-
-interface DesignSummary {
-  flowName: string;
-  name: string;
-  size: number;
   updatedAt: string;
 }
 
@@ -304,7 +297,6 @@ function FlowRow({
   onToggle,
   selected,
   isLoadingSelected,
-  refreshSignal,
   onSelectDesign,
   onNewDesign,
   onDeleteDesign,
@@ -315,35 +307,18 @@ function FlowRow({
   onToggle: () => void;
   selected: SelectedDesign | null;
   isLoadingSelected: boolean;
-  refreshSignal: number;
   onSelectDesign: (flowName: string, name: string) => void;
   onNewDesign: (flowName: string) => void;
   onDeleteDesign: (flowName: string, name: string) => void;
   onDeleteFlow: (flowName: string) => void;
 }) {
-  const [designs, setDesigns] = useState<DesignSummary[] | null>(null);
-  const [loadingDesigns, setLoadingDesigns] = useState(false);
+  // Live stream while expanded so agent-created designs appear without a manual refresh
+  const { data: designsData, isLoading: loadingDesigns, error: designsError } = useDesigns(expanded ? flow.name : null);
+  const designs = designsData?.designs ?? null;
 
   useEffect(() => {
-    if (!expanded) return;
-    let cancelled = false;
-    setLoadingDesigns(true);
-    webDesignRPCClient
-      .listDesigns({ flowName: flow.name })
-      .then(res => {
-        if (!cancelled) setDesigns(res.designs);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) toastManager.error(formatError(e), { duration: 4000 });
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingDesigns(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshSignal is an intentional refetch trigger
-  }, [expanded, flow.name, refreshSignal]);
+    if (designsError) toastManager.error(formatError(designsError), { duration: 4000 });
+  }, [designsError]);
 
   return (
     <div className="border-b border-primary/50">
@@ -432,7 +407,6 @@ function FlowSidebar({
   onToggleFlow,
   selected,
   isLoadingSelected,
-  designsRefreshSignal,
   onSelectDesign,
   onNewDesign,
   onDeleteDesign,
@@ -444,7 +418,6 @@ function FlowSidebar({
   onToggleFlow: (name: string) => void;
   selected: SelectedDesign | null;
   isLoadingSelected: boolean;
-  designsRefreshSignal: number;
   onSelectDesign: (flowName: string, name: string) => void;
   onNewDesign: (flowName: string) => void;
   onDeleteDesign: (flowName: string, name: string) => void;
@@ -476,7 +449,6 @@ function FlowSidebar({
               onToggle={() => onToggleFlow(flow.name)}
               selected={selected}
               isLoadingSelected={isLoadingSelected}
-              refreshSignal={designsRefreshSignal}
               onSelectDesign={onSelectDesign}
               onNewDesign={onNewDesign}
               onDeleteDesign={onDeleteDesign}
@@ -532,10 +504,29 @@ function WebDesignWorkspace({ initialContent }: { initialContent: string | undef
   const [deleteFlowTarget, setDeleteFlowTarget] = useState<string | null>(null);
 
   const [expandedFlows, setExpandedFlows] = useState<Set<string>>(new Set());
-  const [designsRefreshSignal, setDesignsRefreshSignal] = useState(0);
-  const bumpDesignsRefresh = useCallback(() => setDesignsRefreshSignal(n => n + 1), []);
 
   const { agentId, assignAgent: handleAgentLaunched } = useOwnedAgent("Web Design app");
+
+  const handleStartDesign = useCallback(
+    async (prompt: string): Promise<boolean> => {
+      try {
+        const { id } = await agentRPCClient.createAgent({ agentType: "web-design", headless: false });
+        handleAgentLaunched(id);
+        await agentRPCClient.sendInput({
+          agentId: id,
+          input: {
+            from: "Web Design app",
+            message: `/design ${prompt}`,
+          },
+        });
+        return true;
+      } catch (error) {
+        toastManager.error(formatError(error), { duration: 5000 });
+        return false;
+      }
+    },
+    [handleAgentLaunched],
+  );
 
   // Ready == the editor holds the document the URL points at (or an unsaved draft)
   const isDocumentReady = selectedKey !== null ? loadedKey === selectedKey : isDraft;
@@ -598,6 +589,18 @@ function WebDesignWorkspace({ initialContent }: { initialContent: string | undef
     [navigate],
   );
 
+  // Keep the agent’s current design in sync so addSelectedDesign can attach it to chat input.
+  useEffect(() => {
+    if (!agentId || !routeFlowName || !routeDesignName) return;
+    webDesignRPCClient
+      .updateWebDesignState({
+        agentId,
+        selectedFlowName: routeFlowName,
+        selectedDesignName: routeDesignName,
+      })
+      .catch(() => {});
+  }, [agentId, routeFlowName, routeDesignName]);
+
   useEffect(() => {
     if (!routeFlowName || !routeDesignName) return;
     const key = `${routeFlowName}/${routeDesignName}`;
@@ -651,7 +654,6 @@ function WebDesignWorkspace({ initialContent }: { initialContent: string | undef
     try {
       const { design } = await webDesignRPCClient.updateDesign({ flowName: selected.flowName, name: selected.name, content: htmlContent });
       setSavedContent(design.content);
-      bumpDesignsRefresh();
       void refreshFlows();
       toastManager.success("Saved", { duration: 2000 });
     } catch (e: unknown) {
@@ -659,7 +661,7 @@ function WebDesignWorkspace({ initialContent }: { initialContent: string | undef
     } finally {
       setIsSaving(false);
     }
-  }, [isDocumentReady, selected, htmlContent, bumpDesignsRefresh, refreshFlows]);
+  }, [isDocumentReady, selected, htmlContent, refreshFlows]);
 
   const handleSaveModalSubmit = useCallback(
     async (flowName: string, designName: string) => {
@@ -672,14 +674,13 @@ function WebDesignWorkspace({ initialContent }: { initialContent: string | undef
         setSaveModal(null);
         setExpandedFlows(prev => new Set(prev).add(flowName));
         void navigate(designPath(design.flowName, design.name));
-        bumpDesignsRefresh();
         void refreshFlows();
         toastManager.success("Saved", { duration: 2000 });
       } catch (e: unknown) {
         toastManager.error(formatError(e), { duration: 4000 });
       }
     },
-    [htmlContent, navigate, bumpDesignsRefresh, refreshFlows],
+    [htmlContent, navigate, refreshFlows],
   );
 
   const handleNewDesignInFlow = useCallback(
@@ -697,14 +698,13 @@ function WebDesignWorkspace({ initialContent }: { initialContent: string | undef
           closeDocument();
         }
         setDeleteDesignTarget(null);
-        bumpDesignsRefresh();
         void refreshFlows();
         toastManager.success("Deleted", { duration: 2000 });
       } catch (e: unknown) {
         toastManager.error(formatError(e), { duration: 4000 });
       }
     },
-    [selected, closeDocument, bumpDesignsRefresh, refreshFlows],
+    [selected, closeDocument, refreshFlows],
   );
 
   const handleCreateFlow = useCallback(
@@ -755,6 +755,38 @@ function WebDesignWorkspace({ initialContent }: { initialContent: string | undef
     return () => window.removeEventListener("keydown", handler);
   }, [handleSave]);
 
+  // When an agent (or another client) updates the open design on disk, pull it in
+  // if the user has no local unsaved edits so the preview stays current.
+  const htmlContentRef = useRef(htmlContent);
+  const savedContentRef = useRef(savedContent);
+  htmlContentRef.current = htmlContent;
+  savedContentRef.current = savedContent;
+  useEffect(() => {
+    if (!selected || !isDocumentReady || isDirty || isDraft) return;
+    let cancelled = false;
+    const poll = () => {
+      void webDesignRPCClient
+        .getDesign({ flowName: selected.flowName, name: selected.name })
+        .then(({ design }) => {
+          if (cancelled || !design) return;
+          // Skip if the user has dirty local edits (race with typing mid-flight)
+          if (htmlContentRef.current !== savedContentRef.current) return;
+          if (htmlContentRef.current === design.content) return;
+          setHtmlContent(design.content);
+          setPreviewSource(design.content);
+          setSavedContent(design.content);
+        })
+        .catch(() => {
+          /* ignore transient poll errors */
+        });
+    };
+    const id = window.setInterval(poll, 3000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [selected, isDocumentReady, isDirty, isDraft]);
+
   const runPreview = () => setPreviewSource(htmlContent);
 
   const previewHtml = useMemo(() => sanitizeDesignHtml(previewSource), [previewSource]);
@@ -780,7 +812,13 @@ function WebDesignWorkspace({ initialContent }: { initialContent: string | undef
       Loading {selected.flowName} / {selected.name}…
     </div>
   ) : (
-    <EmptyState onNewFlow={() => setNewFlowModalOpen(true)} onNewDesign={() => handleNew()} hasFlows={flows.length > 0} />
+    <EmptyState
+      hasFlows={flows.length > 0}
+      hasAgent={!!agentId}
+      onNewFlow={() => setNewFlowModalOpen(true)}
+      onNewDesign={() => handleNew()}
+      onStartDesign={handleStartDesign}
+    />
   );
 
   return (
@@ -900,7 +938,6 @@ function WebDesignWorkspace({ initialContent }: { initialContent: string | undef
           onToggleFlow={handleToggleFlow}
           selected={selected}
           isLoadingSelected={isLoadingDesign}
-          designsRefreshSignal={designsRefreshSignal}
           onSelectDesign={handleSelectDesign}
           onNewDesign={handleNewDesignInFlow}
           onDeleteDesign={(flowName, name) => setDeleteDesignTarget({ flowName, name })}
@@ -908,16 +945,9 @@ function WebDesignWorkspace({ initialContent }: { initialContent: string | undef
           onNewFlow={() => setNewFlowModalOpen(true)}
         />
 
-        {agentId ? (
-          <ResizableSplit direction="vertical" initialRatio={0.65} minFirst={120} minSecond={120} className="h-full min-h-0">
-            {mainPane}
-            <div className="h-full overflow-hidden bg-primary">
-              <ChatPanel agentId={agentId} />
-            </div>
-          </ResizableSplit>
-        ) : (
-          mainPane
-        )}
+        <ChatDock agentId={agentId} storageKey="webdesign" initialRatio={0.65} headerTitle="Design Agent">
+          {mainPane}
+        </ChatDock>
       </ResizableSplit>
     </div>
   );
@@ -928,28 +958,114 @@ function WebDesignWorkspace({ initialContent }: { initialContent: string | undef
 function EmptyState({
   onNewFlow,
   onNewDesign,
+  onStartDesign,
   hasFlows,
+  hasAgent,
   className = "h-full",
 }: {
   onNewFlow: () => void;
   onNewDesign: () => void;
+  onStartDesign: (prompt: string) => Promise<boolean>;
   hasFlows: boolean;
+  hasAgent: boolean;
   className?: string;
 }) {
+  const [query, setQuery] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!hasAgent) textareaRef.current?.focus();
+  }, [hasAgent]);
+
+  const handleSubmit = async () => {
+    const trimmed = query.trim();
+    if (!trimmed || submitting) return;
+    setSubmitting(true);
+    try {
+      const ok = await onStartDesign(trimmed);
+      if (ok) setQuery("");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <div className={`${className} flex items-center justify-center p-6 bg-primary`}>
-      <div className="max-w-md text-center space-y-4">
-        <div className="mx-auto w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-          <Frame className="w-6 h-6 text-white" />
+    <div className={`${className} flex flex-col items-center justify-center gap-6 p-6 sm:p-8 bg-primary`}>
+      <div className="w-full max-w-xl space-y-6">
+        <div className="text-center space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg mx-auto">
+            <Frame className="w-7 h-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-primary">Design with agents</h2>
+            <p className="text-sm text-muted mt-1.5 max-w-md mx-auto leading-relaxed">
+              {hasFlows ? (
+                <>
+                  Open a mockup from the <span className="font-medium text-secondary">Flows</span> panel, edit HTML live, or describe screens below and a design
+                  agent will write mockups into flows for you.
+                </>
+              ) : (
+                <>
+                  Describe the product area and screens you need. A design agent will create a flow and save self-contained HTML mockups you can preview and
+                  refine here.
+                </>
+              )}
+            </p>
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <h2 className="text-sm font-semibold text-primary">No design open</h2>
-          <p className="text-xs text-muted leading-relaxed">
-            {hasFlows
-              ? "Pick a design from the Flows panel on the left to open it, or create a new flow and add a design to it."
-              : "Create a flow in the Flows panel on the left, then add a design to it. Designs always live inside a flow."}
-          </p>
-        </div>
+
+        {hasAgent ? (
+          <div className="bg-secondary border border-primary rounded-xl px-4 py-3 text-center">
+            <p className="text-xs text-muted leading-relaxed">
+              A design agent is running in the chat panel below. Designs it writes appear in the Flows sidebar — select one to open the editor and live preview.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-secondary border border-primary rounded-xl p-4 shadow-sm space-y-3">
+            <label htmlFor="web-design-landing-query" className="text-2xs font-semibold text-muted uppercase tracking-wide">
+              Design prompt
+            </label>
+            <textarea
+              id="web-design-landing-query"
+              ref={textareaRef}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  void handleSubmit();
+                }
+              }}
+              rows={4}
+              placeholder="e.g. Onboarding for a notes app: welcome, sign-up, empty state, first note"
+              disabled={submitting}
+              className="w-full bg-input border border-primary rounded-xl px-3 py-2.5 text-sm text-primary placeholder-muted focus-accent resize-y min-h-[96px] disabled:opacity-60"
+              aria-label="Design prompt"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-2xs text-muted">⌘/Ctrl + Enter to send</p>
+              <button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={submitting || !query.trim()}
+                className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-ring shadow-button-primary"
+                aria-label="Start design agent"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Starting…
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" /> Start design
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-center gap-2">
           <button
             type="button"
@@ -962,7 +1078,7 @@ function EmptyState({
           <button
             type="button"
             onClick={onNewDesign}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition-colors focus-ring cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-muted hover:bg-accent-muted-hover text-accent text-xs font-medium rounded-lg transition-colors focus-ring cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             New Design

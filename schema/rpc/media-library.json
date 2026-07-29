@@ -356,6 +356,98 @@
         "stream"
       ],
       "additionalProperties": false
+    },
+    {
+      "title": "getMediaLibraryState request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/media-library.getMediaLibraryState"
+        },
+        "params": {
+          "$ref": "#/$defs/getMediaLibraryStateParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getMediaLibraryState response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getMediaLibraryStateResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateMediaLibraryState request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/media-library.updateMediaLibraryState"
+        },
+        "params": {
+          "$ref": "#/$defs/updateMediaLibraryStateParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateMediaLibraryState response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateMediaLibraryStateResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
     }
   ],
   "$defs": {
@@ -848,6 +940,156 @@
         "count"
       ],
       "additionalProperties": false
+    },
+    "getMediaLibraryStateParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "getMediaLibraryStateResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "selectedFilename": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "selectedKind": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "image",
+                    "video",
+                    "audio"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "selectedFilename",
+            "selectedKind"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "updateMediaLibraryStateParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "selectedFilename": {
+          "type": "string"
+        },
+        "selectedKind": {
+          "type": "string",
+          "enum": [
+            "image",
+            "video",
+            "audio"
+          ]
+        },
+        "clearSelection": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "updateMediaLibraryStateResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "selectedFilename": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "selectedKind": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "image",
+                    "video",
+                    "audio"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "selectedFilename",
+            "selectedKind"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "x-tokenring-rpc": {
@@ -884,6 +1126,16 @@
         "type": "stream",
         "params": "#/$defs/streamVideosParams",
         "result": "#/$defs/streamVideosResult"
+      },
+      "getMediaLibraryState": {
+        "type": "query",
+        "params": "#/$defs/getMediaLibraryStateParams",
+        "result": "#/$defs/getMediaLibraryStateResult"
+      },
+      "updateMediaLibraryState": {
+        "type": "mutation",
+        "params": "#/$defs/updateMediaLibraryStateParams",
+        "result": "#/$defs/updateMediaLibraryStateResult"
       }
     }
   }

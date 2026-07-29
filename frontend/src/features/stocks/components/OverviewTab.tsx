@@ -8,9 +8,11 @@ import StatCard from "./StatCard.tsx";
 interface OverviewTabProps {
   quote: StockQuote | undefined;
   history: StockHistoricalRow[] | undefined;
+  historyLoading?: boolean;
+  historyError?: boolean;
 }
 
-export default function OverviewTab({ quote, history }: OverviewTabProps) {
+export default function OverviewTab({ quote, history, historyLoading, historyError }: OverviewTabProps) {
   if (!quote) return <div className="py-8 text-center text-muted text-sm">No quote data</div>;
 
   const price = quote.Price;
@@ -40,7 +42,7 @@ export default function OverviewTab({ quote, history }: OverviewTabProps) {
         </div>
       </div>
 
-      {history && history.length > 1 && (
+      {history && history.length > 1 ? (
         <div className="bg-secondary rounded-xl border border-primary p-3">
           <div className="flex justify-between items-center mb-2">
             <span className="text-2xs uppercase tracking-wide text-muted">Recent Price</span>
@@ -48,7 +50,13 @@ export default function OverviewTab({ quote, history }: OverviewTabProps) {
           </div>
           <PriceLineChart rows={history} />
         </div>
-      )}
+      ) : historyLoading ? (
+        <div className="bg-secondary rounded-xl border border-primary p-3 h-32 flex items-center justify-center text-sm text-muted">Loading price history…</div>
+      ) : historyError ? (
+        <div className="bg-secondary rounded-xl border border-primary p-3 h-20 flex items-center justify-center text-sm text-red-400">
+          Failed to load price history
+        </div>
+      ) : null}
 
       <div>
         <div className="text-2xs uppercase tracking-wide text-muted font-bold mb-2 px-1">Key Stats</div>

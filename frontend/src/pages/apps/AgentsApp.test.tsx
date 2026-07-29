@@ -30,6 +30,16 @@ const runningAgent = {
   currentActivity: "Editing AgentsApp.tsx",
 };
 
+const idleAgent = {
+  id: "agent-idle",
+  createdAt: 1_700_000_100_000,
+  agentType: "research",
+  displayName: "Researcher #1",
+  description: "Digs through the web",
+  idle: true,
+  currentActivity: "Waiting for input",
+};
+
 const todos = [
   { id: "t1", content: "Read the existing app", status: "completed" },
   { id: "t2", content: "Add the sidebar", status: "in_progress" },
@@ -40,13 +50,31 @@ const createAgent = mock(async (_args: { agentType: string; headless: boolean })
 const deleteAgent = mock(async (_args: { agentId: string; reason: string }) => ({ status: "success" as const }));
 const spawnWorkflow = mock(async (_args: { name: string; headless: boolean }) => ({ id: "agent-3", displayName: "Leader", description: "" }));
 const mutateAgents = mock(async () => undefined);
+const mutateAgentTypes = mock(async () => undefined);
+const mutateWorkflows = mock(async () => undefined);
 
 let agentList: (typeof runningAgent)[] = [];
+let agentTypesData: (typeof codeAgentType)[] = [codeAgentType, researchAgentType];
+let agentTypesLoading = false;
+let agentTypesError: Error | undefined;
+let workflowsData = [{ name: "bugHunter", displayName: "Bug Hunter", description: "Finds bugs" }];
+let workflowsLoading = false;
+let workflowsError: Error | undefined;
 
 void mock.module("../../rpc.ts", () => ({
-  useAgentList: () => ({ data: agentList, isLoading: false, mutate: mutateAgents }),
-  useAgentTypes: () => ({ data: [codeAgentType, researchAgentType], isLoading: false, mutate: mock() }),
-  useWorkflows: () => ({ data: [{ name: "bugHunter", displayName: "Bug Hunter", description: "Finds bugs" }], isLoading: false }),
+  useAgentList: () => ({ data: agentList, isLoading: false, error: undefined, mutate: mutateAgents }),
+  useAgentTypes: () => ({
+    data: agentTypesData,
+    isLoading: agentTypesLoading,
+    error: agentTypesError,
+    mutate: mutateAgentTypes,
+  }),
+  useWorkflows: () => ({
+    data: workflowsData,
+    isLoading: workflowsLoading,
+    error: workflowsError,
+    mutate: mutateWorkflows,
+  }),
   useTodos: () => ({ data: { status: "success", todos }, isLoading: false }),
   useCheckpointList: () => ({ data: [], isLoading: false }),
   agentRPCClient: { createAgent, deleteAgent },
@@ -70,6 +98,7 @@ function renderApp(initialPath = "/agents") {
       <Routes>
         <Route path="/agents/:agentType?" element={<AgentsApp />} />
         <Route path="/agent/:agentId/*" element={<AgentsApp />} />
+        <Route path="/configuration" element={<div>Configuration app</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -80,7 +109,16 @@ describe("AgentsApp", () => {
     createAgent.mockClear();
     deleteAgent.mockClear();
     spawnWorkflow.mockClear();
+    mutateAgents.mockClear();
+    mutateAgentTypes.mockClear();
+    mutateWorkflows.mockClear();
     agentList = [];
+    agentTypesData = [codeAgentType, researchAgentType];
+    agentTypesLoading = false;
+    agentTypesError = undefined;
+    workflowsData = [{ name: "bugHunter", displayName: "Bug Hunter", description: "Finds bugs" }];
+    workflowsLoading = false;
+    workflowsError = undefined;
   });
 
   it("groups agent types by category and shows the empty selection state", () => {
@@ -104,6 +142,7 @@ describe("AgentsApp", () => {
     expect(screen.getByText("shell/run")).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /save/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Configuration" })).toBeInTheDocument();
   });
 
   it("launches an agent from the sidebar without selecting it first", async () => {
@@ -167,6 +206,7 @@ describe("AgentsApp", () => {
     renderApp();
 
     await user.click(screen.getByRole("button", { name: "Delete agent Code Engineer #1" }));
+    expect(screen.getByText(/delete "Code Engineer #1"/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Delete" }));
 
     await waitFor(() => expect(deleteAgent).toHaveBeenCalledTimes(1));
@@ -180,5 +220,87 @@ describe("AgentsApp", () => {
     await user.click(screen.getByRole("button", { name: "Spawn workflow: Bug Hunter" }));
 
     await waitFor(() => expect(spawnWorkflow).toHaveBeenCalledWith({ name: "bugHunter", headless: false }));
+  });
+
+  it("filters agent types by search query", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    const filter = screen.getByRole("searchbox", { name: "Filter agent types" });
+    await user.type(filter, "research");
+
+    expect(screen.getByText("Researcher")).toBeInTheDocument();
+    expect(screen.queryByText("Code Engineer")).not.toBeInTheDocument();
+    expect(screen.getByText("1 of 2")).toBeInTheDocument();
+
+    await user.clear(filter);
+    await user.type(filter, "zzz-no-match");
+    expect(screen.getByText(/No types match/)).toBeInTheDocument();
+  });
+
+  it("sorts busy running agents ahead of idle ones", () => {
+    agentList = [idleAgent, runningAgent];
+    renderApp();
+
+    const openBusy = screen.getByRole("button", { name: "Open agent Code Engineer #1" });
+    const openIdle = screen.getByRole("button", { name: "Open agent Researcher #1" });
+    // DOM order: busy agent appears before idle agent.
+    expect(openBusy.compareDocumentPosition(openIdle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("returns to the overview from a type detail page", async () => {
+    const user = userEvent.setup();
+    renderApp("/agents/code");
+
+    expect(screen.getByText("Writes and reviews code")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Overview" }));
+    expect(screen.getByText("Select an agent type")).toBeInTheDocument();
+  });
+
+  it("shows a loading state while resolving a type route", () => {
+    agentTypesLoading = true;
+    agentTypesData = [];
+    renderApp("/agents/code");
+
+    expect(screen.getByText("Loading agent type…")).toBeInTheDocument();
+  });
+
+  it("shows agent-type load errors on the overview instead of a false empty state", () => {
+    agentTypesData = [];
+    agentTypesError = new Error("RPC down");
+    renderApp();
+
+    // Title appears in both the sidebar and the main overview pane.
+    expect(screen.getAllByText("Failed to load agent types").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/RPC down/).length).toBeGreaterThan(0);
+    expect(screen.queryByText("No agent types configured")).not.toBeInTheDocument();
+  });
+
+  it("shows a configuration link when no agent types are configured", () => {
+    agentTypesData = [];
+    renderApp();
+
+    // Copy appears in both the sidebar empty state and the overview hero.
+    expect(screen.getAllByText("No agent types configured").length).toBeGreaterThanOrEqual(2);
+    const links = screen.getAllByRole("link", { name: /configuration/i });
+    expect(links.length).toBeGreaterThan(0);
+  });
+
+  it("surfaces workflow load errors on the overview", () => {
+    workflowsData = [];
+    workflowsError = new Error("workflow service unavailable");
+    renderApp();
+
+    expect(screen.getByText("Failed to load workflows")).toBeInTheDocument();
+    // formatError includes the stack; match the message substring.
+    expect(screen.getByText(/workflow service unavailable/)).toBeInTheDocument();
+  });
+
+  it("navigates to overview when the Agents header is clicked", async () => {
+    const user = userEvent.setup();
+    renderApp("/agents/code");
+
+    await user.click(screen.getByRole("button", { name: "Agents" }));
+    expect(screen.getByText("Select an agent type")).toBeInTheDocument();
   });
 });

@@ -1,8 +1,8 @@
 import { ArrowDownRight, ArrowUpRight, BarChart2, BotMessageSquare, Clock, Loader2, Newspaper, TrendingUp } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useStockPriceHistory, useStockPriceTicks, useStockQuote } from "../../../rpc.ts";
-import { changeSign, fmt, fmtPrice, fmtTs } from "../formatters.ts";
+import { changeSign, fmt, fmtPrice, fmtTs, historyRange } from "../formatters.ts";
 import type { Tab } from "../types.ts";
 import AskAIModal from "./AskAIModal.tsx";
 import ChartTab from "./ChartTab.tsx";
@@ -19,8 +19,10 @@ export default function StockDetail({ symbol, onClear }: StockDetailProps) {
   const [tab, setTab] = useState<Tab>("overview");
   const [showAskAI, setShowAskAI] = useState(false);
 
+  const overviewRange = useMemo(() => historyRange(3), []);
+
   const quote = useStockQuote([symbol]);
-  const history = useStockPriceHistory(symbol);
+  const history = useStockPriceHistory(symbol, overviewRange.from, overviewRange.to);
   const ticks = useStockPriceTicks(symbol);
 
   const quoteRow = quote.data?.rows[0];
@@ -64,6 +66,8 @@ export default function StockDetail({ symbol, onClear }: StockDetailProps) {
             <div className="flex items-baseline gap-2 flex-wrap">
               {quote.isLoading && !quoteRow ? (
                 <Loader2 className="w-4 h-4 animate-spin text-muted" />
+              ) : quote.error && !quoteRow ? (
+                <span className="text-sm text-red-400">Failed to load quote</span>
               ) : price != null ? (
                 <>
                   <span className="text-3xl font-bold text-primary">${fmtPrice(price)}</span>
@@ -119,7 +123,7 @@ export default function StockDetail({ symbol, onClear }: StockDetailProps) {
       </div>
 
       <div>
-        {tab === "overview" && <OverviewTab quote={quoteRow} history={history.data?.rows} />}
+        {tab === "overview" && <OverviewTab quote={quoteRow} history={history.data?.rows} historyLoading={history.isLoading} historyError={!!history.error} />}
         {tab === "chart" && <ChartTab symbol={symbol} />}
         {tab === "history" && <HistoryTab symbol={symbol} />}
         {tab === "news" && <NewsTab symbol={symbol} {...(quoteRow?.SymbolID !== undefined && { symbolId: quoteRow.SymbolID })} />}

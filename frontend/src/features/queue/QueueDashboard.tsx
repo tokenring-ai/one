@@ -1,5 +1,21 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { Activity, Ban, CheckCircle2, Clock, Eraser, History, Layers, ListOrdered, Loader2, Plus, RefreshCw, XCircle } from "lucide-react";
+import {
+  Activity,
+  Ban,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Eraser,
+  ExternalLink,
+  History,
+  Layers,
+  ListOrdered,
+  Loader2,
+  Plus,
+  RefreshCw,
+  XCircle,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -15,24 +31,39 @@ import CreateQueueForm from "./CreateQueueForm.tsx";
 import { formatDurationBetween, formatDurationMs, formatQueueTime, formatRelativeTime, truncateText } from "./formatters.ts";
 
 type MainTab = "pending" | "running" | "results";
+type ResultFilter = "all" | "completed" | "failed" | "cancelled";
 
 export default function QueueDashboard() {
   const navigate = useNavigate();
   const queues = useQueues();
   const [selectedQueue, setSelectedQueue] = useState<string | null>(null);
+  /** Name to select once the live stream includes a newly created queue. */
+  const [pendingSelect, setPendingSelect] = useState<string | null>(null);
   const [tab, setTab] = useState<MainTab>("pending");
+  const [resultFilter, setResultFilter] = useState<ResultFilter>("all");
   const [showAddForm, setShowAddForm] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [, setTick] = useState(0);
 
   const allQueues = queues.data?.queues ?? {};
-  const queueNames = useMemo(() => Object.keys(allQueues), [allQueues]);
+  const queueNames = useMemo(() => Object.keys(allQueues).sort((a, b) => a.localeCompare(b)), [allQueues]);
+
+  // Apply selection after create once the stream reflects the new queue
+  useEffect(() => {
+    if (!pendingSelect) return;
+    if (queueNames.includes(pendingSelect)) {
+      setSelectedQueue(pendingSelect);
+      setPendingSelect(null);
+    }
+  }, [pendingSelect, queueNames]);
 
   // Auto-select the "default" queue (or the first available)
   useEffect(() => {
+    if (pendingSelect) return;
     if (queueNames.length === 0) {
       setSelectedQueue(null);
       return;
@@ -40,12 +71,13 @@ export default function QueueDashboard() {
     if (!selectedQueue || !queueNames.includes(selectedQueue)) {
       setSelectedQueue(queueNames.includes("default") ? "default" : (queueNames[0] ?? null));
     }
-  }, [queueNames, selectedQueue]);
-
+  }, [queueNames, selectedQueue, pendingSelect]);
   const queueData = selectedQueue ? allQueues[selectedQueue] : undefined;
   const pending = useMemo(() => queueData?.items.filter(i => i.status === "pending") ?? [], [queueData]);
   const running = useMemo(() => queueData?.items.filter(i => i.status === "running") ?? [], [queueData]);
-  const results = useMemo(() => queueData?.results ?? [], [queueData]);
+  // Stream stores oldest→newest; show newest first for a usable results feed.
+  const results = useMemo(() => [...(queueData?.results ?? [])].reverse(), [queueData]);
+  const filteredResults = useMemo(() => (resultFilter === "all" ? results : results.filter(r => r.status === resultFilter)), [results, resultFilter]);
 
   const totalPending = useMemo(() => Object.values(allQueues).reduce((n, q) => n + q.items.filter(i => i.status === "pending").length, 0), [allQueues]);
   const totalRunning = useMemo(() => Object.values(allQueues).reduce((n, q) => n + q.items.filter(i => i.status === "running").length, 0), [allQueues]);
@@ -58,6 +90,11 @@ export default function QueueDashboard() {
     return () => clearInterval(id);
   }, [running.length]);
 
+  // Reset expand state when switching queues/tabs so rows don't stay open with stale ids
+  useEffect(() => {
+    setExpandedIds(new Set());
+  }, [selectedQueue, tab]);
+
   const tabs = useMemo<FilterTabOption<MainTab>[]>(
     () => [
       { id: "pending", label: "Pending", count: pending.length },
@@ -67,7 +104,26 @@ export default function QueueDashboard() {
     [pending.length, running.length, results.length],
   );
 
+  const resultFilterTabs = useMemo<FilterTabOption<ResultFilter>[]>(
+    () => [
+      { id: "all", label: "All", count: results.length },
+      { id: "completed", label: "Completed", count: results.filter(r => r.status === "completed").length },
+      { id: "failed", label: "Failed", count: results.filter(r => r.status === "failed").length },
+      { id: "cancelled", label: "Cancelled", count: results.filter(r => r.status === "cancelled").length },
+    ],
+    [results],
+  );
+
   const refresh = () => void queues.mutate();
+
+  const toggleExpanded = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const handleCancel = async () => {
     if (!selectedQueue || !confirmCancel) return;
@@ -150,14 +206,30 @@ export default function QueueDashboard() {
               <p className="text-2xs text-muted max-w-sm mx-auto mb-5">
                 The queue service is running but no queues are configured. Create a queue to start dispatching work.
               </p>
-              <button
-                type="button"
-                onClick={() => setShowCreateForm(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium rounded-lg transition-colors focus-ring cursor-pointer shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Create queue
-              </button>
+              {showCreateForm ? (
+                <div className="max-w-lg mx-auto text-left">
+                  <CreateQueueForm
+                    existingNames={queueNames}
+                    onCancel={() => setShowCreateForm(false)}
+                    onCreated={name => {
+                      setShowCreateForm(false);
+                      setPendingSelect(name);
+                      setTab("pending");
+                      setShowAddForm(false);
+                      void queues.mutate();
+                    }}
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium rounded-lg transition-colors focus-ring cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create queue
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -180,6 +252,7 @@ export default function QueueDashboard() {
                         setSelectedQueue(e.target.value || null);
                         setShowAddForm(false);
                         setTab("pending");
+                        setResultFilter("all");
                       }}
                       className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary focus-accent"
                     >
@@ -231,8 +304,11 @@ export default function QueueDashboard() {
                 <CreateQueueForm
                   existingNames={queueNames}
                   onCancel={() => setShowCreateForm(false)}
-                  onCreated={() => {
+                  onCreated={name => {
                     setShowCreateForm(false);
+                    setPendingSelect(name);
+                    setTab("pending");
+                    setShowAddForm(false);
                     void queues.mutate();
                   }}
                 />
@@ -241,7 +317,16 @@ export default function QueueDashboard() {
               {selectedQueue && queueData ? (
                 <>
                   <div className="flex items-center justify-between gap-3">
-                    <FilterTabs tabs={tabs} value={tab} onChange={setTab} className="flex-1" tabClassName="flex-none px-4" />
+                    <FilterTabs
+                      tabs={tabs}
+                      value={tab}
+                      onChange={next => {
+                        setTab(next);
+                        setShowAddForm(false);
+                      }}
+                      className="flex-1"
+                      tabClassName="flex-none px-4"
+                    />
                     {tab === "pending" ? (
                       <div className="flex items-center gap-2 shrink-0">
                         {pending.length > 0 ? (
@@ -279,7 +364,7 @@ export default function QueueDashboard() {
                   ) : null}
 
                   {tab === "pending" ? (
-                    pending.length === 0 ? (
+                    pending.length === 0 && !showAddForm ? (
                       <EmptyState
                         icon={<Clock className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
                         title="No pending items"
@@ -287,30 +372,50 @@ export default function QueueDashboard() {
                         ctaLabel="Add your first task"
                         onCta={() => setShowAddForm(true)}
                       />
-                    ) : (
+                    ) : pending.length === 0 ? null : (
                       <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
-                        {pending.map((item, index) => (
-                          <div key={item.id} className="px-4 py-3 hover:bg-hover/30 transition-colors">
-                            <div className="flex items-start gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                  <span className="text-2xs text-muted tabular-nums">#{index + 1}</span>
-                                  <span className="text-sm font-medium text-primary truncate">{item.name}</span>
-                                  <span className="inline-flex items-center gap-1 text-2xs text-indigo-600 dark:text-indigo-400 shrink-0">
-                                    <Clock className="w-3 h-3" /> Pending
-                                  </span>
+                        {pending.map((item, index) => {
+                          const expanded = expandedIds.has(item.id);
+                          return (
+                            <div key={item.id} className="px-4 py-3 hover:bg-hover/30 transition-colors">
+                              <div className="flex items-start gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpanded(item.id)}
+                                  className="mt-0.5 p-0.5 text-muted hover:text-primary rounded focus-ring cursor-pointer shrink-0"
+                                  aria-expanded={expanded}
+                                  aria-label={expanded ? "Collapse details" : "Expand details"}
+                                >
+                                  {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                    <span className="text-2xs text-muted tabular-nums">#{index + 1}</span>
+                                    <span className="text-sm font-medium text-primary truncate">{item.name}</span>
+                                    <span className="inline-flex items-center gap-1 text-2xs text-indigo-600 dark:text-indigo-400 shrink-0">
+                                      <Clock className="w-3 h-3" /> Pending
+                                    </span>
+                                  </div>
+                                  <p className="text-2xs text-muted mb-1.5" title={item.input}>
+                                    {expanded ? null : truncateText(item.input)}
+                                  </p>
+                                  {expanded ? (
+                                    <div className="mt-1 mb-2 space-y-2">
+                                      <DetailBlock label="Task / prompt" value={item.input} />
+                                      <p className="text-2xs text-muted">
+                                        Id: <span className="font-mono text-secondary">{item.id}</span>
+                                      </p>
+                                    </div>
+                                  ) : null}
+                                  <p className="text-2xs text-muted/90">
+                                    Queued {formatRelativeTime(item.createdAt)} · from {item.from}
+                                  </p>
                                 </div>
-                                <p className="text-2xs text-muted mb-1.5" title={item.input}>
-                                  {truncateText(item.input)}
-                                </p>
-                                <p className="text-2xs text-muted/90">
-                                  Queued {formatRelativeTime(item.createdAt)} · from {item.from}
-                                </p>
+                                <CancelButton itemId={item.id} busy={busyAction === `cancel:${item.id}`} onClick={() => setConfirmCancel(item.id)} />
                               </div>
-                              <CancelButton itemId={item.id} busy={busyAction === `cancel:${item.id}`} onClick={() => setConfirmCancel(item.id)} />
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )
                   ) : tab === "running" ? (
@@ -322,45 +427,58 @@ export default function QueueDashboard() {
                       />
                     ) : (
                       <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
-                        {running.map(item => (
-                          <div
-                            key={item.id}
-                            role={item.agentId ? "button" : undefined}
-                            tabIndex={item.agentId ? 0 : undefined}
-                            onClick={() => openAgent(item.agentId)}
-                            onKeyDown={e => {
-                              if (!item.agentId) return;
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                openAgent(item.agentId);
-                              }
-                            }}
-                            className={cn("px-4 py-3 transition-colors", item.agentId ? "hover:bg-hover/50 cursor-pointer focus-ring" : "hover:bg-hover/30")}
-                            title={item.agentId ? "Open agent chat" : undefined}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                  <span className="text-sm font-medium text-primary truncate">{item.name}</span>
-                                  <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 shrink-0">
-                                    <Loader2 className="w-3 h-3 animate-spin" /> Running
-                                  </span>
+                        {running.map(item => {
+                          const expanded = expandedIds.has(item.id);
+                          return (
+                            <div key={item.id} className="px-4 py-3 hover:bg-hover/30 transition-colors">
+                              <div className="flex items-start gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpanded(item.id)}
+                                  className="mt-0.5 p-0.5 text-muted hover:text-primary rounded focus-ring cursor-pointer shrink-0"
+                                  aria-expanded={expanded}
+                                  aria-label={expanded ? "Collapse details" : "Expand details"}
+                                >
+                                  {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                    <span className="text-sm font-medium text-primary truncate">{item.name}</span>
+                                    <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 shrink-0">
+                                      <Loader2 className="w-3 h-3 animate-spin" /> Running
+                                    </span>
+                                  </div>
+                                  {!expanded ? (
+                                    <p className="text-2xs text-muted mb-1.5" title={item.input}>
+                                      {truncateText(item.input)}
+                                    </p>
+                                  ) : (
+                                    <div className="mt-1 mb-2">
+                                      <DetailBlock label="Task / prompt" value={item.input} />
+                                    </div>
+                                  )}
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
+                                    <span>Started {item.startedAt ? formatRelativeTime(item.startedAt) : "—"}</span>
+                                    <span>
+                                      Elapsed <span className="text-primary font-medium tabular-nums">{formatDurationBetween(item.startedAt, Date.now())}</span>
+                                    </span>
+                                    {item.agentId ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => openAgent(item.agentId)}
+                                        className="inline-flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:underline focus-ring rounded cursor-pointer"
+                                      >
+                                        <ExternalLink className="w-3 h-3" />
+                                        Open agent
+                                      </button>
+                                    ) : null}
+                                  </div>
                                 </div>
-                                <p className="text-2xs text-muted mb-1.5" title={item.input}>
-                                  {truncateText(item.input)}
-                                </p>
-                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
-                                  <span>Started {item.startedAt ? formatRelativeTime(item.startedAt) : "—"}</span>
-                                  <span>
-                                    Elapsed <span className="text-primary font-medium tabular-nums">{formatDurationBetween(item.startedAt, Date.now())}</span>
-                                  </span>
-                                  {item.agentId ? <span className="truncate">Agent: {item.agentId}</span> : null}
-                                </div>
+                                <CancelButton itemId={item.id} busy={busyAction === `cancel:${item.id}`} onClick={() => setConfirmCancel(item.id)} />
                               </div>
-                              <CancelButton itemId={item.id} busy={busyAction === `cancel:${item.id}`} onClick={() => setConfirmCancel(item.id)} />
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )
                   ) : results.length === 0 ? (
@@ -370,50 +488,82 @@ export default function QueueDashboard() {
                       hint="Completed, failed, and cancelled items will appear here."
                     />
                   ) : (
-                    <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
-                      {results.map(item => (
-                        <div
-                          key={item.id}
-                          role={item.agentId ? "button" : undefined}
-                          tabIndex={item.agentId ? 0 : undefined}
-                          onClick={() => openAgent(item.agentId)}
-                          onKeyDown={e => {
-                            if (!item.agentId) return;
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              openAgent(item.agentId);
-                            }
-                          }}
-                          className={cn("px-4 py-3 transition-colors", item.agentId ? "hover:bg-hover/50 cursor-pointer focus-ring" : "hover:bg-hover/30")}
-                          title={item.agentId ? "Open agent chat" : undefined}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="mt-0.5 shrink-0">
-                              {item.status === "completed" ? (
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                              ) : item.status === "failed" ? (
-                                <XCircle className="w-4 h-4 text-red-500" />
-                              ) : (
-                                <Ban className="w-4 h-4 text-muted" />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                                <span className="text-sm font-medium text-primary">{item.name}</span>
-                                <ResultStatusBadge status={item.status} />
-                                <span className="text-2xs text-muted tabular-nums">{formatDurationMs(item.durationMs)}</span>
+                    <div className="space-y-3">
+                      <FilterTabs tabs={resultFilterTabs} value={resultFilter} onChange={setResultFilter} tabClassName="flex-none px-3" />
+                      {filteredResults.length === 0 ? (
+                        <EmptyState
+                          icon={<History className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                          title={`No ${resultFilter} results`}
+                          hint="Try another status filter to see more history."
+                        />
+                      ) : (
+                        <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
+                          {filteredResults.map(item => {
+                            const expanded = expandedIds.has(item.id);
+                            return (
+                              <div key={item.id} className="px-4 py-3 hover:bg-hover/30 transition-colors">
+                                <div className="flex items-start gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleExpanded(item.id)}
+                                    className="mt-0.5 p-0.5 text-muted hover:text-primary rounded focus-ring cursor-pointer shrink-0"
+                                    aria-expanded={expanded}
+                                    aria-label={expanded ? "Collapse details" : "Expand details"}
+                                  >
+                                    {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                  </button>
+                                  <div className="mt-0.5 shrink-0">
+                                    {item.status === "completed" ? (
+                                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    ) : item.status === "failed" ? (
+                                      <XCircle className="w-4 h-4 text-red-500" />
+                                    ) : (
+                                      <Ban className="w-4 h-4 text-muted" />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                      <span className="text-sm font-medium text-primary">{item.name}</span>
+                                      <ResultStatusBadge status={item.status} />
+                                      <span className="text-2xs text-muted tabular-nums">{formatDurationMs(item.durationMs)}</span>
+                                    </div>
+                                    <p className="text-2xs text-muted mb-1">{formatQueueTime(item.completedAt, { withSeconds: true })}</p>
+                                    {!expanded && item.resultMessage ? (
+                                      <p className="text-2xs text-secondary line-clamp-3 whitespace-pre-wrap" title={item.resultMessage}>
+                                        {item.resultMessage}
+                                      </p>
+                                    ) : null}
+                                    {expanded ? (
+                                      <div className="mt-2 space-y-2">
+                                        <DetailBlock label="Task / prompt" value={item.input} />
+                                        {item.resultMessage ? <DetailBlock label="Result" value={item.resultMessage} /> : null}
+                                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
+                                          <span>
+                                            From <span className="text-secondary">{item.from}</span>
+                                          </span>
+                                          <span>Queued {formatQueueTime(item.createdAt)}</span>
+                                          {item.startedAt ? <span>Started {formatQueueTime(item.startedAt)}</span> : null}
+                                          <span className="font-mono">id {item.id}</span>
+                                        </div>
+                                      </div>
+                                    ) : null}
+                                    {item.agentId ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => openAgent(item.agentId)}
+                                        className="inline-flex items-center gap-1 text-2xs text-sky-600 dark:text-sky-400 hover:underline focus-ring rounded cursor-pointer mt-1.5"
+                                      >
+                                        <ExternalLink className="w-3 h-3" />
+                                        Open agent chat
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                </div>
                               </div>
-                              <p className="text-2xs text-muted mb-1">{formatQueueTime(item.completedAt, { withSeconds: true })}</p>
-                              {item.resultMessage ? (
-                                <p className="text-2xs text-secondary line-clamp-3 whitespace-pre-wrap" title={item.resultMessage}>
-                                  {item.resultMessage}
-                                </p>
-                              ) : null}
-                              {item.agentId ? <p className="text-2xs text-muted mt-1 truncate">Agent: {item.agentId}</p> : null}
-                            </div>
-                          </div>
+                            );
+                          })}
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
                 </>
@@ -489,6 +639,15 @@ function CancelButton({ itemId, busy, onClick }: { itemId: string; busy: boolean
     >
       {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
     </button>
+  );
+}
+
+function DetailBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-primary bg-tertiary/40 px-3 py-2">
+      <p className="text-2xs font-bold text-muted uppercase tracking-widest mb-1">{label}</p>
+      <p className="text-2xs text-secondary whitespace-pre-wrap break-words">{value}</p>
+    </div>
   );
 }
 

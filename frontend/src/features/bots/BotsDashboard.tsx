@@ -1,32 +1,43 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import {
   Activity,
+  AlertTriangle,
   AtSign,
   Bot,
   Cpu,
   Hash,
   Loader2,
+  LogIn,
+  LogOut,
   MessageSquare,
   MessagesSquare,
   Plug,
   PlugZap,
+  Plus,
   RefreshCw,
   RotateCcw,
+  Search,
   Send,
+  Settings2,
   Shield,
+  Trash2,
   User,
+  UserPlus,
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import FilterTabs, { type FilterTabOption } from "../../components/ui/FilterTabs.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { formatConfigIssues } from "../../lib/configWrites.ts";
 import { cn } from "../../lib/utils.ts";
-import { botRPCClient, useBots } from "../../rpc.ts";
+import { botRPCClient, useBots, useConfigSchema } from "../../rpc.ts";
+import ConnectServiceForm, { type ConnectablePlatform, PLATFORMS } from "./ConnectServiceForm.tsx";
+import CreateBotForm from "./CreateBotForm.tsx";
 import { formatDirectMessagePolicy, formatRelativeTime, formatTimestamp } from "./formatters.ts";
 import SendMessageForm, { type MessageTargetOption } from "./SendMessageForm.tsx";
 
@@ -35,8 +46,17 @@ type BotSummary = BotsData["bots"][number];
 type BotChannel = BotSummary["channels"][number];
 type BotConversation = BotSummary["conversations"][number];
 type BotUser = BotSummary["users"][number];
+type DiscoveredChannel = BotsData["discoveredChannels"][number];
 
 type DetailTab = "conversations" | "channels" | "people";
+type ConversationFilter = "all" | "busy";
+
+/** Everything a bot addresses is `service:id`, people included. */
+const TARGET_PATTERN = /^[^:]+:.+/;
+
+/** Plugin package name used by ConfigurationApp deep links. */
+const BOT_PLUGIN_NAME = "@tokenring-ai/bot";
+const BOT_CONFIG_HREF = `/configuration?plugin=${encodeURIComponent(BOT_PLUGIN_NAME)}`;
 
 const CONFIG_EXAMPLE = `bot:
   bots:
@@ -87,6 +107,23 @@ function RolePill({ role }: { role: BotUser["role"] }) {
   );
 }
 
+function SetupStep({ step, title, done, action }: { step: number; title: string; done: boolean; action?: ReactNode }) {
+  return (
+    <li className="flex items-center gap-3">
+      <span
+        className={cn(
+          "shrink-0 w-5 h-5 rounded-full grid place-items-center text-2xs font-semibold tabular-nums",
+          done ? "bg-teal-500/15 text-teal-600 dark:text-teal-400" : "bg-tertiary text-muted border border-primary",
+        )}
+      >
+        {done ? "✓" : step}
+      </span>
+      <span className={cn("flex-1 text-2xs", done ? "text-muted line-through decoration-1" : "text-primary")}>{title}</span>
+      {done ? null : action}
+    </li>
+  );
+}
+
 function EmptyPanel({ icon, title, hint }: { icon: ReactNode; title: string; hint: string }) {
   return (
     <div className="px-6 py-10 text-center">
@@ -100,19 +137,34 @@ function EmptyPanel({ icon, title, hint }: { icon: ReactNode; title: string; hin
 export default function BotsDashboard() {
   const navigate = useNavigate();
   const bots = useBots();
+  const configSchema = useConfigSchema();
 
   const [selectedBotName, setSelectedBotName] = useState<string | null>(null);
   const [tab, setTab] = useState<DetailTab>("conversations");
+  const [conversationFilter, setConversationFilter] = useState<ConversationFilter>("all");
+  const [listQuery, setListQuery] = useState("");
   const [showSendForm, setShowSendForm] = useState(false);
   const [sendTarget, setSendTarget] = useState<string | undefined>(undefined);
   const [confirmReset, setConfirmReset] = useState<{ bot: string; conversationKey: string } | null>(null);
+  const [confirmLeave, setConfirmLeave] = useState<{ bot: string; target: string; name: string } | null>(null);
+  const [confirmDeleteBot, setConfirmDeleteBot] = useState<string | null>(null);
+  const [showCreateBot, setShowCreateBot] = useState(false);
+  const [connectPlatform, setConnectPlatform] = useState<ConnectablePlatform | "any" | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [, setTick] = useState(0);
 
   const data = bots.data;
   const botList = useMemo(() => data?.bots ?? [], [data]);
   const services = useMemo(() => data?.services ?? [], [data]);
   const groups = useMemo(() => data?.groups ?? [], [data]);
+  const discoveredChannels = useMemo(() => data?.discoveredChannels ?? [], [data]);
   const connectedServices = useMemo(() => new Set(services.map(service => service.name)), [services]);
+
+  /** Only offer to connect a platform whose plugin is actually installed. */
+  const availablePlatforms = useMemo<ConnectablePlatform[]>(() => {
+    const slices = new Set((configSchema.data?.plugins ?? []).flatMap(plugin => Object.keys(plugin.slices)));
+    return (Object.keys(PLATFORMS) as ConnectablePlatform[]).filter(platform => slices.has(PLATFORMS[platform].configKey));
+  }, [configSchema.data]);
 
   // Keep a valid bot selected as the list loads and changes
   useEffect(() => {
@@ -125,11 +177,44 @@ export default function BotsDashboard() {
     }
   }, [botList, selectedBotName]);
 
+  // Live-tick relative timestamps while conversations exist
+  useEffect(() => {
+    const hasConversations = botList.some(bot => bot.conversations.length > 0);
+    if (!hasConversations) return;
+    const id = setInterval(() => setTick(t => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, [botList]);
+
   const selectedBot = useMemo(() => botList.find(bot => bot.name === selectedBotName), [botList, selectedBotName]);
 
   const totalChannels = useMemo(() => botList.reduce((count, bot) => count + bot.channels.length, 0), [botList]);
   const totalConversations = useMemo(() => botList.reduce((count, bot) => count + bot.conversations.length, 0), [botList]);
   const busyConversations = useMemo(() => botList.reduce((count, bot) => count + bot.conversations.filter(c => c.busy).length, 0), [botList]);
+
+  /** Every messaging service bots / groups reference, including ones that are offline. */
+  const referencedServices = useMemo(() => {
+    const names = new Set<string>();
+    for (const bot of botList) {
+      for (const channel of bot.channels) names.add(channel.service);
+      for (const user of bot.users) names.add(user.service);
+      for (const conversation of bot.conversations) names.add(conversation.service);
+    }
+    for (const group of groups) {
+      for (const member of group.members) {
+        const separator = member.indexOf(":");
+        if (separator > 0) names.add(member.slice(0, separator));
+      }
+    }
+    for (const service of services) names.add(service.name);
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }, [botList, groups, services]);
+
+  const disconnectedServices = useMemo(
+    () => referencedServices.filter(name => !connectedServices.has(name) && name !== "group"),
+    [referencedServices, connectedServices],
+  );
+
+  const serviceLimits = useMemo(() => new Map(services.map(service => [service.name, service.maxMessageLength])), [services]);
 
   const targetOptions = useMemo<MessageTargetOption[]>(() => {
     const options: MessageTargetOption[] = [];
@@ -148,11 +233,53 @@ export default function BotsDashboard() {
     return options.filter((option, index) => options.findIndex(other => other.target === option.target) === index);
   }, [botList, groups]);
 
+  const filteredConversations = useMemo(() => {
+    if (!selectedBot) return [];
+    const query = listQuery.trim().toLowerCase();
+    return selectedBot.conversations.filter(conversation => {
+      if (conversationFilter === "busy" && !conversation.busy) return false;
+      if (!query) return true;
+      const haystack = [conversation.key, conversation.conversationId, conversation.channelName, conversation.agentType, conversation.service]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [selectedBot, conversationFilter, listQuery]);
+
+  const filteredChannels = useMemo(() => {
+    if (!selectedBot) return [];
+    const query = listQuery.trim().toLowerCase();
+    if (!query) return selectedBot.channels;
+    return selectedBot.channels.filter(channel => {
+      const haystack = [channel.name, channel.target, channel.service, channel.agentType, ...channel.allowedUsers].join(" ").toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [selectedBot, listQuery]);
+
+  const filteredUsers = useMemo(() => {
+    if (!selectedBot) return [];
+    const query = listQuery.trim().toLowerCase();
+    if (!query) return selectedBot.users;
+    return selectedBot.users.filter(user => {
+      const haystack = [user.target, user.userId, user.service, user.role].join(" ").toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [selectedBot, listQuery]);
+
   const tabs = useMemo<FilterTabOption<DetailTab>[]>(
     () => [
       { id: "conversations", label: "Conversations", count: selectedBot?.conversations.length ?? 0 },
       { id: "channels", label: "Channels", count: selectedBot?.channels.length ?? 0 },
       { id: "people", label: "People", count: selectedBot?.users.length ?? 0 },
+    ],
+    [selectedBot],
+  );
+
+  const conversationFilterTabs = useMemo<FilterTabOption<ConversationFilter>[]>(
+    () => [
+      { id: "all", label: "All", count: selectedBot?.conversations.length ?? 0 },
+      { id: "busy", label: "Busy", count: selectedBot?.conversations.filter(c => c.busy).length ?? 0 },
     ],
     [selectedBot],
   );
@@ -186,7 +313,121 @@ export default function BotsDashboard() {
     }
   };
 
+  const handleDeleteBot = async () => {
+    const name = confirmDeleteBot;
+    if (!name) return;
+    setConfirmDeleteBot(null);
+    setBusyAction(`deleteBot:${name}`);
+    try {
+      const result = await botRPCClient.deleteBot({ name });
+      if (result.status === "botNotFound") {
+        toastManager.warning(`Bot "${name}" is already gone`, { duration: 3000 });
+      } else if (result.status === "definedElsewhere") {
+        toastManager.warning(`"${name}" is defined in a configuration file below this one and is still running. Remove it there to delete it.`, {
+          duration: 7000,
+        });
+      } else if (result.status === "configRejected") {
+        toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
+      } else {
+        toastManager.success(`Bot "${name}" deleted`, { duration: 2500 });
+      }
+      await bots.mutate();
+    } catch (err) {
+      toastManager.error(formatError(err), { duration: 5000 });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleSetUserRole = async (bot: string, target: string, role: BotUser["role"]) => {
+    setBusyAction(`user:${target}`);
+    try {
+      const result = await botRPCClient.setUserRole({ bot, target, role });
+      if (result.status === "botNotFound") {
+        toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
+      } else if (result.status === "configRejected") {
+        toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
+      } else {
+        toastManager.success(`${target} is now ${role === "admin" ? "an admin" : "a user"} of "${bot}"`, { duration: 2500 });
+      }
+      await bots.mutate();
+    } catch (err) {
+      toastManager.error(formatError(err), { duration: 5000 });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleRemoveUser = async (bot: string, target: string) => {
+    setBusyAction(`user:${target}`);
+    try {
+      const result = await botRPCClient.removeUser({ bot, target });
+      if (result.status === "botNotFound") {
+        toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
+      } else if (result.status === "definedElsewhere") {
+        toastManager.warning(`${target} is listed in a configuration file below this one and still has access. Remove them there.`, { duration: 7000 });
+      } else if (result.status === "configRejected") {
+        toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
+      } else {
+        toastManager.success(`${target} removed from "${bot}"`, { duration: 2500 });
+      }
+      await bots.mutate();
+    } catch (err) {
+      toastManager.error(formatError(err), { duration: 5000 });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleJoin = async (bot: string, target: string) => {
+    setBusyAction(`join:${target}`);
+    try {
+      const result = await botRPCClient.joinChannel({ bot, target });
+      if (result.status === "botNotFound") {
+        toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
+      } else if (result.status === "providerNotFound") {
+        toastManager.error(`No messaging service is connected for ${target}`, { duration: 4000 });
+      } else if (result.status === "configRejected") {
+        toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
+      } else {
+        toastManager.success(`"${bot}" joined ${target}`, { duration: 2500 });
+      }
+      await bots.mutate();
+    } catch (err) {
+      toastManager.error(formatError(err), { duration: 5000 });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleLeave = async () => {
+    if (!confirmLeave) return;
+    const { bot, target } = confirmLeave;
+    setConfirmLeave(null);
+    setBusyAction(`leave:${target}`);
+    try {
+      const result = await botRPCClient.leaveChannel({ bot, target });
+      if (result.status === "botNotFound") {
+        toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
+      } else if (result.status === "definedElsewhere") {
+        toastManager.warning(`This channel is configured in a file below this layer, so "${bot}" is still answering there. Remove it there to leave.`, {
+          duration: 7000,
+        });
+      } else if (result.status === "configRejected") {
+        toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
+      } else {
+        toastManager.success(`"${bot}" left ${target}`, { duration: 2500 });
+      }
+      await bots.mutate();
+    } catch (err) {
+      toastManager.error(formatError(err), { duration: 5000 });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
   const isLoading = bots.isLoading && !data;
+  const canSend = services.length > 0 || groups.length > 0;
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">
@@ -198,14 +439,50 @@ export default function BotsDashboard() {
       >
         <button
           type="button"
+          onClick={() => {
+            setShowCreateBot(true);
+            setConnectPlatform(null);
+            setShowSendForm(false);
+          }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-500 text-white rounded-lg focus-ring cursor-pointer shadow-sm"
+          title="Create a bot"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          New bot
+        </button>
+        {availablePlatforms.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => {
+              setConnectPlatform("any");
+              setShowCreateBot(false);
+              setShowSendForm(false);
+            }}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-primary border border-primary rounded-lg transition-colors focus-ring cursor-pointer"
+            title="Connect a Slack or Telegram account"
+          >
+            <PlugZap className="w-3.5 h-3.5" />
+            Connect service
+          </button>
+        ) : null}
+        <button
+          type="button"
           onClick={() => openSendForm(undefined)}
-          disabled={services.length === 0}
+          disabled={!canSend}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg focus-ring cursor-pointer shadow-sm"
-          title={services.length === 0 ? "No messaging service is connected" : "Send a message"}
+          title={!canSend ? "No messaging service or group is available" : "Send a message"}
         >
           <Send className="w-3.5 h-3.5" />
           Send message
         </button>
+        <Link
+          to={BOT_CONFIG_HREF}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-primary border border-primary rounded-lg transition-colors focus-ring"
+          title="Edit bots, channels, and groups"
+        >
+          <Settings2 className="w-3.5 h-3.5" />
+          Configure
+        </Link>
         <button
           type="button"
           onClick={refresh}
@@ -236,14 +513,66 @@ export default function BotsDashboard() {
                   icon={<MessagesSquare className="w-4 h-4" />}
                   accentClass="text-violet-500"
                 />
-                <SummaryStat label="Services" value={String(services.length)} icon={<Plug className="w-4 h-4" />} accentClass="text-amber-500" />
+                <SummaryStat
+                  label="Services"
+                  value={disconnectedServices.length > 0 ? `${services.length} · ${disconnectedServices.length} offline` : String(services.length)}
+                  icon={<Plug className="w-4 h-4" />}
+                  accentClass="text-amber-500"
+                />
               </div>
+
+              {disconnectedServices.length > 0 ? (
+                <div className="flex items-start gap-3 px-4 py-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                      {disconnectedServices.length === 1
+                        ? `Messaging service "${disconnectedServices[0]}" is not connected`
+                        : `${disconnectedServices.length} messaging services are not connected`}
+                    </p>
+                    <p className="text-2xs text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+                      Bots that target {disconnectedServices.map(name => `"${name}"`).join(", ")} cannot send or receive until those accounts are configured
+                      (Slack, Telegram, …).
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              {connectPlatform ? (
+                <ConnectServiceForm
+                  available={availablePlatforms}
+                  initialPlatform={connectPlatform === "any" ? undefined : connectPlatform}
+                  existingAccounts={[...connectedServices]}
+                  onConnected={() => {
+                    setConnectPlatform(null);
+                    void bots.mutate();
+                  }}
+                  onCancel={() => setConnectPlatform(null)}
+                />
+              ) : null}
+
+              {showCreateBot ? (
+                <CreateBotForm
+                  existingNames={botList.map(bot => bot.name)}
+                  services={services.map(service => service.name)}
+                  onCreated={name => {
+                    setShowCreateBot(false);
+                    setSelectedBotName(name);
+                    setTab("channels");
+                    void bots.mutate();
+                  }}
+                  onCancel={() => setShowCreateBot(false)}
+                />
+              ) : null}
 
               {showSendForm ? (
                 <SendMessageForm
                   options={targetOptions}
                   initialTarget={sendTarget}
-                  onSent={() => setShowSendForm(false)}
+                  onSent={() => {
+                    setShowSendForm(false);
+                    void bots.mutate();
+                  }}
                   onCancel={() => setShowSendForm(false)}
                 />
               ) : null}
@@ -251,14 +580,58 @@ export default function BotsDashboard() {
               {botList.length === 0 ? (
                 <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
                   <Bot className="w-10 h-10 text-muted mx-auto mb-3 opacity-50" />
-                  <p className="text-sm font-medium text-primary mb-1">No bots configured</p>
-                  <p className="text-2xs text-muted max-w-md mx-auto mb-4">
-                    A bot pairs an agent type with the people and channels it may talk to. Add one under <code className="text-primary">bot.bots</code> in your
-                    configuration, then connect a messaging service such as Slack or Telegram.
+                  <p className="text-sm font-medium text-primary mb-1">No bots yet</p>
+                  <p className="text-2xs text-muted max-w-md mx-auto mb-5">
+                    A bot pairs an agent type with the people and channels it may talk to. Three steps: connect a Slack or Telegram account, create a bot, then
+                    invite it to a channel and join it from here.
                   </p>
-                  <pre className="text-left text-2xs text-muted bg-tertiary border border-primary rounded-lg p-3 max-w-md mx-auto overflow-x-auto">
-                    {CONFIG_EXAMPLE}
-                  </pre>
+
+                  <ol className="max-w-sm mx-auto text-left space-y-2 mb-5">
+                    <SetupStep
+                      step={1}
+                      title="Connect a messaging service"
+                      done={services.length > 0}
+                      action={
+                        availablePlatforms.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => setConnectPlatform("any")}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-2xs font-medium bg-teal-600 hover:bg-teal-500 text-white rounded-md focus-ring cursor-pointer"
+                          >
+                            <PlugZap className="w-3 h-3" /> Connect
+                          </button>
+                        ) : (
+                          <Link to={BOT_CONFIG_HREF} className="text-2xs text-muted hover:text-primary focus-ring rounded-md">
+                            Install a plugin
+                          </Link>
+                        )
+                      }
+                    />
+                    <SetupStep
+                      step={2}
+                      title="Create a bot"
+                      done={false}
+                      action={
+                        <button
+                          type="button"
+                          onClick={() => setShowCreateBot(true)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-2xs font-medium bg-teal-600 hover:bg-teal-500 text-white rounded-md focus-ring cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" /> New bot
+                        </button>
+                      }
+                    />
+                    <SetupStep step={3} title="Invite it to a channel, then join it here" done={false} />
+                  </ol>
+
+                  <details className="max-w-md mx-auto text-left">
+                    <summary className="text-2xs text-muted cursor-pointer hover:text-primary">Or configure it by hand</summary>
+                    <pre className="text-2xs text-muted bg-tertiary border border-primary rounded-lg p-3 mt-2 overflow-x-auto">{CONFIG_EXAMPLE}</pre>
+                    <Link to={BOT_CONFIG_HREF} className="inline-flex items-center gap-1.5 mt-2 text-2xs text-muted hover:text-primary focus-ring rounded-md">
+                      <Settings2 className="w-3 h-3" />
+                      Open bot configuration
+                    </Link>
+                  </details>
                 </div>
               ) : (
                 <>
@@ -266,6 +639,7 @@ export default function BotsDashboard() {
                     {botList.map(bot => {
                       const isSelected = bot.name === selectedBotName;
                       const busy = bot.conversations.filter(conversation => conversation.busy).length;
+                      const offlineChannels = bot.channels.filter(channel => !channel.connected).length;
                       return (
                         <button
                           key={bot.name}
@@ -273,6 +647,8 @@ export default function BotsDashboard() {
                           onClick={() => {
                             setSelectedBotName(bot.name);
                             setTab("conversations");
+                            setConversationFilter("all");
+                            setListQuery("");
                           }}
                           className={cn(
                             "text-left bg-secondary border rounded-xl p-4 shadow-sm transition-colors focus-ring cursor-pointer",
@@ -284,11 +660,21 @@ export default function BotsDashboard() {
                               <p className="text-sm font-semibold text-primary truncate">{bot.displayName}</p>
                               <p className="text-2xs text-muted truncate">{bot.name}</p>
                             </div>
-                            {busy > 0 ? (
-                              <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 shrink-0">
-                                <Activity className="w-3 h-3 animate-pulse" /> {busy}
-                              </span>
-                            ) : null}
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {offlineChannels > 0 ? (
+                                <span
+                                  className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400"
+                                  title="Channels on offline services"
+                                >
+                                  <AlertTriangle className="w-3 h-3" /> {offlineChannels}
+                                </span>
+                              ) : null}
+                              {busy > 0 ? (
+                                <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
+                                  <Activity className="w-3 h-3 animate-pulse" /> {busy}
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium bg-tertiary text-muted border border-primary">
@@ -322,6 +708,12 @@ export default function BotsDashboard() {
                           <p className="text-2xs text-muted truncate">
                             Agent type <span className="text-primary font-medium">{selectedBot.agentType}</span> · DMs:{" "}
                             <span className="text-primary font-medium">{formatDirectMessagePolicy(selectedBot.directMessages)}</span>
+                            {selectedBot.joinMessage ? (
+                              <>
+                                {" "}
+                                · Join: <span className="text-primary font-medium">“{selectedBot.joinMessage}”</span>
+                              </>
+                            ) : null}
                           </p>
                         </div>
                         {selectedBot.requireMention ? (
@@ -333,9 +725,72 @@ export default function BotsDashboard() {
                             <MessageSquare className="w-3 h-3" /> Answers everything
                           </span>
                         )}
+                        <Link
+                          to={BOT_CONFIG_HREF}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring transition-colors"
+                          title="Edit this bot's channels, people, and policy"
+                        >
+                          <Settings2 className="w-3 h-3" /> Edit config
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteBot(selectedBot.name)}
+                          disabled={busyAction === `deleteBot:${selectedBot.name}`}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-rose-500 border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete this bot"
+                        >
+                          {busyAction === `deleteBot:${selectedBot.name}` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                          Delete
+                        </button>
                       </div>
 
-                      <FilterTabs tabs={tabs} value={tab} onChange={setTab} showZeroCounts />
+                      <FilterTabs
+                        tabs={tabs}
+                        value={tab}
+                        onChange={next => {
+                          setTab(next);
+                          setListQuery("");
+                          setConversationFilter("all");
+                        }}
+                        showZeroCounts
+                      />
+
+                      {(tab === "conversations" && selectedBot.conversations.length > 0) ||
+                      (tab === "channels" && selectedBot.channels.length > 0) ||
+                      (tab === "people" && selectedBot.users.length > 0) ? (
+                        <div className="px-4 py-2 border-b border-primary flex flex-wrap items-center gap-2">
+                          {tab === "conversations" ? (
+                            <div className="flex items-center gap-1">
+                              {conversationFilterTabs.map(option => (
+                                <button
+                                  key={option.id}
+                                  type="button"
+                                  onClick={() => setConversationFilter(option.id)}
+                                  className={cn(
+                                    "inline-flex items-center gap-1 px-2 py-1 text-2xs rounded-md border transition-colors focus-ring cursor-pointer",
+                                    conversationFilter === option.id
+                                      ? "border-accent text-primary bg-accent/10"
+                                      : "border-primary text-muted hover:text-primary",
+                                  )}
+                                >
+                                  {option.label}
+                                  <span className="tabular-nums opacity-70">{option.count ?? 0}</span>
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
+                          <label className="relative flex-1 min-w-[10rem]">
+                            <Search className="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                              type="search"
+                              value={listQuery}
+                              onChange={e => setListQuery(e.target.value)}
+                              placeholder={tab === "conversations" ? "Filter conversations…" : tab === "channels" ? "Filter channels…" : "Filter people…"}
+                              className="w-full bg-input border border-primary rounded-md pl-8 pr-3 py-1.5 text-2xs text-primary placeholder-muted focus-accent"
+                            />
+                          </label>
+                        </div>
+                      ) : null}
 
                       {tab === "conversations" ? (
                         selectedBot.conversations.length === 0 ? (
@@ -344,9 +799,15 @@ export default function BotsDashboard() {
                             title="No live conversations"
                             hint="A conversation starts — with an agent of its own — the first time someone messages this bot in a channel or a DM."
                           />
+                        ) : filteredConversations.length === 0 ? (
+                          <EmptyPanel
+                            icon={<Search className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                            title="No matching conversations"
+                            hint={conversationFilter === "busy" ? "Nothing is busy right now." : "Try a different filter or search."}
+                          />
                         ) : (
                           <div className="divide-y divide-primary">
-                            {selectedBot.conversations.map(conversation => (
+                            {filteredConversations.map(conversation => (
                               <ConversationRow
                                 key={conversation.key}
                                 conversation={conversation}
@@ -366,40 +827,69 @@ export default function BotsDashboard() {
                           <EmptyPanel
                             icon={<Hash className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
                             title="Not in any channels"
-                            hint="Add channels under this bot's `channels` config to have it sit in a Slack channel or Telegram group."
+                            hint="Invite the bot to a Slack channel or Telegram group and join it from the Discovered channels panel below, or add one under this bot's `channels` config."
+                          />
+                        ) : filteredChannels.length === 0 ? (
+                          <EmptyPanel
+                            icon={<Search className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                            title="No matching channels"
+                            hint="Try a different search."
                           />
                         ) : (
                           <div className="divide-y divide-primary">
-                            {selectedBot.channels.map(channel => (
-                              <ChannelRow key={channel.target} channel={channel} onMessage={() => openSendForm(channel.target)} />
+                            {filteredChannels.map(channel => (
+                              <ChannelRow
+                                key={channel.target}
+                                channel={channel}
+                                busyAction={busyAction}
+                                onMessage={() => openSendForm(channel.target)}
+                                onLeave={() => setConfirmLeave({ bot: selectedBot.name, target: channel.target, name: channel.name })}
+                              />
                             ))}
                           </div>
                         )
                       ) : null}
 
                       {tab === "people" ? (
-                        selectedBot.users.length === 0 ? (
-                          <EmptyPanel
-                            icon={<Users className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
-                            title="Nobody listed"
-                            hint={
-                              selectedBot.directMessages === "anyone"
-                                ? "This bot answers DMs from anyone, so no one has to be listed — but only listed admins can run commands."
-                                : "List people under `users` as service:userId to let them DM this bot. Admins may also run slash commands."
-                            }
+                        <>
+                          <AddPersonForm
+                            services={services.map(service => service.name)}
+                            existingTargets={selectedBot.users.map(user => user.target)}
+                            busy={busyAction?.startsWith("user:") ?? false}
+                            onAdd={(target, role) => void handleSetUserRole(selectedBot.name, target, role)}
                           />
-                        ) : (
-                          <div className="divide-y divide-primary">
-                            {selectedBot.users.map(user => (
-                              <UserRow
-                                key={user.target}
-                                user={user}
-                                connected={connectedServices.has(user.service)}
-                                onMessage={() => openSendForm(user.target)}
-                              />
-                            ))}
-                          </div>
-                        )
+                          {selectedBot.users.length === 0 ? (
+                            <EmptyPanel
+                              icon={<Users className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                              title="Nobody listed"
+                              hint={
+                                selectedBot.directMessages === "anyone"
+                                  ? "This bot answers DMs from anyone, so no one has to be listed — but only listed admins can run commands."
+                                  : "Nobody can DM this bot until someone is listed here. Admins may also run slash commands."
+                              }
+                            />
+                          ) : filteredUsers.length === 0 ? (
+                            <EmptyPanel
+                              icon={<Search className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                              title="No matching people"
+                              hint="Try a different search."
+                            />
+                          ) : (
+                            <div className="divide-y divide-primary">
+                              {filteredUsers.map(user => (
+                                <UserRow
+                                  key={user.target}
+                                  user={user}
+                                  connected={connectedServices.has(user.service)}
+                                  busyAction={busyAction}
+                                  onMessage={() => openSendForm(user.target)}
+                                  onChangeRole={role => void handleSetUserRole(selectedBot.name, user.target, role)}
+                                  onRemove={() => void handleRemoveUser(selectedBot.name, user.target)}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </>
                       ) : null}
                     </div>
                   ) : null}
@@ -408,28 +898,71 @@ export default function BotsDashboard() {
 
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden">
-                  <div className="px-4 py-2.5 border-b border-primary">
+                  <div className="px-4 py-2.5 border-b border-primary flex items-center justify-between gap-2">
                     <h3 className="text-xs font-semibold text-primary">Messaging services</h3>
+                    <div className="flex items-center gap-2">
+                      {referencedServices.length > 0 ? (
+                        <span className="text-2xs text-muted tabular-nums">
+                          {services.length} connected
+                          {disconnectedServices.length > 0 ? ` · ${disconnectedServices.length} offline` : ""}
+                        </span>
+                      ) : null}
+                      {availablePlatforms.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setConnectPlatform("any")}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
+                          title="Connect a Slack or Telegram account"
+                        >
+                          <PlugZap className="w-3 h-3" /> Connect
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
-                  {services.length === 0 ? (
-                    <p className="px-4 py-6 text-2xs text-muted text-center">
-                      No messaging service is connected. Configure a Slack or Telegram account to give your bots somewhere to talk.
-                    </p>
+                  {referencedServices.length === 0 ? (
+                    <div className="px-4 py-6 text-center">
+                      <p className="text-2xs text-muted mb-3">No messaging service is connected. Your bots have nowhere to talk yet.</p>
+                      <div className="flex items-center justify-center gap-2">
+                        {availablePlatforms.map(platform => (
+                          <button
+                            key={platform}
+                            type="button"
+                            onClick={() => setConnectPlatform(platform)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-2xs font-medium text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
+                          >
+                            <PlugZap className="w-3 h-3" /> Connect {PLATFORMS[platform].label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ) : (
                     <div className="divide-y divide-primary">
-                      {services.map(service => (
-                        <div key={service.name} className="px-4 py-2.5 flex items-center justify-between gap-3">
-                          <ServicePill service={service.name} connected />
-                          <span className="text-2xs text-muted tabular-nums">{service.maxMessageLength.toLocaleString()} char limit</span>
-                        </div>
-                      ))}
+                      {referencedServices.map(name => {
+                        const connected = connectedServices.has(name);
+                        const limit = serviceLimits.get(name);
+                        return (
+                          <div key={name} className="px-4 py-2.5 flex items-center justify-between gap-3">
+                            <ServicePill service={name} connected={connected} />
+                            <span className="text-2xs text-muted tabular-nums">
+                              {connected && limit != null ? `${limit.toLocaleString()} char limit` : connected ? "Connected" : "Not connected"}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
 
                 <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden">
-                  <div className="px-4 py-2.5 border-b border-primary">
+                  <div className="px-4 py-2.5 border-b border-primary flex items-center justify-between gap-2">
                     <h3 className="text-xs font-semibold text-primary">Broadcast groups</h3>
+                    <Link
+                      to={BOT_CONFIG_HREF}
+                      className="inline-flex items-center gap-1 text-2xs text-muted hover:text-primary focus-ring rounded-md"
+                      title="Edit groups in configuration"
+                    >
+                      <Settings2 className="w-3 h-3" /> Edit
+                    </Link>
                   </div>
                   {groups.length === 0 ? (
                     <p className="px-4 py-6 text-2xs text-muted text-center">
@@ -446,7 +979,8 @@ export default function BotsDashboard() {
                           <button
                             type="button"
                             onClick={() => openSendForm(`group:${group.name}`)}
-                            className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
+                            disabled={!canSend}
+                            className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Send className="w-3 h-3" /> Message
                           </button>
@@ -456,10 +990,57 @@ export default function BotsDashboard() {
                   )}
                 </div>
               </div>
+
+              {discoveredChannels.length > 0 ? (
+                <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-primary flex items-center justify-between gap-2">
+                    <h3 className="text-xs font-semibold text-primary">Discovered channels</h3>
+                    <span className="text-2xs text-muted tabular-nums">{discoveredChannels.length} waiting</span>
+                  </div>
+                  <p className="px-4 pt-3 text-2xs text-muted">
+                    {selectedBot
+                      ? `Rooms this app has been added to that no bot answers in yet. Joining adds the channel to "${selectedBot.displayName}".`
+                      : "Rooms this app has been added to that no bot answers in yet. Select a bot above to join one."}
+                  </p>
+                  <div className="divide-y divide-primary mt-2">
+                    {discoveredChannels.map(channel => (
+                      <DiscoveredChannelRow
+                        key={channel.target}
+                        channel={channel}
+                        botName={selectedBot?.name}
+                        busyAction={busyAction}
+                        onJoin={() => void (selectedBot && handleJoin(selectedBot.name, channel.target))}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </>
           )}
         </div>
       </div>
+
+      {confirmDeleteBot ? (
+        <ConfirmDialog
+          title="Delete this bot?"
+          message={`"${confirmDeleteBot}" stops answering everywhere and its live conversations end. The channels it sat in are unaffected on Slack and Telegram — it simply stops listening.`}
+          confirmText="Delete"
+          variant="danger"
+          onConfirm={() => void handleDeleteBot()}
+          onCancel={() => setConfirmDeleteBot(null)}
+        />
+      ) : null}
+
+      {confirmLeave ? (
+        <ConfirmDialog
+          title="Leave this channel?"
+          message={`"${confirmLeave.bot}" will stop answering in ${confirmLeave.name} (${confirmLeave.target}). It stays a member of the room on the platform — remove it there if you want it gone entirely.`}
+          confirmText="Leave"
+          variant="warning"
+          onConfirm={() => void handleLeave()}
+          onCancel={() => setConfirmLeave(null)}
+        />
+      ) : null}
 
       {confirmReset ? (
         <ConfirmDialog
@@ -535,8 +1116,9 @@ function ConversationRow({
           <button
             type="button"
             onClick={onMessage}
-            className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
-            title="Send a message here"
+            disabled={!connected}
+            className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={connected ? "Send a message here" : "Service is offline"}
           >
             <Send className="w-3 h-3" /> Message
           </button>
@@ -555,7 +1137,19 @@ function ConversationRow({
   );
 }
 
-function ChannelRow({ channel, onMessage }: { channel: BotChannel; onMessage: () => void }) {
+function ChannelRow({
+  channel,
+  busyAction,
+  onMessage,
+  onLeave,
+}: {
+  channel: BotChannel;
+  busyAction: string | null;
+  onMessage: () => void;
+  onLeave: () => void;
+}) {
+  const leaving = busyAction === `leave:${channel.target}`;
+
   return (
     <div className="px-4 py-3 hover:bg-hover/30 transition-colors flex items-start gap-3">
       <div className="flex-1 min-w-0">
@@ -576,15 +1170,80 @@ function ChannelRow({ channel, onMessage }: { channel: BotChannel; onMessage: ()
       <button
         type="button"
         onClick={onMessage}
-        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
+        disabled={!channel.connected}
+        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title={channel.connected ? "Send a message to this channel" : "Service is offline"}
       >
         <Send className="w-3 h-3" /> Message
+      </button>
+      <button
+        type="button"
+        onClick={onLeave}
+        disabled={leaving}
+        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-rose-500 border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title="Stop this bot listening in this channel"
+      >
+        {leaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogOut className="w-3 h-3" />} Leave
       </button>
     </div>
   );
 }
 
-function UserRow({ user, connected, onMessage }: { user: BotUser; connected: boolean; onMessage: () => void }) {
+function DiscoveredChannelRow({
+  channel,
+  botName,
+  busyAction,
+  onJoin,
+}: {
+  channel: DiscoveredChannel;
+  botName: string | undefined;
+  busyAction: string | null;
+  onJoin: () => void;
+}) {
+  const joining = busyAction === `join:${channel.target}`;
+
+  return (
+    <div className="px-4 py-2.5 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-medium text-primary truncate">{channel.title ?? channel.channelId}</span>
+          <ServicePill service={channel.service} connected />
+        </div>
+        <p className="text-2xs text-muted truncate">
+          <span className="font-mono">{channel.target}</span>
+          {channel.invitedBy ? ` · invited by ${channel.invitedBy}` : ""} · seen {formatRelativeTime(channel.discoveredAt)}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onJoin}
+        disabled={!botName || joining}
+        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title={botName ? `Have "${botName}" answer here` : "Select a bot first"}
+      >
+        {joining ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogIn className="w-3 h-3" />} Join
+      </button>
+    </div>
+  );
+}
+
+function UserRow({
+  user,
+  connected,
+  busyAction,
+  onMessage,
+  onChangeRole,
+  onRemove,
+}: {
+  user: BotUser;
+  connected: boolean;
+  busyAction: string | null;
+  onMessage: () => void;
+  onChangeRole: (role: BotUser["role"]) => void;
+  onRemove: () => void;
+}) {
+  const busy = busyAction === `user:${user.target}`;
+
   return (
     <div className="px-4 py-3 hover:bg-hover/30 transition-colors flex items-center gap-3">
       <div className="flex-1 min-w-0">
@@ -593,14 +1252,106 @@ function UserRow({ user, connected, onMessage }: { user: BotUser; connected: boo
           <RolePill role={user.role} />
           <ServicePill service={user.service} connected={connected} />
         </div>
+        <p className="text-2xs text-muted font-mono mt-0.5 truncate">{user.target}</p>
       </div>
       <button
         type="button"
+        onClick={() => onChangeRole(user.role === "admin" ? "user" : "admin")}
+        disabled={busy}
+        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title={user.role === "admin" ? "Take away command access" : "Let them run slash commands"}
+      >
+        {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shield className="w-3 h-3" />}
+        {user.role === "admin" ? "Make user" : "Make admin"}
+      </button>
+      <button
+        type="button"
         onClick={onMessage}
-        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
+        disabled={!connected}
+        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title={connected ? "Send a direct message" : "Service is offline"}
       >
         <Send className="w-3 h-3" /> Message
       </button>
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={busy}
+        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-rose-500 border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title="Remove this person from the bot"
+        aria-label={`Remove ${user.target}`}
+      >
+        <Trash2 className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
+
+/** Adds a person to the selected bot, by the `service:userId` that names them. */
+function AddPersonForm({
+  services,
+  existingTargets,
+  busy,
+  onAdd,
+}: {
+  services: string[];
+  existingTargets: string[];
+  busy: boolean;
+  onAdd: (target: string, role: BotUser["role"]) => void;
+}) {
+  const [target, setTarget] = useState("");
+  const [role, setRole] = useState<BotUser["role"]>("user");
+
+  const trimmed = target.trim();
+  const error = !trimmed ? null : !TARGET_PATTERN.test(trimmed) ? "Looks like service:userId" : existingTargets.includes(trimmed) ? "Already listed" : null;
+
+  const submit = () => {
+    if (!trimmed || error) return;
+    onAdd(trimmed, role);
+    setTarget("");
+  };
+
+  return (
+    <div className="px-4 py-3 border-b border-primary flex flex-wrap items-center gap-2">
+      <label className="flex-1 min-w-[12rem]">
+        <input
+          type="text"
+          value={target}
+          onChange={e => setTarget(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          placeholder={services.length > 0 ? `${services[0]}:U123ABC` : "slack:U123ABC"}
+          aria-label="Person to add, as service:userId"
+          className={cn(
+            "w-full bg-input border rounded-md px-2.5 py-1.5 text-2xs text-primary placeholder-muted font-mono focus-accent",
+            error ? "border-rose-500/60" : "border-primary",
+          )}
+          spellCheck={false}
+          autoComplete="off"
+        />
+      </label>
+      <select
+        value={role}
+        onChange={e => setRole(e.target.value as BotUser["role"])}
+        aria-label="Role"
+        className="bg-input border border-primary rounded-md px-2 py-1.5 text-2xs text-primary focus-accent"
+      >
+        <option value="user">User — may chat</option>
+        <option value="admin">Admin — may run commands</option>
+      </select>
+      <button
+        type="button"
+        onClick={submit}
+        disabled={busy || !trimmed || !!error}
+        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-2xs font-medium text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />} Add
+      </button>
+      {error ? <span className="w-full text-2xs text-rose-500">{error}</span> : null}
     </div>
   );
 }

@@ -1,5 +1,16 @@
 import { describe, expect, it } from "bun:test";
-import { changeSign, fmt, fmtMarketCap, fmtPrice, fmtVol, parseHistoryDate, pricePrecision } from "./formatters.ts";
+import {
+  changeSign,
+  fmt,
+  fmtHistoryDate,
+  fmtMarketCap,
+  fmtPrice,
+  fmtVol,
+  historyRange,
+  isoDateOffset,
+  parseHistoryDate,
+  pricePrecision,
+} from "./formatters.ts";
 
 describe("pricePrecision", () => {
   it("uses 2 digits for prices >= 10", () => {
@@ -65,9 +76,54 @@ describe("parseHistoryDate", () => {
     expect(ts).toBeGreaterThan(0);
   });
 
+  it("leaves millisecond timestamps alone", () => {
+    const ms = 1_700_000_000_000;
+    expect(parseHistoryDate(ms)).toBe(ms);
+  });
+
   it("normalizes microsecond timestamps", () => {
     const ms = 1_700_000_000_000;
-    const micros = ms * 1_000_000;
+    const micros = ms * 1_000;
     expect(parseHistoryDate(micros)).toBe(ms);
+  });
+
+  it("normalizes nanosecond timestamps", () => {
+    const ms = 1_700_000_000_000;
+    const nanos = ms * 1_000_000;
+    expect(parseHistoryDate(nanos)).toBe(ms);
+  });
+
+  it("normalizes second timestamps", () => {
+    expect(parseHistoryDate(1_700_000_000)).toBe(1_700_000_000_000);
+  });
+});
+
+describe("fmtHistoryDate", () => {
+  it("returns YYYY-MM-DD strings as-is", () => {
+    expect(fmtHistoryDate("2024-01-15")).toBe("2024-01-15");
+  });
+
+  it("formats epoch milliseconds", () => {
+    // 2024-01-15T00:00:00.000Z
+    expect(fmtHistoryDate(1_705_276_800_000)).toMatch(/2024-01-1[45]/);
+  });
+
+  it("returns em dash for nullish", () => {
+    expect(fmtHistoryDate(null)).toBe("—");
+  });
+});
+
+describe("isoDateOffset", () => {
+  it("returns YYYY-MM-DD", () => {
+    expect(isoDateOffset(0)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe("historyRange", () => {
+  it("returns from before to, with buffer", () => {
+    const { from, to } = historyRange(3);
+    expect(from < to).toBe(true);
+    expect(from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

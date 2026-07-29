@@ -5,12 +5,16 @@ export default function ProviderSelector({
   provider,
   availableProviders,
   loading,
+  error,
   onProviderChange,
+  onRetry,
 }: {
   provider: string | null;
   availableProviders: string[];
   loading: boolean;
+  error?: unknown;
   onProviderChange: (p: string) => void;
+  onRetry?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -22,9 +26,22 @@ export default function ProviderSelector({
     );
   }
 
+  if (error && availableProviders.length === 0) {
+    return (
+      <span className="text-2xs text-warning flex items-center gap-1.5">
+        <WifiOff className="w-3 h-3" /> Providers unavailable
+        {onRetry && (
+          <button type="button" onClick={onRetry} className="text-accent hover:underline cursor-pointer">
+            Retry
+          </button>
+        )}
+      </span>
+    );
+  }
+
   if (availableProviders.length === 0) {
     return (
-      <span className="text-2xs text-muted flex items-center gap-1">
+      <span className="text-2xs text-muted flex items-center gap-1" title="Configure a calendar plugin (e.g. Google Calendar) to sync remote events">
         <WifiOff className="w-3 h-3" /> No providers
       </span>
     );
@@ -42,25 +59,28 @@ export default function ProviderSelector({
         <ChevronDown className="w-3 h-3" />
       </button>
       {open && (
-        <div className="absolute top-full right-0 mt-1 w-48 bg-secondary border border-primary rounded-xl shadow-card z-50 overflow-hidden">
-          <div className="px-3 py-2 border-b border-primary">
-            <p className="text-2xs font-semibold text-muted uppercase tracking-wider">Switch Provider</p>
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
+          <div className="absolute top-full right-0 mt-1 w-48 bg-secondary border border-primary rounded-xl shadow-card z-50 overflow-hidden">
+            <div className="px-3 py-2 border-b border-primary">
+              <p className="text-2xs font-semibold text-muted uppercase tracking-wider">Switch Provider</p>
+            </div>
+            {availableProviders.map(p => (
+              <button
+                type="button"
+                key={p}
+                onClick={() => {
+                  onProviderChange(p);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs hover:bg-hover transition-colors cursor-pointer text-left focus-ring ${p === provider ? "text-sky-500 font-medium" : "text-primary"}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${p === provider ? "bg-sky-500" : "bg-transparent"}`} />
+                {p}
+              </button>
+            ))}
           </div>
-          {availableProviders.map(p => (
-            <button
-              type="button"
-              key={p}
-              onClick={() => {
-                onProviderChange(p);
-                setOpen(false);
-              }}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs hover:bg-hover transition-colors cursor-pointer text-left focus-ring ${p === provider ? "text-sky-500 font-medium" : "text-primary"}`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${p === provider ? "bg-sky-500" : "bg-transparent"}`} />
-              {p}
-            </button>
-          ))}
-        </div>
+        </>
       )}
     </div>
   );

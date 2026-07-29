@@ -8,13 +8,13 @@ export interface MarkdownPreviewProps {
 
 export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       {/* Panel label */}
       <div className="shrink-0 px-4 py-3 border-b border-primary flex items-center gap-2">
         <Eye className="w-4 h-4 text-muted shrink-0" />
         <span className="text-sm font-semibold text-primary">Preview</span>
       </div>
-      <div className="p-5">
+      <div className="flex-1 overflow-y-auto p-5 min-h-0">
         <article
           className="prose prose-sm dark:prose-invert max-w-none
           prose-headings:text-primary prose-p:text-secondary prose-code:text-primary

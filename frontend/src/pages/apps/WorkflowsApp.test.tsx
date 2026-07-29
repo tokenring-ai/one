@@ -186,4 +186,67 @@ describe("WorkflowsApp", () => {
     expect(screen.getByText("Starting agent…")).toBeInTheDocument();
     expect(screen.getByText(/· starting agent…/)).toBeInTheDocument();
   });
+
+  it("shows finished run history in the sidebar and editor", () => {
+    workflowRuns = [
+      {
+        ...activeRun,
+        id: "run-done",
+        status: "completed",
+        currentStep: 2,
+        message: 'Workflow "bugHunter" completed',
+        finishedAt: 1_700_000_100_000,
+      },
+      {
+        ...activeRun,
+        id: "run-failed",
+        status: "failed",
+        currentStep: 0,
+        message: "Step failed",
+        finishedAt: 1_700_000_050_000,
+      },
+    ];
+    renderApp("/workflows/bugHunter");
+
+    expect(screen.getByText("Recent runs")).toBeInTheDocument();
+    expect(screen.getByLabelText("Workflow run progress")).toBeInTheDocument();
+    expect(screen.getByLabelText("Workflow run history")).toBeInTheDocument();
+    expect(screen.getAllByText("Completed").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Failed").length).toBeGreaterThan(0);
+    expect(screen.getByText('Workflow "bugHunter" completed')).toBeInTheDocument();
+  });
+
+  it("shows an empty run-history prompt when a workflow has never been launched", () => {
+    renderApp("/workflows/bugHunter");
+
+    expect(screen.getByText(/No runs yet for this workflow/)).toBeInTheDocument();
+  });
+
+  it("opens the agent for an active run from the editor", async () => {
+    const user = userEvent.setup();
+    workflowRuns = [activeRun];
+    renderApp("/workflows/bugHunter");
+
+    await user.click(screen.getAllByRole("button", { name: /Open agent/ })[0]!);
+    expect(screen.getByText("Agent page")).toBeInTheDocument();
+  });
+
+  it("navigates to a workflow when a finished run is clicked in the sidebar", async () => {
+    const user = userEvent.setup();
+    workflowRuns = [
+      {
+        ...activeRun,
+        id: "run-done",
+        status: "completed",
+        currentStep: 2,
+        message: "done",
+        finishedAt: 1_700_000_100_000,
+      },
+    ];
+    renderApp();
+
+    await user.click(screen.getByRole("button", { name: "View runs for All-Package Bug Hunter" }));
+    expect(screen.getByText("bugHunter.yaml")).toBeInTheDocument();
+    expect(screen.getByLabelText("Workflow run progress")).toBeInTheDocument();
+  });
 });

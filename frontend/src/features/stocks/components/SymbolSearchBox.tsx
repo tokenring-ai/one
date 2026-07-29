@@ -48,9 +48,15 @@ export default function SymbolSearchBox({ value, onChange, onSelect }: SymbolSea
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={e => {
-          if (e.key === "Enter" && results[0]?.Symbol) {
+          if (e.key === "Enter") {
             e.preventDefault();
-            handlePick(results[0].Symbol);
+            const typed = value.trim().toUpperCase();
+            if (results[0]?.Symbol) {
+              handlePick(results[0].Symbol);
+            } else if (typed) {
+              // Allow jumping straight to a known ticker even if search is empty/slow
+              handlePick(typed);
+            }
           } else if (e.key === "Escape") {
             setOpen(false);
           }

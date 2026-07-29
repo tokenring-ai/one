@@ -14,6 +14,20 @@ export function formatUsd(amount: number): string {
   })}`;
 }
 
+/** Format a 0–1 share as a percentage string. */
+export function formatPercent(share: number, digits = 0): string {
+  if (!Number.isFinite(share)) return "0%";
+  const pct = share * 100;
+  if (pct > 0 && pct < 1 && digits === 0) return "<1%";
+  return `${pct.toFixed(digits)}%`;
+}
+
+/** Shorten a long agent id for display (first 8 chars). */
+export function formatAgentIdShort(agentId: string): string {
+  if (!agentId) return "—";
+  return agentId.length <= 8 ? agentId : agentId.slice(0, 8);
+}
+
 /** Shorten model/category labels like "Chat (OpenAI:gpt-4o)" for display. */
 export function shortCategoryLabel(category: string): string {
   const chatMatch = category.match(/^Chat\s*\((.+)\)$/i);
@@ -70,4 +84,21 @@ export function bucketTotals(totalsByCategory: Record<string, number>): {
     else other += amount;
   }
   return { chat, media, other };
+}
+
+export type AgentFilter = "all" | "active" | "idle";
+
+/** Filter agent cost rows by idle/active status. */
+export function filterAgents<T extends { idle: boolean; displayName: string; agentType: string; agentId: string }>(
+  agents: T[],
+  filter: AgentFilter,
+  search = "",
+): T[] {
+  const q = search.trim().toLowerCase();
+  return agents.filter(agent => {
+    if (filter === "active" && agent.idle) return false;
+    if (filter === "idle" && !agent.idle) return false;
+    if (!q) return true;
+    return agent.displayName.toLowerCase().includes(q) || agent.agentType.toLowerCase().includes(q) || agent.agentId.toLowerCase().includes(q);
+  });
 }

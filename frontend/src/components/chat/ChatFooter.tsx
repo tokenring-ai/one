@@ -45,6 +45,13 @@ function getFileIcon(mimeType: string) {
   return FileIcon;
 }
 
+// Keyboard hints for the status row; each stays on one line, breaks happen between them.
+const KEYBOARD_HINTS = [
+  { keys: "↑/↓", label: "History" },
+  { keys: "Enter", label: "Send" },
+  { keys: "Shift+Enter", label: "New line" },
+];
+
 // Maximum file size (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 // Match CLI: discard accidental taps, hard-stop long recordings
@@ -185,6 +192,10 @@ export default function ChatFooter({
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDurationMs, setRecordingDurationMs] = useState(0);
   const isNavigatingHistoryRef = useRef(false);
+
+  // Enter submits on pointer devices and inserts a newline on touch (see handleKeyDown),
+  // so the hint follows the device, not the viewport width.
+  const isTouchDevice = useMemo(() => typeof navigator !== "undefined" && navigator.maxTouchPoints > 0, []);
 
   const chatUsage = useChatUsage(agentId);
   const filesystemState = useFilesystemState(agentId);
@@ -916,8 +927,8 @@ export default function ChatFooter({
             </div>
           </div>
 
-          <div className="min-h-10 pb-3 bg-secondary flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 gap-2 sm:gap-0">
-            <div className="flex flex-wrap items-center gap-2 order-2 sm:order-1">
+          <div className="min-h-10 pb-3 bg-secondary flex flex-wrap items-center justify-between px-6 gap-x-3 gap-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Local file upload button */}
               <button
                 type="button"
@@ -990,29 +1001,40 @@ export default function ChatFooter({
               <SubAgentSelector agentId={agentId} triggerVariant="icon" />
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 order-1 sm:order-2" aria-live="polite" aria-atomic="true">
-              {/* Keyboard hints — sit with the toolbar status row */}
-              <div className="flex items-center gap-2 text-xs text-dim mr-1">
-                <span className="hidden md:inline">
-                  <kbd className="px-1.5 py-0.5 bg-tertiary rounded-md text-primary font-mono">↑/↓</kbd> History •{" "}
-                  <kbd className="px-1.5 py-0.5 bg-tertiary rounded-md text-primary font-mono">Enter</kbd> Send •{" "}
-                  <kbd className="px-1.5 py-0.5 bg-tertiary rounded-md text-primary font-mono">Shift+Enter</kbd> New line
-                </span>
-                <span className="md:hidden">↑/↓ History • Enter for new line • Tap send to submit</span>
+            {/* Wraps below the toolbar when the panel is too narrow for both on one line. */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0" aria-live="polite" aria-atomic="true">
+              {/* Keyboard hints — break between hints, never inside one */}
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-dim min-w-0">
+                {isTouchDevice ? (
+                  <span>↑/↓ History • Enter for new line • Tap send to submit</span>
+                ) : (
+                  KEYBOARD_HINTS.map(({ keys, label }, idx) => (
+                    <span key={keys} className="flex items-center gap-1 whitespace-nowrap">
+                      {idx > 0 && (
+                        <span className="text-dim/60 mr-0.5" aria-hidden="true">
+                          •
+                        </span>
+                      )}
+                      <kbd className="px-1.5 py-0.5 bg-tertiary rounded-md text-primary font-mono">{keys}</kbd> {label}
+                    </span>
+                  ))
+                )}
               </div>
 
-              {/* Right side - status indicator */}
-              <div
-                className={`w-2 h-2 ${idle ? "bg-accent" : "bg-warning"} rounded-full animate-pulse`}
-                aria-label={idle ? "Agent is online" : "Agent is busy"}
-                role="status"
-              />
-              <span className={`text-xs ${idle ? "text-accent" : "text-warning"} font-mono uppercase`}>{idle ? "Online" : "Busy"}</span>
-              {attachments.length > 0 && (
-                <span className="text-xs text-accent font-mono">
-                  • {attachments.length} file{attachments.length !== 1 ? "s" : ""}
-                </span>
-              )}
+              {/* Status indicator — wraps onto its own line last */}
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className={`w-2 h-2 shrink-0 ${idle ? "bg-accent" : "bg-warning"} rounded-full animate-pulse`}
+                  aria-label={idle ? "Agent is online" : "Agent is busy"}
+                  role="status"
+                />
+                <span className={`text-xs ${idle ? "text-accent" : "text-warning"} font-mono uppercase`}>{idle ? "Online" : "Busy"}</span>
+                {attachments.length > 0 && (
+                  <span className="text-xs text-accent font-mono whitespace-nowrap">
+                    • {attachments.length} file{attachments.length !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1071,8 +1093,8 @@ export default function ChatFooter({
           </AnimatePresence>
         </div>
 
-        <div className="h-6 bg-tertiary flex items-center justify-between px-6 select-none gap-3">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="min-h-6 py-0.5 bg-tertiary flex flex-wrap items-center justify-between px-6 select-none gap-x-3 gap-y-0.5">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 min-w-0">
             <span className="text-xs text-muted font-mono line-clamp-1">{statusMessage}</span>
             <span className="text-xs text-dim font-mono shrink-0">{input.length} chars</span>
             {submitFeedback && (
@@ -1083,7 +1105,7 @@ export default function ChatFooter({
           </div>
           {/* Live chat usage + workspace indicators */}
           {(footerMetrics.contextLabel || footerMetrics.costLabel || footerMetrics.cwdLabel) && (
-            <div className="flex items-center gap-x-2 min-w-0 shrink mt-0.5" data-testid="chat-footer-metrics" aria-live="polite" aria-atomic="true">
+            <div className="flex flex-wrap items-center gap-x-2 min-w-0 shrink" data-testid="chat-footer-metrics" aria-live="polite" aria-atomic="true">
               {footerMetrics.contextLabel && (
                 <span className={`text-xs font-mono tabular-nums shrink-0 ${contextToneClass(footerMetrics.percentLeft)}`} title={footerMetrics.contextTitle}>
                   {footerMetrics.contextLabel}
@@ -1108,7 +1130,7 @@ export default function ChatFooter({
                       ·
                     </span>
                   )}
-                  <span className="text-xs font-mono text-muted max-w-36 sm:max-w-56 truncate" title={footerMetrics.cwdTitle}>
+                  <span className="text-xs font-mono text-muted min-w-0 max-w-56 truncate" title={footerMetrics.cwdTitle}>
                     {footerMetrics.cwdLabel}
                   </span>
                 </>

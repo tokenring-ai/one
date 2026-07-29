@@ -1,10 +1,16 @@
-import { Bot, GitBranch } from "lucide-react";
+import { Bot, Calendar, GitBranch } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { cn } from "../../../lib/utils.ts";
 import { HOUR_H, HOURS, MONTHS, WEEKDAYS_SHORT } from "../constants.ts";
 import { toDateKey } from "../dateUtils.ts";
 import type { CalendarEvent } from "../types.ts";
 import EventChip from "./EventChip.tsx";
+
+function eventTypeIcon(type: CalendarEvent["type"], size = 10) {
+  if (type === "workflow") return <GitBranch size={size} className="shrink-0" />;
+  if (type === "calendar") return <Calendar size={size} className="shrink-0" />;
+  return <Bot size={size} className="shrink-0" />;
+}
 
 export default function DayView({
   date,
@@ -44,13 +50,15 @@ export default function DayView({
             {MONTHS[date.getMonth()]} {date.getFullYear()}
           </div>
         </div>
-        {allDay.length > 0 && (
+        {allDay.length > 0 ? (
           <div className="ml-4 flex gap-1 flex-wrap">
             {allDay.map(ev => (
               <EventChip key={ev.id} event={ev} onClick={() => onEventClick(ev)} compact />
             ))}
           </div>
-        )}
+        ) : dayEvents.length === 0 ? (
+          <p className="ml-4 text-2xs text-muted">No events — click a time slot to add one</p>
+        ) : null}
       </div>
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="flex" style={{ height: `${24 * HOUR_H}px` }}>
@@ -94,7 +102,7 @@ export default function DayView({
                   style={{ top: `${top}px`, height: `${height}px` }}
                 >
                   <div className="flex items-center gap-1.5 truncate font-semibold">
-                    {ev.type === "workflow" ? <GitBranch size={10} className="shrink-0" /> : <Bot size={10} className="shrink-0" />}
+                    {eventTypeIcon(ev.type, 10)}
                     {ev.title}
                   </div>
                   {ev.startTime && (

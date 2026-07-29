@@ -16,7 +16,9 @@
     "util/**",
     "deps/**",
     "docs/**",
-    "website/**"
+    "website/**",
+    "packaging/**",
+    "**/vault-launcher.js"
   ],
   "options": {
     "typeAware": true,

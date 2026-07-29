@@ -1,16 +1,18 @@
 import Editor from "@monaco-editor/react";
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { BookOpen, ChevronDown, ChevronRight, FileText, FolderOpen, Loader2, Plus, Save, Search, Send, Trash2, X } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight, Eye, FileText, FolderOpen, Loader2, Pencil, Plus, Save, Search, Send, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { useNavigate, useParams } from "react-router-dom";
+import remarkGfm from "remark-gfm";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
-import ChatPanel from "../../components/chat/ChatPanel.tsx";
+import ChatDock from "../../components/chat/ChatDock.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { useOwnedAgent } from "../../hooks/useOwnedAgent.ts";
 import { useTheme } from "../../hooks/useTheme.ts";
-import { agentRPCClient, researchRPCClient, useTopics } from "../../rpc.ts";
+import { agentRPCClient, researchRPCClient, useItems, useTopics } from "../../rpc.ts";
 
 const DEFAULT_MARKDOWN = `# Research Notes
 
@@ -284,6 +286,7 @@ function TopicRow({
   onNewItem,
   onDeleteItem,
   onDeleteTopic,
+  onItemsChange,
 }: {
   topic: TopicSummary;
   expanded: boolean;
@@ -294,29 +297,24 @@ function TopicRow({
   onNewItem: (topicName: string) => void;
   onDeleteItem: (topicName: string, name: string) => void;
   onDeleteTopic: (topicName: string) => void;
+  onItemsChange?: ((topicName: string, items: ItemSummary[]) => void) | undefined;
 }) {
-  const [items, setItems] = useState<ItemSummary[] | null>(null);
-  const [loadingItems, setLoadingItems] = useState(false);
+  // Live stream so agent-written dossiers appear without manual refresh
+  const { data: itemsData, isLoading: loadingItems, error: itemsError, mutate: refreshItems } = useItems(expanded ? topic.name : null);
+  const items = itemsData?.items ?? null;
 
   useEffect(() => {
-    if (!expanded) return;
-    let cancelled = false;
-    setLoadingItems(true);
-    researchRPCClient
-      .listItems({ topicName: topic.name })
-      .then(res => {
-        if (!cancelled) setItems(res.items);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) toastManager.error(formatError(e), { duration: 4000 });
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingItems(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [expanded, topic.name, refreshSignal]);
+    if (!expanded || refreshSignal === 0) return;
+    void refreshItems();
+  }, [expanded, refreshSignal, refreshItems]);
+
+  useEffect(() => {
+    if (itemsError) toastManager.error(formatError(itemsError), { duration: 4000 });
+  }, [itemsError]);
+
+  useEffect(() => {
+    if (items) onItemsChange?.(topic.name, items);
+  }, [items, topic.name, onItemsChange]);
 
   return (
     <div className="border-b border-primary/50">
@@ -375,6 +373,7 @@ function TopicRow({
                   <span className="flex-1 min-w-0 truncate text-xs" title={item.name}>
                     {item.name}
                   </span>
+                  <span className="text-2xs text-muted shrink-0 opacity-0 group-hover:opacity-100 tabular-nums">{formatBytes(item.size)}</span>
                   <button
                     type="button"
                     onClick={e => {
@@ -396,6 +395,33 @@ function TopicRow({
   );
 }
 
+function formatBytes(size: number): string {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// ─── Markdown dossier preview ──────────────────────────────────────────────────
+
+function DossierPreview({ content }: { content: string }) {
+  return (
+    <div className="h-full overflow-y-auto bg-primary">
+      <div className="p-5 sm:p-6 max-w-3xl mx-auto">
+        <article
+          className="prose prose-sm dark:prose-invert max-w-none
+          prose-headings:text-primary prose-p:text-secondary prose-code:text-primary
+          prose-a:text-accent prose-strong:text-primary prose-blockquote:text-muted
+          prose-li:text-secondary prose-th:text-primary prose-td:text-secondary
+          prose-code:bg-tertiary prose-code:rounded prose-code:px-1 prose-code:py-0.5
+          prose-pre:bg-tertiary prose-pre:border prose-pre:border-primary"
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        </article>
+      </div>
+    </div>
+  );
+}
+
 // ─── Sidebar ───────────────────────────────────────────────────────────────────
 
 function TopicsSidebar({
@@ -410,6 +436,7 @@ function TopicsSidebar({
   onDeleteTopic,
   onNewTopic,
   onNewItemGlobal,
+  onItemsChange,
 }: {
   topics: TopicSummary[];
   expandedTopics: Set<string>;
@@ -422,6 +449,7 @@ function TopicsSidebar({
   onDeleteTopic: (topicName: string) => void;
   onNewTopic: () => void;
   onNewItemGlobal: () => void;
+  onItemsChange?: (topicName: string, items: ItemSummary[]) => void;
 }) {
   return (
     <div className="h-full flex flex-col bg-secondary border-r border-primary">
@@ -449,6 +477,7 @@ function TopicsSidebar({
           <div className="px-3 py-6 text-center">
             <BookOpen className="w-6 h-6 text-muted mx-auto mb-2" />
             <p className="text-2xs text-muted">No topics yet</p>
+            <p className="text-2xs text-muted mt-1">Start a research agent or create a topic</p>
           </div>
         ) : (
           topics.map(topic => (
@@ -463,6 +492,7 @@ function TopicsSidebar({
               onNewItem={onNewItem}
               onDeleteItem={onDeleteItem}
               onDeleteTopic={onDeleteTopic}
+              onItemsChange={onItemsChange}
             />
           ))
         )}
@@ -580,7 +610,7 @@ export default function ResearchApp() {
   const navigate = useNavigate();
   const { topicName: routeTopicName, itemName: routeItemName } = useParams<{ topicName?: string; itemName?: string }>();
   const [theme] = useTheme();
-  const { data: topicsData, mutate: refreshTopics } = useTopics();
+  const { data: topicsData, mutate: refreshTopics, isLoading: topicsLoading, error: topicsError } = useTopics();
   const topics = topicsData?.topics ?? [];
 
   const seedContent = DEFAULT_MARKDOWN;
@@ -596,6 +626,7 @@ export default function ResearchApp() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingItem, setIsLoadingItem] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"preview" | "edit">("preview");
   const [saveModal, setSaveModal] = useState<{ mode: "create" | "saveAs"; presetTopicName: string } | null>(null);
   const [newTopicModalOpen, setNewTopicModalOpen] = useState(false);
   const [deleteItemTarget, setDeleteItemTarget] = useState<SelectedItem | null>(null);
@@ -604,6 +635,9 @@ export default function ResearchApp() {
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
   const [itemsRefreshSignal, setItemsRefreshSignal] = useState(0);
   const bumpItemsRefresh = useCallback(() => setItemsRefreshSignal(n => n + 1), []);
+  // Track remote item mtimes so agent writes can refresh the open dossier
+  const [itemMetaByKey, setItemMetaByKey] = useState<Record<string, string>>({});
+  const loadedUpdatedAtRef = useRef<string | null>(null);
 
   const { agentId, assignAgent: handleAgentLaunched } = useOwnedAgent("Research app");
 
@@ -619,6 +653,7 @@ export default function ResearchApp() {
             message: `/deep research ${query}`,
           },
         });
+        // Expand all topics as the agent creates them so dossiers appear live
         return true;
       } catch (error) {
         toastManager.error(formatError(error), { duration: 5000 });
@@ -630,6 +665,21 @@ export default function ResearchApp() {
 
   const isDocumentReady = selectedKey !== null ? loadedKey === selectedKey : isDraft;
   const isDirty = isDocumentReady && markdownContent !== savedContent;
+
+  const handleItemsChange = useCallback((topicName: string, items: ItemSummary[]) => {
+    setItemMetaByKey(prev => {
+      let changed = false;
+      const next = { ...prev };
+      for (const item of items) {
+        const key = `${topicName}/${item.name}`;
+        if (next[key] !== item.updatedAt) {
+          next[key] = item.updatedAt;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, []);
 
   const handleToggleTopic = useCallback((name: string) => {
     setExpandedTopics(prev => {
@@ -648,6 +698,9 @@ export default function ResearchApp() {
     setSavedContent(DEFAULT_MARKDOWN);
     setLoadedKey(null);
     setIsDraft(false);
+    setLoadError(null);
+    setViewMode("preview");
+    loadedUpdatedAtRef.current = null;
     void navigate(RESEARCH_ROOT);
   }, [navigate]);
 
@@ -665,6 +718,54 @@ export default function ResearchApp() {
     },
     [navigate],
   );
+
+  // Keep the agent’s current item in sync so addSelectedItem can attach it to chat input.
+  useEffect(() => {
+    if (!agentId || !routeTopicName || !routeItemName) return;
+    researchRPCClient
+      .updateResearchState({
+        agentId,
+        selectedTopicName: routeTopicName,
+        selectedItemName: routeItemName,
+      })
+      .catch(() => {});
+  }, [agentId, routeTopicName, routeItemName]);
+
+  const loadItem = useCallback(async (topicName: string, name: string, options?: { silent?: boolean }) => {
+    const key = `${topicName}/${name}`;
+    if (!options?.silent) {
+      setIsLoadingItem(true);
+      setLoadError(null);
+    }
+    try {
+      const { item } = await researchRPCClient.getItem({ topicName, name });
+      if (!item) {
+        const message = `Item "${name}" not found in topic "${topicName}"`;
+        if (!options?.silent) {
+          toastManager.error(message, { duration: 4000 });
+          setLoadError(message);
+        }
+        return false;
+      }
+      setMarkdownContent(item.content);
+      setSavedContent(item.content);
+      setLoadedKey(key);
+      setIsDraft(false);
+      loadedUpdatedAtRef.current = item.updatedAt;
+      setItemMetaByKey(prev => ({ ...prev, [key]: item.updatedAt }));
+      // Prefer preview when opening dossiers for browsing
+      if (!options?.silent) setViewMode("preview");
+      return true;
+    } catch (e: unknown) {
+      if (!options?.silent) {
+        toastManager.error(formatError(e), { duration: 4000 });
+        setLoadError(formatError(e));
+      }
+      return false;
+    } finally {
+      if (!options?.silent) setIsLoadingItem(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!routeTopicName || !routeItemName) return;
@@ -688,6 +789,9 @@ export default function ResearchApp() {
         setSavedContent(item.content);
         setLoadedKey(key);
         setIsDraft(false);
+        loadedUpdatedAtRef.current = item.updatedAt;
+        setItemMetaByKey(prev => ({ ...prev, [key]: item.updatedAt }));
+        setViewMode("preview");
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -707,6 +811,36 @@ export default function ResearchApp() {
     setExpandedTopics(prev => (prev.has(routeTopicName) ? prev : new Set(prev).add(routeTopicName)));
   }, [routeTopicName]);
 
+  // When the agent rewrites the open item, refresh the editor if the user has no local edits.
+  // Relies on TopicRow's streamItems → onItemsChange while the topic is expanded (selected topic is auto-expanded).
+  useEffect(() => {
+    if (!selected || !selectedKey || loadedKey !== selectedKey) return;
+    const remoteUpdatedAt = itemMetaByKey[selectedKey];
+    if (!remoteUpdatedAt || remoteUpdatedAt === loadedUpdatedAtRef.current) return;
+    if (isDirty) return;
+    void loadItem(selected.topicName, selected.name, { silent: true });
+  }, [selected, selectedKey, loadedKey, itemMetaByKey, isDirty, loadItem]);
+
+  // Auto-expand topics that gain items while a research agent is running so dossiers stream in live
+  useEffect(() => {
+    if (!agentId) return;
+    setExpandedTopics(prev => {
+      let changed = false;
+      const next = new Set(prev);
+      for (const topic of topics) {
+        if (topic.itemCount > 0 && !next.has(topic.name)) {
+          next.add(topic.name);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [agentId, topics]);
+
+  useEffect(() => {
+    if (topicsError) toastManager.error(formatError(topicsError), { duration: 4000 });
+  }, [topicsError]);
+
   const handleSave = useCallback(async () => {
     if (!isDocumentReady) return;
     if (!selected) {
@@ -721,6 +855,8 @@ export default function ResearchApp() {
         content: markdownContent,
       });
       setSavedContent(item.content);
+      loadedUpdatedAtRef.current = item.updatedAt;
+      setItemMetaByKey(prev => ({ ...prev, [`${item.topicName}/${item.name}`]: item.updatedAt }));
       bumpItemsRefresh();
       void refreshTopics();
       toastManager.success("Saved", { duration: 2000 });
@@ -734,11 +870,17 @@ export default function ResearchApp() {
   const handleSaveModalSubmit = useCallback(
     async (topicName: string, itemName: string) => {
       try {
+        // createItem for new names; updateItem when overwriting via Save As to an existing path is not supported
+        // (user must pick a unique name). createItem auto-vivifies the topic directory.
         const { item } = await researchRPCClient.createItem({ topicName, name: itemName, content: markdownContent });
         setSavedContent(item.content);
+        setMarkdownContent(item.content);
         setLoadedKey(`${item.topicName}/${item.name}`);
         setIsDraft(false);
+        loadedUpdatedAtRef.current = item.updatedAt;
+        setItemMetaByKey(prev => ({ ...prev, [`${item.topicName}/${item.name}`]: item.updatedAt }));
         setSaveModal(null);
+        setViewMode("edit");
         setExpandedTopics(prev => new Set(prev).add(topicName));
         void navigate(itemPath(item.topicName, item.name));
         bumpItemsRefresh();
@@ -819,23 +961,27 @@ export default function ResearchApp() {
   const subtitle = selected ? `${selected.topicName} / ${selected.name}` : isDraft ? "Untitled" : "No item open";
 
   const mainPane = isDocumentReady ? (
-    <div className="h-full bg-primary">
-      <Editor
-        height="100%"
-        language="markdown"
-        theme={theme === "light" ? "vs-light" : "vs-dark"}
-        value={markdownContent}
-        onChange={value => setMarkdownContent(value ?? "")}
-        options={{
-          minimap: { enabled: false },
-          fontSize: 13,
-          wordWrap: "on",
-          lineNumbers: "on",
-          scrollBeyondLastLine: false,
-          padding: { top: 12 },
-        }}
-      />
-    </div>
+    viewMode === "preview" ? (
+      <DossierPreview content={markdownContent} />
+    ) : (
+      <div className="h-full bg-primary">
+        <Editor
+          height="100%"
+          language="markdown"
+          theme={theme === "light" ? "vs-light" : "vs-dark"}
+          value={markdownContent}
+          onChange={value => setMarkdownContent(value ?? "")}
+          options={{
+            minimap: { enabled: false },
+            fontSize: 13,
+            wordWrap: "on",
+            lineNumbers: "on",
+            scrollBeyondLastLine: false,
+            padding: { top: 12 },
+          }}
+        />
+      </div>
+    )
   ) : selected && loadError ? (
     <div className="h-full flex flex-col items-center justify-center gap-3 p-6 bg-primary text-center">
       <p className="text-xs text-red-500 max-w-md">{loadError}</p>
@@ -851,6 +997,11 @@ export default function ResearchApp() {
     <div className="h-full flex items-center justify-center gap-2 bg-primary text-xs text-muted">
       <Loader2 className="w-4 h-4 animate-spin" />
       Loading {selected ? `${selected.topicName} / ${selected.name}` : "…"}…
+    </div>
+  ) : topicsLoading && topics.length === 0 ? (
+    <div className="h-full flex items-center justify-center gap-2 bg-primary text-xs text-muted">
+      <Loader2 className="w-4 h-4 animate-spin" />
+      Loading research topics…
     </div>
   ) : (
     <EmptyState hasTopics={topics.length > 0} hasAgent={!!agentId} onStartResearch={handleStartResearch} />
@@ -889,33 +1040,91 @@ export default function ResearchApp() {
       <AppPageHeader title="Research" subtitle={subtitle} icon={<Search className="w-4 h-4" />} iconGradient="from-indigo-500 to-violet-600" size="compact">
         {isDocumentReady && (
           <>
-            <button
-              type="button"
-              onClick={() => void handleSave()}
-              disabled={isSaving || (!isDirty && !!selected)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-accent hover:bg-accent-hover text-white text-2xs font-medium rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-              {selected ? (isDirty ? "Save" : "Saved") : "Save…"}
-            </button>
-            {selected && (
+            <div className="flex items-center rounded-lg border border-primary p-0.5 shrink-0" role="group" aria-label="View mode">
               <button
                 type="button"
-                onClick={() => setDeleteItemTarget(selected)}
-                className="p-1.5 text-muted hover:text-red-500 rounded-lg transition-colors focus-ring cursor-pointer"
-                title="Delete item"
+                onClick={() => setViewMode("preview")}
+                className={`flex items-center gap-1 px-2 py-1 text-2xs font-medium rounded-md transition-colors cursor-pointer focus-ring ${
+                  viewMode === "preview" ? "bg-accent text-white" : "text-muted hover:text-primary hover:bg-hover"
+                }`}
+                aria-pressed={viewMode === "preview"}
+                title="Preview markdown"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Eye className="w-3 h-3" />
+                Preview
               </button>
-            )}
+              <button
+                type="button"
+                onClick={() => setViewMode("edit")}
+                className={`flex items-center gap-1 px-2 py-1 text-2xs font-medium rounded-md transition-colors cursor-pointer focus-ring ${
+                  viewMode === "edit" ? "bg-accent text-white" : "text-muted hover:text-primary hover:bg-hover"
+                }`}
+                aria-pressed={viewMode === "edit"}
+                title="Edit markdown source"
+              >
+                <Pencil className="w-3 h-3" />
+                Edit
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1 shrink-0">
+              {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" title="Unsaved changes" />}
+              <button
+                type="button"
+                onClick={() => void handleSave()}
+                disabled={isSaving || (!isDirty && !!selected)}
+                title={selected ? "Save (Ctrl/⌘+S)" : "Save…"}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-accent hover:bg-accent-hover text-white text-2xs font-medium rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                {selected ? (isDirty ? "Save" : "Saved") : "Save…"}
+              </button>
+              {selected && (
+                <button
+                  type="button"
+                  onClick={() => setSaveModal({ mode: "saveAs", presetTopicName: selected.topicName })}
+                  title="Save As…"
+                  className="px-2 py-1 text-2xs text-muted hover:text-primary hover:bg-hover rounded-lg transition-colors focus-ring cursor-pointer"
+                >
+                  Save As…
+                </button>
+              )}
+              {selected && (
+                <button
+                  type="button"
+                  onClick={() => setDeleteItemTarget(selected)}
+                  className="p-1.5 text-muted hover:text-red-500 rounded-lg transition-colors focus-ring cursor-pointer"
+                  title="Delete item"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="w-px h-5 bg-primary/70 mx-0.5 shrink-0" aria-hidden="true" />
           </>
         )}
-        <AgentLauncherBar
-          defaultAgentType="research"
-          buttonLabel="Start Agent"
-          buttonClassName="bg-indigo-600 hover:bg-indigo-500 text-white shadow-button-primary"
-          onLaunch={handleAgentLaunched}
-        />
+
+        <button
+          type="button"
+          onClick={() => handleNew()}
+          title="New research item"
+          className="flex items-center gap-1.5 px-2.5 py-1 bg-accent-muted hover:bg-accent-muted-hover text-accent text-2xs font-medium rounded-lg transition-colors cursor-pointer focus-ring shrink-0"
+        >
+          <Plus className="w-3 h-3" />
+          New
+        </button>
+
+        <div className="w-px h-5 bg-primary/70 mx-0.5 shrink-0" aria-hidden="true" />
+
+        {!agentId && (
+          <AgentLauncherBar
+            defaultAgentType="research"
+            buttonLabel="Start Agent"
+            buttonClassName="bg-indigo-600 hover:bg-indigo-500 text-white shadow-button-primary"
+            onLaunch={handleAgentLaunched}
+          />
+        )}
       </AppPageHeader>
 
       <ResizableSplit direction="horizontal" initialRatio={0.18} minFirst={180} minSecond={320} className="flex-1 min-h-0">
@@ -931,18 +1140,12 @@ export default function ResearchApp() {
           onDeleteTopic={name => setDeleteTopicTarget(name)}
           onNewTopic={() => setNewTopicModalOpen(true)}
           onNewItemGlobal={() => handleNew()}
+          onItemsChange={handleItemsChange}
         />
 
-        {agentId ? (
-          <ResizableSplit direction="vertical" initialRatio={0.65} minFirst={120} minSecond={120} className="h-full min-h-0">
-            {mainPane}
-            <div className="h-full overflow-hidden bg-primary">
-              <ChatPanel agentId={agentId} />
-            </div>
-          </ResizableSplit>
-        ) : (
-          mainPane
-        )}
+        <ChatDock agentId={agentId} storageKey="research" initialRatio={0.65} headerTitle="Research Agent">
+          {mainPane}
+        </ChatDock>
       </ResizableSplit>
     </div>
   );

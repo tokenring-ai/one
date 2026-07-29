@@ -39,9 +39,12 @@ export default function ConfigurationApp() {
   const scopeOverrides = serverOverrides?.[scope];
   const draft = drafts[scope];
 
-  // Seed / reseed each scope's draft whenever fresh server overrides arrive and there are no local edits in flight.
+  const needsDraftSeed = configScopes.some(candidate => drafts[candidate] === null);
+
+  // Seed / reseed each scope's draft whenever it is null and server overrides are available.
+  // Depends on needsDraftSeed so a post-save null draft reseeds even if the server snapshot is unchanged.
   useEffect(() => {
-    if (!serverOverrides) return;
+    if (!serverOverrides || !needsDraftSeed) return;
     setDrafts(current => {
       const next = { ...current };
       let changed = false;
@@ -53,7 +56,7 @@ export default function ConfigurationApp() {
       }
       return changed ? next : current;
     });
-  }, [serverOverrides]);
+  }, [serverOverrides, needsDraftSeed]);
 
   const plugins = useMemo(() => {
     const list = schema.data?.plugins ?? [];
@@ -63,7 +66,10 @@ export default function ConfigurationApp() {
   const filteredPlugins = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return plugins;
-    return plugins.filter(plugin => plugin.displayName.toLowerCase().includes(query) || plugin.pluginName.toLowerCase().includes(query));
+    return plugins.filter(
+      plugin =>
+        plugin.displayName.toLowerCase().includes(query) || plugin.pluginName.toLowerCase().includes(query) || plugin.description.toLowerCase().includes(query),
+    );
   }, [plugins, search]);
 
   const selectedName = searchParams.get("plugin");
@@ -71,31 +77,38 @@ export default function ConfigurationApp() {
 
   const isScopeDirty = (candidate: ConfigScope) => {
     const candidateDraft = drafts[candidate];
-    const candidateServer = serverOverrides?.[candidate];
-    return candidateDraft !== null && candidateServer !== undefined && !deepEqual(candidateDraft, candidateServer);
+    if (candidateDraft === null) return false;
+    const candidateServer = serverOverrides?.[candidate] ?? {};
+    return !deepEqual(candidateDraft, candidateServer);
   };
   const dirty = isScopeDirty(scope);
 
   const pluginHasOverrides = (plugin: ConfigUIPluginSchema, target: ConfigScope) => {
-    const source = (target === scope ? draft : null) ?? serverOverrides?.[target] ?? {};
+    const source = drafts[target] ?? serverOverrides?.[target] ?? {};
     return Object.keys(plugin.slices).some(sliceKey => source[sliceKey] !== undefined);
   };
 
   /** Slices of the selected plugin that a higher-precedence scope also sets. */
   const shadowedByProject = scope === "user" && selectedPlugin !== undefined && pluginHasOverrides(selectedPlugin, "project");
 
+  /** Clears server validation / save feedback so the user can keep editing cleanly. */
+  const clearValidationFeedback = () => {
+    setIssues([]);
+    setSaveMessage(null);
+  };
+
   const selectScope = (next: ConfigScope) => {
     const params = new URLSearchParams(searchParams);
     params.set("scope", next);
     setSearchParams(params);
-    setIssues([]);
-    setSaveMessage(null);
+    clearValidationFeedback();
   };
 
   const selectPlugin = (pluginName: string) => {
     const params = new URLSearchParams(searchParams);
     params.set("plugin", pluginName);
     setSearchParams(params);
+    clearValidationFeedback();
   };
 
   const save = async () => {
@@ -107,7 +120,8 @@ export default function ConfigurationApp() {
       if (result.ok) {
         setIssues([]);
         setSaveMessage(`Saved to ${SCOPE_META[scope].label.toLowerCase()} configuration`);
-        setDrafts(current => ({ ...current, [scope]: null })); // reseed from server
+        // Keep the applied draft mounted so the form does not flash empty. Once mutate
+        // refreshes serverOverrides to match, dirty clears automatically.
         await Promise.all([values.mutate(), schema.mutate()]);
       } else {
         setIssues(result.issues);
@@ -121,9 +135,8 @@ export default function ConfigurationApp() {
   };
 
   const discard = () => {
-    setDrafts(current => ({ ...current, [scope]: scopeOverrides ? deepClone(scopeOverrides) : {} }));
-    setIssues([]);
-    setSaveMessage(null);
+    setDrafts(current => ({ ...current, [scope]: deepClone(scopeOverrides ?? {}) }));
+    clearValidationFeedback();
   };
 
   const isLoading = schema.isLoading || values.isLoading;
@@ -276,7 +289,8 @@ export default function ConfigurationApp() {
                       issues={issues}
                       onDraftChange={next => {
                         setDrafts(current => ({ ...current, [scope]: next }));
-                        setSaveMessage(null);
+                        // Clear stale validation so the user can fix fields without leftover errors.
+                        clearValidationFeedback();
                       }}
                     />
                   </div>

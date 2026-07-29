@@ -1,14 +1,125 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { Download, Loader2, Play, Power, PowerOff, RefreshCw, RotateCcw, Search, Sparkles, Trash2, User } from "lucide-react";
+import { FocusTrap } from "focus-trap-react";
+import { Download, Loader2, Play, Power, PowerOff, RefreshCw, RotateCcw, Search, Sparkles, Trash2, User, X, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
+import FilterTabs, { type FilterTabOption } from "../../components/ui/FilterTabs.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { cn } from "../../lib/utils.ts";
-import { agentRPCClient, skillsRPCClient, useAgentList, useAgentTypes, useSkills } from "../../rpc.ts";
+import { agentRPCClient, skillsRPCClient, useAgentList, useAgentTypes, useEnabledSkills, useSkills } from "../../rpc.ts";
+
+type StatusFilter = "all" | "enabled" | "disabled";
+
+type SkillRow = {
+  name: string;
+  slug: string;
+  description: string;
+  enabled: boolean;
+  sourceUrl?: string | undefined;
+  userInvocable?: boolean | undefined;
+  argumentHint?: string | undefined;
+  context?: string | undefined;
+  agent?: string | undefined;
+};
+
+type TrySkillState = {
+  name: string;
+  argumentHint?: string | undefined;
+  args: string;
+};
+
+function TrySkillDialog({
+  skill,
+  busy,
+  onChangeArgs,
+  onConfirm,
+  onCancel,
+}: {
+  skill: TrySkillState;
+  busy: boolean;
+  onChangeArgs: (value: string) => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <FocusTrap>
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="try-skill-title"
+        onKeyDown={e => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            onCancel();
+          }
+        }}
+      >
+        <div className="bg-secondary border border-primary rounded-lg shadow-xl max-w-md w-full">
+          <div className="flex items-center justify-between p-4 border-b border-primary">
+            <h3 id="try-skill-title" className="text-lg font-semibold text-primary font-mono">
+              Try /{skill.name}
+            </h3>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="p-1.5 text-muted hover:text-primary transition-colors focus-ring cursor-pointer rounded-md"
+              aria-label="Close dialog"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="px-4 py-4 space-y-3">
+            <p className="text-sm text-secondary">Runs the skill on the selected agent and opens chat. Disabled skills are enabled automatically first.</p>
+            <div>
+              <label htmlFor="try-skill-args" className="block text-2xs font-bold text-muted uppercase tracking-widest mb-1.5">
+                Arguments {skill.argumentHint ? <span className="font-mono normal-case tracking-normal">({skill.argumentHint})</span> : "(optional)"}
+              </label>
+              <input
+                id="try-skill-args"
+                type="text"
+                value={skill.args}
+                onChange={e => onChangeArgs(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    onConfirm();
+                  }
+                }}
+                placeholder={skill.argumentHint || "Optional prompt / args"}
+                className="w-full bg-input border border-primary rounded-md py-2 px-3 text-sm text-primary placeholder-muted focus-ring"
+                autoFocus
+              />
+            </div>
+          </div>
+          <div className="flex gap-3 px-4 pb-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={busy}
+              className="flex-1 px-4 py-2 bg-tertiary hover:bg-hover text-primary rounded-md border border-primary transition-colors focus-ring disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={busy}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-md shadow-lg transition-colors active:scale-[0.98] focus-ring disabled:opacity-50"
+            >
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+              Run skill
+            </button>
+          </div>
+        </div>
+      </div>
+    </FocusTrap>
+  );
+}
 
 export default function SkillsDashboard() {
   const navigate = useNavigate();
@@ -16,9 +127,11 @@ export default function SkillsDashboard() {
   const agentTypes = useAgentTypes();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [zipUrl, setZipUrl] = useState("");
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [trySkill, setTrySkill] = useState<TrySkillState | null>(null);
   const [creatingAgent, setCreatingAgent] = useState(false);
 
   useEffect(() => {
@@ -33,22 +146,45 @@ export default function SkillsDashboard() {
   }, [agents.data, selectedAgentId]);
 
   const skillsQuery = useSkills(selectedAgentId ?? undefined);
+  const enabledSkillsStream = useEnabledSkills(selectedAgentId ?? "");
 
-  const skills = useMemo(() => {
+  const enabledFromStream = useMemo(() => {
+    if (enabledSkillsStream.data?.status !== "success") return null;
+    return new Set(enabledSkillsStream.data.skills);
+  }, [enabledSkillsStream.data]);
+
+  const skills = useMemo<SkillRow[]>(() => {
     if (skillsQuery.data?.status !== "success") return [];
-    return skillsQuery.data.skills;
-  }, [skillsQuery.data]);
-
-  const filteredSkills = useMemo(() => {
-    if (!searchQuery.trim()) return skills;
-    const query = searchQuery.toLowerCase();
-    return skills.filter(s => s.name.toLowerCase().includes(query) || s.description.toLowerCase().includes(query) || s.slug.toLowerCase().includes(query));
-  }, [skills, searchQuery]);
+    return skillsQuery.data.skills.map(skill => ({
+      ...skill,
+      enabled: enabledFromStream ? enabledFromStream.has(skill.name) : skill.enabled,
+    }));
+  }, [skillsQuery.data, enabledFromStream]);
 
   const enabledCount = skills.filter(s => s.enabled).length;
+  const disabledCount = skills.length - enabledCount;
+
+  const statusTabs = useMemo<FilterTabOption<StatusFilter>[]>(
+    () => [
+      { id: "all", label: "All", count: skills.length },
+      { id: "enabled", label: "Enabled", count: enabledCount },
+      { id: "disabled", label: "Disabled", count: disabledCount },
+    ],
+    [skills.length, enabledCount, disabledCount],
+  );
+
+  const filteredSkills = useMemo(() => {
+    let list = skills;
+    if (statusFilter === "enabled") list = list.filter(s => s.enabled);
+    else if (statusFilter === "disabled") list = list.filter(s => !s.enabled);
+
+    if (!searchQuery.trim()) return list;
+    const query = searchQuery.toLowerCase();
+    return list.filter(s => s.name.toLowerCase().includes(query) || s.description.toLowerCase().includes(query) || s.slug.toLowerCase().includes(query));
+  }, [skills, searchQuery, statusFilter]);
 
   const refresh = async () => {
-    await Promise.all([skillsQuery.mutate(), agents.mutate()]);
+    await Promise.all([skillsQuery.mutate(), agents.mutate(), enabledSkillsStream.mutate()]);
   };
 
   const ensureAgent = async (): Promise<string | null> => {
@@ -91,7 +227,7 @@ export default function SkillsDashboard() {
       }
       toastManager.success(`Installed skill "${result.skill.name}"`, { duration: 3000 });
       setZipUrl("");
-      await skillsQuery.mutate();
+      await Promise.all([skillsQuery.mutate(), enabledSkillsStream.mutate()]);
     } catch (error: unknown) {
       toastManager.error(formatError(error), { duration: 5000 });
     } finally {
@@ -100,20 +236,20 @@ export default function SkillsDashboard() {
   };
 
   const handleToggle = async (name: string, currentlyEnabled: boolean) => {
-    if (!selectedAgentId) {
+    const agentId = selectedAgentId ?? (await ensureAgent());
+    if (!agentId) {
       toastManager.warning("Select or create an agent first", { duration: 3000 });
       return;
     }
     setBusyAction(`toggle:${name}`);
     try {
-      const result = currentlyEnabled
-        ? await skillsRPCClient.disableSkill({ agentId: selectedAgentId, name })
-        : await skillsRPCClient.enableSkill({ agentId: selectedAgentId, name });
+      const result = currentlyEnabled ? await skillsRPCClient.disableSkill({ agentId, name }) : await skillsRPCClient.enableSkill({ agentId, name });
       if (result.status === "agentNotFound") {
         toastManager.error("Agent no longer exists", { duration: 4000 });
         return;
       }
-      await skillsQuery.mutate();
+      toastManager.success(currentlyEnabled ? `Disabled /${name}` : `Enabled /${name}`, { duration: 2500 });
+      await Promise.all([skillsQuery.mutate(), enabledSkillsStream.mutate()]);
     } catch (error: unknown) {
       toastManager.error(formatError(error), { duration: 5000 });
     } finally {
@@ -122,16 +258,17 @@ export default function SkillsDashboard() {
   };
 
   const handleReset = async (name: string) => {
-    if (!selectedAgentId) return;
+    const agentId = selectedAgentId ?? (await ensureAgent());
+    if (!agentId) return;
     setBusyAction(`reset:${name}`);
     try {
-      const result = await skillsRPCClient.resetSkill({ agentId: selectedAgentId, name });
+      const result = await skillsRPCClient.resetSkill({ agentId, name });
       if (result.status === "agentNotFound") {
         toastManager.error("Agent no longer exists", { duration: 4000 });
         return;
       }
       toastManager.success(`Reset skill "${name}"`, { duration: 3000 });
-      await skillsQuery.mutate();
+      await Promise.all([skillsQuery.mutate(), enabledSkillsStream.mutate()]);
     } catch (error: unknown) {
       toastManager.error(formatError(error), { duration: 5000 });
     } finally {
@@ -140,18 +277,20 @@ export default function SkillsDashboard() {
   };
 
   const handleDelete = async () => {
-    if (!selectedAgentId || !confirmDelete) return;
+    if (!confirmDelete) return;
     const name = confirmDelete;
     setConfirmDelete(null);
+    const agentId = selectedAgentId ?? (await ensureAgent());
+    if (!agentId) return;
     setBusyAction(`delete:${name}`);
     try {
-      const result = await skillsRPCClient.deleteSkill({ agentId: selectedAgentId, name });
+      const result = await skillsRPCClient.deleteSkill({ agentId, name });
       if (result.status === "agentNotFound") {
         toastManager.error("Agent no longer exists", { duration: 4000 });
         return;
       }
       toastManager.success(`Deleted skill "${name}"`, { duration: 3000 });
-      await skillsQuery.mutate();
+      await Promise.all([skillsQuery.mutate(), enabledSkillsStream.mutate()]);
     } catch (error: unknown) {
       toastManager.error(formatError(error), { duration: 5000 });
     } finally {
@@ -159,25 +298,53 @@ export default function SkillsDashboard() {
     }
   };
 
-  const handleTry = async (name: string) => {
+  const openTrySkill = (skill: SkillRow) => {
+    setTrySkill({
+      name: skill.name,
+      argumentHint: skill.argumentHint,
+      args: "",
+    });
+  };
+
+  const handleTryConfirm = async () => {
+    if (!trySkill) return;
+    const name = trySkill.name;
+    const args = trySkill.args.trim();
     const agentId = selectedAgentId ?? (await ensureAgent());
     if (!agentId) return;
+
+    setBusyAction(`try:${name}`);
     try {
+      const skill = skills.find(s => s.name === name);
+      if (skill && !skill.enabled) {
+        const enableResult = await skillsRPCClient.enableSkill({ agentId, name });
+        if (enableResult.status === "agentNotFound") {
+          toastManager.error("Agent no longer exists", { duration: 4000 });
+          return;
+        }
+        await Promise.all([skillsQuery.mutate(), enabledSkillsStream.mutate()]);
+      }
+
+      const message = args ? `/${name} ${args}` : `/${name}`;
       await agentRPCClient.sendInput({
         agentId,
         input: {
           from: "Skills dashboard",
-          message: `/${name}`,
+          message,
         },
       });
-      toastManager.success(`Running /${name}`, { duration: 2500 });
+      setTrySkill(null);
+      toastManager.success(`Running ${message}`, { duration: 2500 });
       void navigate(`/agent/${agentId}`);
     } catch (error: unknown) {
       toastManager.error(formatError(error), { duration: 5000 });
+    } finally {
+      setBusyAction(null);
     }
   };
 
   const selectedAgent = agents.data?.find(a => a.id === selectedAgentId);
+  const emptyBecauseFilter = skills.length > 0 && filteredSkills.length === 0;
 
   return (
     <div className="w-full h-full flex flex-col bg-primary overflow-hidden">
@@ -288,7 +455,7 @@ export default function SkillsDashboard() {
 
           {/* Installed list */}
           <section>
-            <div className="flex items-center justify-between gap-3 mb-3 px-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 px-1">
               <p className="text-2xs font-bold text-muted uppercase tracking-widest">Installed</p>
               <div className="relative w-full max-w-xs">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
@@ -296,10 +463,39 @@ export default function SkillsDashboard() {
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Escape" && searchQuery) {
+                      e.preventDefault();
+                      setSearchQuery("");
+                    }
+                  }}
                   placeholder="Filter skills…"
-                  className="w-full bg-input border border-primary rounded-md py-1.5 pl-8 pr-3 text-xs text-primary placeholder-muted focus-ring"
+                  className="w-full bg-input border border-primary rounded-md py-1.5 pl-8 pr-8 text-xs text-primary placeholder-muted focus-ring"
+                  aria-label="Filter skills"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-md text-muted hover:text-primary hover:bg-hover transition-colors focus-ring"
+                    aria-label="Clear search"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
+            </div>
+
+            <div className="mb-3 rounded-xl border border-primary bg-secondary overflow-hidden">
+              <FilterTabs
+                tabs={statusTabs}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                showZeroCounts
+                className="px-1"
+                activeTabClassName="border-violet-500 text-primary"
+                activeCountClassName="bg-violet-500/15 text-violet-600 dark:text-violet-400"
+              />
             </div>
 
             {skillsQuery.isLoading && skills.length === 0 ? (
@@ -309,15 +505,35 @@ export default function SkillsDashboard() {
             ) : filteredSkills.length === 0 ? (
               <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
                 <Sparkles className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
-                <p className="text-sm font-medium text-secondary mb-1">{searchQuery ? "No matching skills" : "No skills installed"}</p>
+                <p className="text-sm font-medium text-secondary mb-1">{emptyBecauseFilter ? "No matching skills" : "No skills installed"}</p>
                 <p className="text-2xs text-muted max-w-sm mx-auto">
-                  {searchQuery ? `Nothing matches “${searchQuery}”.` : "Download a skill zip above, or use /skills download <url> in chat."}
+                  {searchQuery
+                    ? `Nothing matches “${searchQuery}”.`
+                    : statusFilter !== "all"
+                      ? `No ${statusFilter} skills for this agent.`
+                      : "Download a skill zip above, or use /skills download <url> in chat."}
                 </p>
+                {(searchQuery || statusFilter !== "all") && skills.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setStatusFilter("all");
+                    }}
+                    className="mt-3 text-xs text-violet-600 dark:text-violet-400 hover:underline focus-ring rounded"
+                  >
+                    Clear filters
+                  </button>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-2">
                 {filteredSkills.map(skill => {
-                  const isBusy = busyAction === `toggle:${skill.name}` || busyAction === `reset:${skill.name}` || busyAction === `delete:${skill.name}`;
+                  const isBusy =
+                    busyAction === `toggle:${skill.name}` ||
+                    busyAction === `reset:${skill.name}` ||
+                    busyAction === `delete:${skill.name}` ||
+                    busyAction === `try:${skill.name}`;
                   return (
                     <div
                       key={skill.slug || skill.name}
@@ -359,7 +575,7 @@ export default function SkillsDashboard() {
                             title="Try skill"
                             aria-label={`Try ${skill.name}`}
                             disabled={isBusy}
-                            onClick={() => void handleTry(skill.name)}
+                            onClick={() => openTrySkill(skill)}
                             className="p-1.5 rounded-md text-muted hover:text-violet-500 hover:bg-violet-500/10 transition-colors focus-ring disabled:opacity-50"
                           >
                             <Play className="w-3.5 h-3.5" />
@@ -369,7 +585,7 @@ export default function SkillsDashboard() {
                           type="button"
                           title={skill.enabled ? "Disable" : "Enable"}
                           aria-label={skill.enabled ? `Disable ${skill.name}` : `Enable ${skill.name}`}
-                          disabled={isBusy || !selectedAgentId}
+                          disabled={isBusy}
                           onClick={() => void handleToggle(skill.name, skill.enabled)}
                           className="p-1.5 rounded-md text-muted hover:text-primary hover:bg-hover transition-colors focus-ring disabled:opacity-50"
                         >
@@ -380,7 +596,7 @@ export default function SkillsDashboard() {
                             type="button"
                             title="Reset from source"
                             aria-label={`Reset ${skill.name}`}
-                            disabled={isBusy || !selectedAgentId}
+                            disabled={isBusy}
                             onClick={() => void handleReset(skill.name)}
                             className="p-1.5 rounded-md text-muted hover:text-primary hover:bg-hover transition-colors focus-ring disabled:opacity-50"
                           >
@@ -391,7 +607,7 @@ export default function SkillsDashboard() {
                           type="button"
                           title="Delete skill"
                           aria-label={`Delete ${skill.name}`}
-                          disabled={isBusy || !selectedAgentId}
+                          disabled={isBusy}
                           onClick={() => setConfirmDelete(skill.name)}
                           className="p-1.5 rounded-md text-muted hover:text-error hover:bg-error/10 transition-colors focus-ring disabled:opacity-50"
                         >
@@ -415,6 +631,16 @@ export default function SkillsDashboard() {
           variant="danger"
           onConfirm={() => void handleDelete()}
           onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+
+      {trySkill && (
+        <TrySkillDialog
+          skill={trySkill}
+          busy={busyAction === `try:${trySkill.name}`}
+          onChangeArgs={args => setTrySkill(prev => (prev ? { ...prev, args } : prev))}
+          onConfirm={() => void handleTryConfirm()}
+          onCancel={() => setTrySkill(null)}
         />
       )}
     </div>

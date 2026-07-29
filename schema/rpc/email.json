@@ -692,12 +692,10 @@
                 "type": "boolean"
               },
               "receivedAt": {
-                "type": "string",
-                "format": "date-time"
+                "type": "number"
               },
               "sentAt": {
-                "type": "string",
-                "format": "date-time"
+                "type": "number"
               }
             },
             "required": [
@@ -705,8 +703,7 @@
               "subject",
               "from",
               "to",
-              "isRead",
-              "receivedAt"
+              "isRead"
             ],
             "additionalProperties": false
           }
@@ -859,12 +856,10 @@
                 "type": "boolean"
               },
               "receivedAt": {
-                "type": "string",
-                "format": "date-time"
+                "type": "number"
               },
               "sentAt": {
-                "type": "string",
-                "format": "date-time"
+                "type": "number"
               }
             },
             "required": [
@@ -872,8 +867,7 @@
               "subject",
               "from",
               "to",
-              "isRead",
-              "receivedAt"
+              "isRead"
             ],
             "additionalProperties": false
           }
@@ -1010,12 +1004,10 @@
               "type": "boolean"
             },
             "receivedAt": {
-              "type": "string",
-              "format": "date-time"
+              "type": "number"
             },
             "sentAt": {
-              "type": "string",
-              "format": "date-time"
+              "type": "number"
             }
           },
           "required": [
@@ -1023,8 +1015,7 @@
             "subject",
             "from",
             "to",
-            "isRead",
-            "receivedAt"
+            "isRead"
           ],
           "additionalProperties": false
         },
@@ -1193,12 +1184,10 @@
                   "type": "string"
                 },
                 "createdAt": {
-                  "type": "string",
-                  "format": "date-time"
+                  "type": "number"
                 },
                 "updatedAt": {
-                  "type": "string",
-                  "format": "date-time"
+                  "type": "number"
                 }
               },
               "required": [
@@ -1398,12 +1387,10 @@
                   "type": "string"
                 },
                 "createdAt": {
-                  "type": "string",
-                  "format": "date-time"
+                  "type": "number"
                 },
                 "updatedAt": {
-                  "type": "string",
-                  "format": "date-time"
+                  "type": "number"
                 }
               },
               "required": [
@@ -1534,12 +1521,10 @@
                   "type": "string"
                 },
                 "createdAt": {
-                  "type": "string",
-                  "format": "date-time"
+                  "type": "number"
                 },
                 "updatedAt": {
-                  "type": "string",
-                  "format": "date-time"
+                  "type": "number"
                 }
               },
               "required": [

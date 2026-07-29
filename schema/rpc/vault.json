@@ -124,6 +124,52 @@
       "additionalProperties": false
     },
     {
+      "title": "getItem request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/vault.getItem"
+        },
+        "params": {
+          "$ref": "#/$defs/getItemParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getItem response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getItemResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "setItems request",
       "type": "object",
       "properties": {
@@ -285,6 +331,38 @@
         }
       }
     },
+    "getItemParams": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "minLength": 1
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "category",
+        "key"
+      ]
+    },
+    "getItemResult": {
+      "type": "object",
+      "properties": {
+        "found": {
+          "type": "boolean"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "found"
+      ],
+      "additionalProperties": false
+    },
     "setItemsParams": {
       "type": "object",
       "properties": {
@@ -393,6 +471,11 @@
         "type": "stream",
         "params": "#/$defs/streamEntriesParams",
         "result": "#/$defs/streamEntriesResult"
+      },
+      "getItem": {
+        "type": "query",
+        "params": "#/$defs/getItemParams",
+        "result": "#/$defs/getItemResult"
       },
       "setItems": {
         "type": "mutation",

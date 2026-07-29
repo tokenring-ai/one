@@ -1,24 +1,27 @@
 import type { AudioIndexEntry } from "@tokenring-ai/media-library/rpc/schema";
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { Loader2, Music, Pause, Play, Sparkles, Type, X } from "lucide-react";
+import { Download, Loader2, Music, Pause, Play, Sparkles, Type, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { audioRPCClient } from "../../../../rpc.ts";
-import { formatDuration, mediaUrl } from "../../utils.ts";
+import { downloadMedia, formatDuration, mediaUrl } from "../../utils.ts";
 import ActionButton from "./ActionButton.tsx";
 import ViewerHeader from "./ViewerHeader.tsx";
 
 export default function AudioViewer({
   audio,
   agentId,
+  workingOn,
   onWorkOnAudio,
   onClose,
 }: {
   audio: AudioIndexEntry;
   agentId: string | null;
+  workingOn?: boolean | undefined;
   onWorkOnAudio: () => Promise<void>;
   onClose: () => void;
 }) {
+  const busy = workingOn ?? false;
   const [transcribing, setTranscribing] = useState(false);
   const [transcript, setTranscript] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -59,6 +62,14 @@ export default function AudioViewer({
     }
   };
 
+  const handleDownload = () => {
+    try {
+      downloadMedia(audio.filename);
+    } catch {
+      toastManager.error("Download failed", { duration: 3000 });
+    }
+  };
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <ViewerHeader
@@ -68,8 +79,13 @@ export default function AudioViewer({
         onClose={onClose}
         actions={
           <>
-            <ActionButton onClick={() => void onWorkOnAudio()} primary icon={<Sparkles className="w-3.5 h-3.5" />}>
-              Work on this audio
+            <ActionButton
+              onClick={() => void onWorkOnAudio()}
+              primary
+              disabled={busy}
+              icon={busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+            >
+              {busy ? "Opening..." : "Work on this audio"}
             </ActionButton>
             <ActionButton
               onClick={() => void handleTranscribe()}
@@ -77,6 +93,9 @@ export default function AudioViewer({
               icon={transcribing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Type className="w-3.5 h-3.5" />}
             >
               {transcribing ? "Transcribing..." : "Transcribe"}
+            </ActionButton>
+            <ActionButton onClick={handleDownload} icon={<Download className="w-3.5 h-3.5" />}>
+              Download
             </ActionButton>
           </>
         }
@@ -116,11 +135,16 @@ export default function AudioViewer({
           <div className="w-full max-w-xl bg-tertiary rounded-2xl p-5 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <p className="text-2xs font-medium text-muted uppercase tracking-wide">Transcript</p>
-              <button type="button" onClick={() => setTranscript(null)} className="text-muted hover:text-primary transition-colors">
+              <button
+                type="button"
+                onClick={() => setTranscript(null)}
+                className="text-muted hover:text-primary transition-colors"
+                aria-label="Dismiss transcript"
+              >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-            <p className="text-sm text-primary whitespace-pre-wrap leading-relaxed">{transcript}</p>
+            <p className="text-sm text-primary whitespace-pre-wrap leading-relaxed">{transcript || "(empty transcript)"}</p>
           </div>
         )}
       </div>

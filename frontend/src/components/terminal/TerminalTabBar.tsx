@@ -50,14 +50,18 @@ export default function TerminalTabBar({ terminals, activeName, onSelect, onClos
     return () => observer.disconnect();
   }, [syncScrollAffordances]);
 
-  // Adding or removing a tab changes the scrollable width.
-  useEffect(syncScrollAffordances, [syncScrollAffordances]);
+  // Adding or removing a tab changes the scrollable width — re-measure chevrons.
+  // Depend on count (and names via join) rather than the array identity so list stream
+  // snapshots that only change lastInput don't thrash the scroll state.
+  const terminalKey = terminals.map(t => t.name).join("\0");
+  useEffect(syncScrollAffordances, [syncScrollAffordances, terminalKey]);
 
   // Keep the selected tab visible when navigation comes from outside the strip (URL, close).
   useEffect(() => {
     if (!activeName) return;
     const strip = stripRef.current;
     const tab = strip?.querySelector<HTMLElement>(`[data-terminal-tab="${CSS.escape(activeName)}"]`);
+    // scrollIntoView is missing in some test environments (jsdom); skip rather than throw.
     tab?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
   }, [activeName]);
 

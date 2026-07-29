@@ -104,6 +104,31 @@ describe("ChatPanel", () => {
     });
   });
 
+  it("shows dock controls only when a dock mode is supplied", async () => {
+    const user = userEvent.setup();
+    const onDockModeChange = mock();
+    const onClose = mock();
+
+    const { rerender } = renderChatPanel();
+    expect(screen.queryByRole("button", { name: "Dock to the right" })).toBeNull();
+
+    rerender(
+      <MemoryRouter>
+        <ChatInputProvider>
+          <ChatPanel agentId="test-agent" dockMode="bottom" onDockModeChange={onDockModeChange} onClose={onClose} />
+        </ChatInputProvider>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("button", { name: "Dock to the bottom" }).getAttribute("aria-pressed")).toBe("true");
+
+    await user.click(screen.getByRole("button", { name: "Dock to the right" }));
+    expect(onDockModeChange).toHaveBeenCalledWith("right");
+
+    await user.click(screen.getByRole("button", { name: "Close chat" }));
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it("shows agent no longer running when agent is not found", () => {
     useAgentEventStateMock.mockReturnValue({
       messages: [],

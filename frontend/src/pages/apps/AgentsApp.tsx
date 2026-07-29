@@ -1,7 +1,7 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { ChevronDown, ChevronRight, Cpu, GitBranch, Glasses, Loader2, Pause, Play, Trash2, User, Wrench } from "lucide-react";
+import { ChevronDown, ChevronRight, Cpu, GitBranch, Glasses, Loader2, Pause, Play, Search, Trash2, User, Wrench, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import AgentTodoList from "../../components/AgentTodoList.tsx";
 import CheckpointBrowser from "../../components/CheckpointBrowser.tsx";
 import ChatPanel from "../../components/chat/ChatPanel.tsx";
@@ -23,7 +23,7 @@ interface AgentType {
   displayName: string;
   description: string;
   category?: string;
-  enabledTools: string[];
+  enabledTools?: string[];
 }
 
 interface RunningAgent {
@@ -34,6 +34,31 @@ interface RunningAgent {
   description: string;
   idle: boolean;
   currentActivity: string;
+}
+
+interface WorkflowSummary {
+  name: string;
+  displayName: string;
+  description: string;
+}
+
+/** Active (non-idle) agents first, then newest. */
+function sortRunningAgents(agents: RunningAgent[]): RunningAgent[] {
+  return [...agents].sort((a, b) => {
+    if (a.idle !== b.idle) return a.idle ? 1 : -1;
+    return b.createdAt - a.createdAt;
+  });
+}
+
+function matchesTypeFilter(agentType: AgentType, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    agentType.displayName.toLowerCase().includes(q) ||
+    agentType.type.toLowerCase().includes(q) ||
+    agentType.description.toLowerCase().includes(q) ||
+    (agentType.category ?? "").toLowerCase().includes(q)
+  );
 }
 
 // ─── Sidebar ───────────────────────────────────────────────────────────────────
@@ -55,6 +80,7 @@ function AgentSidebar({
   onLaunchType,
   onOpenAgent,
   onDeleteAgent,
+  onGoOverview,
 }: {
   agents: RunningAgent[];
   agentsLoading: boolean;
@@ -73,16 +99,25 @@ function AgentSidebar({
   onLaunchType: (type: string) => void;
   onOpenAgent: (id: string) => void;
   onDeleteAgent: (id: string) => void;
+  onGoOverview: () => void;
 }) {
+  const [typeFilter, setTypeFilter] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const sortedAgents = useMemo(() => sortRunningAgents(agents), [agents]);
+
+  const filteredTypes = useMemo(() => agentTypes.filter(t => matchesTypeFilter(t, typeFilter)), [agentTypes, typeFilter]);
+
+  const isFiltering = typeFilter.trim().length > 0;
+
   const grouped = useMemo(() => {
     const groups: Record<string, AgentType[]> = {};
-    for (const agentType of agentTypes) {
+    for (const agentType of filteredTypes) {
       (groups[agentType.category || UNCATEGORIZED] ??= []).push(agentType);
     }
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-  }, [agentTypes]);
+  }, [filteredTypes]);
 
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const toggleCategory = (category: string) =>
     setCollapsed(prev => {
       const next = new Set(prev);
@@ -91,10 +126,19 @@ function AgentSidebar({
       return next;
     });
 
+  const isCategoryCollapsed = (category: string) => !isFiltering && collapsed.has(category);
+
   return (
     <div className="h-full flex flex-col bg-secondary border-r border-primary">
       <div className="flex items-center gap-1 px-2 py-2 border-b border-primary">
-        <span className="flex-1 text-2xs font-bold text-muted uppercase tracking-widest px-1">Agents</span>
+        <button
+          type="button"
+          onClick={onGoOverview}
+          className="flex-1 text-left text-2xs font-bold text-muted uppercase tracking-widest px-1 hover:text-primary transition-colors cursor-pointer focus-ring rounded"
+          title="Back to Agents overview"
+        >
+          Agents
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -113,7 +157,7 @@ function AgentSidebar({
           ) : agents.length === 0 ? (
             <div className="px-3 py-4 text-center text-muted text-2xs italic">No active agents</div>
           ) : (
-            agents.map(agent => {
+            sortedAgents.map(agent => {
               const isSelected = selectedAgentId === agent.id;
               return (
                 <div
@@ -136,10 +180,10 @@ function AgentSidebar({
                       onClick={() => onOpenAgent(agent.id)}
                       className="min-w-0 flex-1 flex flex-col text-left cursor-pointer focus-ring rounded"
                       aria-label={`Open agent ${agent.displayName}`}
-                      title={agent.currentActivity}
+                      title={agent.currentActivity || agent.agentType}
                     >
                       <span className={`text-xs font-medium truncate ${isSelected ? "text-primary" : "text-secondary"}`}>{agent.displayName}</span>
-                      <span className="text-2xs text-muted truncate">{agent.currentActivity}</span>
+                      <span className="text-2xs text-muted truncate">{agent.currentActivity || agent.agentType}</span>
                     </button>
                     <button
                       type="button"
@@ -160,7 +204,41 @@ function AgentSidebar({
 
         {/* Agent types, grouped by category */}
         <div>
-          <span className="block px-3 pt-2.5 pb-1 text-2xs font-bold text-accent/90 uppercase tracking-widest">Agent Types</span>
+          <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
+            <span className="text-2xs font-bold text-accent/90 uppercase tracking-widest">Agent Types</span>
+            {!agentTypesLoading && agentTypes.length > 0 && (
+              <span className="text-2xs text-muted" aria-live="polite">
+                {isFiltering ? `${filteredTypes.length} of ${agentTypes.length}` : agentTypes.length}
+              </span>
+            )}
+          </div>
+
+          {agentTypes.length > 0 && (
+            <div className="px-2 pb-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted pointer-events-none" />
+                <input
+                  type="search"
+                  value={typeFilter}
+                  onChange={e => setTypeFilter(e.target.value)}
+                  placeholder="Filter types…"
+                  className="w-full bg-input border border-primary rounded-md py-1.5 pl-7 pr-7 text-2xs text-primary placeholder-muted focus-accent transition-all"
+                  aria-label="Filter agent types"
+                />
+                {typeFilter && (
+                  <button
+                    type="button"
+                    onClick={() => setTypeFilter("")}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted hover:text-primary cursor-pointer focus-ring"
+                    aria-label="Clear type filter"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {agentTypesLoading && agentTypes.length === 0 ? (
             <LoadingState size="sm" className="py-6" />
           ) : agentTypesError ? (
@@ -169,7 +247,12 @@ function AgentSidebar({
             <div className="px-3 py-6 text-center">
               <User className="w-6 h-6 text-muted mx-auto mb-2 opacity-60" />
               <p className="text-2xs text-muted">No agent types configured</p>
+              <Link to="/configuration" className="inline-block mt-2 text-2xs text-accent hover:text-accent-soft focus-ring rounded">
+                Open Configuration
+              </Link>
             </div>
+          ) : filteredTypes.length === 0 ? (
+            <div className="px-3 py-4 text-center text-muted text-2xs italic">No types match “{typeFilter.trim()}”</div>
           ) : (
             grouped.map(([category, types]) => (
               <div key={category}>
@@ -177,8 +260,9 @@ function AgentSidebar({
                   type="button"
                   onClick={() => toggleCategory(category)}
                   className="w-full flex items-center gap-1 px-2 py-1.5 text-left hover:bg-hover transition-colors cursor-pointer"
+                  aria-expanded={!isCategoryCollapsed(category)}
                 >
-                  {collapsed.has(category) ? (
+                  {isCategoryCollapsed(category) ? (
                     <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted" />
                   ) : (
                     <ChevronDown className="w-3.5 h-3.5 shrink-0 text-muted" />
@@ -186,7 +270,7 @@ function AgentSidebar({
                   <span className="flex-1 min-w-0 truncate text-2xs font-semibold text-muted uppercase tracking-wider">{category}</span>
                   <span className="text-2xs text-muted shrink-0 pr-1">{types.length}</span>
                 </button>
-                {!collapsed.has(category) &&
+                {!isCategoryCollapsed(category) &&
                   types.map(agentType => {
                     const isSelected = selectedType === agentType.type;
                     const isLaunching = launchingType === agentType.type;
@@ -241,13 +325,17 @@ function AgentTypeDetail({
   launching,
   onLaunch,
   onOpenAgent,
+  onBack,
 }: {
   agentType: AgentType;
   runningAgents: RunningAgent[];
   launching: boolean;
   onLaunch: () => void;
   onOpenAgent: (id: string) => void;
+  onBack: () => void;
 }) {
+  const enabledTools = agentType.enabledTools ?? [];
+
   return (
     <div className="h-full flex flex-col bg-primary">
       <AppPageHeader
@@ -263,6 +351,13 @@ function AgentTypeDetail({
         iconGradient="from-amber-500 to-orange-600"
         size="compact"
       >
+        <button
+          type="button"
+          onClick={onBack}
+          className="px-2.5 py-1.5 text-2xs font-medium text-muted hover:text-primary hover:bg-hover rounded-lg transition-colors cursor-pointer focus-ring"
+        >
+          Overview
+        </button>
         <button
           type="button"
           onClick={onLaunch}
@@ -287,13 +382,13 @@ function AgentTypeDetail({
               <span className="text-2xs font-semibold text-muted uppercase tracking-wide flex items-center gap-1.5">
                 <Wrench className="w-3 h-3" /> Enabled tools
               </span>
-              <span className="text-2xs text-muted">{agentType.enabledTools.length} configured</span>
+              <span className="text-2xs text-muted">{enabledTools.length} configured</span>
             </div>
-            {agentType.enabledTools.length === 0 ? (
+            {enabledTools.length === 0 ? (
               <p className="text-2xs text-muted italic">No tools are enabled for this agent type.</p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
-                {agentType.enabledTools.map(tool => (
+                {enabledTools.map(tool => (
                   <span key={tool} className="px-2 py-1 bg-secondary border border-primary rounded-md text-2xs font-mono text-secondary">
                     {tool}
                   </span>
@@ -306,7 +401,7 @@ function AgentTypeDetail({
             <div className="space-y-2">
               <span className="text-2xs font-semibold text-muted uppercase tracking-wide">Running agents of this type</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {runningAgents.map(agent => (
+                {sortRunningAgents(runningAgents).map(agent => (
                   <button
                     type="button"
                     key={agent.id}
@@ -323,7 +418,7 @@ function AgentTypeDetail({
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs font-medium text-primary truncate">{agent.displayName}</div>
-                      <div className="text-2xs text-muted truncate">{agent.currentActivity}</div>
+                      <div className="text-2xs text-muted truncate">{agent.currentActivity || "Idle"}</div>
                     </div>
                   </button>
                 ))}
@@ -332,7 +427,11 @@ function AgentTypeDetail({
           )}
 
           <p className="text-2xs text-muted border-t border-primary/60 pt-3">
-            Agent types are read-only here — change them in the Configuration app or in your TokenRing config files.
+            Agent types are read-only here — change them in the{" "}
+            <Link to="/configuration" className="text-accent hover:text-accent-soft focus-ring rounded">
+              Configuration
+            </Link>{" "}
+            app or in your TokenRing config files.
           </p>
         </div>
       </div>
@@ -345,13 +444,23 @@ function AgentTypeDetail({
 function AgentsOverview({
   agents,
   hasAgentTypes,
+  agentTypesError,
+  onRetryAgentTypes,
   workflows,
+  workflowsLoading,
+  workflowsError,
+  onRetryWorkflows,
   spawningWorkflow,
   onSpawnWorkflow,
 }: {
   agents: ReturnType<typeof useAgentList>;
   hasAgentTypes: boolean;
-  workflows: { name: string; displayName: string; description: string }[];
+  agentTypesError: Error | undefined;
+  onRetryAgentTypes: () => void;
+  workflows: WorkflowSummary[];
+  workflowsLoading: boolean;
+  workflowsError: Error | undefined;
+  onRetryWorkflows: () => void;
   spawningWorkflow: string | null;
   onSpawnWorkflow: (name: string) => void;
 }) {
@@ -367,23 +476,39 @@ function AgentsOverview({
 
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
         <div className="max-w-3xl mx-auto space-y-6">
-          <div className="flex flex-col items-center text-center gap-3 py-4">
-            <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
-              <Cpu className="w-7 h-7 text-white" />
+          {agentTypesError ? (
+            <ErrorState title="Failed to load agent types" error={agentTypesError} onRetry={onRetryAgentTypes} variant="page" className="py-8" />
+          ) : (
+            <div className="flex flex-col items-center text-center gap-3 py-4">
+              <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+                <Cpu className="w-7 h-7 text-white" />
+              </div>
+              <div className="max-w-md space-y-2">
+                <h2 className="text-base font-semibold text-primary">{hasAgentTypes ? "Select an agent type" : "No agent types configured"}</h2>
+                <p className="text-sm text-muted leading-relaxed">
+                  {hasAgentTypes
+                    ? "Pick an agent type from the list to see what it does and which tools it can use, then launch it. Running agents and their todo lists are shown above the list."
+                    : "Agent types come from your TokenRing configuration. Add one in the Configuration app to get started."}
+                </p>
+                {!hasAgentTypes && (
+                  <Link
+                    to="/configuration"
+                    className="inline-flex items-center gap-1.5 mt-1 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors focus-ring"
+                  >
+                    Open Configuration
+                  </Link>
+                )}
+              </div>
             </div>
-            <div className="max-w-md space-y-2">
-              <h2 className="text-base font-semibold text-primary">{hasAgentTypes ? "Select an agent type" : "No agent types configured"}</h2>
-              <p className="text-sm text-muted leading-relaxed">
-                {hasAgentTypes
-                  ? "Pick an agent type from the list to see what it does and which tools it can use, then launch it. Running agents and their todo lists are shown above the list."
-                  : "Agent types come from your TokenRing configuration. Add one in the Configuration app to get started."}
-              </p>
-            </div>
-          </div>
+          )}
 
           <CheckpointBrowser agents={agents} />
 
-          {workflows.length > 0 && (
+          {workflowsError ? (
+            <ErrorState title="Failed to load workflows" error={workflowsError} onRetry={onRetryWorkflows} variant="inline" />
+          ) : workflowsLoading && workflows.length === 0 ? (
+            <LoadingState size="sm" message="Loading workflows…" className="py-4" />
+          ) : workflows.length > 0 ? (
             <div className="space-y-2">
               <div className="px-1">
                 <span className="text-2xs font-bold text-cyan-600 dark:text-cyan-500/90 uppercase tracking-widest flex items-center gap-1.5">
@@ -417,7 +542,7 @@ function AgentsOverview({
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -438,23 +563,28 @@ export default function AgentsApp() {
   const [deletingAgentId, setDeletingAgentId] = useState<string | null>(null);
   const [launchingType, setLaunchingType] = useState<string | null>(null);
   const [spawningWorkflow, setSpawningWorkflow] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const agentList = (agents.data ?? []) as RunningAgent[];
   const agentTypeList = (agentTypes.data ?? []) as AgentType[];
+  const workflowList = (workflows.data ?? []) as WorkflowSummary[];
 
   const selectedAgentType = useMemo(
     () => (routeAgentType ? (agentTypeList.find(t => t.type === routeAgentType) ?? null) : null),
     [agentTypeList, routeAgentType],
   );
 
+  const confirmDeleteAgent = useMemo(() => (confirmDeleteId ? (agentList.find(a => a.id === confirmDeleteId) ?? null) : null), [agentList, confirmDeleteId]);
+
   // A route pointing at an agent type that is no longer configured resets to the overview.
   useEffect(() => {
-    if (routeAgentType && !agentTypes.isLoading && agentTypeList.length > 0 && !selectedAgentType) {
+    if (routeAgentType && !agentTypes.isLoading && !agentTypes.error && agentTypeList.length > 0 && !selectedAgentType) {
       toastManager.error(`Agent type "${routeAgentType}" not found`, { duration: 4000 });
       void navigate("/agents", { replace: true });
     }
-  }, [routeAgentType, selectedAgentType, agentTypeList.length, agentTypes.isLoading, navigate]);
+  }, [routeAgentType, selectedAgentType, agentTypeList.length, agentTypes.isLoading, agentTypes.error, navigate]);
+
+  const handleGoOverview = useCallback(() => void navigate("/agents"), [navigate]);
 
   const handleSelectType = useCallback((type: string) => void navigate(`/agents/${encodeURIComponent(type)}`), [navigate]);
 
@@ -491,13 +621,21 @@ export default function AgentsApp() {
   );
 
   const handleConfirmDelete = useCallback(async () => {
-    if (!confirmDelete) return;
-    const agentId = confirmDelete;
-    setConfirmDelete(null);
+    if (!confirmDeleteId) return;
+    const agentId = confirmDeleteId;
+    const displayName = confirmDeleteAgent?.displayName ?? agentId;
+    setConfirmDeleteId(null);
     setDeletingAgentId(agentId);
     try {
-      await agentRPCClient.deleteAgent({ agentId, reason: "User initiated agent deletion from Agents app" });
+      const result = await agentRPCClient.deleteAgent({ agentId, reason: "User initiated agent deletion from Agents app" });
+      if (result.status === "agentNotFound") {
+        toastManager.error(`Agent "${displayName}" is no longer running`, { duration: 4000 });
+        await agents.mutate();
+        if (routeAgentId === agentId) void navigate("/agents");
+        return;
+      }
       await agents.mutate();
+      toastManager.success(`Deleted "${displayName}"`, { duration: 3000 });
       // The open chat would point at a deleted agent, so fall back to the overview.
       if (routeAgentId === agentId) void navigate("/agents");
     } catch (error) {
@@ -505,7 +643,59 @@ export default function AgentsApp() {
     } finally {
       setDeletingAgentId(null);
     }
-  }, [agents, confirmDelete, navigate, routeAgentId]);
+  }, [agents, confirmDeleteAgent, confirmDeleteId, navigate, routeAgentId]);
+
+  const detailPane = (() => {
+    if (routeAgentId) {
+      // Keyed so switching agents resets the chat's local state instead of reusing it.
+      return <ChatPanel key={routeAgentId} agentId={routeAgentId} />;
+    }
+
+    // Type route while types are still loading — avoid flashing the overview.
+    if (routeAgentType && agentTypes.isLoading && !selectedAgentType) {
+      return (
+        <div className="h-full flex flex-col bg-primary">
+          <LoadingState message="Loading agent type…" className="flex-1" />
+        </div>
+      );
+    }
+
+    if (routeAgentType && agentTypes.error && !selectedAgentType) {
+      return (
+        <div className="h-full flex flex-col bg-primary">
+          <ErrorState title="Failed to load agent types" error={agentTypes.error} onRetry={() => void agentTypes.mutate()} variant="page" />
+        </div>
+      );
+    }
+
+    if (selectedAgentType) {
+      return (
+        <AgentTypeDetail
+          agentType={selectedAgentType}
+          runningAgents={agentList.filter(agent => agent.agentType === selectedAgentType.type)}
+          launching={launchingType === selectedAgentType.type}
+          onLaunch={() => void handleLaunch(selectedAgentType.type)}
+          onOpenAgent={id => void navigate(`/agent/${id}`)}
+          onBack={handleGoOverview}
+        />
+      );
+    }
+
+    return (
+      <AgentsOverview
+        agents={agents}
+        hasAgentTypes={agentTypeList.length > 0}
+        agentTypesError={agentTypes.error}
+        onRetryAgentTypes={() => void agentTypes.mutate()}
+        workflows={workflowList}
+        workflowsLoading={workflows.isLoading}
+        workflowsError={workflows.error}
+        onRetryWorkflows={() => void workflows.mutate()}
+        spawningWorkflow={spawningWorkflow}
+        onSpawnWorkflow={name => void handleSpawnWorkflow(name)}
+      />
+    );
+  })();
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">
@@ -526,37 +716,23 @@ export default function AgentsApp() {
           onSelectType={handleSelectType}
           onLaunchType={type => void handleLaunch(type)}
           onOpenAgent={id => void navigate(`/agent/${id}`)}
-          onDeleteAgent={setConfirmDelete}
+          onDeleteAgent={setConfirmDeleteId}
+          onGoOverview={handleGoOverview}
         />
-        {routeAgentId ? (
-          // Keyed so switching agents resets the chat's local state instead of reusing it.
-          <ChatPanel key={routeAgentId} agentId={routeAgentId} />
-        ) : selectedAgentType ? (
-          <AgentTypeDetail
-            agentType={selectedAgentType}
-            runningAgents={agentList.filter(agent => agent.agentType === selectedAgentType.type)}
-            launching={launchingType === selectedAgentType.type}
-            onLaunch={() => void handleLaunch(selectedAgentType.type)}
-            onOpenAgent={id => void navigate(`/agent/${id}`)}
-          />
-        ) : (
-          <AgentsOverview
-            agents={agents}
-            hasAgentTypes={agentTypeList.length > 0}
-            workflows={workflows.data ?? []}
-            spawningWorkflow={spawningWorkflow}
-            onSpawnWorkflow={name => void handleSpawnWorkflow(name)}
-          />
-        )}
+        {detailPane}
       </ResizableSplit>
 
-      {confirmDelete && (
+      {confirmDeleteId && (
         <ConfirmDialog
           title="Delete Agent"
-          message="Are you sure you want to delete this agent? This action cannot be undone."
+          message={
+            confirmDeleteAgent
+              ? `Are you sure you want to delete "${confirmDeleteAgent.displayName}"? This action cannot be undone.`
+              : "Are you sure you want to delete this agent? This action cannot be undone."
+          }
           confirmText="Delete"
           onConfirm={handleConfirmDelete}
-          onCancel={() => setConfirmDelete(null)}
+          onCancel={() => setConfirmDeleteId(null)}
           variant="danger"
         />
       )}

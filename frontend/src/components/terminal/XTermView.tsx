@@ -77,6 +77,11 @@ export default function XTermView({ output, onResize, onSubmit, readOnly, classN
 
   const [caret, setCaret] = useState<CaretPosition | null>(null);
   const [input, setInput] = useState("");
+  // Local command history for this session instance (remounted per terminal via `key`).
+  const historyRef = useRef<string[]>([]);
+  const historyIndexRef = useRef(-1);
+  /** Draft text restored when the user arrows back down past the newest history entry. */
+  const draftRef = useRef("");
 
   const interactive = onSubmit !== undefined && !readOnly;
 
@@ -210,10 +215,42 @@ export default function XTermView({ output, onResize, onSubmit, readOnly, classN
 
     if (event.key === "Enter") {
       event.preventDefault();
-      if (!input) return;
-      // The provider terminates the line itself; sending our own \n submits a blank line too.
+      // Empty Enter is valid (blank line / accept default prompt). The provider appends \n.
+      if (input.trim()) {
+        const history = historyRef.current;
+        if (history[history.length - 1] !== input) {
+          historyRef.current = [...history, input].slice(-200);
+        }
+      }
+      historyIndexRef.current = -1;
+      draftRef.current = "";
       onSubmit?.(input);
       setInput("");
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      const history = historyRef.current;
+      if (history.length === 0) return;
+      event.preventDefault();
+      if (historyIndexRef.current === -1) draftRef.current = input;
+      const next = historyIndexRef.current === -1 ? history.length - 1 : Math.max(0, historyIndexRef.current - 1);
+      historyIndexRef.current = next;
+      setInput(history[next] ?? "");
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      if (historyIndexRef.current === -1) return;
+      event.preventDefault();
+      const history = historyRef.current;
+      if (historyIndexRef.current >= history.length - 1) {
+        historyIndexRef.current = -1;
+        setInput(draftRef.current);
+      } else {
+        historyIndexRef.current += 1;
+        setInput(history[historyIndexRef.current] ?? "");
+      }
       return;
     }
 
@@ -223,7 +260,23 @@ export default function XTermView({ output, onResize, onSubmit, readOnly, classN
       if (field.selectionStart !== field.selectionEnd || window.getSelection()?.toString()) return;
       event.preventDefault();
       setInput("");
+      historyIndexRef.current = -1;
+      draftRef.current = "";
       onSubmit?.("\x03");
+      return;
+    }
+
+    if (event.key === "d" && event.ctrlKey) {
+      // Empty Ctrl+D → EOF (shell exit). With a draft, leave the browser alone.
+      if (input) return;
+      event.preventDefault();
+      onSubmit?.("\x04");
+      return;
+    }
+
+    if (event.key === "l" && event.ctrlKey) {
+      event.preventDefault();
+      onSubmit?.("\x0c");
     }
   };
 

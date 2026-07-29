@@ -1,9 +1,19 @@
-import { Check, Code, File, FileText, Loader2, Plus, Save, X } from "lucide-react";
+import formatError from "@tokenring-ai/utility/error/formatError";
+import { Check, Code, Download, File, FileText, Loader2, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toastManager } from "../../../components/ui/toast.tsx";
 import { cn } from "../../../lib/utils.ts";
 import { filesystemRPCClient } from "../../../rpc.ts";
-import { getBasename, getFileIcon } from "../fsUtils.ts";
+import { formatFileDate, formatFileSize, getBasename, getFileIcon } from "../fsUtils.ts";
+
+interface FileStats {
+  size?: number;
+  modified?: string;
+  created?: string;
+  isDirectory?: boolean;
+  isFile?: boolean;
+}
 
 interface PreviewMetadataPaneProps {
   agentId: string;
@@ -15,10 +25,64 @@ interface PreviewMetadataPaneProps {
   isDirty: boolean;
   saving: boolean;
   onSave: () => Promise<void>;
+  onRename?: (file: string) => void;
+  onDelete?: (file: string) => void;
 }
 
-export default function PreviewMetadataPane({ file, provider, selectedPaths, onToggleSelected, onClose, isDirty, saving, onSave }: PreviewMetadataPaneProps) {
+export default function PreviewMetadataPane({
+  file,
+  provider,
+  selectedPaths,
+  onToggleSelected,
+  onClose,
+  isDirty,
+  saving,
+  onSave,
+  onRename,
+  onDelete,
+}: PreviewMetadataPaneProps) {
   const navigate = useNavigate();
+  const [stats, setStats] = useState<FileStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file || !provider) {
+      setStats(null);
+      setStatsError(null);
+      return;
+    }
+    let cancelled = false;
+    setStatsLoading(true);
+    setStatsError(null);
+    setStats(null);
+    filesystemRPCClient
+      .stat({ path: file, provider })
+      .then(({ stats: s }) => {
+        if (cancelled) return;
+        if (s.exists) {
+          const next: FileStats = {};
+          if (s.size !== undefined) next.size = s.size;
+          if (s.modified !== undefined) next.modified = s.modified;
+          if (s.created !== undefined) next.created = s.created;
+          if (s.isDirectory !== undefined) next.isDirectory = s.isDirectory;
+          if (s.isFile !== undefined) next.isFile = s.isFile;
+          setStats(next);
+        } else {
+          setStatsError("File not found");
+        }
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setStatsError(formatError(e));
+      })
+      .finally(() => {
+        if (!cancelled) setStatsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [file, provider]);
+
   if (!file) {
     return (
       <div className="h-full bg-tertiary flex flex-col items-center justify-center text-center p-8">
@@ -31,16 +95,33 @@ export default function PreviewMetadataPane({ file, provider, selectedPaths, onT
 
   const name = getBasename(file);
   const isChecked = selectedPaths.has(file);
+  const ext = name.includes(".") ? name.split(".").pop()?.toUpperCase() : "File";
+
+  const handleDownload = async () => {
+    if (!provider) return;
+    try {
+      const result = await filesystemRPCClient.readTextFile({ path: file, provider });
+      const blob = new Blob([result.content ?? ""], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toastManager.error("Download failed", { duration: 3000 });
+    }
+  };
 
   return (
-    <div className="h-full bg-secondary flex flex-col">
+    <div className="h-full bg-secondary flex flex-col min-h-0">
       <div className="px-4 py-3 border-b border-primary flex items-start gap-3 shrink-0">
         <div className="w-9 h-9 rounded-lg bg-tertiary flex items-center justify-center shrink-0">{getFileIcon(file, false, 20)}</div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-primary truncate" title={file}>
             {name}
           </p>
-          <p className="text-2xs text-muted mt-0.5">{file.split(".").pop()?.toUpperCase() || "File"}</p>
+          <p className="text-2xs text-muted mt-0.5">{ext}</p>
         </div>
         <button type="button" onClick={onClose} className="p-1 text-muted hover:text-primary focus-ring rounded" aria-label="Close preview">
           <X className="w-3.5 h-3.5" />
@@ -68,6 +149,38 @@ export default function PreviewMetadataPane({ file, provider, selectedPaths, onT
             </>
           )}
         </button>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => void handleDownload()}
+            className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-primary text-xs font-medium text-muted hover:text-primary hover:bg-hover transition-all focus-ring cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" /> Download
+          </button>
+          {onRename && (
+            <button
+              type="button"
+              onClick={() => onRename(file)}
+              className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-primary text-xs font-medium text-muted hover:text-primary hover:bg-hover transition-all focus-ring cursor-pointer"
+            >
+              <Pencil className="w-3.5 h-3.5" /> Rename
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(file)}
+              className={cn(
+                "flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-primary text-xs font-medium text-muted hover:text-red-400 hover:bg-hover transition-all focus-ring cursor-pointer",
+                !onRename && "col-span-2",
+              )}
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete
+            </button>
+          )}
+        </div>
+
         {/\.md$/i.test(file) && provider && (
           <button
             type="button"
@@ -104,7 +217,7 @@ export default function PreviewMetadataPane({ file, provider, selectedPaths, onT
         {isDirty && (
           <button
             type="button"
-            onClick={onSave}
+            onClick={() => void onSave()}
             disabled={saving}
             className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-primary text-xs font-medium text-muted hover:text-primary hover:bg-hover transition-all focus-ring cursor-pointer disabled:opacity-50"
           >
@@ -114,14 +227,35 @@ export default function PreviewMetadataPane({ file, provider, selectedPaths, onT
         )}
       </div>
 
-      <div className="px-4 py-2 border-b border-primary space-y-1 shrink-0">
-        <div className="flex justify-between text-2xs">
-          <span className="text-muted">Path</span>
-          <span className="text-primary truncate ml-4 max-w-40" title={file}>
-            {file}
-          </span>
-        </div>
+      <div className="px-4 py-3 space-y-1.5 shrink-0 overflow-y-auto flex-1">
+        <p className="text-2xs font-semibold text-muted uppercase tracking-wide mb-2">Details</p>
+        <MetaRow label="Path" value={file} mono />
+        <MetaRow label="Type" value={ext ?? "—"} />
+        {statsLoading ? (
+          <div className="flex items-center gap-2 py-2 text-2xs text-muted">
+            <Loader2 className="w-3 h-3 animate-spin" /> Loading stats…
+          </div>
+        ) : statsError ? (
+          <p className="text-2xs text-red-400">{statsError}</p>
+        ) : (
+          <>
+            <MetaRow label="Size" value={formatFileSize(stats?.size)} />
+            <MetaRow label="Modified" value={formatFileDate(stats?.modified)} />
+            <MetaRow label="Created" value={formatFileDate(stats?.created)} />
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+function MetaRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex justify-between gap-3 text-2xs">
+      <span className="text-muted shrink-0">{label}</span>
+      <span className={cn("text-primary text-right truncate", mono && "font-mono")} title={value}>
+        {value}
+      </span>
     </div>
   );
 }

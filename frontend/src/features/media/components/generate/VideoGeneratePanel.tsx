@@ -4,6 +4,7 @@ import type { KeyboardEvent } from "react";
 import { useMemo, useState } from "react";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { useVideoGenerationModels, videoGenerationRPCClient } from "../../../../rpc.ts";
+import { keywordsFromPrompt } from "../../utils.ts";
 import GenerateButton from "./GenerateButton.tsx";
 import GeneratePanelShell from "./GeneratePanelShell.tsx";
 import ImageShapeField, { type ImageShape } from "./ImageShapeField.tsx";
@@ -11,7 +12,7 @@ import ModelSelectField from "./ModelSelectField.tsx";
 import PromptField from "./PromptField.tsx";
 import VideoQualityField, { type VideoQuality } from "./VideoQualityField.tsx";
 
-export default function VideoGeneratePanel({ agentId, onGenerated }: { agentId: string | null; onGenerated: () => void }) {
+export default function VideoGeneratePanel({ agentId, onGenerated }: { agentId: string | null; onGenerated: (filename?: string) => void }) {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState<string>("");
   const [shape, setShape] = useState<ImageShape>("landscape");
@@ -40,7 +41,7 @@ export default function VideoGeneratePanel({ agentId, onGenerated }: { agentId: 
     }
     setGenerating(true);
     try {
-      await videoGenerationRPCClient.generateVideo({
+      const result = await videoGenerationRPCClient.generateVideo({
         agentId,
         ...(selectedModel && { model: selectedModel }),
         request: {
@@ -51,16 +52,16 @@ export default function VideoGeneratePanel({ agentId, onGenerated }: { agentId: 
             shape,
           },
           ...(duration > 0 && { duration }),
-          keywords: prompt
-            .trim()
-            .split(/[,\s]+/)
-            .filter(Boolean)
-            .slice(0, 10),
+          keywords: keywordsFromPrompt(prompt),
         },
       });
-      toastManager.success("Video generated!", { duration: 3000 });
-      setPrompt("");
-      onGenerated();
+      if (result.status === "success") {
+        toastManager.success(result.filename ? `Video generated: ${result.filename}` : "Video generated!", { duration: 3000 });
+        setPrompt("");
+        onGenerated(result.filename);
+      } else {
+        toastManager.error("Agent not found", { duration: 4000 });
+      }
     } catch (err) {
       toastManager.error(formatError(err), { duration: 5000 });
     } finally {
@@ -83,8 +84,11 @@ export default function VideoGeneratePanel({ agentId, onGenerated }: { agentId: 
       <ImageShapeField value={shape} onChange={setShape} />
       <VideoQualityField value={quality} onChange={setQuality} />
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-secondary">Duration (seconds)</label>
+        <label className="text-xs font-medium text-secondary" htmlFor="video-duration">
+          Duration (seconds)
+        </label>
         <input
+          id="video-duration"
           type="number"
           min={1}
           max={60}

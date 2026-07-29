@@ -1,6 +1,6 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { Eye, EyeOff, KeyRound, Loader2, Lock, Pencil, Plus, RefreshCw, Save, Trash2, Upload, X } from "lucide-react";
-import { useState } from "react";
+import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, Lock, Pencil, Plus, RefreshCw, Save, Search, Trash2, Upload, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
@@ -9,10 +9,61 @@ import { useVaultKeys, vaultRPCClient } from "../../rpc.ts";
 
 // ─── Categories ───────────────────────────────────────────────────────────────
 
-const CATEGORIES: { id: string; label: string }[] = [
-  { id: "env", label: "Environment Variables" },
-  { id: "token", label: "Stored Auth Tokens" },
-];
+/** Well-known category labels (any other category id is shown as-is). */
+const CATEGORY_LABELS: Record<string, string> = {
+  env: "Environment Variables",
+  token: "Stored Auth Tokens",
+};
+
+const DEFAULT_CATEGORIES = ["env", "token"] as const;
+
+function categoryLabel(id: string): string {
+  return CATEGORY_LABELS[id] ?? id;
+}
+
+/** Merge known defaults with whatever the vault currently contains. */
+function resolveCategories(entries: Record<string, string[] | undefined>): string[] {
+  const set = new Set<string>([...DEFAULT_CATEGORIES, ...Object.keys(entries)]);
+  return Array.from(set).sort((a, b) => {
+    const ai = (DEFAULT_CATEGORIES as readonly string[]).indexOf(a);
+    const bi = (DEFAULT_CATEGORIES as readonly string[]).indexOf(b);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
+    return a.localeCompare(b);
+  });
+}
+
+async function assertMutationOk(result: { success: boolean; message: string }, fallback: string): Promise<void> {
+  if (!result.success) {
+    throw new Error(result.message || fallback);
+  }
+}
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    //oxlint-disable typescript/no-unnecessary-condition
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // fall through
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
 
 // ─── Key row ──────────────────────────────────────────────────────────────────
 
@@ -24,13 +75,80 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Reveal existing secret (fetched on demand — list RPC only returns keys)
+  const [revealed, setRevealed] = useState(false);
+  const [revealedValue, setRevealedValue] = useState<string | null>(null);
+  const [revealing, setRevealing] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const resetReveal = () => {
+    setRevealed(false);
+    setRevealedValue(null);
+    setCopied(false);
+  };
+
+  const handleReveal = async () => {
+    if (revealed) {
+      resetReveal();
+      return;
+    }
+    setRevealing(true);
+    try {
+      const result = await vaultRPCClient.getItem({ category, key: keyName });
+      if (!result.found || result.value === undefined) {
+        toastManager.error(`"${keyName}" not found in vault`, { duration: 4000 });
+        return;
+      }
+      setRevealedValue(result.value);
+      setRevealed(true);
+    } catch (err) {
+      toastManager.error(formatError(err), { duration: 5000 });
+    } finally {
+      setRevealing(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    let text = revealedValue;
+    if (text == null) {
+      setRevealing(true);
+      try {
+        const result = await vaultRPCClient.getItem({ category, key: keyName });
+        if (!result.found || result.value === undefined) {
+          toastManager.error(`"${keyName}" not found in vault`, { duration: 4000 });
+          return;
+        }
+        text = result.value;
+        setRevealedValue(text);
+        setRevealed(true);
+      } catch (err) {
+        toastManager.error(formatError(err), { duration: 5000 });
+        return;
+      } finally {
+        setRevealing(false);
+      }
+    }
+    const ok = await copyText(text);
+    if (ok) {
+      setCopied(true);
+      toastManager.success("Copied to clipboard", { duration: 2000 });
+      window.setTimeout(() => setCopied(false), 1500);
+    } else {
+      toastManager.error("Could not copy to clipboard", { duration: 3000 });
+    }
+  };
+
   const handleSave = async () => {
+    if (!value) return;
     setSaving(true);
     try {
-      await vaultRPCClient.setItems({ updates: [{ category, key: keyName, value }] });
+      const result = await vaultRPCClient.setItems({ updates: [{ category, key: keyName, value }] });
+      await assertMutationOk(result, "Failed to save key");
       toastManager.success(`"${keyName}" saved`, { duration: 3000 });
       setEditing(false);
       setValue("");
+      setShowValue(false);
+      resetReveal();
       onSaved();
     } catch (err) {
       toastManager.error(formatError(err), { duration: 5000 });
@@ -46,7 +164,8 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
     }
     setDeleting(true);
     try {
-      await vaultRPCClient.deleteItems({ updates: [{ category, key: keyName }] });
+      const result = await vaultRPCClient.deleteItems({ updates: [{ category, key: keyName }] });
+      await assertMutationOk(result, "Failed to delete key");
       toastManager.success(`"${keyName}" deleted`, { duration: 3000 });
       onDeleted();
     } catch (err) {
@@ -60,27 +179,55 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
     <div className="flex flex-col gap-2 px-4 py-3 border-b border-primary last:border-b-0">
       <div className="flex items-center gap-3">
         <KeyRound className="w-3.5 h-3.5 text-muted shrink-0" />
-        <span className="flex-1 text-sm font-mono text-primary truncate">{keyName}</span>
+        <span className="flex-1 text-sm font-mono text-primary truncate" title={keyName}>
+          {keyName}
+        </span>
         <div className="flex items-center gap-1 shrink-0">
           {!editing && (
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(true);
-                setConfirmDelete(false);
-              }}
-              className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring cursor-pointer"
-              title="Update value"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => void handleReveal()}
+                disabled={revealing}
+                className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring cursor-pointer disabled:opacity-50"
+                title={revealed ? "Hide value" : "Show value"}
+                aria-label={revealed ? "Hide value" : "Show value"}
+              >
+                {revealing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : revealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCopy()}
+                disabled={revealing}
+                className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring cursor-pointer disabled:opacity-50"
+                title="Copy value"
+                aria-label="Copy value"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(true);
+                  setConfirmDelete(false);
+                  resetReveal();
+                  setValue("");
+                  setShowValue(false);
+                }}
+                className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring cursor-pointer"
+                title="Update value"
+                aria-label="Update value"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            </>
           )}
           {confirmDelete ? (
             <>
               <span className="text-xs text-red-500 font-medium">Confirm?</span>
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={() => void handleDelete()}
                 disabled={deleting}
                 className="px-2 py-1 text-xs bg-red-600 hover:bg-red-500 text-white rounded-md cursor-pointer disabled:opacity-50 focus-ring"
               >
@@ -90,22 +237,32 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
                 type="button"
                 onClick={() => setConfirmDelete(false)}
                 className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring cursor-pointer"
+                aria-label="Cancel delete"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="p-1.5 text-muted hover:text-red-500 transition-colors rounded-md focus-ring cursor-pointer"
-              title="Delete key"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
+            !editing && (
+              <button
+                type="button"
+                onClick={() => void handleDelete()}
+                className="p-1.5 text-muted hover:text-red-500 transition-colors rounded-md focus-ring cursor-pointer"
+                title="Delete key"
+                aria-label="Delete key"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )
           )}
         </div>
       </div>
+
+      {revealed && revealedValue != null && !editing && (
+        <div className="pl-6">
+          <div className="bg-input border border-primary rounded-lg px-3 py-2 font-mono text-xs text-primary break-all select-all">{revealedValue}</div>
+        </div>
+      )}
 
       {editing && (
         <div className="flex items-center gap-2 pl-6">
@@ -120,6 +277,7 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
                 if (e.key === "Escape") {
                   setEditing(false);
                   setValue("");
+                  setShowValue(false);
                 }
               }}
               autoFocus
@@ -129,15 +287,19 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
               type="button"
               onClick={() => setShowValue(v => !v)}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-primary cursor-pointer"
+              title={showValue ? "Hide value" : "Show value"}
+              aria-label={showValue ? "Hide value" : "Show value"}
             >
               {showValue ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
             </button>
           </div>
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => void handleSave()}
             disabled={saving || !value}
             className="flex items-center gap-1 px-2.5 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-50 focus-ring"
+            title="Save"
+            aria-label="Save"
           >
             {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
           </button>
@@ -146,8 +308,10 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
             onClick={() => {
               setEditing(false);
               setValue("");
+              setShowValue(false);
             }}
             className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring cursor-pointer"
+            aria-label="Cancel edit"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -170,10 +334,12 @@ function AddKeyForm({ category, onAdded }: { category: string; onAdded: () => vo
     if (!key.trim() || !value) return;
     setSaving(true);
     try {
-      await vaultRPCClient.setItems({ updates: [{ category, key: key.trim(), value }] });
+      const result = await vaultRPCClient.setItems({ updates: [{ category, key: key.trim(), value }] });
+      await assertMutationOk(result, "Failed to add key");
       toastManager.success(`"${key.trim()}" added`, { duration: 3000 });
       setKey("");
       setValue("");
+      setShowValue(false);
       setOpen(false);
       onAdded();
     } catch (err) {
@@ -214,7 +380,10 @@ function AddKeyForm({ category, onAdded }: { category: string; onAdded: () => vo
             onChange={e => setValue(e.target.value)}
             onKeyDown={e => {
               if (e.key === "Enter") void handleSave();
-              if (e.key === "Escape") setOpen(false);
+              if (e.key === "Escape") {
+                setOpen(false);
+                setShowValue(false);
+              }
             }}
             className="w-full bg-input border border-primary rounded-lg py-1.5 pl-3 pr-8 text-xs text-primary placeholder-muted focus-accent font-mono"
           />
@@ -222,22 +391,30 @@ function AddKeyForm({ category, onAdded }: { category: string; onAdded: () => vo
             type="button"
             onClick={() => setShowValue(v => !v)}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-primary cursor-pointer"
+            title={showValue ? "Hide value" : "Show value"}
+            aria-label={showValue ? "Hide value" : "Show value"}
           >
             {showValue ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
           </button>
         </div>
         <button
           type="button"
-          onClick={handleSave}
+          onClick={() => void handleSave()}
           disabled={saving || !key.trim() || !value}
           className="flex items-center gap-1 px-2.5 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-50 focus-ring"
+          title="Save"
+          aria-label="Save"
         >
           {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
         </button>
         <button
           type="button"
-          onClick={() => setOpen(false)}
+          onClick={() => {
+            setOpen(false);
+            setShowValue(false);
+          }}
           className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring cursor-pointer"
+          aria-label="Cancel"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -250,7 +427,7 @@ function AddKeyForm({ category, onAdded }: { category: string; onAdded: () => vo
 
 function BulkImportModal({
   category,
-  categoryLabel,
+  categoryLabel: label,
   onClose,
   onImported,
 }: {
@@ -264,14 +441,22 @@ function BulkImportModal({
 
   const parseEntries = (raw: string) => {
     const entries: { key: string; value: string }[] = [];
+    const seen = new Set<string>();
     for (const line of raw.split("\n")) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith("#")) continue;
       const eqIdx = trimmed.indexOf("=");
       if (eqIdx < 1) continue;
       const key = trimmed.slice(0, eqIdx).trim();
-      const value = trimmed.slice(eqIdx + 1);
-      if (key) entries.push({ key, value });
+      // Allow empty values to be skipped; vault schema requires minLength 1
+      let value = trimmed.slice(eqIdx + 1);
+      // Strip optional surrounding quotes
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      if (!key || !value || seen.has(key)) continue;
+      seen.add(key);
+      entries.push({ key, value });
     }
     return entries;
   };
@@ -282,10 +467,13 @@ function BulkImportModal({
     if (!preview.length) return;
     setImporting(true);
     try {
-      await vaultRPCClient.setItems({
+      const result = await vaultRPCClient.setItems({
         updates: preview.map(({ key, value }) => ({ category, key, value })),
       });
-      toastManager.success(`Imported ${preview.length} key${preview.length !== 1 ? "s" : ""} into "${categoryLabel}"`, { duration: 4000 });
+      await assertMutationOk(result, "Failed to import keys");
+      toastManager.success(`Imported ${preview.length} key${preview.length !== 1 ? "s" : ""} into "${label}"`, {
+        duration: 4000,
+      });
       onImported();
       onClose();
     } catch (err) {
@@ -296,39 +484,42 @@ function BulkImportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose} role="presentation">
       <div
         className="w-full max-w-lg bg-secondary border border-primary rounded-xl shadow-2xl flex flex-col gap-0 overflow-hidden"
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bulk-import-title"
       >
-        {/* Modal header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-primary">
           <Upload className="w-4 h-4 text-accent-soft shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-primary">Bulk Import</p>
-            <p className="text-2xs text-muted">Into: {categoryLabel}</p>
+            <p id="bulk-import-title" className="text-sm font-semibold text-primary">
+              Bulk Import
+            </p>
+            <p className="text-2xs text-muted">Into: {label}</p>
           </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring">
+          <button type="button" onClick={onClose} className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring" aria-label="Close">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Textarea */}
         <div className="px-4 py-3 space-y-2">
           <p className="text-2xs text-muted">
             Paste <span className="font-mono">KEY=value</span> pairs, one per line. Lines starting with <span className="font-mono">#</span> are ignored.
+            Optional quotes around values are stripped.
           </p>
           <textarea
             autoFocus
             value={text}
             onChange={e => setText(e.target.value)}
-            placeholder={"API_KEY=abc123\nSECRET_TOKEN=xyz789\n# this is a comment"}
+            placeholder={'API_KEY=abc123\nSECRET_TOKEN="xyz789"\n# this is a comment'}
             rows={8}
             className="w-full bg-input border border-primary rounded-lg py-2 px-3 text-xs text-primary placeholder-muted font-mono resize-none focus-accent"
           />
         </div>
 
-        {/* Preview */}
         {preview.length > 0 && (
           <div className="mx-4 mb-3 bg-input border border-primary rounded-lg overflow-hidden">
             <p className="px-3 py-1.5 text-2xs text-muted border-b border-primary">
@@ -345,7 +536,6 @@ function BulkImportModal({
           </div>
         )}
 
-        {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-primary">
           <button
             type="button"
@@ -356,7 +546,7 @@ function BulkImportModal({
           </button>
           <button
             type="button"
-            onClick={handleImport}
+            onClick={() => void handleImport()}
             disabled={importing || !preview.length}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-50 focus-ring"
           >
@@ -386,7 +576,11 @@ function CategorySection({
 }) {
   const [importOpen, setImportOpen] = useState(false);
 
-  const filtered = search.trim() ? keys.filter(k => k.toLowerCase().includes(search.toLowerCase())) : keys;
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = q ? keys.filter(k => k.toLowerCase().includes(q)) : keys;
+    return [...list].sort((a, b) => a.localeCompare(b));
+  }, [keys, search]);
 
   return (
     <>
@@ -419,6 +613,7 @@ function CategorySection({
 
         <p className="text-2xs text-muted text-right">
           {keys.length} key{keys.length !== 1 ? "s" : ""}
+          {search.trim() && filtered.length !== keys.length ? ` · ${filtered.length} shown` : ""}
         </p>
       </div>
     </>
@@ -433,8 +628,10 @@ export default function VaultApp() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const entries = vault.data ?? {};
-
-  const displayedCategories = activeCategory ? CATEGORIES.filter(c => c.id === activeCategory) : CATEGORIES;
+  const categories = useMemo(() => resolveCategories(entries), [entries]);
+  // Keep tab selection valid when categories change (e.g. last key in a custom category deleted)
+  const activeTab = activeCategory && !categories.includes(activeCategory) ? null : activeCategory;
+  const displayedCategories = activeTab ? categories.filter(c => c === activeTab) : categories;
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">
@@ -449,8 +646,9 @@ export default function VaultApp() {
           onClick={() => vault.mutate()}
           className="p-2 text-muted hover:text-primary border border-primary rounded-lg hover:bg-hover transition-colors focus-ring cursor-pointer"
           title="Refresh"
+          aria-label="Refresh vault"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
+          <RefreshCw className={`w-3.5 h-3.5 ${vault.isValidating ? "animate-spin" : ""}`} />
         </button>
       </AppPageHeader>
 
@@ -460,21 +658,22 @@ export default function VaultApp() {
           type="button"
           onClick={() => setActiveCategory(null)}
           className={`px-3 py-1.5 text-xs font-medium rounded-t-md border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
-            activeCategory === null ? "text-primary border-accent" : "text-muted border-transparent hover:text-primary"
+            activeTab === null ? "text-primary border-accent" : "text-muted border-transparent hover:text-primary"
           }`}
         >
           All
         </button>
-        {CATEGORIES.map(c => (
+        {categories.map(id => (
           <button
             type="button"
-            key={c.id}
-            onClick={() => setActiveCategory(c.id)}
+            key={id}
+            onClick={() => setActiveCategory(id)}
             className={`px-3 py-1.5 text-xs font-medium rounded-t-md border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
-              activeCategory === c.id ? "text-primary border-accent" : "text-muted border-transparent hover:text-primary"
+              activeTab === id ? "text-primary border-accent" : "text-muted border-transparent hover:text-primary"
             }`}
           >
-            {c.label}
+            {categoryLabel(id)}
+            {(entries[id]?.length ?? 0) > 0 && <span className="ml-1.5 text-2xs text-muted tabular-nums">{entries[id]!.length}</span>}
           </button>
         ))}
       </div>
@@ -488,18 +687,39 @@ export default function VaultApp() {
         ) : (
           <div className="max-w-2xl mx-auto py-6 px-4 sm:px-6 space-y-6">
             {/* Search */}
-            <input
-              type="text"
-              placeholder="Search keys..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full bg-input border border-primary rounded-lg py-1.5 px-3 text-xs text-primary placeholder-muted focus-accent"
-            />
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
+              <input
+                type="search"
+                placeholder="Search keys..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full bg-input border border-primary rounded-lg py-1.5 pl-9 pr-8 text-xs text-primary placeholder-muted focus-accent"
+                aria-label="Search vault keys"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted hover:text-primary cursor-pointer"
+                  aria-label="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
 
             {/* Category sections */}
-            {displayedCategories.map(c => (
-              <CategorySection key={c.id} category={c.id} label={c.label} keys={entries[c.id]} search={search} onMutate={() => vault.mutate()} />
+            {displayedCategories.map(id => (
+              <CategorySection key={id} category={id} label={categoryLabel(id)} keys={entries[id]} search={search} onMutate={() => vault.mutate()} />
             ))}
+
+            {displayedCategories.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
+                <Lock className="w-8 h-8 text-muted opacity-30" />
+                <p className="text-sm text-muted">No vault categories</p>
+              </div>
+            )}
           </div>
         )}
       </div>

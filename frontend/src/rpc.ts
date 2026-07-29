@@ -9,6 +9,8 @@ import CalendarRpcSchema from "@tokenring-ai/calendar/rpc/schema";
 import ChatRpcSchema from "@tokenring-ai/chat/rpc/schema";
 import CheckpointRpcSchema from "@tokenring-ai/checkpoint/rpc/schema";
 import CloudQuoteRpcSchema from "@tokenring-ai/cloudquote/rpc/schema";
+import DatabaseRpcSchema from "@tokenring-ai/database/rpc/schema";
+import type { FilterOperator as DatabaseFilterOperator } from "@tokenring-ai/database/types";
 import EmailRpcSchema from "@tokenring-ai/email/rpc/schema";
 import FileSystemRpcSchema from "@tokenring-ai/filesystem/rpc/schema";
 import ImageGenerationRpcSchema from "@tokenring-ai/image/rpc/schema";
@@ -75,6 +77,7 @@ export const skillsRPCClient = createWsRPCClient(baseURL, SkillsRpcSchema, rpcAu
 export const todoRPCClient = createWsRPCClient(baseURL, TodoRpcSchema, rpcAuth);
 export const researchRPCClient = createWsRPCClient(baseURL, ResearchRpcSchema, rpcAuth);
 export const configRPCClient = createWsRPCClient(baseURL, ConfigRpcSchema, rpcAuth);
+export const databaseRPCClient = createWsRPCClient(baseURL, DatabaseRpcSchema, rpcAuth);
 
 export function useAvailableCommands(agentId: string) {
   return useTypedSWR(agentId ? `/agent/getAvailableCommands/${agentId}` : null, async () => {
@@ -133,7 +136,7 @@ export function useFilesystemState(agentId: string | undefined) {
 }
 
 export function useDirectoryListing(opts?: { path: string; showHidden?: boolean; provider: string }) {
-  return useTypedSWR(opts ? `/filesystem/listDirectory/${opts.provider}/${opts.path}` : null, () =>
+  return useTypedSWR(opts ? `/filesystem/listDirectory/${opts.provider}/${opts.path}/${opts.showHidden ?? false}` : null, () =>
     filesystemRPCClient.listDirectory({
       path: opts!.path,
       recursive: false,
@@ -152,6 +155,18 @@ export function useFileContents(path: string | undefined, provider: string | und
   );
 }
 
+export function useWorkspaceFileSearch(opts?: { provider: string; query: string; limit?: number }) {
+  const query = opts?.query.trim() ?? "";
+  const limit = opts?.limit ?? 48;
+  return useTypedSWR(opts && query ? `/filesystem/searchWorkspaceFiles/${opts.provider}/${query}/${limit}` : null, () =>
+    filesystemRPCClient.searchWorkspaceFiles({
+      provider: opts!.provider,
+      query,
+      limit,
+    }),
+  );
+}
+
 export function useChatModelsByProvider() {
   return useTypedSWR(`/ai-client/chatModelsByProvider`, () => aiRPCClient.listChatModelsByProvider({}));
 }
@@ -160,8 +175,8 @@ export function useAvailableTools() {
   return useTypedSWR(`/chat/getAvailableTools`, () => chatRPCClient.getAvailableTools({}));
 }
 
-export function useEnabledTools(agentId: string) {
-  return useAgentStatusStream(agentId ? `enabled-tools:${agentId}` : null, signal => chatRPCClient.streamEnabledTools({ agentId }, signal));
+export function useEnabledTools(agentId: string | undefined) {
+  return useAgentStatusStream(agentId ? `enabled-tools:${agentId}` : null, signal => chatRPCClient.streamEnabledTools({ agentId: agentId! }, signal));
 }
 
 export function useChatUsage(agentId: string) {
@@ -176,8 +191,8 @@ export function useAvailableHooks() {
   return useTypedSWR(`/lifecycle/getAvailableHooks`, () => lifecycleRPCClient.getAvailableHooks({}));
 }
 
-export function useEnabledHooks(agentId: string) {
-  return useAgentStatusStream(agentId ? `enabled-hooks:${agentId}` : null, signal => lifecycleRPCClient.streamEnabledHooks({ agentId }, signal));
+export function useEnabledHooks(agentId: string | undefined) {
+  return useAgentStatusStream(agentId ? `enabled-hooks:${agentId}` : null, signal => lifecycleRPCClient.streamEnabledHooks({ agentId: agentId! }, signal));
 }
 
 export function useSkills(agentId?: string) {
@@ -235,8 +250,18 @@ export function useStockPriceTicks(symbol: string | undefined) {
   });
 }
 
+export function useStockPriceChart(symbol: string | undefined, interval: string) {
+  return useTypedSWR(symbol ? `/cloudquote/getPriceChart/${symbol}/${interval}` : null, () => cloudquoteRPCClient.getPriceChart({ symbol: symbol!, interval }));
+}
+
 export function useStockLeaders(list: "MOSTACTIVE" | "PERCENTGAINERS" | "PERCENTLOSERS", limit = 10) {
   return useTypedSWR(`/cloudquote/getLeaders/${list}`, () => cloudquoteRPCClient.getLeaders({ list, limit }), { refreshInterval: 60000 });
+}
+
+export function useStockHeadlines(symbols: string | undefined, count = 25) {
+  return useTypedSWR(symbols ? `/cloudquote/getHeadlinesBySecurity/${symbols}/${count}` : null, () =>
+    cloudquoteRPCClient.getHeadlinesBySecurity(stripUndefinedKeys({ symbols: symbols!, count })),
+  );
 }
 
 export function useFindStock(search: string | undefined, limit = 10) {
@@ -264,6 +289,41 @@ export function useConfigSchema() {
 
 export function useConfigValues() {
   return useTypedSWR("/config/getConfigValues", () => configRPCClient.getConfigValues({}));
+}
+
+// ─── Database ─────────────────────────────────────────────────────────────────
+
+export function useDatasources() {
+  return useTypedSWR("/database/getDatasources", () => databaseRPCClient.getDatasources({}));
+}
+
+export function useDatabaseTables(datasource: string | undefined) {
+  return useTypedSWR(datasource ? `/database/listTables/${datasource}` : null, () => databaseRPCClient.listTables({ datasource: datasource! }));
+}
+
+export function useTableSchema(datasource: string | undefined, table: string | undefined) {
+  return useTypedSWR(datasource && table ? `/database/getTableSchema/${datasource}/${table}` : null, () =>
+    databaseRPCClient.getTableSchema({ datasource: datasource!, table: table! }),
+  );
+}
+
+export interface RowQuery {
+  columns?: string[];
+  filters?: { column: string; op: DatabaseFilterOperator; value?: string | number | boolean | null | (string | number)[] }[];
+  orderBy?: { column: string; direction: "asc" | "desc" }[];
+  limit?: number;
+  offset?: number;
+}
+
+export function useTableRows(datasource: string | undefined, table: string | undefined, query: RowQuery) {
+  const enabled = Boolean(datasource && table);
+  return useTypedSWR(enabled ? `/database/selectRows/${datasource}/${table}/${JSON.stringify(query)}` : null, () =>
+    databaseRPCClient.selectRows(stripUndefinedKeys({ datasource: datasource!, table: table!, ...query })),
+  );
+}
+
+export function useDatabaseState(agentId: string | undefined) {
+  return useTypedSWR(agentId ? `/database/getDatabaseState/${agentId}` : null, () => databaseRPCClient.getDatabaseState({ agentId: agentId! }));
 }
 
 export function useAppLogs(options?: { enabled?: boolean }) {

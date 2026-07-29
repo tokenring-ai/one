@@ -3,7 +3,7 @@ import type { z } from "zod";
 import { toDateKey } from "./dateUtils.ts";
 import type { CalendarEvent } from "./types.ts";
 
-export function rpcToLocalEvent(ev: z.output<typeof CalendarEventSchema>): CalendarEvent {
+export function rpcToLocalEvent(ev: z.output<typeof CalendarEventSchema>, provider: string): CalendarEvent {
   const start = new Date(ev.startAt);
   const end = new Date(ev.endAt);
   const fmt = (h: number, m: number) => `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
@@ -19,6 +19,7 @@ export function rpcToLocalEvent(ev: z.output<typeof CalendarEventSchema>): Calen
     type: "calendar",
     color: "bg-accent",
     source: "rpc",
+    provider,
     ...(ev.description && {
       description: ev.description,
     }),

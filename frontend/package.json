@@ -51,6 +51,7 @@
     "@tokenring-ai/chat": "workspace:*",
     "@tokenring-ai/checkpoint": "workspace:*",
     "@tokenring-ai/cloudquote": "workspace:*",
+    "@tokenring-ai/database": "workspace:*",
     "@tokenring-ai/email": "workspace:*",
     "@tokenring-ai/filesystem": "workspace:*",
     "@tokenring-ai/image": "workspace:*",

@@ -126,10 +126,6 @@
 	path = plugin/metrics
 	url = ../metrics.git
 	branch = main
-[submodule "plugin/mysql"]
-	path = plugin/mysql
-	url = ../mysql.git
-	branch = main
 [submodule "plugin/queue"]
 	path = plugin/queue
 	url = ../queue.git
@@ -245,4 +241,12 @@
 [submodule "plugin/wordpress"]
 	path = plugin/wordpress
 	url = ../wordpress.git
+	branch = main
+[submodule "plugin/google"]
+	path = plugin/google
+	url = ../google.git
+	branch = main
+[submodule "plugin/discord"]
+	path = plugin/discord
+	url = ../discord.git
 	branch = main

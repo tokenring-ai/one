@@ -54,6 +54,22 @@ const pluginFixture: ConfigUIPluginSchema = {
   },
 };
 
+const otherPluginFixture: ConfigUIPluginSchema = {
+  pluginName: "alpha-plugin",
+  displayName: "Alpha Plugin",
+  description: "Another test plugin",
+  version: "0.1.0",
+  slices: {
+    alpha: {
+      kind: "group",
+      key: "alpha",
+      path: ["alpha"],
+      label: "Alpha",
+      children: [{ kind: "field", key: "label", path: ["alpha", "label"], label: "Label", field: { type: "text" }, required: false }],
+    },
+  },
+};
+
 const applyConfigMock = mock();
 let schemaData: Record<string, unknown>;
 let valuesData: Record<string, unknown>;
@@ -69,14 +85,20 @@ const { default: ConfigurationApp } = await import("../../pages/apps/Configurati
 beforeEach(() => {
   applyConfigMock.mockReset();
   schemaData = {
-    plugins: [pluginFixture],
-    restartRequired: false,
-    overridesFile: "/home/user/.tokenring/config.yaml",
+    plugins: [pluginFixture, otherPluginFixture],
+    overridesFiles: {
+      user: "/home/user/.tokenring/config.yaml",
+      project: "/repo/.tokenring/config.yaml",
+    },
     overlayError: null,
   };
   valuesData = {
-    effective: { widget: { name: "eff-name", size: 5, apiKey: { __sensitive: true, isSet: true } }, connections: { main: { url: "sqlite://x" } } },
-    overrides: {},
+    effective: {
+      widget: { name: "eff-name", size: 5, apiKey: { __sensitive: true, isSet: true } },
+      connections: { main: { url: "sqlite://x" } },
+      alpha: { label: "default" },
+    },
+    overrides: { user: {}, project: {} },
   };
 });
 
@@ -151,61 +173,131 @@ describe("ConfigurationApp", () => {
     expect(screen.getByRole("button", { name: /Widget Plugin/ })).toBeInTheDocument();
   });
 
-  it("saves the edited draft as a full override set", async () => {
-    applyConfigMock.mockResolvedValue({ ok: true, restartRequired: false });
-    const user = userEvent.setup();
-    renderApp();
-
-    await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toBeInTheDocument());
-    await user.type(screen.getByRole("textbox", { name: "Name" }), "x");
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
-
-    expect(applyConfigMock).toHaveBeenCalledWith({ overrides: { widget: { name: "eff-namex" } } });
-    await waitFor(() => expect(screen.getByText("Saved")).toBeInTheDocument());
+  it("shows the overrides file for the active scope", async () => {
+    renderApp("/configuration?plugin=widget-plugin");
+    await waitFor(() => {
+      expect(screen.getByText("/home/user/.tokenring/config.yaml")).toBeInTheDocument();
+    });
   });
 
-  it("shows the restart banner when apply requires a restart", async () => {
-    applyConfigMock.mockResolvedValue({ ok: true, restartRequired: true });
+  it("filters the plugin list by search", async () => {
     const user = userEvent.setup();
     renderApp();
 
+    await waitFor(() => expect(screen.getByRole("button", { name: /Widget Plugin/ })).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: /Alpha Plugin/ })).toBeInTheDocument();
+
+    await user.type(screen.getByRole("textbox", { name: "Search plugins" }), "alpha");
+    expect(screen.getByRole("button", { name: /Alpha Plugin/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Widget Plugin/ })).not.toBeInTheDocument();
+  });
+
+  it("saves the edited draft as a full override set for the active scope", async () => {
+    applyConfigMock.mockResolvedValue({ ok: true });
+    const user = userEvent.setup();
+    renderApp("/configuration?plugin=widget-plugin");
+
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toBeInTheDocument());
     await user.type(screen.getByRole("textbox", { name: "Name" }), "x");
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await user.click(screen.getByRole("button", { name: "Save to user" }));
 
-    await waitFor(() => expect(screen.getByText(/need a restart/)).toBeInTheDocument());
+    expect(applyConfigMock).toHaveBeenCalledWith({ scope: "user", overrides: { widget: { name: "eff-namex" } } });
+    await waitFor(() => expect(screen.getByText(/Saved to user configuration/)).toBeInTheDocument());
   });
 
   it("maps failed-apply issues onto fields", async () => {
     applyConfigMock.mockResolvedValue({ ok: false, issues: [{ path: ["widget", "size"], message: "Too small" }] });
     const user = userEvent.setup();
-    renderApp();
+    renderApp("/configuration?plugin=widget-plugin");
 
     await waitFor(() => expect(screen.getByRole("spinbutton", { name: "Size" })).toBeInTheDocument());
     await user.clear(screen.getByRole("spinbutton", { name: "Size" }));
     await user.type(screen.getByRole("spinbutton", { name: "Size" }), "0");
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await user.click(screen.getByRole("button", { name: "Save to user" }));
 
     await waitFor(() => expect(screen.getByText("Too small")).toBeInTheDocument());
     expect(screen.getByText(/1 validation issue/)).toBeInTheDocument();
   });
 
+  it("clears validation feedback when the user edits after a failed save", async () => {
+    applyConfigMock.mockResolvedValue({ ok: false, issues: [{ path: ["widget", "size"], message: "Too small" }] });
+    const user = userEvent.setup();
+    renderApp("/configuration?plugin=widget-plugin");
+
+    await waitFor(() => expect(screen.getByRole("spinbutton", { name: "Size" })).toBeInTheDocument());
+    await user.clear(screen.getByRole("spinbutton", { name: "Size" }));
+    await user.type(screen.getByRole("spinbutton", { name: "Size" }), "0");
+    await user.click(screen.getByRole("button", { name: "Save to user" }));
+    await waitFor(() => expect(screen.getByText("Too small")).toBeInTheDocument());
+
+    await user.clear(screen.getByRole("spinbutton", { name: "Size" }));
+    await user.type(screen.getByRole("spinbutton", { name: "Size" }), "2");
+    expect(screen.queryByText("Too small")).not.toBeInTheDocument();
+    expect(screen.queryByText(/validation issue/)).not.toBeInTheDocument();
+  });
+
   it("discard restores the server overrides", async () => {
     const user = userEvent.setup();
-    renderApp();
+    renderApp("/configuration?plugin=widget-plugin");
 
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toBeInTheDocument());
     await user.type(screen.getByRole("textbox", { name: "Name" }), "x");
-    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+    expect(screen.getByText(/Unsaved changes to the user configuration/)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Discard" }));
-    expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("eff-name");
+  });
+
+  it("switches between user and project scopes", async () => {
+    valuesData = {
+      ...valuesData,
+      overrides: {
+        user: { widget: { name: "user-name" } },
+        project: { widget: { name: "project-name" } },
+      },
+    };
+    const user = userEvent.setup();
+    renderApp("/configuration?plugin=widget-plugin&scope=user");
+
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("user-name"));
+    expect(screen.getByText("/home/user/.tokenring/config.yaml")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^Project/ }));
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("project-name"));
+    expect(screen.getByText("/repo/.tokenring/config.yaml")).toBeInTheDocument();
+  });
+
+  it("saves to the project scope when selected", async () => {
+    applyConfigMock.mockResolvedValue({ ok: true });
+    const user = userEvent.setup();
+    renderApp("/configuration?plugin=widget-plugin&scope=project");
+
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toBeInTheDocument());
+    await user.type(screen.getByRole("textbox", { name: "Name" }), "y");
+    await user.click(screen.getByRole("button", { name: "Save to project" }));
+
+    expect(applyConfigMock).toHaveBeenCalledWith({ scope: "project", overrides: { widget: { name: "eff-namey" } } });
+    await waitFor(() => expect(screen.getByText(/Saved to project configuration/)).toBeInTheDocument());
   });
 
   it("shows the overlay error banner", async () => {
     schemaData = { ...schemaData, overlayError: "overrides were rejected" };
     renderApp();
     await waitFor(() => expect(screen.getByText("overrides were rejected")).toBeInTheDocument());
+  });
+
+  it("warns when project overrides shadow the user scope", async () => {
+    valuesData = {
+      ...valuesData,
+      overrides: {
+        user: {},
+        project: { widget: { name: "project-name" } },
+      },
+    };
+    renderApp("/configuration?plugin=widget-plugin&scope=user");
+    await waitFor(() => {
+      expect(screen.getByText(/also configured at the project level/)).toBeInTheDocument();
+    });
   });
 });

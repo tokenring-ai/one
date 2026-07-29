@@ -4,11 +4,12 @@ import type { KeyboardEvent } from "react";
 import { useMemo, useState } from "react";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { audioRPCClient, useSpeechModels } from "../../../../rpc.ts";
+import { keywordsFromPrompt } from "../../utils.ts";
 import GenerateButton from "./GenerateButton.tsx";
 import GeneratePanelShell from "./GeneratePanelShell.tsx";
 import ModelSelectField from "./ModelSelectField.tsx";
 
-export default function SpeechGeneratePanel({ agentId, onGenerated }: { agentId: string | null; onGenerated: () => void }) {
+export default function SpeechGeneratePanel({ agentId, onGenerated }: { agentId: string | null; onGenerated: (filename?: string) => void }) {
   const [text, setText] = useState("");
   const [voice, setVoice] = useState("");
   const [speed, setSpeed] = useState<number>(1);
@@ -42,12 +43,12 @@ export default function SpeechGeneratePanel({ agentId, onGenerated }: { agentId:
         ...(voice && { voice }),
         ...(speed > 0 && { speed }),
         ...(selectedModel && { model: selectedModel }),
-        keywords: text.trim().split(/\s+/).filter(Boolean).slice(0, 10),
+        keywords: keywordsFromPrompt(text),
       });
       if (result.status === "success") {
-        toastManager.success("Speech generated!", { duration: 3000 });
+        toastManager.success(result.filename ? `Speech generated: ${result.filename}` : "Speech generated!", { duration: 3000 });
         setText("");
-        onGenerated();
+        onGenerated(result.filename);
       } else {
         toastManager.error("Agent not found", { duration: 4000 });
       }
@@ -70,8 +71,11 @@ export default function SpeechGeneratePanel({ agentId, onGenerated }: { agentId:
       gradient="from-emerald-500 to-teal-600"
     >
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-secondary">Text</label>
+        <label className="text-xs font-medium text-secondary" htmlFor="speech-text">
+          Text
+        </label>
         <textarea
+          id="speech-text"
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -83,8 +87,11 @@ export default function SpeechGeneratePanel({ agentId, onGenerated }: { agentId:
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-secondary">Voice</label>
+          <label className="text-xs font-medium text-secondary" htmlFor="speech-voice">
+            Voice
+          </label>
           <input
+            id="speech-voice"
             type="text"
             value={voice}
             onChange={e => setVoice(e.target.value)}
@@ -93,8 +100,11 @@ export default function SpeechGeneratePanel({ agentId, onGenerated }: { agentId:
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-secondary">Speed</label>
+          <label className="text-xs font-medium text-secondary" htmlFor="speech-speed">
+            Speed
+          </label>
           <input
+            id="speech-speed"
             type="number"
             step={0.1}
             min={0.25}

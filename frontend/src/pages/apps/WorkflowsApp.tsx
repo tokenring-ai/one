@@ -2,9 +2,13 @@ import formatError from "@tokenring-ai/utility/error/formatError";
 import {
   ArrowDown,
   ArrowUp,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Circle,
+  ExternalLink,
   GitBranch,
+  History,
   Loader2,
   Play,
   Plus,
@@ -14,10 +18,12 @@ import {
   Trash2,
   TriangleAlert,
   X,
+  XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import ErrorState from "../../components/ui/ErrorState.tsx";
 import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { useAgentList, useAgentTypes, useTypedSWR, useWorkflowRuns, useWorkflows, workflowRPCClient } from "../../rpc.ts";
@@ -75,6 +81,91 @@ interface WorkflowRun {
 
 function isRunActive(run: WorkflowRun): boolean {
   return run.status === "starting" || run.status === "running";
+}
+
+function isRunFinished(run: WorkflowRun): boolean {
+  return run.status === "completed" || run.status === "failed" || run.status === "cancelled";
+}
+
+/** Newest first; keeps active runs at the top, then finished by finish/start time. */
+function sortRunsNewestFirst(runs: WorkflowRun[]): WorkflowRun[] {
+  return [...runs].sort((a, b) => {
+    const aActive = isRunActive(a);
+    const bActive = isRunActive(b);
+    if (aActive !== bActive) return aActive ? -1 : 1;
+    const aTime = a.finishedAt ?? a.startedAt;
+    const bTime = b.finishedAt ?? b.startedAt;
+    return bTime - aTime;
+  });
+}
+
+function formatRelativeTime(ts: number, now = Date.now()): string {
+  const delta = ts - now;
+  const abs = Math.abs(delta);
+  const minutes = Math.round(abs / 60_000);
+  const hours = Math.round(abs / 3_600_000);
+  const days = Math.round(abs / 86_400_000);
+
+  let unit: string;
+  if (minutes < 1) unit = "just now";
+  else if (minutes < 60) unit = `${minutes}m`;
+  else if (hours < 48) unit = `${hours}h`;
+  else unit = `${days}d`;
+
+  if (unit === "just now") return unit;
+  return delta >= 0 ? `in ${unit}` : `${unit} ago`;
+}
+
+function formatDurationMs(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  const seconds = Math.round(ms / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const rem = seconds % 60;
+  if (minutes < 60) return rem ? `${minutes}m ${rem}s` : `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remMin = minutes % 60;
+  return remMin ? `${hours}h ${remMin}m` : `${hours}h`;
+}
+
+function runDurationLabel(run: WorkflowRun): string | null {
+  if (run.finishedAt == null) return null;
+  return formatDurationMs(Math.max(0, run.finishedAt - run.startedAt));
+}
+
+function RunStatusBadge({ status }: { status: WorkflowRunStatus }) {
+  switch (status) {
+    case "starting":
+      return (
+        <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 shrink-0">
+          <Loader2 className="w-3 h-3 animate-spin" /> Starting
+        </span>
+      );
+    case "running":
+      return (
+        <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 shrink-0">
+          <Loader2 className="w-3 h-3 animate-spin" /> Running
+        </span>
+      );
+    case "completed":
+      return (
+        <span className="inline-flex items-center gap-1 text-2xs text-emerald-600 dark:text-emerald-400 shrink-0">
+          <CheckCircle2 className="w-3 h-3" /> Completed
+        </span>
+      );
+    case "failed":
+      return (
+        <span className="inline-flex items-center gap-1 text-2xs text-red-600 dark:text-red-400 shrink-0">
+          <XCircle className="w-3 h-3" /> Failed
+        </span>
+      );
+    case "cancelled":
+      return (
+        <span className="inline-flex items-center gap-1 text-2xs text-muted shrink-0">
+          <X className="w-3 h-3" /> Cancelled
+        </span>
+      );
+  }
 }
 
 const DEFAULT_SUB_AGENT: SubAgentSettings = {
@@ -187,27 +278,35 @@ function ConfirmModal({ title, message, onConfirm, onClose }: { title: string; m
 function WorkflowSidebar({
   workflows,
   isLoading,
+  loadError,
+  onRetryLoad,
   selectedName,
   creating,
   dirtyNames,
   activeRuns,
+  recentFinishedRuns,
   launchingName,
   onSelect,
   onNew,
   onRun,
   onOpenAgent,
+  onSelectRunWorkflow,
 }: {
   workflows: Workflow[];
   isLoading: boolean;
+  loadError: unknown;
+  onRetryLoad: () => void;
   selectedName: string | null;
   creating: boolean;
   dirtyNames: Set<string>;
   activeRuns: WorkflowRun[];
+  recentFinishedRuns: WorkflowRun[];
   launchingName: string | null;
   onSelect: (name: string) => void;
   onNew: () => void;
   onRun: (name: string) => void;
   onOpenAgent: (id: string) => void;
+  onSelectRunWorkflow: (workflowName: string) => void;
 }) {
   const grouped = useMemo(() => {
     const groups: Record<string, Workflow[]> = {};
@@ -249,10 +348,9 @@ function WorkflowSidebar({
               <button
                 type="button"
                 key={run.id}
-                onClick={() => run.agentId && onOpenAgent(run.agentId)}
-                disabled={!run.agentId}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-hover transition-colors cursor-pointer focus-ring disabled:cursor-default"
-                aria-label={`Open agent running ${run.displayName || run.workflowName}`}
+                onClick={() => (run.agentId ? onOpenAgent(run.agentId) : onSelectRunWorkflow(run.workflowName))}
+                className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-hover transition-colors cursor-pointer focus-ring"
+                aria-label={run.agentId ? `Open agent running ${run.displayName || run.workflowName}` : `View workflow ${run.displayName || run.workflowName}`}
                 title={run.steps[run.currentStep] ?? ""}
               >
                 <div className="w-3 h-3 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin shrink-0" />
@@ -267,6 +365,44 @@ function WorkflowSidebar({
           </div>
         )}
 
+        {recentFinishedRuns.length > 0 && (
+          <div className="border-b border-primary/50">
+            <span className="flex items-center gap-1 px-3 pt-2.5 pb-1 text-2xs font-bold text-muted uppercase tracking-widest">
+              <History className="w-3 h-3" /> Recent runs
+            </span>
+            {recentFinishedRuns.map(run => {
+              const when = run.finishedAt ?? run.startedAt;
+              return (
+                <button
+                  type="button"
+                  key={run.id}
+                  onClick={() => onSelectRunWorkflow(run.workflowName)}
+                  className="w-full flex items-start gap-2 px-3 py-2 text-left hover:bg-hover transition-colors cursor-pointer focus-ring"
+                  aria-label={`View runs for ${run.displayName || run.workflowName}`}
+                  title={run.message || undefined}
+                >
+                  <div className="mt-0.5 shrink-0">
+                    {run.status === "completed" ? (
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    ) : run.status === "failed" ? (
+                      <XCircle className="w-3 h-3 text-red-500" />
+                    ) : (
+                      <X className="w-3 h-3 text-muted" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-primary truncate">{run.displayName || run.workflowName}</div>
+                    <div className="text-2xs text-muted truncate">
+                      {run.status} · {formatRelativeTime(when)}
+                      {runDurationLabel(run) ? ` · ${runDurationLabel(run)}` : ""}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {creating && (
           <div className="flex items-center gap-1.5 px-2 py-2 bg-accent-muted text-accent border-b border-primary/50">
             <Plus className="w-3.5 h-3.5 shrink-0" />
@@ -274,7 +410,9 @@ function WorkflowSidebar({
           </div>
         )}
 
-        {isLoading && workflows.length === 0 ? (
+        {loadError && workflows.length === 0 ? (
+          <ErrorState title="Unable to load workflows" error={loadError} onRetry={onRetryLoad} />
+        ) : isLoading && workflows.length === 0 ? (
           <div className="px-3 py-6 flex justify-center">
             <Loader2 className="w-4 h-4 text-muted animate-spin" />
           </div>
@@ -303,6 +441,7 @@ function WorkflowSidebar({
                 items.map(workflow => {
                   const isSelected = selectedName === workflow.name && !creating;
                   const isLaunching = launchingName === workflow.name;
+                  const hasActiveRun = activeRuns.some(run => run.workflowName === workflow.name);
                   return (
                     <div
                       key={workflow.name}
@@ -318,6 +457,7 @@ function WorkflowSidebar({
                       >
                         <GitBranch className="w-3 h-3 shrink-0 opacity-70" />
                         <span className="flex-1 min-w-0 truncate text-xs">{workflow.displayName || workflow.name}</span>
+                        {hasActiveRun && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" title="Running" />}
                         {dirtyNames.has(workflow.name) && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" title="Unsaved changes" />}
                       </button>
                       <button
@@ -473,6 +613,155 @@ function SubAgentSettingsEditor({ value, onChange }: { value: SubAgentSettings; 
   );
 }
 
+// ─── RunMonitor ────────────────────────────────────────────────────────────────
+
+/** Live step checklist for an in-flight (or just-finished) run, plus open-agent action. */
+function ActiveRunPanel({ run, onOpenAgent }: { run: WorkflowRun; onOpenAgent: (id: string) => void }) {
+  const active = isRunActive(run);
+
+  return (
+    <div
+      className={`border rounded-xl overflow-hidden ${
+        active
+          ? "border-amber-500/40 bg-amber-500/5"
+          : run.status === "completed"
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : run.status === "failed"
+              ? "border-red-500/30 bg-red-500/5"
+              : "border-primary bg-secondary/40"
+      }`}
+    >
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-primary/50">
+        <RunStatusBadge status={run.status} />
+        <span className="flex-1 min-w-0 text-xs text-muted truncate">
+          {active
+            ? run.status === "starting"
+              ? "Spawning agent…"
+              : `Step ${Math.min(run.currentStep + 1, run.steps.length)} of ${run.steps.length}`
+            : run.message || run.status}
+        </span>
+        {run.agentId && (
+          <button
+            type="button"
+            onClick={() => onOpenAgent(run.agentId!)}
+            className="flex items-center gap-1 px-2 py-1 text-2xs font-medium text-cyan-700 dark:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors cursor-pointer focus-ring shrink-0"
+          >
+            <ExternalLink className="w-3 h-3" /> Open agent
+          </button>
+        )}
+      </div>
+
+      <ol className="px-3 py-2 space-y-1.5">
+        {run.steps.map((step, index) => {
+          let state: "done" | "current" | "pending" | "failed" = "pending";
+          if (run.status === "completed" || (isRunActive(run) && index < run.currentStep) || (isRunFinished(run) && index < run.currentStep)) {
+            state = "done";
+          } else if (isRunActive(run) && index === run.currentStep) {
+            state = "current";
+          } else if (isRunFinished(run) && index === run.currentStep) {
+            state = "failed";
+          }
+
+          return (
+            <li key={index} className="flex items-start gap-2 min-w-0">
+              <span className="mt-0.5 shrink-0">
+                {state === "done" ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                ) : state === "current" ? (
+                  <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin" />
+                ) : state === "failed" ? (
+                  <XCircle className="w-3.5 h-3.5 text-red-500" />
+                ) : (
+                  <Circle className="w-3.5 h-3.5 text-muted/50" />
+                )}
+              </span>
+              <span
+                className={`flex-1 min-w-0 text-2xs font-mono truncate ${
+                  state === "current"
+                    ? "text-primary font-medium"
+                    : state === "done"
+                      ? "text-muted"
+                      : state === "failed"
+                        ? "text-red-600 dark:text-red-400"
+                        : "text-muted/70"
+                }`}
+                title={step}
+              >
+                <span className="text-muted mr-1.5 not-italic font-sans">{index + 1}.</span>
+                {step}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+function WorkflowRunHistory({
+  runs,
+  emptyMessage,
+  onOpenAgent,
+}: {
+  runs: WorkflowRun[];
+  /** Shown only when `runs` is empty. Pass null to render nothing in that case. */
+  emptyMessage: string | null;
+  onOpenAgent: (id: string) => void;
+}) {
+  if (runs.length === 0) {
+    if (!emptyMessage) return null;
+    return (
+      <div className="border border-dashed border-primary rounded-xl px-3 py-4 text-center">
+        <History className="w-5 h-5 text-muted mx-auto mb-1.5 opacity-50" />
+        <p className="text-2xs text-muted">{emptyMessage}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-primary rounded-xl bg-secondary/40 overflow-hidden divide-y divide-primary/60">
+      {runs.map(run => {
+        const when = run.finishedAt ?? run.startedAt;
+        const duration = runDurationLabel(run);
+        return (
+          <div key={run.id} className="flex items-start gap-2 px-3 py-2.5">
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <RunStatusBadge status={run.status} />
+                <span className="text-2xs text-muted" title={new Date(when).toLocaleString()}>
+                  {formatRelativeTime(when)}
+                  {duration ? ` · ${duration}` : ""}
+                </span>
+              </div>
+              {run.message && (
+                <p className="text-2xs text-muted truncate" title={run.message}>
+                  {run.message}
+                </p>
+              )}
+              {isRunActive(run) && run.steps.length > 0 && (
+                <p className="text-2xs text-muted truncate">
+                  {run.status === "starting" ? "Starting agent…" : `Step ${run.currentStep + 1}/${run.steps.length}: ${run.steps[run.currentStep] ?? ""}`}
+                </p>
+              )}
+            </div>
+            {run.agentId && (
+              <button
+                type="button"
+                onClick={() => onOpenAgent(run.agentId!)}
+                className="p-1 text-muted hover:text-cyan-600 dark:hover:text-cyan-400 rounded transition-colors cursor-pointer focus-ring shrink-0"
+                title="Open agent"
+                aria-label="Open agent for this run"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── EmptyState ────────────────────────────────────────────────────────────────
 
 function EmptyState({ hasWorkflows, directory, onNew }: { hasWorkflows: boolean; directory: string | undefined; onNew: () => void }) {
@@ -517,6 +806,7 @@ function WorkflowEditor({
   savedWorkflow,
   isDirty,
   activeRun,
+  workflowRuns,
   categories,
   agentTypes,
   saving,
@@ -526,6 +816,7 @@ function WorkflowEditor({
   onDelete,
   onLaunch,
   onCancelCreate,
+  onOpenAgent,
 }: {
   workflowName: string | null;
   creating: boolean;
@@ -536,6 +827,8 @@ function WorkflowEditor({
   savedWorkflow: Workflow | null;
   isDirty: boolean;
   activeRun: WorkflowRun | null;
+  /** All tracked runs for this workflow (active + finished), newest first. */
+  workflowRuns: WorkflowRun[];
   categories: string[];
   agentTypes: { type: string; displayName: string; category?: string }[];
   saving: boolean;
@@ -545,6 +838,7 @@ function WorkflowEditor({
   onDelete: () => void;
   onLaunch: () => void;
   onCancelCreate: () => void;
+  onOpenAgent: (id: string) => void;
 }) {
   const trimmedName = nameValue.trim();
   const nameError = creating && trimmedName !== "" && !NAME_PATTERN.test(trimmedName);
@@ -554,6 +848,10 @@ function WorkflowEditor({
   const unknownAgentType = draft.agentType !== "" && agentTypes.length > 0 && !agentTypes.some(a => a.type === draft.agentType);
 
   const title = creating ? "New workflow" : draft.displayName || workflowName || "";
+  // Prefer the live run; otherwise feature the most recent finished run with its step checklist.
+  const featuredRunId = activeRun?.id ?? (workflowRuns[0] && isRunFinished(workflowRuns[0]) ? workflowRuns[0]!.id : null);
+  const featuredRun = featuredRunId ? (activeRun ?? workflowRuns.find(run => run.id === featuredRunId) ?? null) : null;
+  const historyRuns = useMemo(() => workflowRuns.filter(run => run.id !== featuredRunId).slice(0, 10), [workflowRuns, featuredRunId]);
 
   return (
     <div className="h-full flex flex-col bg-primary">
@@ -563,7 +861,7 @@ function WorkflowEditor({
           creating ? (
             "Define the steps this workflow runs"
           ) : (
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-2 flex-wrap">
               <code className="font-mono">{workflowName}.yaml</code>
               {savedWorkflow && <span className="text-muted">· updated {new Date(savedWorkflow.updatedAt).toLocaleString()}</span>}
               {isDirty && <span className="text-amber-600 dark:text-amber-500 font-medium">· unsaved changes</span>}
@@ -589,6 +887,16 @@ function WorkflowEditor({
           </button>
         ) : (
           <>
+            {activeRun?.agentId && (
+              <button
+                type="button"
+                onClick={() => onOpenAgent(activeRun.agentId!)}
+                title="Open the agent running this workflow"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-primary text-muted hover:text-primary hover:bg-hover text-2xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
+              >
+                <ExternalLink className="w-3.5 h-3.5" /> Open agent
+              </button>
+            )}
             <button
               type="button"
               onClick={onLaunch}
@@ -632,6 +940,21 @@ function WorkflowEditor({
 
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
         <div className="max-w-3xl mx-auto space-y-5">
+          {!creating && (
+            <section className="space-y-2" aria-label="Run monitoring">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-2xs font-semibold text-muted uppercase tracking-wide">Runs</span>
+                <span className="text-2xs text-muted">Live progress and recent history</span>
+              </div>
+              {featuredRun && <ActiveRunPanel run={featuredRun} onOpenAgent={onOpenAgent} />}
+              <WorkflowRunHistory
+                runs={historyRuns}
+                emptyMessage={featuredRun ? null : "No runs yet for this workflow. Launch it to see progress here."}
+                onOpenAgent={onOpenAgent}
+              />
+            </section>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label htmlFor="workflow-name" className="text-2xs font-semibold text-muted uppercase tracking-wide">
@@ -763,7 +1086,13 @@ export default function WorkflowsApp() {
 
   const categories = useMemo(() => [...new Set(workflowList.map(w => w.category).filter(Boolean))].sort(), [workflowList]);
 
-  const activeRuns = useMemo(() => ((workflowRuns.data?.runs ?? []) as WorkflowRun[]).filter(isRunActive), [workflowRuns.data]);
+  const allRuns = useMemo(() => sortRunsNewestFirst((workflowRuns.data?.runs ?? []) as WorkflowRun[]), [workflowRuns.data]);
+  const activeRuns = useMemo(() => allRuns.filter(isRunActive), [allRuns]);
+  const recentFinishedRuns = useMemo(() => allRuns.filter(isRunFinished).slice(0, 8), [allRuns]);
+  const selectedWorkflowRuns = useMemo(
+    () => (selectedWorkflow ? allRuns.filter(run => run.workflowName === selectedWorkflow.name) : []),
+    [allRuns, selectedWorkflow],
+  );
 
   const dirtyNames = useMemo(() => {
     const names = new Set<string>();
@@ -885,21 +1214,32 @@ export default function WorkflowsApp() {
     [agents, navigate],
   );
 
+  const openAgent = useCallback(
+    (id: string) => {
+      void navigate(`/agent/${id}`);
+    },
+    [navigate],
+  );
+
   return (
     <div className="w-full h-full flex flex-col bg-primary">
       <ResizableSplit direction="horizontal" initialRatio={0.22} minFirst={200} minSecond={360} className="flex-1 min-h-0">
         <WorkflowSidebar
           workflows={workflowList}
           isLoading={workflows.isLoading}
+          loadError={workflows.error}
+          onRetryLoad={() => void workflows.mutate()}
           selectedName={selectedWorkflow?.name ?? null}
           creating={creating}
           dirtyNames={dirtyNames}
           activeRuns={activeRuns}
+          recentFinishedRuns={recentFinishedRuns}
           launchingName={launching}
           onSelect={handleSelect}
           onNew={handleNew}
           onRun={name => void handleLaunch(name)}
-          onOpenAgent={id => void navigate(`/agent/${id}`)}
+          onOpenAgent={openAgent}
+          onSelectRunWorkflow={handleSelect}
         />
         {draft && (creating || selectedWorkflow) ? (
           <WorkflowEditor
@@ -912,6 +1252,7 @@ export default function WorkflowsApp() {
             savedWorkflow={creating ? null : selectedWorkflow}
             isDirty={isDirty}
             activeRun={creating ? null : (activeRuns.find(run => run.workflowName === selectedWorkflow?.name) ?? null)}
+            workflowRuns={creating ? [] : selectedWorkflowRuns}
             categories={categories}
             agentTypes={agentTypes.data ?? []}
             saving={saving}
@@ -921,7 +1262,10 @@ export default function WorkflowsApp() {
             onDelete={() => selectedWorkflow && setDeleteTarget(selectedWorkflow.name)}
             onLaunch={() => selectedWorkflow && void handleLaunch(selectedWorkflow.name)}
             onCancelCreate={handleCancelCreate}
+            onOpenAgent={openAgent}
           />
+        ) : workflows.error && workflowList.length === 0 ? (
+          <ErrorState title="Unable to load workflows" error={workflows.error} onRetry={() => void workflows.mutate()} variant="page" />
         ) : (
           <EmptyState hasWorkflows={workflowList.length > 0} directory={workflowDirectory.data?.directory} onNew={handleNew} />
         )}

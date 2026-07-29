@@ -17,6 +17,9 @@ type TerminalSession = {
   complete: boolean;
 };
 
+/** Stable empty list so effects that depend on `terminalList` don't re-fire every render. */
+const EMPTY_TERMINALS: never[] = [];
+
 export default function TerminalApp() {
   const navigate = useNavigate();
   const { terminalId } = useParams<{ terminalId?: string }>();
@@ -25,7 +28,9 @@ export default function TerminalApp() {
   const [spawning, setSpawning] = useState(false);
   const [confirmClose, setConfirmClose] = useState<string | null>(null);
 
-  const terminalList = terminals.data?.status === "success" ? terminals.data.terminals : [];
+  const terminalList = terminals.data?.status === "success" ? terminals.data.terminals : EMPTY_TERMINALS;
+  const listError = terminals.error ? formatError(terminals.error) : null;
+  const firstTerminalName = terminalList[0]?.name;
 
   // The URL is the source of truth for which terminal is open.
   const activeTerminalName = terminalId ?? null;
@@ -39,15 +44,22 @@ export default function TerminalApp() {
       return;
     }
 
-    setSessions(prev => ({
-      ...prev,
-      [activeTerminalName]: {
-        name: activeTerminalName,
-        output: outputStream.data!.output,
-        position: outputStream.data!.position,
-        complete: outputStream.data!.complete,
-      },
-    }));
+    const next = outputStream.data;
+    setSessions(prev => {
+      const existing = prev[activeTerminalName];
+      if (existing && existing.output === next.output && existing.position === next.position && existing.complete === next.complete) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [activeTerminalName]: {
+          name: activeTerminalName,
+          output: next.output,
+          position: next.position,
+          complete: next.complete,
+        },
+      };
+    });
   }, [activeTerminalName, outputStream.data]);
 
   const streamError = outputStream.error ? formatError(outputStream.error) : null;
@@ -58,6 +70,13 @@ export default function TerminalApp() {
     },
     [navigate],
   );
+
+  // Sidebar and bookmarks land on bare `/terminal`; open the first live session so the
+  // page is immediately usable without an extra click when sessions already exist.
+  useEffect(() => {
+    if (terminals.isLoading || activeTerminalName !== null || !firstTerminalName) return;
+    void navigate(`/terminal/${encodeURIComponent(firstTerminalName)}`, { replace: true });
+  }, [terminals.isLoading, activeTerminalName, firstTerminalName, navigate]);
 
   const spawnTerminal = async () => {
     setSpawning(true);
@@ -128,9 +147,27 @@ export default function TerminalApp() {
   const sendInput = useCallback(
     (input: string) => {
       if (!activeTerminalName) return;
-      terminalRPCClient.sendInput({ terminalName: activeTerminalName, input }).catch((error: unknown) => {
-        toastManager.error(formatError(error), { duration: 5000 });
-      });
+      void terminalRPCClient
+        .sendInput({ terminalName: activeTerminalName, input })
+        .then(result => {
+          switch (result.status) {
+            case "success":
+              return;
+            case "terminalNotFound":
+              toastManager.error("Terminal not found", { duration: 5000 });
+              return;
+            case "terminalNotInteractive":
+              toastManager.error("Terminal is not interactive", { duration: 5000 });
+              return;
+            default: {
+              const exhaustive: never = result;
+              throw new Error(`Unexpected status: ${(exhaustive as { status: string }).status}`);
+            }
+          }
+        })
+        .catch((error: unknown) => {
+          toastManager.error(formatError(error), { duration: 5000 });
+        });
     },
     [activeTerminalName],
   );
@@ -161,6 +198,8 @@ export default function TerminalApp() {
 
   // A bookmarked or stale URL can name a terminal that no longer exists.
   const missingTerminal = activeTerminalName !== null && !activeTerminal;
+  // While auto-select is navigating to the first tab, avoid flashing the empty state.
+  const awaitingAutoSelect = activeTerminalName === null && terminalList.length > 0;
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">
@@ -190,6 +229,12 @@ export default function TerminalApp() {
       />
 
       <div className="flex-1 flex flex-col min-h-0">
+        {listError && (
+          <div role="alert" className="shrink-0 px-4 py-2 bg-red-500/10 border-b border-red-500/30 text-xs text-red-400 font-mono">
+            Terminal list unavailable: {listError}
+          </div>
+        )}
+
         {activeTerminal ? (
           <>
             {streamError && (
@@ -205,7 +250,7 @@ export default function TerminalApp() {
                 output={activeSession?.output ?? ""}
                 onResize={handleResize}
                 onSubmit={sendInput}
-                readOnly={activeSession?.complete ?? false}
+                readOnly={activeSession?.complete || !activeTerminal.running}
                 className="w-full h-full"
               />
               {!activeSession?.output && (
@@ -221,6 +266,14 @@ export default function TerminalApp() {
               <span className="text-2xs font-mono text-secondary truncate" title={activeTerminal.workingDirectory}>
                 {activeTerminal.workingDirectory}
               </span>
+              <span className="text-2xs font-mono text-muted shrink-0" title={`Provider: ${activeTerminal.providerName}`}>
+                {activeTerminal.providerName}
+              </span>
+              {activeTerminal.connectedAgentIds.length > 0 && (
+                <span className="text-2xs font-mono text-muted shrink-0" title={activeTerminal.connectedAgentIds.join(", ")}>
+                  {activeTerminal.connectedAgentIds.length} agent{activeTerminal.connectedAgentIds.length === 1 ? "" : "s"}
+                </span>
+              )}
               <span className="ml-auto shrink-0 text-2xs font-mono text-muted">
                 {activeTerminal.running ? (
                   "running"
@@ -232,19 +285,17 @@ export default function TerminalApp() {
               </span>
             </div>
           </>
+        ) : awaitingAutoSelect ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 text-muted animate-spin" />
+          </div>
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <Terminal className="w-12 h-12 text-muted mx-auto mb-4 opacity-30" />
-              <p className="text-sm font-medium text-primary mb-1">
-                {missingTerminal ? "Terminal not found" : terminalList[0] ? "No terminal selected" : "No terminals"}
-              </p>
+              <p className="text-sm font-medium text-primary mb-1">{missingTerminal ? "Terminal not found" : "No terminals"}</p>
               <p className="text-2xs text-muted max-w-xs mx-auto mb-4">
-                {missingTerminal
-                  ? `'${activeTerminalName}' is no longer running. Open another tab or start a new one.`
-                  : terminalList[0]
-                    ? "Pick a tab above to reconnect, or create a new terminal"
-                    : "Create a terminal to get started"}
+                {missingTerminal ? `'${activeTerminalName}' is no longer available. Open another tab or start a new one.` : "Create a terminal to get started"}
               </p>
               <button
                 type="button"

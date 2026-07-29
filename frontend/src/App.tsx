@@ -16,6 +16,7 @@ import BlogApp from "./pages/apps/BlogApp.tsx";
 import BotsApp from "./pages/apps/BotsApp.tsx";
 import CalendarApp from "./pages/apps/CalendarApp.tsx";
 import ConfigurationApp from "./pages/apps/ConfigurationApp.tsx";
+import DatabaseApp from "./pages/apps/DatabaseApp.tsx";
 import DocumentsApp from "./pages/apps/DocumentsApp.tsx";
 import EmailApp from "./pages/apps/EmailApp.tsx";
 import FilesApp from "./pages/apps/FilesApp.tsx";
@@ -134,6 +135,7 @@ export default function App() {
                     <Route path="/files" element={<FilesApp />} />
                     <Route path="/terminal/:terminalId?" element={<TerminalApp />} />
                     <Route path="/email" element={<EmailApp />} />
+                    <Route path="/database" element={<DatabaseApp />} />
                     <Route path="/calendar" element={<CalendarApp />} />
                     <Route path="/media" element={<MediaApp />} />
                     <Route path="/social" element={<SocialApp />} />

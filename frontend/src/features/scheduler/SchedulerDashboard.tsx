@@ -1,5 +1,22 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { Activity, AlertCircle, CheckCircle2, Clock, History, Loader2, Pause, Play, Plus, RefreshCw, Timer, Trash2, User, XCircle } from "lucide-react";
+import {
+  Activity,
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  History,
+  Loader2,
+  Pause,
+  Play,
+  Plus,
+  RefreshCw,
+  Timer,
+  Trash2,
+  User,
+  XCircle,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +31,7 @@ import AddTaskForm from "./AddTaskForm.tsx";
 import { formatDuration, formatRelativeTime, formatScheduleSummary, formatScheduleTime, truncateMessage } from "./formatters.ts";
 
 type MainTab = "tasks" | "history";
+type HistoryStatusFilter = "all" | "completed" | "failed";
 
 const MAIN_TABS: FilterTabOption<MainTab>[] = [
   { id: "tasks", label: "Tasks" },
@@ -24,12 +42,12 @@ function StatusPill({ running }: { running: boolean }) {
   return running ? (
     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-2xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-      Scheduler running
+      Scheduler enabled
     </span>
   ) : (
     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-2xs font-medium bg-tertiary text-muted border border-primary">
       <Pause className="w-3 h-3" />
-      Scheduler stopped
+      Scheduler disabled
     </span>
   );
 }
@@ -66,6 +84,11 @@ export default function SchedulerDashboard() {
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [creatingAgent, setCreatingAgent] = useState(false);
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [historyTaskFilter, setHistoryTaskFilter] = useState<string>("");
+  const [historyStatusFilter, setHistoryStatusFilter] = useState<HistoryStatusFilter>("all");
+  // Live clock so relative next/last-run labels stay current without waiting for SWR
+  const [, setNowTick] = useState(0);
 
   // Auto-select first agent when list loads / selection disappears
   useEffect(() => {
@@ -120,9 +143,30 @@ export default function SchedulerDashboard() {
       .sort((a, b) => b.startTime - a.startTime);
   }, [historyQuery.data]);
 
+  const filteredHistory = useMemo(() => {
+    return historyEntries.filter(run => {
+      if (historyTaskFilter && run.taskName !== historyTaskFilter) return false;
+      if (historyStatusFilter !== "all" && run.status !== historyStatusFilter) return false;
+      return true;
+    });
+  }, [historyEntries, historyTaskFilter, historyStatusFilter]);
+
+  const historyTaskNames = useMemo(() => {
+    const names = new Set(historyEntries.map(r => r.taskName));
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }, [historyEntries]);
+
   const taskCount = taskEntries.length;
   const runningTaskCount = taskEntries.filter(t => t.status === "running").length;
   const schedulerRunning = statusQuery.data?.running ?? false;
+
+  // Refresh relative-time labels while there is upcoming or active work
+  useEffect(() => {
+    const needsTick = runningTaskCount > 0 || taskEntries.some(t => t.nextRunTime != null);
+    if (!needsTick) return;
+    const id = setInterval(() => setNowTick(n => n + 1), 15_000);
+    return () => clearInterval(id);
+  }, [runningTaskCount, taskEntries]);
 
   const tabs = useMemo<FilterTabOption<MainTab>[]>(
     () => [
@@ -131,6 +175,13 @@ export default function SchedulerDashboard() {
     ],
     [taskCount, historyEntries.length],
   );
+
+  const openHistoryForTask = (taskName: string) => {
+    setHistoryTaskFilter(taskName);
+    setHistoryStatusFilter("all");
+    setTab("history");
+    setShowAddForm(false);
+  };
 
   const refreshAll = async () => {
     await Promise.all([tasksQuery.mutate(), statusQuery.mutate(), historyQuery.mutate(), agents.mutate()]);
@@ -258,7 +309,7 @@ export default function SchedulerDashboard() {
                 />
                 <SummaryStat
                   label="Scheduler"
-                  value={schedulerRunning ? "On" : "Off"}
+                  value={schedulerRunning ? "Enabled" : "Disabled"}
                   sub={statusQuery.data?.autoStart ? "Auto-start enabled" : "Auto-start off"}
                   icon={schedulerRunning ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
                   accentClass={schedulerRunning ? "text-emerald-500" : "text-muted"}
@@ -290,6 +341,9 @@ export default function SchedulerDashboard() {
                         setSelectedAgentId(e.target.value || null);
                         setShowAddForm(false);
                         setTab("tasks");
+                        setExpandedTask(null);
+                        setHistoryTaskFilter("");
+                        setHistoryStatusFilter("all");
                       }}
                       className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary focus-accent"
                     >
@@ -308,7 +362,13 @@ export default function SchedulerDashboard() {
                       type="button"
                       disabled={!selectedAgentId || busyAction === "start" || busyAction === "stop" || (!schedulerRunning && taskCount === 0)}
                       onClick={() => void handleStartStop()}
-                      title={!schedulerRunning && taskCount === 0 ? "Add a task before starting" : undefined}
+                      title={
+                        !schedulerRunning && taskCount === 0
+                          ? "Add a task before enabling the scheduler"
+                          : schedulerRunning
+                            ? "Disable scheduler (pause all tasks)"
+                            : "Enable scheduler so pending tasks can fire"
+                      }
                       className={cn(
                         "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg focus-ring cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors",
                         schedulerRunning
@@ -323,7 +383,7 @@ export default function SchedulerDashboard() {
                       ) : (
                         <Play className="w-3.5 h-3.5" />
                       )}
-                      {schedulerRunning ? "Stop" : "Start"}
+                      {schedulerRunning ? "Disable" : "Enable"}
                     </button>
                     {selectedAgentId ? (
                       <button
@@ -340,7 +400,7 @@ export default function SchedulerDashboard() {
                 {!schedulerRunning && taskCount > 0 ? (
                   <p className="text-2xs text-amber-700 dark:text-amber-400/90 flex items-start gap-1.5">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                    Scheduler is stopped. Tasks will not fire until you start it (or auto-start after adding a task).
+                    Scheduler is disabled. Tasks will not fire until you enable it (or auto-start after adding a task).
                   </p>
                 ) : null}
               </div>
@@ -398,50 +458,80 @@ export default function SchedulerDashboard() {
                       </div>
                     ) : (
                       <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
-                        {taskEntries.map(entry => (
-                          <div key={entry.name} className="px-4 py-3 hover:bg-hover/30 transition-colors">
-                            <div className="flex items-start gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                  <span className="text-sm font-medium text-primary truncate">{entry.name}</span>
-                                  <TaskStatusBadge status={entry.status} />
-                                </div>
-                                <p className="text-2xs text-muted mb-1.5" title={entry.task.message}>
-                                  {truncateMessage(entry.task.message)}
-                                </p>
-                                <p className="text-2xs text-muted/90 mb-2">{formatScheduleSummary(entry.task)}</p>
-                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs">
-                                  <span className="text-muted">
-                                    Next:{" "}
-                                    <span className="text-primary font-medium" title={formatScheduleTime(entry.nextRunTime)}>
-                                      {entry.nextRunTime ? `${formatScheduleTime(entry.nextRunTime)} (${formatRelativeTime(entry.nextRunTime)})` : "—"}
+                        {taskEntries.map(entry => {
+                          const isExpanded = expandedTask === entry.name;
+                          return (
+                            <div key={entry.name} className="px-4 py-3 hover:bg-hover/30 transition-colors">
+                              <div className="flex items-start gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedTask(isExpanded ? null : entry.name)}
+                                  className="mt-0.5 p-0.5 text-muted hover:text-primary rounded focus-ring cursor-pointer shrink-0"
+                                  aria-expanded={isExpanded}
+                                  aria-label={isExpanded ? `Collapse ${entry.name}` : `Expand ${entry.name}`}
+                                >
+                                  {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                    <span className="text-sm font-medium text-primary truncate">{entry.name}</span>
+                                    <TaskStatusBadge status={entry.status} />
+                                  </div>
+                                  <p className="text-2xs text-muted mb-1.5" title={entry.task.message}>
+                                    {isExpanded ? entry.task.message : truncateMessage(entry.task.message)}
+                                  </p>
+                                  <p className="text-2xs text-muted/90 mb-2">{formatScheduleSummary(entry.task)}</p>
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs">
+                                    <span className="text-muted">
+                                      Next:{" "}
+                                      <span className="text-primary font-medium" title={formatScheduleTime(entry.nextRunTime)}>
+                                        {entry.nextRunTime ? `${formatScheduleTime(entry.nextRunTime)} (${formatRelativeTime(entry.nextRunTime)})` : "—"}
+                                      </span>
                                     </span>
-                                  </span>
-                                  <span className="text-muted">
-                                    Last:{" "}
-                                    <span className="text-primary font-medium" title={formatScheduleTime(entry.task.lastRunTime)}>
-                                      {entry.task.lastRunTime
-                                        ? `${formatScheduleTime(entry.task.lastRunTime)} (${formatRelativeTime(entry.task.lastRunTime)})`
-                                        : "Never"}
+                                    <span className="text-muted">
+                                      Last:{" "}
+                                      <span className="text-primary font-medium" title={formatScheduleTime(entry.task.lastRunTime)}>
+                                        {entry.task.lastRunTime
+                                          ? `${formatScheduleTime(entry.task.lastRunTime)} (${formatRelativeTime(entry.task.lastRunTime)})`
+                                          : "Never"}
+                                      </span>
                                     </span>
-                                  </span>
+                                  </div>
+                                  {isExpanded ? (
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => openHistoryForTask(entry.name)}
+                                        className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer"
+                                      >
+                                        <History className="w-3 h-3" />
+                                        View run history
+                                      </button>
+                                    </div>
+                                  ) : null}
                                 </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmRemove(entry.name)}
+                                  disabled={busyAction === `remove:${entry.name}`}
+                                  className="p-1.5 text-muted hover:text-red-500 transition-colors rounded-md focus-ring cursor-pointer disabled:opacity-50 shrink-0"
+                                  aria-label={`Remove task ${entry.name}`}
+                                  title="Remove task"
+                                >
+                                  {busyAction === `remove:${entry.name}` ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => setConfirmRemove(entry.name)}
-                                disabled={busyAction === `remove:${entry.name}`}
-                                className="p-1.5 text-muted hover:text-red-500 transition-colors rounded-md focus-ring cursor-pointer disabled:opacity-50 shrink-0"
-                                aria-label={`Remove task ${entry.name}`}
-                                title="Remove task"
-                              >
-                                {busyAction === `remove:${entry.name}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                              </button>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )
+                  ) : historyQuery.error && !historyQuery.data ? (
+                    <ErrorState title="Unable to load history" error={historyQuery.error} onRetry={() => void historyQuery.mutate()} variant="page" />
                   ) : historyEntries.length === 0 ? (
                     <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
                       <History className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
@@ -451,42 +541,103 @@ export default function SchedulerDashboard() {
                       </p>
                     </div>
                   ) : (
-                    <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
-                      {historyEntries.map((run, idx) => (
-                        <div key={`${run.taskName}-${run.startTime}-${idx}`} className="px-4 py-3">
-                          <div className="flex items-start gap-3">
-                            <div className="mt-0.5 shrink-0">
-                              {run.status === "completed" ? (
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                              ) : (
-                                <XCircle className="w-4 h-4 text-red-500" />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                                <span className="text-sm font-medium text-primary">{run.taskName}</span>
-                                <span
-                                  className={cn(
-                                    "text-2xs px-1.5 py-0.5 rounded-md border",
-                                    run.status === "completed"
-                                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                                      : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
-                                  )}
-                                >
-                                  {run.status}
-                                </span>
-                                <span className="text-2xs text-muted tabular-nums">{formatDuration(run.startTime, run.endTime)}</span>
-                              </div>
-                              <p className="text-2xs text-muted mb-1">{formatScheduleTime(run.startTime, { withSeconds: true })}</p>
-                              {run.message ? (
-                                <p className="text-2xs text-secondary line-clamp-2" title={run.message}>
-                                  {run.message}
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+                        <label className="flex-1 min-w-0 space-y-1">
+                          <span className="text-2xs font-medium text-muted">Task</span>
+                          <select
+                            value={historyTaskFilter}
+                            onChange={e => setHistoryTaskFilter(e.target.value)}
+                            className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary focus-accent"
+                            aria-label="Filter history by task"
+                          >
+                            <option value="">All tasks</option>
+                            {historyTaskNames.map(name => (
+                              <option key={name} value={name}>
+                                {name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="sm:w-40 space-y-1">
+                          <span className="text-2xs font-medium text-muted">Status</span>
+                          <select
+                            value={historyStatusFilter}
+                            onChange={e => setHistoryStatusFilter(e.target.value as HistoryStatusFilter)}
+                            className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary focus-accent"
+                            aria-label="Filter history by status"
+                          >
+                            <option value="all">All statuses</option>
+                            <option value="completed">Completed</option>
+                            <option value="failed">Failed</option>
+                          </select>
+                        </label>
+                        {historyTaskFilter || historyStatusFilter !== "all" ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHistoryTaskFilter("");
+                              setHistoryStatusFilter("all");
+                            }}
+                            className="px-3 py-2 text-xs text-muted hover:text-primary border border-primary rounded-lg focus-ring cursor-pointer sm:mb-0"
+                          >
+                            Clear filters
+                          </button>
+                        ) : null}
+                      </div>
+
+                      {filteredHistory.length === 0 ? (
+                        <div className="px-6 py-10 text-center bg-secondary border border-primary border-dashed rounded-xl">
+                          <p className="text-sm font-medium text-secondary mb-1">No matching runs</p>
+                          <p className="text-2xs text-muted">Try a different task or status filter.</p>
                         </div>
-                      ))}
+                      ) : (
+                        <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
+                          {filteredHistory.map((run, idx) => (
+                            <div key={`${run.taskName}-${run.startTime}-${idx}`} className="px-4 py-3">
+                              <div className="flex items-start gap-3">
+                                <div className="mt-0.5 shrink-0">
+                                  {run.status === "completed" ? (
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                  ) : (
+                                    <XCircle className="w-4 h-4 text-red-500" />
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => setHistoryTaskFilter(run.taskName)}
+                                      className="text-sm font-medium text-primary hover:underline focus-ring rounded cursor-pointer"
+                                      title={`Filter history to ${run.taskName}`}
+                                    >
+                                      {run.taskName}
+                                    </button>
+                                    <span
+                                      className={cn(
+                                        "text-2xs px-1.5 py-0.5 rounded-md border",
+                                        run.status === "completed"
+                                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                          : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
+                                      )}
+                                    >
+                                      {run.status}
+                                    </span>
+                                    <span className="text-2xs text-muted tabular-nums">{formatDuration(run.startTime, run.endTime)}</span>
+                                    <span className="text-2xs text-muted tabular-nums">({formatRelativeTime(run.startTime)})</span>
+                                  </div>
+                                  <p className="text-2xs text-muted mb-1">{formatScheduleTime(run.startTime, { withSeconds: true })}</p>
+                                  {run.message ? (
+                                    <p className="text-2xs text-secondary line-clamp-3 whitespace-pre-wrap break-words" title={run.message}>
+                                      {run.message}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </>

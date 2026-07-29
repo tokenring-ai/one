@@ -1,14 +1,17 @@
 import type { ChatAttachment } from "@tokenring-ai/agent/AgentEvents";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2 } from "lucide-react";
+import type React from "react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAgentEventState } from "../../hooks/useAgentEventState.ts";
+import { cn } from "../../lib/utils.ts";
 import { agentRPCClient, useAvailableCommands, useCommandHistory } from "../../rpc.ts";
 import { useChatInput } from "../ChatInputContext.tsx";
 import FileBrowserOverlay from "../overlay/file-browser.tsx";
 import { toastManager } from "../ui/toast.tsx";
 import AutoScrollContainer from "./AutoScrollContainer.tsx";
+import ChatDockControls, { type ChatDockMode } from "./ChatDockControls.tsx";
 import ChatFooter from "./ChatFooter.tsx";
 import ConnectionStatusBanner from "./ConnectionStatusBanner.tsx";
 import DeletedAgentRestorePanel from "./DeletedAgentRestorePanel.tsx";
@@ -17,9 +20,16 @@ import PendingQuestions from "./PendingQuestions.tsx";
 
 interface ChatPanelProps {
   agentId: string;
+  /** Current dock placement. When set together with `onDockModeChange`, the dock controls are shown. */
+  dockMode?: ChatDockMode;
+  onDockModeChange?: (mode: ChatDockMode) => void;
+  onClose?: () => void;
+  /** Lets the surrounding dock use the header as a drag handle (floating mode). */
+  onHeaderPointerDown?: (event: React.PointerEvent) => void;
+  headerTitle?: string;
 }
 
-export default function ChatPanel({ agentId }: ChatPanelProps) {
+export default function ChatPanel({ agentId, dockMode, onDockModeChange, onClose, onHeaderPointerDown, headerTitle = "Agent Chat" }: ChatPanelProps) {
   const { getInput, setInput: setPersistedInput, clearInput } = useChatInput();
   const [input, setInputState] = useState(() => getInput(agentId));
   const [showHistory, setShowHistory] = useState(false);
@@ -96,9 +106,25 @@ export default function ChatPanel({ agentId }: ChatPanelProps) {
     }
   };
 
+  const header =
+    dockMode && onDockModeChange ? (
+      <div
+        onPointerDown={onHeaderPointerDown}
+        className={cn(
+          "shrink-0 h-9 px-2 flex items-center gap-2 border-b border-primary bg-secondary select-none",
+          dockMode === "float" && onHeaderPointerDown && "cursor-move",
+        )}
+      >
+        <span className="text-xs font-medium text-muted truncate">{headerTitle}</span>
+        <div className="flex-1" />
+        <ChatDockControls mode={dockMode} onModeChange={onDockModeChange} onClose={() => (onClose ? onClose() : onDockModeChange("closed"))} />
+      </div>
+    ) : null;
+
   if (agentNotFound) {
     return (
       <div className="h-full flex flex-col">
+        {header}
         <DeletedAgentRestorePanel agentId={agentId} />
 
         <div className="flex flex-col items-center justify-center flex-1 p-6 text-center">
@@ -148,6 +174,8 @@ export default function ChatPanel({ agentId }: ChatPanelProps) {
 
   return (
     <div className="h-full flex flex-col">
+      {header}
+
       <ConnectionStatusBanner
         isConnecting={isConnecting}
         connectionError={connectionError}

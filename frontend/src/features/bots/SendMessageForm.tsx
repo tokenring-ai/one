@@ -1,10 +1,11 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2, Send, X } from "lucide-react";
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { cn } from "../../lib/utils.ts";
 import { botRPCClient } from "../../rpc.ts";
+import { splitTarget } from "./formatters.ts";
 
 export type MessageTargetOption = {
   target: string;
@@ -21,6 +22,7 @@ type SendMessageFormProps = {
 };
 
 const CUSTOM_TARGET = "__custom__";
+const TARGET_PATTERN = /^[^:]+:.+/;
 
 export default function SendMessageForm({ options, initialTarget, onSent, onCancel }: SendMessageFormProps) {
   const knownTarget = initialTarget && options.some(option => option.target === initialTarget) ? initialTarget : undefined;
@@ -30,7 +32,13 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
   const [sending, setSending] = useState(false);
 
   const target = selected === CUSTOM_TARGET ? customTarget.trim() : selected;
-  const groups = [...new Set(options.map(option => option.group))];
+  const groups = useMemo(() => [...new Set(options.map(option => option.group))], [options]);
+  const selectedOption = options.find(option => option.target === selected);
+  const serviceHint = useMemo(() => {
+    if (!target || !TARGET_PATTERN.test(target)) return null;
+    const { service } = splitTarget(target);
+    return service || null;
+  }, [target]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -39,8 +47,8 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
       toastManager.error("A target is required", { duration: 3000 });
       return;
     }
-    if (!/^[^:]+:.+/.test(target)) {
-      toastManager.error("Targets look like service:userId, e.g. slack:U123ABC", { duration: 4000 });
+    if (!TARGET_PATTERN.test(target)) {
+      toastManager.error("Targets look like service:userId, e.g. slack:U123ABC or group:dev-team", { duration: 4000 });
       return;
     }
     if (!body) {
@@ -52,7 +60,8 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
     try {
       const result = await botRPCClient.sendMessage({ target, message: body });
       if (result.status === "providerNotFound") {
-        toastManager.error(`No messaging service is connected for "${target.split(":")[0]}"`, { duration: 5000 });
+        const { service } = splitTarget(target);
+        toastManager.error(`No messaging service is connected for "${service}"`, { duration: 5000 });
         return;
       }
       toastManager.success(`Message sent to ${target}`, { duration: 2500 });
@@ -95,11 +104,12 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
           ))}
           <option value={CUSTOM_TARGET}>Another target…</option>
         </select>
+        {selected !== CUSTOM_TARGET && selectedOption ? <span className="block text-2xs text-muted font-mono">{selectedOption.target}</span> : null}
       </label>
 
       {selected === CUSTOM_TARGET ? (
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">service:userId</span>
+          <span className="text-2xs font-medium text-muted">service:userId or group:name</span>
           <input
             type="text"
             value={customTarget}
@@ -107,7 +117,10 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
             placeholder="slack:U123ABC"
             className={inputClass}
             autoFocus
+            spellCheck={false}
+            autoComplete="off"
           />
+          <span className="block text-2xs text-muted">Examples: slack:C0123ABCD, telegram:123456789, group:dev-team</span>
         </label>
       ) : null}
 
@@ -121,6 +134,10 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
           className={cn(inputClass, "resize-y min-h-[5rem]")}
           required
         />
+        <span className="flex items-center justify-between text-2xs text-muted">
+          <span>{serviceHint ? `Via ${serviceHint}` : "Pick a target to send"}</span>
+          <span className="tabular-nums">{message.length.toLocaleString()} chars</span>
+        </span>
       </label>
 
       <div className="flex items-center justify-end gap-2 pt-1">
@@ -133,7 +150,7 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
         </button>
         <button
           type="submit"
-          disabled={sending}
+          disabled={sending || !target || !message.trim()}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-500 disabled:opacity-60 text-white rounded-lg focus-ring cursor-pointer shadow-sm"
         >
           {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}

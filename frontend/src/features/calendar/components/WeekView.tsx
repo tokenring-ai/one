@@ -1,10 +1,16 @@
-import { Bot, GitBranch } from "lucide-react";
+import { Bot, Calendar, GitBranch } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { cn } from "../../../lib/utils.ts";
 import { HOUR_H, HOURS, WEEKDAYS_LETTER } from "../constants.ts";
 import { addDays, toDateKey } from "../dateUtils.ts";
 import type { CalendarEvent } from "../types.ts";
 import EventChip from "./EventChip.tsx";
+
+function eventTypeIcon(type: CalendarEvent["type"], size = 8) {
+  if (type === "workflow") return <GitBranch size={size} className="shrink-0" />;
+  if (type === "calendar") return <Calendar size={size} className="shrink-0" />;
+  return <Bot size={size} className="shrink-0" />;
+}
 
 export default function WeekView({
   weekStart,
@@ -132,7 +138,7 @@ export default function WeekView({
                         style={{ top: `${top}px`, height: `${height}px` }}
                       >
                         <div className="flex items-center gap-1 truncate">
-                          {ev.type === "workflow" ? <GitBranch size={8} className="shrink-0" /> : <Bot size={8} className="shrink-0" />}
+                          {eventTypeIcon(ev.type, 8)}
                           {ev.title}
                         </div>
                         {ev.startTime && <div className="text-white/70">{ev.startTime}</div>}

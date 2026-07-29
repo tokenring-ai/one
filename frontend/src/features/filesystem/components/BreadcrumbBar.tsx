@@ -1,4 +1,4 @@
-import { ChevronRight, Eye, EyeOff, Plus, RefreshCw } from "lucide-react";
+import { ChevronRight, Eye, EyeOff, FilePlus, FolderPlus, Plus, RefreshCw } from "lucide-react";
 import React from "react";
 import { cn } from "../../../lib/utils.ts";
 
@@ -9,18 +9,20 @@ interface BreadcrumbBarProps {
   onToggleHidden: () => void;
   onUpload: () => void;
   onRefresh: () => void;
+  onNewFile?: () => void;
+  onNewFolder?: () => void;
 }
 
-export default function BreadcrumbBar({ path, onNavigate, showHidden, onToggleHidden, onUpload, onRefresh }: BreadcrumbBarProps) {
+export default function BreadcrumbBar({ path, onNavigate, showHidden, onToggleHidden, onUpload, onRefresh, onNewFile, onNewFolder }: BreadcrumbBarProps) {
   const parts = path === "." ? [] : path.split("/");
   return (
-    <div className="h-10 border-b border-primary bg-secondary flex items-center gap-2 px-3 shrink-0">
+    <div className="h-10 border-b border-primary bg-secondary flex items-center gap-1.5 px-3 shrink-0">
       <div className="flex items-center gap-0.5 text-xs text-muted flex-1 min-w-0 overflow-hidden">
         <button type="button" onClick={() => onNavigate(".")} className="hover:text-primary shrink-0 focus-ring rounded px-1">
           root
         </button>
         {parts.map((part, i) => (
-          <React.Fragment key={part}>
+          <React.Fragment key={`${part}-${i}`}>
             <ChevronRight className="w-3 h-3 shrink-0 text-dim" />
             <button
               type="button"
@@ -51,6 +53,28 @@ export default function BreadcrumbBar({ path, onNavigate, showHidden, onToggleHi
         {showHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
         <span className="hidden sm:inline">{showHidden ? "Hide" : "Show"} hidden</span>
       </button>
+      {onNewFile && (
+        <button
+          type="button"
+          onClick={onNewFile}
+          className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-hover text-muted text-2xs transition-colors focus-ring cursor-pointer"
+          title="New file"
+        >
+          <FilePlus className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">New file</span>
+        </button>
+      )}
+      {onNewFolder && (
+        <button
+          type="button"
+          onClick={onNewFolder}
+          className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-hover text-muted text-2xs transition-colors focus-ring cursor-pointer"
+          title="New folder"
+        >
+          <FolderPlus className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">New folder</span>
+        </button>
+      )}
       <button
         type="button"
         onClick={onUpload}

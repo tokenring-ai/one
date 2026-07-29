@@ -1,13 +1,15 @@
-import { Check, Download, Loader2 } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import formatError from "@tokenring-ai/utility/error/formatError";
+import { Check, Download, Loader2, Pencil, Trash2 } from "lucide-react";
+import { useMemo } from "react";
 import { toastManager } from "../../../components/ui/toast.tsx";
 import { cn } from "../../../lib/utils.ts";
-import { filesystemRPCClient, useDirectoryListing } from "../../../rpc.ts";
-import { getBasename, getFileIcon } from "../fsUtils.ts";
+import { filesystemRPCClient, useDirectoryListing, useWorkspaceFileSearch } from "../../../rpc.ts";
+import { getBasename, getFileIcon, isHiddenEntry } from "../fsUtils.ts";
 
 interface FileListPaneProps {
   provider: string | null;
   path: string;
+  showHidden: boolean;
   onNavigate: (p: string) => void;
   onSelectFile: (f: string) => void;
   selectedFile: string | null;
@@ -17,11 +19,14 @@ interface FileListPaneProps {
   uploadingFiles: string[];
   searchQuery: string;
   onRefresh: () => void;
+  onRename?: (file: string) => void;
+  onDelete?: (file: string) => void;
 }
 
 export default function FileListPane({
   provider,
   path,
+  showHidden,
   onNavigate,
   onSelectFile,
   selectedFile,
@@ -30,19 +35,31 @@ export default function FileListPane({
   onToggleSelectAll,
   uploadingFiles,
   searchQuery,
+  onRename,
+  onDelete,
 }: FileListPaneProps) {
-  const listing = useDirectoryListing(provider ? { path, showHidden: false, provider } : undefined);
+  const trimmedSearch = searchQuery.trim();
+  const isSearching = trimmedSearch.length > 0;
 
-  useEffect(() => {
-    /* no-op: refresh is triggered externally */
-  }, []);
+  const listing = useDirectoryListing(provider && !isSearching ? { path, showHidden, provider } : undefined);
+  const workspaceSearch = useWorkspaceFileSearch(provider && isSearching ? { provider, query: trimmedSearch, limit: 80 } : undefined);
 
   const sortedFiles = useMemo(() => {
+    if (isSearching) {
+      const files = workspaceSearch.data?.files ?? [];
+      return [...files].sort((a, b) => {
+        const dA = a.endsWith("/"),
+          dB = b.endsWith("/");
+        if (dA && !dB) return -1;
+        if (!dA && dB) return 1;
+        return a.localeCompare(b);
+      });
+    }
+
     if (!listing.data?.files) return [];
     let files = [...listing.data.files];
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      files = files.filter(f => getBasename(f).toLowerCase().includes(q));
+    if (!showHidden) {
+      files = files.filter(f => !isHiddenEntry(f));
     }
     return files.sort((a, b) => {
       const dA = a.endsWith("/"),
@@ -51,7 +68,7 @@ export default function FileListPane({
       if (!dA && dB) return 1;
       return a.localeCompare(b);
     });
-  }, [listing.data?.files, searchQuery]);
+  }, [listing.data?.files, workspaceSearch.data?.files, isSearching, showHidden]);
 
   const fileOnly = sortedFiles.filter(f => !f.endsWith("/"));
   const allSelected = fileOnly.length > 0 && fileOnly.every(f => selectedPaths.has(f));
@@ -63,10 +80,15 @@ export default function FileListPane({
       onNavigate(dirPath);
       return;
     }
+    // When searching, opening a file should also jump to its parent directory context is optional;
+    // select the file for preview/edit.
     onSelectFile(file);
   };
 
-  if (listing.isLoading) {
+  const isLoading = isSearching ? workspaceSearch.isLoading : listing.isLoading;
+  const loadError = isSearching ? workspaceSearch.error : listing.error;
+
+  if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
         <Loader2 className="w-5 h-5 text-muted animate-spin" />
@@ -74,8 +96,25 @@ export default function FileListPane({
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="h-full flex items-center justify-center p-6 text-center">
+        <p className="text-sm text-red-400">{formatError(loadError)}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto flex flex-col">
+      {isSearching && (
+        <div className="px-3 py-1.5 border-b border-primary bg-tertiary text-2xs text-muted shrink-0">
+          {workspaceSearch.data
+            ? `${workspaceSearch.data.totalMatches} match${workspaceSearch.data.totalMatches === 1 ? "" : "es"} for “${trimmedSearch}”${
+                workspaceSearch.data.totalMatches > sortedFiles.length ? ` · showing ${sortedFiles.length}` : ""
+              }`
+            : `Searching for “${trimmedSearch}”…`}
+        </div>
+      )}
       <table className="w-full text-left border-collapse">
         <thead className="sticky top-0 bg-secondary z-10">
           <tr className="text-2xs text-muted font-semibold border-b border-primary">
@@ -95,7 +134,7 @@ export default function FileListPane({
             </th>
             <th className="px-2 py-2 font-medium">Name</th>
             <th className="px-2 py-2 font-medium w-24 hidden md:table-cell">Type</th>
-            <th className="px-2 py-2 font-medium w-16 hidden sm:table-cell text-right pr-4">Actions</th>
+            <th className="px-2 py-2 font-medium w-24 hidden sm:table-cell text-right pr-4">Actions</th>
           </tr>
         </thead>
         <tbody className="text-xs">
@@ -105,6 +144,7 @@ export default function FileListPane({
             const isSelectedFile = selectedFile === file;
             const isChecked = selectedPaths.has(file);
             const isUploading = uploadingFiles.includes(name);
+            const showPathHint = isSearching && file.includes("/");
 
             return (
               <tr
@@ -137,11 +177,16 @@ export default function FileListPane({
                 </td>
 
                 <td className="px-2 py-2.5">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     {getFileIcon(file, isDir)}
-                    <span className={cn("font-medium truncate", isSelectedFile ? "text-accent-soft" : "text-primary", isUploading && "text-accent-soft")}>
-                      {name}
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <span
+                        className={cn("font-medium truncate block", isSelectedFile ? "text-accent-soft" : "text-primary", isUploading && "text-accent-soft")}
+                      >
+                        {name}
+                      </span>
+                      {showPathHint && <span className="text-2xs text-dim truncate block">{file}</span>}
+                    </div>
                     {isUploading && <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin shrink-0" />}
                   </div>
                 </td>
@@ -149,13 +194,14 @@ export default function FileListPane({
                 <td className="px-2 py-2.5 text-muted hidden md:table-cell">{isDir ? "folder" : name.includes(".") ? name.split(".").pop() : "—"}</td>
 
                 <td className="px-2 py-2.5 hidden sm:table-cell" onClick={e => e.stopPropagation()}>
-                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                  <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
                     {!isDir && (
                       <button
                         type="button"
                         onClick={async () => {
                           try {
-                            const result = await filesystemRPCClient.readTextFile({ path: file, provider: provider! });
+                            if (!provider) return;
+                            const result = await filesystemRPCClient.readTextFile({ path: file, provider });
                             const blob = new Blob([result.content ?? ""], { type: "text/plain" });
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement("a");
@@ -174,6 +220,28 @@ export default function FileListPane({
                         <Download className="w-3.5 h-3.5" />
                       </button>
                     )}
+                    {onRename && (
+                      <button
+                        type="button"
+                        onClick={() => onRename(file)}
+                        className="p-1 hover:text-primary text-muted focus-ring rounded cursor-pointer"
+                        aria-label={`Rename ${name}`}
+                        title="Rename"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button
+                        type="button"
+                        onClick={() => onDelete(file)}
+                        className="p-1 hover:text-red-400 text-muted focus-ring rounded cursor-pointer"
+                        aria-label={`Delete ${name}`}
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -183,7 +251,7 @@ export default function FileListPane({
           {sortedFiles.length === 0 && (
             <tr>
               <td colSpan={4} className="py-16 text-center text-muted text-sm">
-                {searchQuery ? `No files matching "${searchQuery}"` : "This directory is empty."}
+                {isSearching ? `No files matching “${trimmedSearch}”` : "This directory is empty."}
               </td>
             </tr>
           )}

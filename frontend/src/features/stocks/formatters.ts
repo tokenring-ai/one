@@ -44,12 +44,53 @@ export function fmtTs(ts: number | null | undefined, kind: "date" | "datetime" =
   return kind === "datetime" ? d.toLocaleString() : d.toLocaleDateString();
 }
 
+/**
+ * Normalize a history/tick timestamp to epoch milliseconds.
+ * CloudQuote typically returns ms; some feeds use µs/ns or seconds.
+ */
 export function parseHistoryDate(v: number | string): number {
   if (typeof v === "string") {
     const t = Date.parse(v);
     return Number.isNaN(t) ? 0 : t;
   }
-  if (v > 1e15) return v / 1e6;
-  if (v > 1e12) return v / 1e3;
+  // nanoseconds (~1e18) → ms
+  if (v > 1e16) return v / 1e6;
+  // microseconds (~1e15) → ms
+  if (v > 1e14) return v / 1e3;
+  // seconds (~1e9) → ms
+  if (v > 0 && v < 1e11) return v * 1000;
+  // already milliseconds (~1e12)
   return v;
+}
+
+/** Format a history row date (epoch ms or YYYY-MM-DD) for display. */
+export function fmtHistoryDate(v: number | string | null | undefined): string {
+  if (v == null || v === "") return "—";
+  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
+  const ts = parseHistoryDate(v as number | string);
+  if (!ts) return String(v);
+  return new Date(ts).toLocaleDateString("en-CA"); // YYYY-MM-DD
+}
+
+/** ISO date (YYYY-MM-DD) offset by `days` from today (local). */
+export function isoDateOffset(days: number, from = new Date()): string {
+  const d = new Date(from);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * CloudQuote getPriceHistory works best with a 1-day buffer on each side.
+ * Returns { from, to } suitable for the RPC.
+ */
+export function historyRange(monthsBack: number): { from: string; to: string } {
+  const end = new Date();
+  end.setDate(end.getDate() + 1);
+  const start = new Date();
+  start.setMonth(start.getMonth() - monthsBack);
+  start.setDate(start.getDate() - 1);
+  return {
+    from: start.toISOString().slice(0, 10),
+    to: end.toISOString().slice(0, 10),
+  };
 }

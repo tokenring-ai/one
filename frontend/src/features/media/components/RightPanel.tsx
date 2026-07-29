@@ -10,6 +10,7 @@ export default function RightPanel({
   kind,
   agentId,
   selected,
+  workingOn,
   onWorkOnSelection,
   onClearSelection,
   onGenerated,
@@ -17,20 +18,22 @@ export default function RightPanel({
   kind: MediaKind;
   agentId: string | null;
   selected: MediaEntry | null;
+  workingOn?: boolean | undefined;
   onWorkOnSelection: () => Promise<void>;
   onClearSelection: () => void;
-  onGenerated: () => void;
+  onGenerated: (filename?: string) => void;
 }) {
+  const isWorking = workingOn ?? false;
   if (selected) {
     switch (selected.kind) {
       case "image":
-        return <ImageViewer image={selected} onWorkOnImage={onWorkOnSelection} onClose={onClearSelection} />;
+        return <ImageViewer image={selected} workingOn={isWorking} onWorkOnImage={onWorkOnSelection} onClose={onClearSelection} />;
       case "video":
-        return <VideoViewer video={selected} onWorkOnVideo={onWorkOnSelection} onClose={onClearSelection} />;
+        return <VideoViewer video={selected} workingOn={isWorking} onWorkOnVideo={onWorkOnSelection} onClose={onClearSelection} />;
       case "audio":
-        return <AudioViewer audio={selected} agentId={agentId} onWorkOnAudio={onWorkOnSelection} onClose={onClearSelection} />;
+        return <AudioViewer audio={selected} agentId={agentId} workingOn={isWorking} onWorkOnAudio={onWorkOnSelection} onClose={onClearSelection} />;
       default: {
-        const exhaustive: any = selected satisfies never;
+        const exhaustive: string = selected satisfies never;
         console.error(`Unhandled media kind: ${exhaustive}`);
         return null;
       }
@@ -45,7 +48,7 @@ export default function RightPanel({
     case "audio":
       return <SpeechGeneratePanel agentId={agentId} onGenerated={onGenerated} />;
     default: {
-      const exhaustive: any = kind satisfies never;
+      const exhaustive: string = kind satisfies never;
       console.error(`Unhandled media kind: ${exhaustive}`);
       return null;
     }

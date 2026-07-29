@@ -4,6 +4,7 @@ import type { KeyboardEvent } from "react";
 import { useMemo, useState } from "react";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { imageGenerationRPCClient, useImageGenerationModels } from "../../../../rpc.ts";
+import { keywordsFromPrompt } from "../../utils.ts";
 import GenerateButton from "./GenerateButton.tsx";
 import GeneratePanelShell from "./GeneratePanelShell.tsx";
 import ImageQualityField, { type ImageQuality } from "./ImageQualityField.tsx";
@@ -11,7 +12,7 @@ import ImageShapeField, { type ImageShape } from "./ImageShapeField.tsx";
 import ModelSelectField from "./ModelSelectField.tsx";
 import PromptField from "./PromptField.tsx";
 
-export default function ImageGeneratePanel({ agentId, onGenerated }: { agentId: string | null; onGenerated: () => void }) {
+export default function ImageGeneratePanel({ agentId, onGenerated }: { agentId: string | null; onGenerated: (filename?: string) => void }) {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState<string>("");
   const [shape, setShape] = useState<ImageShape>("square");
@@ -39,7 +40,7 @@ export default function ImageGeneratePanel({ agentId, onGenerated }: { agentId: 
     }
     setGenerating(true);
     try {
-      await imageGenerationRPCClient.generateImage({
+      const result = await imageGenerationRPCClient.generateImage({
         agentId,
         ...(selectedModel && { model: selectedModel }),
         request: {
@@ -49,16 +50,17 @@ export default function ImageGeneratePanel({ agentId, onGenerated }: { agentId: 
             quality,
             shape,
           },
-          keywords: prompt
-            .trim()
-            .split(/[,\s]+/)
-            .filter(Boolean)
-            .slice(0, 10),
+          keywords: keywordsFromPrompt(prompt),
         },
       });
-      toastManager.success("Image generated!", { duration: 3000 });
-      setPrompt("");
-      onGenerated();
+      if (result.status === "success") {
+        const fileName = result.results[0]?.fileName;
+        toastManager.success(fileName ? `Image generated: ${fileName}` : "Image generated!", { duration: 3000 });
+        setPrompt("");
+        onGenerated(fileName);
+      } else {
+        toastManager.error("Agent not found", { duration: 4000 });
+      }
     } catch (err) {
       toastManager.error(formatError(err), { duration: 5000 });
     } finally {

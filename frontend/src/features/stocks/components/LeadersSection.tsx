@@ -40,6 +40,8 @@ export default function LeadersSection({ onSymbolSelect }: LeadersSectionProps) 
         <div className="flex justify-center py-6">
           <Loader2 className="w-5 h-5 animate-spin text-muted" />
         </div>
+      ) : leaders.error ? (
+        <div className="py-6 text-center text-red-400 text-sm">Failed to load market leaders</div>
       ) : !rows.length ? (
         <div className="py-6 text-center text-muted text-sm">No data</div>
       ) : (
