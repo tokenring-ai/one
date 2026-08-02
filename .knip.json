@@ -8,8 +8,6 @@
     "website/**"
   ],
   "exclude": [
-    "dependencies",
-    "unlisted",
     "unresolved",
     "exports"
   ],

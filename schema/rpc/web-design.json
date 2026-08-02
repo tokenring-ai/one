@@ -809,6 +809,10 @@
               "size": {
                 "type": "number"
               },
+              "mimeType": {
+                "default": "text/html",
+                "type": "string"
+              },
               "updatedAt": {
                 "type": "string"
               }
@@ -817,6 +821,7 @@
               "flowName",
               "name",
               "size",
+              "mimeType",
               "updatedAt"
             ],
             "additionalProperties": false
@@ -856,6 +861,10 @@
               "size": {
                 "type": "number"
               },
+              "mimeType": {
+                "default": "text/html",
+                "type": "string"
+              },
               "updatedAt": {
                 "type": "string"
               }
@@ -864,6 +873,7 @@
               "flowName",
               "name",
               "size",
+              "mimeType",
               "updatedAt"
             ],
             "additionalProperties": false
@@ -907,19 +917,33 @@
                 "size": {
                   "type": "number"
                 },
+                "mimeType": {
+                  "default": "text/html",
+                  "type": "string"
+                },
                 "updatedAt": {
                   "type": "string"
                 },
                 "content": {
                   "type": "string"
+                },
+                "encoding": {
+                  "default": "utf8",
+                  "type": "string",
+                  "enum": [
+                    "utf8",
+                    "base64"
+                  ]
                 }
               },
               "required": [
                 "flowName",
                 "name",
                 "size",
+                "mimeType",
                 "updatedAt",
-                "content"
+                "content",
+                "encoding"
               ],
               "additionalProperties": false
             },
@@ -946,6 +970,14 @@
         "content": {
           "default": "",
           "type": "string"
+        },
+        "encoding": {
+          "default": "utf8",
+          "type": "string",
+          "enum": [
+            "utf8",
+            "base64"
+          ]
         }
       },
       "required": [
@@ -968,19 +1000,33 @@
             "size": {
               "type": "number"
             },
+            "mimeType": {
+              "default": "text/html",
+              "type": "string"
+            },
             "updatedAt": {
               "type": "string"
             },
             "content": {
               "type": "string"
+            },
+            "encoding": {
+              "default": "utf8",
+              "type": "string",
+              "enum": [
+                "utf8",
+                "base64"
+              ]
             }
           },
           "required": [
             "flowName",
             "name",
             "size",
+            "mimeType",
             "updatedAt",
-            "content"
+            "content",
+            "encoding"
           ],
           "additionalProperties": false
         }
@@ -1001,6 +1047,14 @@
         },
         "content": {
           "type": "string"
+        },
+        "encoding": {
+          "default": "utf8",
+          "type": "string",
+          "enum": [
+            "utf8",
+            "base64"
+          ]
         }
       },
       "required": [
@@ -1024,19 +1078,33 @@
             "size": {
               "type": "number"
             },
+            "mimeType": {
+              "default": "text/html",
+              "type": "string"
+            },
             "updatedAt": {
               "type": "string"
             },
             "content": {
               "type": "string"
+            },
+            "encoding": {
+              "default": "utf8",
+              "type": "string",
+              "enum": [
+                "utf8",
+                "base64"
+              ]
             }
           },
           "required": [
             "flowName",
             "name",
             "size",
+            "mimeType",
             "updatedAt",
-            "content"
+            "content",
+            "encoding"
           ],
           "additionalProperties": false
         }

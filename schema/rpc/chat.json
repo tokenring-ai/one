@@ -1226,6 +1226,7 @@
               "const": "success"
             },
             "tools": {
+              "readOnly": true,
               "type": "array",
               "items": {
                 "type": "string"
@@ -1281,6 +1282,7 @@
               "const": "success"
             },
             "tools": {
+              "readOnly": true,
               "type": "array",
               "items": {
                 "type": "string"
@@ -1336,6 +1338,7 @@
               "const": "success"
             },
             "tools": {
+              "readOnly": true,
               "type": "array",
               "items": {
                 "type": "string"
@@ -1391,6 +1394,7 @@
               "const": "success"
             },
             "tools": {
+              "readOnly": true,
               "type": "array",
               "items": {
                 "type": "string"

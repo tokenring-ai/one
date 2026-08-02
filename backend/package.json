@@ -15,7 +15,6 @@
     "@tokenring-ai/one-frontend": "workspace:*",
     "@tokenring-ai/cdn": "workspace:*",
     "@tokenring-ai/checkpoint": "workspace:*",
-    "@tokenring-ai/chrome": "workspace:*",
     "@tokenring-ai/code-watch": "workspace:*",
     "@tokenring-ai/codebase": "workspace:*",
     "@tokenring-ai/database": "workspace:*",

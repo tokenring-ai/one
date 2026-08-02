@@ -250,3 +250,15 @@
 	path = plugin/discord
 	url = ../discord.git
 	branch = main
+[submodule "plugin/reddit"]
+	path = plugin/reddit
+	url = ../reddit.git
+	branch = main
+[submodule "plugin/x"]
+	path = plugin/x
+	url = ../x.git
+	branch = main
+[submodule "plugin/browser"]
+	path = plugin/browser
+	url = ../browser.git
+	branch = main

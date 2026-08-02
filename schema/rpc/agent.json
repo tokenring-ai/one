@@ -727,6 +727,11 @@
               "type": "string",
               "description": "Group this agent type appears under in pickers"
             },
+            "defaultCommand": {
+              "default": "/chat send",
+              "description": "The default command to run when the message to the agent does not start with a '/'",
+              "type": "string"
+            },
             "debug": {
               "default": false,
               "advanced": true,
@@ -779,6 +784,7 @@
             "displayName",
             "description",
             "category",
+            "defaultCommand",
             "debug",
             "initialCommands",
             "createMessage",
@@ -3533,10 +3539,7 @@
         "agentId": {
           "type": "string"
         }
-      },
-      "required": [
-        "agentId"
-      ]
+      }
     },
     "getAvailableCommandsResult": {
       "oneOf": [
@@ -3557,11 +3560,210 @@
                   },
                   "description": {
                     "type": "string"
+                  },
+                  "inputSchema": {
+                    "readOnly": true,
+                    "type": "object",
+                    "properties": {
+                      "args": {
+                        "readOnly": true,
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "defaultValue": {
+                                  "type": "string"
+                                },
+                                "minimum": {
+                                  "type": "number"
+                                },
+                                "maximum": {
+                                  "type": "number"
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "description"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "number"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "defaultValue": {
+                                  "type": "number"
+                                },
+                                "minimum": {
+                                  "type": "number"
+                                },
+                                "maximum": {
+                                  "type": "number"
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "description"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "flag"
+                                },
+                                "description": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "description"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "date"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "defaultValue": {
+                                  "type": "number"
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "description"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "enum"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "values": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "defaultValue": {
+                                  "type": "string"
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "description",
+                                "values"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        }
+                      },
+                      "positionals": {
+                        "readOnly": true,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "required": {
+                              "type": "boolean"
+                            },
+                            "defaultValue": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "description"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "remainder": {
+                        "readOnly": true,
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "defaultValue": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "description"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "allowAttachments": {
+                        "type": "boolean"
+                      }
+                    },
+                    "additionalProperties": false
                   }
                 },
                 "required": [
                   "name",
-                  "description"
+                  "description",
+                  "inputSchema"
                 ],
                 "additionalProperties": false
               }

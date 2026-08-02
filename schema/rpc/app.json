@@ -168,6 +168,399 @@
         "stream"
       ],
       "additionalProperties": false
+    },
+    {
+      "title": "listDebugTargets request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/app.listDebugTargets"
+        },
+        "params": {
+          "$ref": "#/$defs/listDebugTargetsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listDebugTargets response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listDebugTargetsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "captureDebugSnapshot request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/app.captureDebugSnapshot"
+        },
+        "params": {
+          "$ref": "#/$defs/captureDebugSnapshotParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "captureDebugSnapshot response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/captureDebugSnapshotResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listDebugSnapshots request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/app.listDebugSnapshots"
+        },
+        "params": {
+          "$ref": "#/$defs/listDebugSnapshotsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listDebugSnapshots response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listDebugSnapshotsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "readDebugSnapshot request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/app.readDebugSnapshot"
+        },
+        "params": {
+          "$ref": "#/$defs/readDebugSnapshotParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "readDebugSnapshot response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/readDebugSnapshotResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteDebugSnapshot request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/app.deleteDebugSnapshot"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteDebugSnapshotParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteDebugSnapshot response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteDebugSnapshotResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "startDebugRecording request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/app.startDebugRecording"
+        },
+        "params": {
+          "$ref": "#/$defs/startDebugRecordingParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "startDebugRecording response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/startDebugRecordingResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "stopDebugRecording request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/app.stopDebugRecording"
+        },
+        "params": {
+          "$ref": "#/$defs/stopDebugRecordingParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "stopDebugRecording response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/stopDebugRecordingResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamDebugRecording request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/app.streamDebugRecording"
+        },
+        "params": {
+          "$ref": "#/$defs/streamDebugRecordingParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamDebugRecording response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamDebugRecordingResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamDebugRecording stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
     }
   ],
   "$defs": {
@@ -339,6 +732,517 @@
         "position"
       ],
       "additionalProperties": false
+    },
+    "listDebugTargetsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listDebugTargetsResult": {
+      "type": "object",
+      "properties": {
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "label",
+              "description"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "targets"
+      ],
+      "additionalProperties": false
+    },
+    "captureDebugSnapshotParams": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ]
+    },
+    "captureDebugSnapshotResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "targetNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "listDebugSnapshotsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listDebugSnapshotsResult": {
+      "type": "object",
+      "properties": {
+        "snapshots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "sizeBytes": {
+                "type": "number"
+              },
+              "capturedAt": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "sizeBytes",
+              "capturedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "snapshots"
+      ],
+      "additionalProperties": false
+    },
+    "readDebugSnapshotParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "readDebugSnapshotResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "name": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "name",
+            "content"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "notFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "deleteDebugSnapshotParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "deleteDebugSnapshotResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "notFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "startDebugRecordingParams": {
+      "type": "object",
+      "properties": {
+        "targets": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "id"
+            ]
+          }
+        },
+        "intervalMs": {
+          "type": "number",
+          "minimum": 1000
+        }
+      },
+      "required": [
+        "targets",
+        "intervalMs"
+      ]
+    },
+    "startDebugRecordingResult": {
+      "type": "object",
+      "properties": {
+        "recording": {
+          "type": "boolean"
+        },
+        "intervalMs": {
+          "type": "number"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "startedAt": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastCaptureAt": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "captureCount": {
+          "type": "number"
+        },
+        "lastSnapshot": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastError": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "recording",
+        "intervalMs",
+        "targets",
+        "startedAt",
+        "lastCaptureAt",
+        "captureCount",
+        "lastSnapshot",
+        "lastError"
+      ],
+      "additionalProperties": false
+    },
+    "stopDebugRecordingParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "stopDebugRecordingResult": {
+      "type": "object",
+      "properties": {
+        "recording": {
+          "type": "boolean"
+        },
+        "intervalMs": {
+          "type": "number"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "startedAt": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastCaptureAt": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "captureCount": {
+          "type": "number"
+        },
+        "lastSnapshot": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastError": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "recording",
+        "intervalMs",
+        "targets",
+        "startedAt",
+        "lastCaptureAt",
+        "captureCount",
+        "lastSnapshot",
+        "lastError"
+      ],
+      "additionalProperties": false
+    },
+    "streamDebugRecordingParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamDebugRecordingResult": {
+      "type": "object",
+      "properties": {
+        "recording": {
+          "type": "boolean"
+        },
+        "intervalMs": {
+          "type": "number"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "startedAt": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastCaptureAt": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "captureCount": {
+          "type": "number"
+        },
+        "lastSnapshot": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastError": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "recording",
+        "intervalMs",
+        "targets",
+        "startedAt",
+        "lastCaptureAt",
+        "captureCount",
+        "lastSnapshot",
+        "lastError"
+      ],
+      "additionalProperties": false
     }
   },
   "x-tokenring-rpc": {
@@ -360,6 +1264,46 @@
         "type": "stream",
         "params": "#/$defs/streamLogsParams",
         "result": "#/$defs/streamLogsResult"
+      },
+      "listDebugTargets": {
+        "type": "query",
+        "params": "#/$defs/listDebugTargetsParams",
+        "result": "#/$defs/listDebugTargetsResult"
+      },
+      "captureDebugSnapshot": {
+        "type": "mutation",
+        "params": "#/$defs/captureDebugSnapshotParams",
+        "result": "#/$defs/captureDebugSnapshotResult"
+      },
+      "listDebugSnapshots": {
+        "type": "query",
+        "params": "#/$defs/listDebugSnapshotsParams",
+        "result": "#/$defs/listDebugSnapshotsResult"
+      },
+      "readDebugSnapshot": {
+        "type": "query",
+        "params": "#/$defs/readDebugSnapshotParams",
+        "result": "#/$defs/readDebugSnapshotResult"
+      },
+      "deleteDebugSnapshot": {
+        "type": "mutation",
+        "params": "#/$defs/deleteDebugSnapshotParams",
+        "result": "#/$defs/deleteDebugSnapshotResult"
+      },
+      "startDebugRecording": {
+        "type": "mutation",
+        "params": "#/$defs/startDebugRecordingParams",
+        "result": "#/$defs/startDebugRecordingResult"
+      },
+      "stopDebugRecording": {
+        "type": "mutation",
+        "params": "#/$defs/stopDebugRecordingParams",
+        "result": "#/$defs/stopDebugRecordingResult"
+      },
+      "streamDebugRecording": {
+        "type": "stream",
+        "params": "#/$defs/streamDebugRecordingParams",
+        "result": "#/$defs/streamDebugRecordingResult"
       }
     }
   }

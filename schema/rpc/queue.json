@@ -364,10 +364,74 @@
                       "type": "string"
                     },
                     "input": {
-                      "type": "string"
-                    },
-                    "from": {
-                      "type": "string"
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "attachments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "encoding": {
+                                "type": "string",
+                                "enum": [
+                                  "text",
+                                  "base64",
+                                  "href"
+                                ]
+                              },
+                              "body": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string",
+                                "enum": [
+                                  "audio/wav",
+                                  "audio/mpeg",
+                                  "audio/webm",
+                                  "video/mp4",
+                                  "video/webm",
+                                  "image/png",
+                                  "image/jpeg",
+                                  "image/webp",
+                                  "text/plain",
+                                  "text/markdown",
+                                  "text/html",
+                                  "text/x-diff",
+                                  "application/json",
+                                  "message/rfc822"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "encoding",
+                              "body",
+                              "mimeType"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "timestamp": {
+                          "not": {}
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "message"
+                      ],
+                      "additionalProperties": false
                     },
                     "createdAt": {
                       "type": "number"
@@ -415,7 +479,6 @@
                     "queueName",
                     "name",
                     "input",
-                    "from",
                     "createdAt",
                     "status"
                   ],
@@ -437,10 +500,74 @@
                       "type": "string"
                     },
                     "input": {
-                      "type": "string"
-                    },
-                    "from": {
-                      "type": "string"
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "attachments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "encoding": {
+                                "type": "string",
+                                "enum": [
+                                  "text",
+                                  "base64",
+                                  "href"
+                                ]
+                              },
+                              "body": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string",
+                                "enum": [
+                                  "audio/wav",
+                                  "audio/mpeg",
+                                  "audio/webm",
+                                  "video/mp4",
+                                  "video/webm",
+                                  "image/png",
+                                  "image/jpeg",
+                                  "image/webp",
+                                  "text/plain",
+                                  "text/markdown",
+                                  "text/html",
+                                  "text/x-diff",
+                                  "application/json",
+                                  "message/rfc822"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "encoding",
+                              "body",
+                              "mimeType"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "timestamp": {
+                          "not": {}
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "message"
+                      ],
+                      "additionalProperties": false
                     },
                     "createdAt": {
                       "type": "number"
@@ -498,7 +625,6 @@
                     "queueName",
                     "name",
                     "input",
-                    "from",
                     "createdAt",
                     "status",
                     "completedAt",
@@ -534,10 +660,72 @@
           "type": "string"
         },
         "input": {
-          "type": "string"
-        },
-        "from": {
-          "type": "string"
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "attachments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "encoding": {
+                    "type": "string",
+                    "enum": [
+                      "text",
+                      "base64",
+                      "href"
+                    ]
+                  },
+                  "body": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "string",
+                    "enum": [
+                      "audio/wav",
+                      "audio/mpeg",
+                      "audio/webm",
+                      "video/mp4",
+                      "video/webm",
+                      "image/png",
+                      "image/jpeg",
+                      "image/webp",
+                      "text/plain",
+                      "text/markdown",
+                      "text/html",
+                      "text/x-diff",
+                      "application/json",
+                      "message/rfc822"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "encoding",
+                  "body",
+                  "mimeType"
+                ]
+              }
+            },
+            "timestamp": {
+              "not": {}
+            }
+          },
+          "required": [
+            "from",
+            "message"
+          ]
         }
       },
       "required": [
