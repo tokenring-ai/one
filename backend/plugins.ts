@@ -5,12 +5,12 @@ import AudioPlugin from "@tokenring-ai/audio/plugin";
 import AWSPlugin from "@tokenring-ai/aws/plugin";
 import BlogPlugin from "@tokenring-ai/blog/plugin";
 import BotPlugin from "@tokenring-ai/bot/plugin";
+import BrowserPlugin from "@tokenring-ai/browser/plugin";
 import BunStoragePlugin from "@tokenring-ai/bun-storage/plugin";
 import CalendarPlugin from "@tokenring-ai/calendar/plugin";
 import CDNPlugin from "@tokenring-ai/cdn/plugin";
 import ChatPlugin from "@tokenring-ai/chat/plugin";
 import CheckpointPlugin from "@tokenring-ai/checkpoint/plugin";
-import ChromePlugin from "@tokenring-ai/chrome/plugin";
 import CloudQuotePlugin from "@tokenring-ai/cloudquote/plugin";
 import CodeWatchPlugin from "@tokenring-ai/code-watch/plugin";
 import CodeBasePlugin from "@tokenring-ai/codebase/plugin";
@@ -38,6 +38,7 @@ import NewsRPMPlugin from "@tokenring-ai/newsrpm/plugin";
 import OneFrontendPlugin from "@tokenring-ai/one-frontend/plugin";
 import PosixSystemPlugin from "@tokenring-ai/posix-system/plugin";
 import QueuePlugin from "@tokenring-ai/queue/plugin";
+import RedditPlugin from "@tokenring-ai/reddit/plugin";
 import ResearchPlugin from "@tokenring-ai/research/plugin";
 import RPCPlugin from "@tokenring-ai/rpc/plugin";
 import SandboxPlugin from "@tokenring-ai/sandbox/plugin";
@@ -61,6 +62,7 @@ import WebHostPlugin from "@tokenring-ai/web-host/plugin";
 import WebSearchPlugin from "@tokenring-ai/websearch/plugin";
 import WordPressPlugin from "@tokenring-ai/wordpress/plugin";
 import WorkflowPlugin from "@tokenring-ai/workflow/plugin";
+import XPlugin from "@tokenring-ai/x/plugin";
 import { z } from "zod";
 
 export const plugins = [
@@ -71,12 +73,12 @@ export const plugins = [
   AWSPlugin,
   OneFrontendPlugin,
   BlogPlugin,
+  BrowserPlugin,
   CalendarPlugin,
   CDNPlugin,
   ChatPlugin,
   CloudQuotePlugin,
   CheckpointPlugin,
-  ChromePlugin,
   CodeBasePlugin,
   CodeWatchPlugin,
   DatabasePlugin,
@@ -103,6 +105,7 @@ export const plugins = [
   MemoryPlugin,
   MetricsPlugin,
   NewsRPMPlugin,
+  RedditPlugin,
   ResearchPlugin,
   RPCPlugin,
   QueuePlugin,
@@ -126,6 +129,7 @@ export const plugins = [
   WebSearchPlugin,
   WordPressPlugin,
   WorkflowPlugin,
+  XPlugin,
 ];
 export const configSchema = z.object({
   ...TokenRingAppConfigSchema.shape,
@@ -135,17 +139,17 @@ export const configSchema = z.object({
   ...AWSPlugin.configSchema.shape,
   ...OneFrontendPlugin.configSchema.shape,
   ...BlogPlugin.configSchema.shape,
+  ...BrowserPlugin.configSchema.shape,
   ...CalendarPlugin.configSchema.shape,
   ...ChatPlugin.configSchema.shape,
   ...CloudQuotePlugin.configSchema.shape,
   ...CheckpointPlugin.configSchema.shape,
-  ...ChromePlugin.configSchema.shape,
   ...CodeBasePlugin.configSchema.shape,
   ...CodeWatchPlugin.configSchema.shape,
   ...DatabasePlugin.configSchema.shape,
   ...DiscordPlugin.configSchema.shape,
   ...DockerPlugin.configSchema.shape,
-  ...BunStoragePlugin.configSchema.shape,
+  ...BunStoragePlugin.immutableConfigSchema.shape,
   ...BotPlugin.configSchema.shape,
   ...FileIndexPlugin.configSchema.shape,
   ...FilesystemPlugin.configSchema.shape,
@@ -161,6 +165,7 @@ export const configSchema = z.object({
   ...MetricsPlugin.configSchema.shape,
   ...MCPPlugin.configSchema.shape,
   ...NewsRPMPlugin.configSchema.shape,
+  ...RedditPlugin.configSchema.shape,
   ...ResearchPlugin.configSchema.shape,
   ...QueuePlugin.configSchema.shape,
   ...SandboxPlugin.configSchema.shape,
@@ -182,4 +187,5 @@ export const configSchema = z.object({
   ...WebSearchPlugin.configSchema.shape,
   ...WordPressPlugin.configSchema.shape,
   ...WorkflowPlugin.configSchema.shape,
+  ...XPlugin.configSchema.shape,
 });

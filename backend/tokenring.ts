@@ -185,7 +185,7 @@ async function runApp({ projectDirectory, dataDirectory, listen, port, vaultFile
 
     const app = new TokenRingApp(appConfig, { userConfig, projectConfig });
 
-    app.addServices(
+    app.addService(
       new ConfigurationService(app, {
         configSchema,
         overridesFiles: { user: userOverridesFile, project: projectOverridesFile },
@@ -193,7 +193,7 @@ async function runApp({ projectDirectory, dataDirectory, listen, port, vaultFile
       }),
     );
 
-    const pluginManager = new PluginManager(app);
+    const pluginManager = app.addService(new PluginManager(app));
 
     await pluginManager.installPlugins(plugins);
 

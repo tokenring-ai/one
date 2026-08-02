@@ -2,7 +2,7 @@ lifecycle:
   agentDefaults:
     enabledHooks:
       - autoCheckpoint
-      - addRelatedFiles
+      - addSelectedFiles
       - clearReadFiles
       - todoCompletionCheck
       - injectSubagentResults
