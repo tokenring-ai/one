@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ConfigUIPluginSchema } from "@tokenring-ai/app/config/uiSchema";
-import { MemoryRouter } from "react-router-dom";
+import { useState } from "react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import ConfigForm from "./ConfigForm.tsx";
 
 const pluginFixture: ConfigUIPluginSchema = {
@@ -36,6 +37,15 @@ const pluginFixture: ConfigUIPluginSchema = {
         },
         { kind: "field", key: "apiKey", path: ["widget", "apiKey"], label: "Api Key", field: { type: "password" }, required: false, sensitive: true },
         { kind: "field", key: "tags", path: ["widget", "tags"], label: "Tags", field: { type: "stringList", itemType: "string" }, required: false },
+        {
+          kind: "field",
+          key: "include",
+          path: ["widget", "include"],
+          label: "Include",
+          field: { type: "regex" },
+          required: false,
+          placeholder: "\\.ts$",
+        },
       ],
     },
     connections: {
@@ -71,12 +81,14 @@ const otherPluginFixture: ConfigUIPluginSchema = {
 };
 
 const applyConfigMock = mock();
+const schemaMutateMock = mock(() => Promise.resolve());
+const valuesMutateMock = mock(async () => valuesData);
 let schemaData: Record<string, unknown>;
 let valuesData: Record<string, unknown>;
 
 void mock.module("../../rpc.ts", () => ({
-  useConfigSchema: () => ({ data: schemaData, isLoading: false, error: undefined, mutate: mock(() => Promise.resolve()) }),
-  useConfigValues: () => ({ data: valuesData, isLoading: false, error: undefined, mutate: mock(() => Promise.resolve()) }),
+  useConfigSchema: () => ({ data: schemaData, isLoading: false, error: undefined, mutate: schemaMutateMock }),
+  useConfigValues: () => ({ data: valuesData, isLoading: false, error: undefined, mutate: valuesMutateMock }),
   configRPCClient: { applyConfig: applyConfigMock },
 }));
 
@@ -84,6 +96,10 @@ const { default: ConfigurationApp } = await import("../../pages/apps/Configurati
 
 beforeEach(() => {
   applyConfigMock.mockReset();
+  schemaMutateMock.mockReset();
+  schemaMutateMock.mockImplementation(() => Promise.resolve());
+  valuesMutateMock.mockReset();
+  valuesMutateMock.mockImplementation(async () => valuesData);
   schemaData = {
     plugins: [pluginFixture, otherPluginFixture],
     overridesFiles: {
@@ -117,6 +133,7 @@ describe("ConfigForm", () => {
     expect(screen.getByRole("combobox", { name: "Mode" })).toBeInTheDocument();
     expect(screen.getByLabelText("Api Key")).toHaveAttribute("type", "password");
     expect(screen.getByRole("textbox", { name: "Add to Tags" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Include" })).toBeInTheDocument();
     // map node renders existing entries
     expect(screen.getByText("main")).toBeInTheDocument();
   });
@@ -133,6 +150,15 @@ describe("ConfigForm", () => {
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Mode" }), "beta");
     expect(onDraftChange.mock.calls.at(-1)?.[0]).toEqual({ widget: { mode: "beta" } });
+  });
+
+  it("renders a regex field and flags invalid patterns", () => {
+    renderForm({ widget: { include: "[" } });
+
+    const include = screen.getByRole("textbox", { name: "Include" });
+    expect(include).toHaveValue("[");
+    expect(include).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 
   it("shows the modified badge and reset clears the override", async () => {
@@ -155,18 +181,100 @@ describe("ConfigForm", () => {
     renderForm({}, [{ path: ["widget", "size"], message: "Too small" }]);
     expect(screen.getByRole("alert")).toHaveTextContent("Too small");
   });
+
+  it("does not mark inherited list items as modified", () => {
+    const listPlugin: ConfigUIPluginSchema = {
+      pluginName: "list-plugin",
+      displayName: "List Plugin",
+      description: "list",
+      version: "1.0.0",
+      slices: {
+        items: {
+          kind: "list",
+          key: "items",
+          path: ["items"],
+          label: "Items",
+          item: {
+            kind: "group",
+            key: "value",
+            path: [],
+            label: "Item",
+            children: [{ kind: "field", key: "url", path: ["url"], label: "Url", field: { type: "text" }, required: false }],
+          },
+        },
+      },
+    };
+    render(<ConfigForm plugin={listPlugin} draft={{}} effective={{ items: [{ url: "https://example.test" }] }} issues={[]} onDraftChange={mock()} />);
+    expect(screen.getByRole("textbox", { name: "Url" })).toHaveValue("https://example.test");
+    expect(screen.queryByText("modified")).not.toBeInTheDocument();
+  });
+
+  it("keeps an empty string-list as an override when the last item is removed", async () => {
+    const user = userEvent.setup();
+    const onDraftChange = renderForm({ widget: { tags: ["only"] } });
+
+    await user.click(screen.getByRole("button", { name: "Remove only" }));
+    expect(onDraftChange.mock.calls.at(-1)?.[0]).toEqual({ widget: { tags: [] } });
+  });
+
+  it("restores a secret override within the same mount when source is toggled away and back", async () => {
+    const secretPlugin: ConfigUIPluginSchema = {
+      pluginName: "secret-plugin",
+      displayName: "Secret Plugin",
+      description: "secrets",
+      version: "1.0.0",
+      slices: {
+        creds: {
+          kind: "group",
+          key: "creds",
+          path: ["creds"],
+          label: "Credentials",
+          children: [{ kind: "secret", key: "token", path: ["creds", "token"], label: "Token", required: false, sensitive: true }],
+        },
+      },
+    };
+    const redacted = { __sensitive: true, isSet: true };
+    let draft: Record<string, unknown> = { creds: { token: redacted } };
+    const user = userEvent.setup();
+
+    const Harness = () => {
+      const [current, setCurrent] = useState(draft);
+      return (
+        <ConfigForm
+          plugin={secretPlugin}
+          draft={current}
+          effective={{ creds: { token: redacted } }}
+          issues={[]}
+          onDraftChange={next => {
+            draft = next;
+            setCurrent(next);
+          }}
+        />
+      );
+    };
+
+    render(<Harness />);
+    await user.selectOptions(screen.getByRole("combobox", { name: "Token source" }), "env");
+    expect(draft).toEqual({ creds: { token: { source: "env", env: "" } } });
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "Token source" }), "value");
+    expect(draft).toEqual({ creds: { token: redacted } });
+    expect(screen.getByLabelText("Token value")).toHaveAttribute("placeholder", expect.stringContaining("set"));
+  });
 });
 
 describe("ConfigurationApp", () => {
   const renderApp = (initialEntry = "/configuration") =>
     render(
       <MemoryRouter initialEntries={[initialEntry]}>
-        <ConfigurationApp />
+        <Routes>
+          <Route path="/configuration/:plugin?" element={<ConfigurationApp />} />
+        </Routes>
       </MemoryRouter>,
     );
 
-  it("lists plugins and honors the ?plugin= deep link", async () => {
-    renderApp("/configuration?plugin=widget-plugin");
+  it("lists plugins and honors the /configuration/:plugin deep link", async () => {
+    renderApp("/configuration/widget-plugin");
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Widget Plugin" })).toBeInTheDocument();
     });
@@ -174,7 +282,7 @@ describe("ConfigurationApp", () => {
   });
 
   it("shows the overrides file for the active scope", async () => {
-    renderApp("/configuration?plugin=widget-plugin");
+    renderApp("/configuration/widget-plugin");
     await waitFor(() => {
       expect(screen.getByText("/home/user/.tokenring/config.yaml")).toBeInTheDocument();
     });
@@ -195,7 +303,7 @@ describe("ConfigurationApp", () => {
   it("saves the edited draft as a full override set for the active scope", async () => {
     applyConfigMock.mockResolvedValue({ ok: true });
     const user = userEvent.setup();
-    renderApp("/configuration?plugin=widget-plugin");
+    renderApp("/configuration/widget-plugin");
 
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toBeInTheDocument());
     await user.type(screen.getByRole("textbox", { name: "Name" }), "x");
@@ -205,10 +313,37 @@ describe("ConfigurationApp", () => {
     await waitFor(() => expect(screen.getByText(/Saved to user configuration/)).toBeInTheDocument());
   });
 
+  it("reseeds the draft from post-save server values so sensitive redaction does not leave the form dirty", async () => {
+    applyConfigMock.mockResolvedValue({ ok: true });
+    // After save the server returns the secret redacted — matching what a real mutate would yield.
+    valuesMutateMock.mockImplementation(() => {
+      valuesData = {
+        ...valuesData,
+        overrides: {
+          user: { widget: { apiKey: { __sensitive: true, isSet: true } } },
+          project: {},
+        },
+      };
+      return Promise.resolve(valuesData);
+    });
+    const user = userEvent.setup();
+    renderApp("/configuration/widget-plugin");
+
+    await waitFor(() => expect(screen.getByLabelText("Api Key")).toBeInTheDocument());
+    await user.type(screen.getByLabelText("Api Key"), "new-secret");
+    expect(screen.getByText(/Unsaved changes to the user configuration/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Save to user" }));
+    await waitFor(() => expect(screen.getByText(/Saved to user configuration/)).toBeInTheDocument());
+    // Draft must match the redacted server snapshot — no lingering "unsaved changes".
+    expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Api Key")).toHaveAttribute("placeholder", expect.stringContaining("set"));
+  });
+
   it("maps failed-apply issues onto fields", async () => {
     applyConfigMock.mockResolvedValue({ ok: false, issues: [{ path: ["widget", "size"], message: "Too small" }] });
     const user = userEvent.setup();
-    renderApp("/configuration?plugin=widget-plugin");
+    renderApp("/configuration/widget-plugin");
 
     await waitFor(() => expect(screen.getByRole("spinbutton", { name: "Size" })).toBeInTheDocument());
     await user.clear(screen.getByRole("spinbutton", { name: "Size" }));
@@ -222,7 +357,7 @@ describe("ConfigurationApp", () => {
   it("clears validation feedback when the user edits after a failed save", async () => {
     applyConfigMock.mockResolvedValue({ ok: false, issues: [{ path: ["widget", "size"], message: "Too small" }] });
     const user = userEvent.setup();
-    renderApp("/configuration?plugin=widget-plugin");
+    renderApp("/configuration/widget-plugin");
 
     await waitFor(() => expect(screen.getByRole("spinbutton", { name: "Size" })).toBeInTheDocument());
     await user.clear(screen.getByRole("spinbutton", { name: "Size" }));
@@ -238,7 +373,7 @@ describe("ConfigurationApp", () => {
 
   it("discard restores the server overrides", async () => {
     const user = userEvent.setup();
-    renderApp("/configuration?plugin=widget-plugin");
+    renderApp("/configuration/widget-plugin");
 
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toBeInTheDocument());
     await user.type(screen.getByRole("textbox", { name: "Name" }), "x");
@@ -258,7 +393,7 @@ describe("ConfigurationApp", () => {
       },
     };
     const user = userEvent.setup();
-    renderApp("/configuration?plugin=widget-plugin&scope=user");
+    renderApp("/configuration/widget-plugin?scope=user");
 
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("user-name"));
     expect(screen.getByText("/home/user/.tokenring/config.yaml")).toBeInTheDocument();
@@ -271,7 +406,7 @@ describe("ConfigurationApp", () => {
   it("saves to the project scope when selected", async () => {
     applyConfigMock.mockResolvedValue({ ok: true });
     const user = userEvent.setup();
-    renderApp("/configuration?plugin=widget-plugin&scope=project");
+    renderApp("/configuration/widget-plugin?scope=project");
 
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toBeInTheDocument());
     await user.type(screen.getByRole("textbox", { name: "Name" }), "y");
@@ -295,7 +430,7 @@ describe("ConfigurationApp", () => {
         project: { widget: { name: "project-name" } },
       },
     };
-    renderApp("/configuration?plugin=widget-plugin&scope=user");
+    renderApp("/configuration/widget-plugin?scope=user");
     await waitFor(() => {
       expect(screen.getByText(/also configured at the project level/)).toBeInTheDocument();
     });

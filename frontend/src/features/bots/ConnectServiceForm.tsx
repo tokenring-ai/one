@@ -6,7 +6,7 @@ import { toastManager } from "../../components/ui/toast.tsx";
 import { type ConfigScope, formatConfigIssues, updateConfigLayer } from "../../lib/configWrites.ts";
 import { cn } from "../../lib/utils.ts";
 
-export type ConnectablePlatform = "telegram" | "slack";
+export type ConnectablePlatform = "telegram" | "slack" | "x" | "reddit";
 
 type CredentialField = {
   key: string;
@@ -48,6 +48,38 @@ export const PLATFORMS: Record<ConnectablePlatform, PlatformSpec> = {
         placeholder: "xapp-…",
         required: false,
         hint: "Optional. Enables Socket Mode, so the app needs no public HTTP endpoint.",
+      },
+    ],
+  },
+  x: {
+    label: "X / Twitter",
+    configKey: "x",
+    defaultAccountName: "x",
+    setup:
+      "Create an X developer app and paste an OAuth 2.0 user-context access token for the account the bot should speak as. Typical scopes: tweet.read, tweet.write, users.read, dm.read, dm.write.",
+    fields: [
+      {
+        key: "accessToken",
+        label: "Access token",
+        placeholder: "AAAA…",
+        required: true,
+        hint: "User-context Bearer token. Mentions and DMs are polled; no public webhook is required.",
+      },
+    ],
+  },
+  reddit: {
+    label: "Reddit",
+    configKey: "reddit",
+    defaultAccountName: "reddit",
+    setup:
+      "Create a Reddit app and paste an OAuth access token for the account the bot should speak as. Typical scopes: identity, privatemessages, submit, read, edit. Inbox is polled for comment replies and private messages. Refresh-token auth can be added later under Configuration.",
+    fields: [
+      {
+        key: "accessToken",
+        label: "Access token",
+        placeholder: "",
+        required: true,
+        hint: "Bearer access token for the Reddit account.",
       },
     ],
   },

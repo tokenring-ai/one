@@ -19,6 +19,7 @@ import {
   Send,
   Settings,
   Sparkles,
+  User,
   WifiOff,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -150,12 +151,20 @@ export default function MessagingDashboard() {
       for (const user of bot.users) {
         options.push({ target: user.target, label: `${user.target} (${user.role})`, group: `${bot.displayName} people` });
       }
+      // Live threads (DMs, forum topics) may not match a configured channel target.
+      for (const conversation of bot.conversations) {
+        const label = conversation.channelName ? `${conversation.channelName} — ${conversation.key}` : `${conversation.key} (direct)`;
+        options.push({ target: conversation.key, label, group: `${bot.displayName} conversations` });
+      }
     }
     for (const group of groups) {
       options.push({ target: `group:${group.name}`, label: `group:${group.name} — ${group.members.length} members`, group: "Broadcast groups" });
     }
     return options.filter((option, index) => options.findIndex(other => other.target === option.target) === index);
   }, [botList, groups]);
+
+  const emailProvidersLoading = emailProviders.isLoading && !emailProviders.data;
+  const emailProvidersFailed = Boolean(emailProviders.error && !emailProviders.data);
 
   /** Channel cards: messaging services from bots + email providers. */
   const channelCards = useMemo(() => {
@@ -203,7 +212,16 @@ export default function MessagingDashboard() {
       });
     }
 
-    if (providers.length > 0) {
+    if (emailProvidersFailed) {
+      cards.push({
+        id: "email-error",
+        name: "Email",
+        kind: "email",
+        connected: false,
+        detail: "Could not load email providers",
+        href: "/email",
+      });
+    } else if (providers.length > 0) {
       for (const provider of providers) {
         cards.push({
           id: `email-${provider}`,
@@ -214,7 +232,7 @@ export default function MessagingDashboard() {
           href: "/email",
         });
       }
-    } else {
+    } else if (!emailProvidersLoading) {
       cards.push({
         id: "email-none",
         name: "Email",
@@ -226,7 +244,7 @@ export default function MessagingDashboard() {
     }
 
     return cards;
-  }, [services, allChannels, connectedServiceNames, providers]);
+  }, [services, allChannels, connectedServiceNames, providers, emailProvidersFailed, emailProvidersLoading]);
 
   const connectedCount = channelCards.filter(c => c.connected).length;
 
@@ -278,9 +296,19 @@ export default function MessagingDashboard() {
     }
   };
 
-  const botsLoading = bots.isLoading && !bots.data;
-  const emailLoading = emailProviders.isLoading && !emailProviders.data;
-  const isLoading = botsLoading && emailLoading;
+  // Bots are the primary payload; email providers can stream in after first paint.
+  const isLoading = bots.isLoading && !bots.data;
+  const botsFailed = Boolean(bots.error && !bots.data);
+  const canSend = services.length > 0 || targetOptions.length > 0;
+
+  const emailStatValue = (() => {
+    if (emailProvidersFailed) return "Unavailable";
+    if (emailProviders.isLoading && !emailProviders.data) return "…";
+    if (providers.length === 0) return "None";
+    if (emailInbox.error && !emailInbox.data) return "Error";
+    if (unreadEmailCount > 0) return `${unreadEmailCount} unread`;
+    return `${emailMessages.length} recent`;
+  })();
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">
@@ -293,9 +321,9 @@ export default function MessagingDashboard() {
         <button
           type="button"
           onClick={() => openSendForm(undefined)}
-          disabled={services.length === 0 && targetOptions.length === 0}
+          disabled={!canSend}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg focus-ring cursor-pointer shadow-sm"
-          title={services.length === 0 ? "Connect Slack or Telegram to send messages" : "Send a message via a connected service"}
+          title={canSend ? "Send a message via a connected service" : "Connect Slack, Telegram, or another messaging service to send"}
         >
           <Send className="w-3.5 h-3.5" />
           Send
@@ -315,7 +343,7 @@ export default function MessagingDashboard() {
           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-primary border border-primary rounded-lg transition-colors focus-ring cursor-pointer"
           title="Refresh"
         >
-          <RefreshCw className={cn("w-3.5 h-3.5", (bots.isValidating || emailInbox.isValidating) && "animate-spin")} />
+          <RefreshCw className={cn("w-3.5 h-3.5", (bots.isValidating || emailInbox.isValidating || emailProviders.isValidating) && "animate-spin")} />
           Refresh
         </button>
       </AppPageHeader>
@@ -326,7 +354,7 @@ export default function MessagingDashboard() {
             <div className="flex justify-center py-20">
               <Loader2 className="w-7 h-7 text-muted animate-spin" />
             </div>
-          ) : bots.error && !bots.data && emailProviders.error && !emailProviders.data ? (
+          ) : botsFailed ? (
             <ErrorState title="Unable to load messaging data" error={bots.error} onRetry={refresh} variant="page" />
           ) : (
             <>
@@ -344,12 +372,7 @@ export default function MessagingDashboard() {
                   icon={<MessagesSquare className="w-4 h-4" />}
                   accentClass="text-violet-500"
                 />
-                <SummaryStat
-                  label="Email"
-                  value={providers.length === 0 ? "None" : unreadEmailCount > 0 ? `${unreadEmailCount} unread` : `${emailMessages.length} recent`}
-                  icon={<Mail className="w-4 h-4" />}
-                  accentClass="text-red-500"
-                />
+                <SummaryStat label="Email" value={emailStatValue} icon={<Mail className="w-4 h-4" />} accentClass="text-red-500" />
               </div>
 
               {showSendForm ? (
@@ -373,19 +396,27 @@ export default function MessagingDashboard() {
                     liveConversations={liveConversations}
                     emailMessages={emailMessages}
                     emailProvider={primaryEmailProvider}
-                    emailLoading={emailInbox.isLoading}
+                    emailLoading={!!primaryEmailProvider && emailInbox.isLoading && !emailInbox.data}
+                    emailError={emailProvidersFailed ? emailProviders.error : emailInbox.error}
+                    emailProvidersFailed={emailProvidersFailed}
+                    emailProvidersLoading={emailProvidersLoading}
                     messagingAgents={messagingAgents}
                     servicesConnected={services.length}
                     botsCount={botList.length}
                     providersCount={providers.length}
                     onOpenConversation={id => void navigate(`/agent/${id}`)}
                     onQuickSend={() => openSendForm(undefined)}
+                    canSend={canSend}
                     connectedServices={connectedServiceNames}
                     onOpenEmail={() => void navigate("/email")}
                     onOpenBots={() => void navigate("/bots")}
                     onOpenConfig={() => void navigate("/configuration")}
                     onOpenAgent={id => void navigate(`/agent/${id}`)}
                     onLaunchAgent={() => void launchMessagingAgent()}
+                    onRetryEmail={() => {
+                      void emailProviders.mutate();
+                      void emailInbox.mutate();
+                    }}
                     creatingAgent={creatingAgent}
                   />
                 ) : null}
@@ -426,11 +457,15 @@ export default function MessagingDashboard() {
                     provider={primaryEmailProvider}
                     providers={providers}
                     messages={emailMessages}
-                    loading={!!primaryEmailProvider && emailInbox.isLoading}
+                    loading={(emailProviders.isLoading && !emailProviders.data) || (!!primaryEmailProvider && emailInbox.isLoading && !emailInbox.data)}
+                    providersError={emailProvidersFailed ? emailProviders.error : undefined}
                     error={emailInbox.error}
                     onOpenEmail={() => void navigate("/email")}
                     onOpenConfig={() => void navigate("/configuration")}
-                    onRetry={() => void emailInbox.mutate()}
+                    onRetry={() => {
+                      void emailProviders.mutate();
+                      void emailInbox.mutate();
+                    }}
                   />
                 ) : null}
 
@@ -480,18 +515,23 @@ function OverviewPanel({
   emailMessages,
   emailProvider,
   emailLoading,
+  emailError,
+  emailProvidersFailed,
+  emailProvidersLoading,
   messagingAgents,
   servicesConnected,
   botsCount,
   providersCount,
   onOpenConversation,
   onQuickSend,
+  canSend,
   connectedServices,
   onOpenEmail,
   onOpenBots,
   onOpenConfig,
   onOpenAgent,
   onLaunchAgent,
+  onRetryEmail,
   creatingAgent,
 }: {
   channelCards: Array<{ id: string; name: string; kind: "messaging" | "email"; connected: boolean; detail: string; href: string }>;
@@ -499,24 +539,32 @@ function OverviewPanel({
   emailMessages: EmailMessage[];
   emailProvider: string | undefined;
   emailLoading: boolean;
+  emailError: unknown;
+  emailProvidersFailed: boolean;
+  emailProvidersLoading: boolean;
   messagingAgents: Array<{ id: string; displayName: string; currentActivity: string; agentType: string }>;
   servicesConnected: number;
   botsCount: number;
   providersCount: number;
   onOpenConversation: (agentId: string) => void;
   onQuickSend: () => void;
+  canSend: boolean;
   connectedServices: Set<string>;
   onOpenEmail: () => void;
   onOpenBots: () => void;
   onOpenConfig: () => void;
   onOpenAgent: (id: string) => void;
   onLaunchAgent: () => void;
+  onRetryEmail: () => void;
   creatingAgent: boolean;
 }) {
   const previewConversations = liveConversations.slice(0, 5);
   const previewEmails = emailMessages.slice(0, 5);
   const connectedCards = channelCards.filter(c => c.connected);
-  const nothingConnected = servicesConnected === 0 && providersCount === 0;
+  // Avoid flashing the empty banner while email providers are still loading.
+  const nothingConnected = servicesConnected === 0 && providersCount === 0 && !emailProvidersFailed && !emailProvidersLoading;
+  // Prefer cached messages over a revalidation error; only surface errors when empty.
+  const showEmailError = emailProvidersFailed || Boolean(emailError && previewEmails.length === 0);
 
   return (
     <div className="p-4 space-y-5">
@@ -621,12 +669,18 @@ function OverviewPanel({
               Open email →
             </button>
           </div>
-          {!emailProvider ? (
-            <p className="px-4 py-6 text-2xs text-muted text-center">No email provider configured.</p>
-          ) : emailLoading ? (
+          {showEmailError ? (
+            <ErrorState
+              title={emailProvidersFailed ? "Could not load email providers" : "Could not load inbox"}
+              error={emailError ?? "Unknown error"}
+              onRetry={onRetryEmail}
+            />
+          ) : emailProvidersLoading || emailLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="w-5 h-5 text-muted animate-spin" />
             </div>
+          ) : !emailProvider ? (
+            <p className="px-4 py-6 text-2xs text-muted text-center">No email provider configured.</p>
           ) : previewEmails.length === 0 ? (
             <p className="px-4 py-6 text-2xs text-muted text-center">Inbox is empty for {emailProvider}.</p>
           ) : (
@@ -686,7 +740,7 @@ function OverviewPanel({
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {servicesConnected > 0 ? (
+          {canSend ? (
             <button
               type="button"
               onClick={onQuickSend}
@@ -731,7 +785,11 @@ function ConversationRow({
               <span className="inline-flex items-center gap-1 text-2xs text-muted">
                 <Hash className="w-3 h-3" /> {conversation.conversationId}
               </span>
-            ) : null}
+            ) : (
+              <span className="inline-flex items-center gap-1 text-2xs text-muted">
+                <User className="w-3 h-3" /> Direct
+              </span>
+            )}
             {conversation.busy ? (
               <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
                 <Activity className="w-3 h-3 animate-pulse" /> Working
@@ -754,13 +812,16 @@ function ConversationRow({
             type="button"
             onClick={onOpenAgent}
             className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
+            title="Open the agent handling this conversation"
           >
             <Cpu className="w-3 h-3" /> Agent
           </button>
           <button
             type="button"
             onClick={onMessage}
-            className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
+            disabled={!connected}
+            className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={connected ? "Send a message here" : "Service is offline"}
           >
             <Send className="w-3 h-3" /> Message
           </button>
@@ -775,6 +836,7 @@ function EmailPanel({
   providers,
   messages,
   loading,
+  providersError,
   error,
   onOpenEmail,
   onOpenConfig,
@@ -784,11 +846,24 @@ function EmailPanel({
   providers: string[];
   messages: EmailMessage[];
   loading: boolean;
+  providersError: unknown;
   error: unknown;
   onOpenEmail: () => void;
   onOpenConfig: () => void;
   onRetry: () => void;
 }) {
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-6 h-6 text-muted animate-spin" />
+      </div>
+    );
+  }
+
+  if (providersError) {
+    return <ErrorState title="Could not load email providers" error={providersError} onRetry={onRetry} />;
+  }
+
   if (providers.length === 0) {
     return (
       <EmptyPanel
@@ -808,15 +883,8 @@ function EmailPanel({
     );
   }
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="w-6 h-6 text-muted animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
+  // Prefer cached messages over a revalidation error when the inbox already loaded.
+  if (error && messages.length === 0) {
     return <ErrorState title="Could not load inbox" error={error} onRetry={onRetry} />;
   }
 

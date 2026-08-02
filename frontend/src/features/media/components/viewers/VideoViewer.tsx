@@ -22,11 +22,9 @@ export default function VideoViewer({
   if (video.duration !== undefined) subtitleParts.push(formatDuration(video.duration));
 
   const handleDownload = () => {
-    try {
-      downloadMedia(video.filename);
-    } catch {
+    void downloadMedia(video.filename).catch(() => {
       toastManager.error("Download failed", { duration: 3000 });
-    }
+    });
   };
 
   return (
@@ -52,12 +50,14 @@ export default function VideoViewer({
           </>
         }
       />
-      <div className="flex-1 overflow-hidden flex flex-col items-center justify-center p-4 bg-primary gap-4">
-        <video src={mediaUrl(video.filename)} className="max-w-full max-h-full rounded-xl shadow-lg" controls playsInline />
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col items-center justify-center p-4 bg-primary gap-4">
+        <div className="flex-1 min-h-0 w-full flex items-center justify-center">
+          <video key={video.filename} src={mediaUrl(video.filename)} className="max-w-full max-h-full rounded-xl shadow-lg" controls playsInline />
+        </div>
         {video.prompt && (
-          <div className="w-full max-w-2xl">
+          <div className="w-full max-w-2xl shrink-0">
             <p className="text-2xs font-medium text-muted uppercase tracking-wide mb-1">Prompt</p>
-            <p className="text-sm text-secondary italic">{video.prompt}</p>
+            <p className="text-sm text-secondary italic line-clamp-4">{video.prompt}</p>
           </div>
         )}
       </div>

@@ -7,15 +7,25 @@ describe("formatUsd", () => {
   });
 
   test("formats typical amounts with up to 4 decimals", () => {
-    expect(formatUsd(1.23456)).toMatch(/^\$1\.2346$/);
+    expect(formatUsd(1.23456)).toBe("$1.2346");
   });
 
   test("uses higher precision for tiny amounts", () => {
-    expect(formatUsd(0.00042)).toMatch(/\$0\.00042/);
+    expect(formatUsd(0.00042)).toBe("$0.00042");
+  });
+
+  test("places the minus sign before the dollar sign", () => {
+    expect(formatUsd(-1.5)).toBe("-$1.50");
+    expect(formatUsd(-0.00042)).toBe("-$0.00042");
+  });
+
+  test("uses en-US grouping for large amounts", () => {
+    expect(formatUsd(1234.5)).toBe("$1,234.50");
   });
 
   test("handles non-finite", () => {
     expect(formatUsd(Number.NaN)).toBe("$0.00");
+    expect(formatUsd(Number.POSITIVE_INFINITY)).toBe("$0.00");
   });
 });
 

@@ -72,12 +72,19 @@ export default function SymbolSearchBox({ value, onChange, onSelect }: SymbolSea
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Searching…
             </div>
           )}
-          {!search.isLoading && results.length === 0 && <div className="px-3 py-3 text-xs text-muted">No matches for "{debounced}"</div>}
+          {!search.isLoading && search.error && results.length === 0 && (
+            <div className="px-3 py-3 text-xs text-red-400">Search failed. Press Enter to open "{debounced}" directly.</div>
+          )}
+          {!search.isLoading && !search.error && results.length === 0 && (
+            <div className="px-3 py-3 text-xs text-muted">No matches for "{debounced}". Press Enter to try it anyway.</div>
+          )}
           {results.map((r, i) => {
             const sym = r.Symbol ?? "";
+            if (!sym) return null;
             const logo = (r as { CLIconBright128?: string }).CLIconBright128;
             const change = Number(r.Change ?? 0);
-            const isUp = change >= 0;
+            const isUp = change > 0;
+            const isDown = change < 0;
             return (
               <button
                 type="button"
@@ -98,7 +105,7 @@ export default function SymbolSearchBox({ value, onChange, onSelect }: SymbolSea
                 {r.Price != null && (
                   <div className="text-right shrink-0">
                     <div className="text-sm font-medium text-primary">${fmtPrice(r.Price)}</div>
-                    <div className={`text-2xs font-medium ${isUp ? "text-emerald-500" : "text-red-500"}`}>
+                    <div className={`text-2xs font-medium ${isUp ? "text-emerald-500" : isDown ? "text-red-500" : "text-muted"}`}>
                       {changeSign(r.ChangePercent)}
                       {fmt(r.ChangePercent)}%
                     </div>

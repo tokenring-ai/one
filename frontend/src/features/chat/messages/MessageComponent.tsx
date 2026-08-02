@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import AttachmentChip from "../../../components/chat/AttachmentChip";
+import { markdownLinkComponents } from "../../../components/chat/MarkdownLink.tsx";
 import type { ChatMessage, InteractionResponseMessage, QuestionPromptMessage } from "../../../types/agent-events.ts";
 import CodeBlock from "./components/CodeBlock.tsx";
 import InteractionResponseDisplay from "./components/InteractionResponseDisplay.tsx";
@@ -92,6 +93,7 @@ export default function MessageComponent({ msg, question, response }: MessageCom
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
+                  ...markdownLinkComponents,
                   pre: ({ children }) => <>{children}</>,
                   code: ({ className, children, ...props }) => {
                     const text = String(children as string).trim();

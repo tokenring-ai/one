@@ -40,10 +40,26 @@ const agent = {
   currentActivity: "",
 };
 
-const enableTools = mock(async () => ({ status: "success" as const, tools: ["filesystem/readFile"] }));
-const disableTools = mock(async () => ({ status: "success" as const, tools: [] as string[] }));
-const enableHooks = mock(async () => ({ status: "success" as const, hooks: ["checkpoint/auto"] }));
-const disableHooks = mock(async () => ({ status: "success" as const, hooks: [] as string[] }));
+const enableTools = mock(async (args: { agentId: string; tools: string[] }) => {
+  for (const tool of args.tools) {
+    if (!enabledToolList.includes(tool)) enabledToolList.push(tool);
+  }
+  return { status: "success" as const, tools: [...enabledToolList] };
+});
+const disableTools = mock(async (args: { agentId: string; tools: string[] }) => {
+  enabledToolList = enabledToolList.filter(tool => !args.tools.includes(tool));
+  return { status: "success" as const, tools: [...enabledToolList] };
+});
+const enableHooks = mock(async (args: { agentId: string; hooks: string[] }) => {
+  for (const hook of args.hooks) {
+    if (!enabledHookList.includes(hook)) enabledHookList.push(hook);
+  }
+  return { status: "success" as const, hooks: [...enabledHookList] };
+});
+const disableHooks = mock(async (args: { agentId: string; hooks: string[] }) => {
+  enabledHookList = enabledHookList.filter(hook => !args.hooks.includes(hook));
+  return { status: "success" as const, hooks: [...enabledHookList] };
+});
 const mutateTools = mock(async () => undefined);
 const mutateEnabledTools = mock(async () => undefined);
 const mutateHooks = mock(async () => undefined);
@@ -78,6 +94,7 @@ void mock.module("../../rpc.ts", () => ({
   useAppLogs: () => ({
     data: { logs: logEntries },
     isLoading: false,
+    isValidating: false,
     error: undefined,
     mutate: mutateLogs,
   }),
@@ -101,6 +118,7 @@ function renderApp() {
       <Routes>
         <Route path="/services" element={<ServicesApp />} />
         <Route path="/agent/:agentId" element={<div>Agent page</div>} />
+        <Route path="/agents" element={<div>Agents list page</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -222,6 +240,7 @@ describe("ServicesApp", () => {
   });
 
   it("works in browse-only mode when no agents exist", async () => {
+    const user = userEvent.setup();
     agentList = [];
     renderApp();
 
@@ -229,5 +248,27 @@ describe("ServicesApp", () => {
     expect(screen.getByText("filesystem")).toBeInTheDocument();
     // No On/Off buttons without an agent
     expect(screen.queryByRole("button", { name: /Enable /i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Open Agents" }));
+    expect(screen.getByText("Agents list page")).toBeInTheDocument();
+  });
+
+  it("keeps a manually expanded package open after enabling a tool", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    // git starts collapsed (no enabled tools there); open it, then enable a tool elsewhere
+    if (!screen.queryByRole("button", { name: "Enable status" })) {
+      await user.click(screen.getByRole("button", { name: /git/i }));
+    }
+    expect(screen.getByRole("button", { name: "Enable status" })).toBeInTheDocument();
+
+    // Enabling another package's tool used to re-run auto-expand and collapse git
+    await user.click(screen.getByRole("button", { name: "Enable writeFile" }));
+    await waitFor(() => {
+      expect(enableTools).toHaveBeenCalledWith({ agentId: "agent-1", tools: ["filesystem/writeFile"] });
+    });
+
+    expect(screen.getByRole("button", { name: "Enable status" })).toBeInTheDocument();
   });
 });

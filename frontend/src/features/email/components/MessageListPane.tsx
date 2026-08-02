@@ -60,8 +60,9 @@ export default function MessageListPane({
     setNextPageToken(listing.data?.nextPageToken);
   }, [listing.data?.nextPageToken, searchQuery, extraMessages.length]);
 
+  // Parent starts at 0; only revalidate when bumped after send/etc. (avoids double-fetch on mount)
   useEffect(() => {
-    if (refreshKey === undefined) return;
+    if (refreshKey === undefined || refreshKey === 0) return;
     setExtraMessages([]);
     setNextPageToken(undefined);
     void result.mutate();
@@ -145,6 +146,7 @@ export default function MessageListPane({
           type="button"
           onClick={() => {
             setExtraMessages([]);
+            setNextPageToken(undefined);
             void result.mutate();
           }}
           className="p-1 text-muted hover:text-primary transition-colors focus-ring rounded cursor-pointer"

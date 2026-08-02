@@ -38,6 +38,10 @@ export default function DocumentsApp() {
     onError: message => toastManager.error(`AI editing unavailable: ${message}`, { duration: 5000 }),
   });
   const { loading: aiLoading, response: aiResponse, sendEdit, cancel: cancelAI, clear: clearAI } = useAIEdit(agentId);
+  const resetAI = useCallback(() => {
+    cancelAI();
+    clearAI();
+  }, [cancelAI, clearAI]);
 
   const [content, setContent] = useState(INITIAL_CONTENT);
   const [title, setTitle] = useState("Untitled Document");
@@ -69,10 +73,10 @@ export default function DocumentsApp() {
       setTitle(opts.title ?? (opts.path ? titleFromPath(opts.path) : "Untitled Document"));
       setSelection(null);
       setAiPrompt("");
-      clearAI();
+      resetAI();
       setMobilePanelOpen(false);
     },
-    [clearAI],
+    [resetAI],
   );
 
   // Load file from FilesApp navigation state only when a file payload is present
@@ -170,8 +174,9 @@ export default function DocumentsApp() {
     setShowOpen(true);
   }, [pendingAction, resetToNew]);
 
-  // Ctrl/Cmd+S save, Ctrl/Cmd+O open, Ctrl/Cmd+N new
+  // Ctrl/Cmd+S save, Ctrl/Cmd+O open, Ctrl/Cmd+N new (disabled while modals/dialogs are open)
   useEffect(() => {
+    if (showSaveAs || showOpen || pendingAction) return;
     const handler = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey)) return;
       const key = e.key.toLowerCase();
@@ -188,7 +193,7 @@ export default function DocumentsApp() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleSave, requestOpen, requestNew]);
+  }, [handleSave, requestOpen, requestNew, showSaveAs, showOpen, pendingAction]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -211,8 +216,27 @@ export default function DocumentsApp() {
     setMobilePanelOpen(true);
   }, []);
 
+  // Drop in-flight / prior AI results when the selection range or text changes
+  const selectionIdentity = selection ? `${selection.start}:${selection.end}:${selection.text}` : null;
+  const prevSelectionIdentity = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevSelectionIdentity.current;
+    prevSelectionIdentity.current = selectionIdentity;
+    if (prev === selectionIdentity) return;
+    // First selection from nothing: only clear on subsequent change/clear
+    if (prev === null && selectionIdentity !== null) return;
+    resetAI();
+  }, [selectionIdentity, resetAI]);
+
   const applyAIResponse = useCallback(() => {
-    if (!aiResponse || !selection) return;
+    if (aiResponse === null || !selection) return;
+    const currentSlice = content.slice(selection.start, selection.end);
+    if (currentSlice !== selection.text) {
+      toastManager.error("Document changed since the selection was made. Select the text again and re-run AI edit.", {
+        duration: 4000,
+      });
+      return;
+    }
     const before = content.slice(0, selection.start);
     const after = content.slice(selection.end);
     const newContent = before + aiResponse + after;
@@ -244,10 +268,10 @@ export default function DocumentsApp() {
       setMobilePanelOpen(true);
       if (panel === "preview") {
         setSelection(null);
-        clearAI();
+        resetAI();
       }
     },
-    [clearAI],
+    [resetAI],
   );
 
   const rightPanelContent =
@@ -357,7 +381,7 @@ export default function DocumentsApp() {
             <button
               type="button"
               onClick={() => void handleSave()}
-              disabled={isSaving || !isDirty}
+              disabled={isSaving || (!isDirty && !!currentFilePath)}
               title={currentFilePath ? `Save (Ctrl/⌘+S)` : "Save As…"}
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted hover:text-primary hover:bg-hover rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >

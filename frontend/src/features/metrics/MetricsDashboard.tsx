@@ -77,13 +77,14 @@ function LiveStatusBadge({ isValidating, error, hasData }: { isValidating: boole
       </span>
     );
   }
-  if (isValidating && !hasData) {
+  // Never show "Live" without a snapshot — covers first connect and paused/waiting gaps.
+  if (!hasData) {
     return (
       <span
         className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-2xs font-medium bg-tertiary text-muted border border-primary"
         data-testid="metrics-live-status"
       >
-        <Loader2 className="w-3 h-3 animate-spin" />
+        <Loader2 className={cn("w-3 h-3", isValidating && "animate-spin")} />
         Connecting
       </span>
     );
@@ -305,10 +306,11 @@ export default function MetricsDashboard() {
         toastManager.error("Agent no longer exists", { duration: 4000 });
       } else {
         toastManager.success("Cost counters reset", { duration: 2500 });
-        await summary.mutate();
       }
+      // Refresh either way: clear counters or drop a ghost agent row.
+      await summary.mutate();
     } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
+      toastManager.error(formatError(err, { includeStack: false }), { duration: 5000 });
     } finally {
       setResettingId(null);
     }
@@ -349,7 +351,12 @@ export default function MetricsDashboard() {
           {summary.isLoading && !data ? (
             <LoadingState message="Loading metrics…" size="lg" className="py-20" />
           ) : summary.error && !data ? (
-            <ErrorState title="Unable to load metrics" error={summary.error} onRetry={() => void summary.mutate()} variant="page" />
+            <ErrorState
+              title="Unable to load metrics"
+              error={formatError(summary.error, { includeStack: false }).split("\n")[0]}
+              onRetry={() => void summary.mutate()}
+              variant="page"
+            />
           ) : data ? (
             <>
               {summary.error ? (
@@ -358,7 +365,7 @@ export default function MetricsDashboard() {
                   role="status"
                   data-testid="metrics-stale-banner"
                 >
-                  Live updates interrupted: {formatError(summary.error)}. Showing last known snapshot.
+                  Live updates interrupted: {formatError(summary.error, { includeStack: false }).split("\n")[0]}. Showing last known snapshot.
                 </div>
               ) : null}
 

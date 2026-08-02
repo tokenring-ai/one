@@ -1,7 +1,9 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { FolderOpen, Search, X } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useSWRConfig } from "swr";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
@@ -9,7 +11,7 @@ import LoadingState from "../../components/ui/LoadingState.tsx";
 import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { useHeadlessAgent } from "../../hooks/useHeadlessAgent.ts";
-import { filesystemRPCClient, useDirectoryListing, useFileContents, useFilesystemProviders } from "../../rpc.ts";
+import { filesystemRPCClient, useFileContents, useFilesystemProviders } from "../../rpc.ts";
 import AgentLaunchPanel from "./components/AgentLaunchPanel.tsx";
 import BreadcrumbBar from "./components/BreadcrumbBar.tsx";
 import FileEditorPane from "./components/FileEditorPane.tsx";
@@ -20,31 +22,38 @@ import { getBasename, getParentPath, isLikelyTextFile, joinPath } from "./fsUtil
 
 type NamePrompt = { mode: "new-file" } | { mode: "new-folder" } | { mode: "rename"; path: string; isDir: boolean };
 
+function filesPath(fileId: string | null | undefined): string {
+  return fileId ? `/files/${encodeURIComponent(fileId)}` : "/files";
+}
+
 export default function FilesApp() {
+  const navigate = useNavigate();
+  const { fileId: routeFileId } = useParams<{ fileId?: string }>();
+  // URL is the source of truth for which file is open (params are already decoded).
+  const selectedFile = routeFileId ?? null;
+
   const { agentId, initialising, error } = useHeadlessAgent({
     appName: "Files app",
     preferredTypes: ["coder"],
     noTypesMessage: "No agent types available",
   });
   const fsProviders = useFilesystemProviders();
-  const [provider, setProvider] = useState<string | null>(null);
+  const { mutate: globalMutate } = useSWRConfig();
+  const [providerOverride, setProviderOverride] = useState<string | null>(null);
 
-  useEffect(() => {
-    const newProvider = fsProviders.data?.providers[0];
-    if (!provider && newProvider) {
-      setProvider(newProvider);
-    }
-  }, [fsProviders.data, provider]);
+  const providers = fsProviders.data?.providers ?? [];
+  const provider = useMemo(() => {
+    if (providerOverride && providers.includes(providerOverride)) return providerOverride;
+    return providers[0] ?? null;
+  }, [providerOverride, providers]);
 
   const [path, setPath] = useState(".");
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
   const [showHidden, setShowHidden] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const listing = useDirectoryListing(agentId && provider ? { path, showHidden, provider } : undefined);
 
   const [saving, setSaving] = useState(false);
   const fileContent = useFileContents(selectedFile && isLikelyTextFile(selectedFile) ? selectedFile : undefined, provider ?? undefined);
@@ -54,26 +63,65 @@ export default function FilesApp() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // When deep-linking to a file, open its parent directory in the list.
+  useEffect(() => {
+    if (!selectedFile) return;
+    const parent = getParentPath(selectedFile);
+    setPath(parent);
+  }, [selectedFile]);
+
   // Debounce search for workspace-wide search
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchQuery), 250);
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  // Reset editor draft when switching files
-  useEffect(() => {
-    setUpdatedContent(null);
-  }, [selectedFile]);
-
   const editorContent = updatedContent ?? fileContent.data?.content ?? "";
   const isDirty = updatedContent !== null && updatedContent !== (fileContent.data?.content ?? "");
 
+  const confirmDiscardIfDirty = useCallback(() => {
+    if (!isDirty) return true;
+    return window.confirm("You have unsaved changes. Discard them?");
+  }, [isDirty]);
+
+  const selectFile = useCallback(
+    (file: string | null, options?: { replace?: boolean }) => {
+      if (file === selectedFile) return;
+      if (!confirmDiscardIfDirty()) return;
+      setUpdatedContent(null);
+      void navigate(filesPath(file), options?.replace ? { replace: true } : undefined);
+    },
+    [selectedFile, confirmDiscardIfDirty, navigate],
+  );
+
+  const navigateTo = useCallback(
+    (nextPath: string) => {
+      if (nextPath === path && !selectedFile) {
+        setSearchQuery("");
+        return;
+      }
+      if (selectedFile && !confirmDiscardIfDirty()) return;
+      setUpdatedContent(null);
+      setPath(nextPath);
+      setSearchQuery("");
+      // Clear file selection when browsing directories so the URL matches list focus.
+      if (selectedFile) {
+        void navigate("/files");
+      }
+    },
+    [path, selectedFile, confirmDiscardIfDirty, navigate],
+  );
+
   const refreshListing = useCallback(async () => {
-    await listing.mutate();
-  }, [listing]);
+    await globalMutate(
+      key => typeof key === "string" && (key.startsWith("/filesystem/listDirectory/") || key.startsWith("/filesystem/searchWorkspaceFiles/")),
+      undefined,
+      { revalidate: true },
+    );
+  }, [globalMutate]);
 
   const handleSave = useCallback(async () => {
-    if (!selectedFile || !agentId || !provider || !isLikelyTextFile(selectedFile)) return;
+    if (!selectedFile || !provider || !isLikelyTextFile(selectedFile)) return;
     setSaving(true);
     try {
       await filesystemRPCClient.writeFile({ path: selectedFile, content: editorContent, provider });
@@ -85,7 +133,7 @@ export default function FilesApp() {
     } finally {
       setSaving(false);
     }
-  }, [selectedFile, agentId, provider, editorContent, fileContent]);
+  }, [selectedFile, provider, editorContent, fileContent]);
 
   // ⌘/Ctrl+S
   useEffect(() => {
@@ -126,7 +174,7 @@ export default function FilesApp() {
   }, []);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!agentId || !provider) return;
+    if (!provider) return;
     const files = e.target.files;
     if (!files?.length) return;
     const MAX = 5 * 1024 * 1024;
@@ -163,10 +211,13 @@ export default function FilesApp() {
   const handleNamePromptSubmit = async (name: string) => {
     if (!provider || !namePrompt) return;
     if (namePrompt.mode === "new-file") {
+      if (selectedFile && !confirmDiscardIfDirty()) return;
       const dest = joinPath(path, name);
       await filesystemRPCClient.writeFile({ path: dest, content: "", provider });
       await refreshListing();
-      setSelectedFile(dest);
+      setUpdatedContent(null);
+      // Navigate directly — selectFile would re-check dirty against stale state.
+      void navigate(filesPath(dest));
       setNamePrompt(null);
       toastManager.success(`Created ${name}`, { duration: 2000 });
       return;
@@ -189,8 +240,10 @@ export default function FilesApp() {
     }
     await filesystemRPCClient.rename({ oldPath, newPath, provider });
     await refreshListing();
+    // Keep editor draft when renaming the open file (path changes, content stays).
     if (selectedFile === namePrompt.path || selectedFile === oldPath) {
-      setSelectedFile(namePrompt.isDir ? `${newPath}/` : newPath);
+      const nextFile = namePrompt.isDir ? `${newPath}/` : newPath;
+      void navigate(filesPath(nextFile), { replace: true });
     }
     setSelectedPaths(prev => {
       if (!prev.has(namePrompt.path) && !prev.has(oldPath)) return prev;
@@ -206,15 +259,21 @@ export default function FilesApp() {
 
   const handleDeleteConfirm = async () => {
     if (!provider || !deleteTarget) return;
+    if (deleteTarget.endsWith("/")) {
+      toastManager.error("Deleting folders is not supported from the Files app", { duration: 4000 });
+      setDeleteTarget(null);
+      return;
+    }
     setDeleting(true);
     try {
-      const target = deleteTarget.endsWith("/") ? deleteTarget.slice(0, -1) : deleteTarget;
-      await filesystemRPCClient.deleteFile({ path: target, provider });
-      if (selectedFile === deleteTarget || selectedFile === target) setSelectedFile(null);
+      await filesystemRPCClient.deleteFile({ path: deleteTarget, provider });
+      if (selectedFile === deleteTarget) {
+        setUpdatedContent(null);
+        void navigate("/files", { replace: true });
+      }
       setSelectedPaths(prev => {
         const next = new Set(prev);
         next.delete(deleteTarget);
-        next.delete(target);
         return next;
       });
       await refreshListing();
@@ -230,6 +289,17 @@ export default function FilesApp() {
   const openRename = (file: string) => {
     const isDir = file.endsWith("/");
     setNamePrompt({ mode: "rename", path: file, isDir });
+  };
+
+  const switchProvider = (next: string) => {
+    if (next === provider) return;
+    if (!confirmDiscardIfDirty()) return;
+    setProviderOverride(next);
+    setPath(".");
+    setUpdatedContent(null);
+    setSelectedPaths(new Set());
+    setSearchQuery("");
+    if (selectedFile) void navigate("/files", { replace: true });
   };
 
   if (initialising) {
@@ -248,21 +318,45 @@ export default function FilesApp() {
     );
   }
 
+  if (fsProviders.error) {
+    return (
+      <ErrorState
+        title="Could not load filesystem providers"
+        error={formatError(fsProviders.error)}
+        onRetry={() => void fsProviders.mutate()}
+        variant="page"
+        className="bg-primary"
+      />
+    );
+  }
+
+  if (fsProviders.isLoading || (!provider && !fsProviders.data)) {
+    return <LoadingState message="Loading filesystems…" className="bg-primary h-full w-full" />;
+  }
+
+  if (!provider) {
+    return (
+      <ErrorState
+        title="No filesystem providers"
+        error="Configure a filesystem provider to browse and edit files."
+        onRetry={() => void fsProviders.mutate()}
+        variant="page"
+        className="bg-primary"
+      />
+    );
+  }
+
   return (
     <div className="w-full h-full flex flex-col bg-primary overflow-hidden">
       <AppPageHeader title="Files" subtitle="Browse · edit · create · search" icon={<FolderOpen className="w-4 h-4" />} iconGradient="from-accent to-blue-600">
-        {(fsProviders.data?.providers.length ?? 0) > 1 && (
+        {providers.length > 1 && (
           <select
-            value={provider ?? ""}
-            onChange={e => {
-              setProvider(e.target.value);
-              setPath(".");
-              setSelectedFile(null);
-            }}
+            value={provider}
+            onChange={e => switchProvider(e.target.value)}
             className="bg-input border border-primary rounded-lg px-2 py-1.5 text-xs text-primary focus-ring cursor-pointer"
             aria-label="Filesystem provider"
           >
-            {fsProviders.data!.providers.map(p => (
+            {providers.map(p => (
               <option key={p} value={p}>
                 {p}
               </option>
@@ -294,11 +388,7 @@ export default function FilesApp() {
 
       <BreadcrumbBar
         path={path}
-        onNavigate={p => {
-          setPath(p);
-          setSelectedFile(null);
-          setSearchQuery("");
-        }}
+        onNavigate={navigateTo}
         showHidden={showHidden}
         onToggleHidden={() => setShowHidden(v => !v)}
         onUpload={() => fileInputRef.current?.click()}
@@ -314,12 +404,8 @@ export default function FilesApp() {
             provider={provider}
             path={path}
             showHidden={showHidden}
-            onNavigate={p => {
-              setPath(p);
-              setSelectedFile(null);
-              setSearchQuery("");
-            }}
-            onSelectFile={setSelectedFile}
+            onNavigate={navigateTo}
+            onSelectFile={selectFile}
             selectedFile={selectedFile}
             selectedPaths={selectedPaths}
             onToggleSelected={toggleSelected}
@@ -336,7 +422,7 @@ export default function FilesApp() {
             provider={provider}
             selectedPaths={selectedPaths}
             onToggleSelected={toggleSelected}
-            onClose={() => setSelectedFile(null)}
+            onClose={() => selectFile(null)}
             isDirty={isDirty}
             saving={saving}
             onSave={handleSave}

@@ -31,7 +31,7 @@ function StatusBadge({ status }: { status: PlatformStatusId }) {
 function PlatformCard({ info }: { info: PlatformStatus }) {
   const { platform, status, hasConfig, pluginInstalled } = info;
   const canConfigure = pluginInstalled && hasConfig;
-  const configHref = `/configuration?plugin=${encodeURIComponent(platform.pluginName)}`;
+  const configHref = `/configuration/${encodeURIComponent(platform.pluginName)}`;
   const muted = status === "not_installed";
 
   return (
@@ -114,12 +114,16 @@ function BotsSummary({
   conversationCount,
   serviceCount,
   botPluginInstalled,
+  botsError,
+  onRetryBots,
 }: {
   botCount: number;
   channelCount: number;
   conversationCount: number;
   serviceCount: number;
   botPluginInstalled: boolean;
+  botsError: unknown;
+  onRetryBots: () => void;
 }) {
   return (
     <div className="bg-secondary border border-primary rounded-xl p-4 space-y-3">
@@ -127,7 +131,7 @@ function BotsSummary({
         <div className="min-w-0">
           <p className="text-2xs font-bold text-muted uppercase tracking-widest">Bots & messaging</p>
           <p className="text-sm text-secondary mt-1 leading-relaxed">
-            Channel bots sit on Slack/Telegram accounts and answer with agents. Configure accounts above, then define bots under{" "}
+            Channel bots sit on Slack, Telegram, and Discord accounts and answer with agents. Configure accounts above, then define bots under{" "}
             <code className="text-2xs text-primary">bot.bots</code>.
           </p>
         </div>
@@ -144,6 +148,8 @@ function BotsSummary({
         <p className="text-2xs text-muted flex items-center gap-1.5">
           <WifiOff className="w-3.5 h-3.5" /> Bot plugin is not installed on this instance.
         </p>
+      ) : botsError ? (
+        <ErrorState title="Unable to load bots status" error={botsError} onRetry={onRetryBots} variant="inline" />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <SummaryStat label="Bots" value={String(botCount)} icon={<Bot className="w-3.5 h-3.5" />} accentClass="text-teal-500" />
@@ -158,11 +164,11 @@ function BotsSummary({
         </div>
       )}
 
-      {botPluginInstalled && botCount === 0 && serviceCount > 0 ? (
+      {botPluginInstalled && !botsError && botCount === 0 && serviceCount > 0 ? (
         <div className="flex flex-wrap items-center gap-2 text-2xs">
           <span className="text-muted">Messaging services are live, but no bots are defined yet.</span>
           <Link
-            to={`/configuration?plugin=${encodeURIComponent(BOT_PLUGIN_NAME)}`}
+            to={`/configuration/${encodeURIComponent(BOT_PLUGIN_NAME)}`}
             className="inline-flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:underline focus-ring rounded"
           >
             <Settings2 className="w-3 h-3" /> Configure bots
@@ -170,11 +176,24 @@ function BotsSummary({
         </div>
       ) : null}
 
-      {botPluginInstalled && serviceCount === 0 ? (
-        <p className="text-2xs text-muted">No messaging services connected. Add a Slack or Telegram account to go live.</p>
+      {botPluginInstalled && !botsError && serviceCount === 0 ? (
+        <p className="text-2xs text-muted">No messaging services connected. Add a Slack, Telegram, or Discord account to go live.</p>
       ) : null}
     </div>
   );
+}
+
+function platformsHeadline(connectedCount: number, needsConfigCount: number, configuredCount: number): string {
+  if (connectedCount > 0) {
+    return connectedCount === 1 ? "1 connected" : `${connectedCount} connected`;
+  }
+  if (needsConfigCount > 0) {
+    return needsConfigCount === 1 ? "1 ready to configure" : `${needsConfigCount} ready to configure`;
+  }
+  if (configuredCount > 0) {
+    return configuredCount === 1 ? "1 configured (offline)" : `${configuredCount} configured (offline)`;
+  }
+  return "Connect messaging and social plugins";
 }
 
 /**
@@ -201,12 +220,16 @@ export default function SocialPlatforms() {
   const channelCount = botList.reduce((n, bot) => n + bot.channels.length, 0);
   const conversationCount = botList.reduce((n, bot) => n + bot.conversations.length, 0);
   const serviceCount = bots.data?.services.length ?? 0;
+  // Soft-fail: bots endpoint may be unavailable; only treat as hard error when we have no data.
+  const botsHardError = bots.error && !bots.data ? bots.error : undefined;
 
   const connectedCount = platformStatuses.filter(p => p.status === "connected").length;
   const needsConfigCount = platformStatuses.filter(p => p.status === "needs_config").length;
+  const configuredCount = platformStatuses.filter(p => p.status === "configured").length;
 
-  // Plugins + config are required for platform cards. Bots is optional (endpoint may be missing).
-  const isLoading = (plugins.isLoading && !plugins.data) || (config.isLoading && !config.data);
+  // Wait for plugins + config, and for bots on first load so messaging status is not
+  // briefly shown as offline before listBots returns. Bots errors are non-fatal.
+  const isLoading = (plugins.isLoading && !plugins.data) || (config.isLoading && !config.data) || (bots.isLoading && !bots.data && !bots.error);
   const hardError = (plugins.error && !plugins.data) || (config.error && !config.data);
 
   const refresh = () => {
@@ -217,7 +240,7 @@ export default function SocialPlatforms() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-10">
+      <div className="flex justify-center py-10" role="status" aria-live="polite">
         <Loader2 className="w-6 h-6 text-muted animate-spin" />
       </div>
     );
@@ -233,13 +256,7 @@ export default function SocialPlatforms() {
       <div className="flex items-center justify-between gap-2 px-1">
         <div>
           <p className="text-2xs font-bold text-muted uppercase tracking-widest">Platforms</p>
-          <p className="text-2xs text-muted mt-0.5">
-            {connectedCount > 0
-              ? `${connectedCount} connected`
-              : needsConfigCount > 0
-                ? `${needsConfigCount} ready to configure`
-                : "Connect messaging and social plugins"}
-          </p>
+          <p className="text-2xs text-muted mt-0.5">{platformsHeadline(connectedCount, needsConfigCount, configuredCount)}</p>
         </div>
         <button
           type="button"
@@ -264,6 +281,8 @@ export default function SocialPlatforms() {
         conversationCount={conversationCount}
         serviceCount={serviceCount}
         botPluginInstalled={botPluginInstalled}
+        botsError={botsHardError}
+        onRetryBots={() => void bots.mutate()}
       />
     </div>
   );

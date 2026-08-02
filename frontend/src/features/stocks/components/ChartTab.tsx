@@ -1,5 +1,5 @@
 import { Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStockPriceChart, useStockPriceHistory, useStockPriceTicks } from "../../../rpc.ts";
 import { historyRange } from "../formatters.ts";
 import type { StockHistoricalRow } from "../types.ts";
@@ -41,6 +41,13 @@ export default function ChartTab({ symbol }: ChartTabProps) {
   const rpcChartUrl = chart.data?.svgDataUri;
   const imageUrl = chartStage === 0 ? darkChartUrl : chartStage === 1 ? rpcChartUrl : undefined;
 
+  // If stage 1 has no RPC URL after load/error, fall through to local market-data chart.
+  useEffect(() => {
+    if (chartStage === 1 && !chart.isLoading && !rpcChartUrl) {
+      setChartStage(2);
+    }
+  }, [chartStage, chart.isLoading, rpcChartUrl]);
+
   const localRows = useMemo(() => {
     if (selected.useTicks) {
       const rows = ticks.data?.rows ?? [];
@@ -57,6 +64,7 @@ export default function ChartTab({ symbol }: ChartTabProps) {
   const dataError = selected.useTicks ? ticks.error : history.error;
 
   const imgKey = `${symbol}-${chartInterval}-${chartStage}`;
+  const waitingOnImagePipeline = chartStage === 1 && (chart.isLoading || !rpcChartUrl);
 
   return (
     <div className="space-y-3">
@@ -86,13 +94,11 @@ export default function ChartTab({ symbol }: ChartTabProps) {
             alt={`${symbol} price chart`}
             className="w-full h-48 object-contain bg-secondary"
             onError={() => {
-              setChartStage(prev => {
-                if (prev === 0 && rpcChartUrl) return 1;
-                return 2;
-              });
+              // Always try RPC chart after dark external fails; only then fall back to local SVG.
+              setChartStage(prev => (prev === 0 ? 1 : 2));
             }}
           />
-        ) : dataLoading || (chartStage < 2 && chart.isLoading) ? (
+        ) : waitingOnImagePipeline || dataLoading ? (
           <div className="flex justify-center items-center h-48">
             <Loader2 className="w-5 h-5 animate-spin text-muted" />
           </div>

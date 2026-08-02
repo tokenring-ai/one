@@ -10,9 +10,10 @@ import type {
 } from "@tokenring-ai/app/config/uiSchema";
 // Deep import: the package root re-exports SecretService, which is server-only.
 import { type SecretSource, secretSourceOf } from "@tokenring-ai/secrets/secret";
+import deepEqual from "@tokenring-ai/utility/object/deepEqual";
 import { isPlainObject } from "@tokenring-ai/utility/object/isPlainObject";
 import { ChevronRight, Plus, RotateCcw, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isRedactedSensitiveValue } from "../../lib/utils.ts";
 
 export interface ConfigIssue {
@@ -230,17 +231,29 @@ function FieldControl({
           aria-label={node.label}
         />
       );
+    case "regex":
+      return <RegexControl node={node} value={value} overridden={overridden} onChange={onChange} />;
     case "number":
       return (
         <input
           type="number"
           className={inputClass + inheritedClass + " sm:w-32"}
-          value={typeof value === "number" ? value : ""}
+          value={typeof value === "number" && !Number.isNaN(value) ? value : ""}
           min={field.min}
           max={field.max}
           step={field.decimals === 0 ? 1 : "any"}
           placeholder={node.defaultValue !== undefined ? formatDefaultValue(node.defaultValue) : ""}
-          onChange={event => onChange(event.target.value === "" ? undefined : Number(event.target.value))}
+          onChange={event => {
+            const raw = event.target.value;
+            if (raw === "") {
+              onChange(undefined);
+              return;
+            }
+            const next = Number(raw);
+            // Ignore incomplete intermediate input ("-", ".", "1e") so we never store NaN.
+            if (Number.isNaN(next)) return;
+            onChange(next);
+          }}
           aria-label={node.label}
         />
       );
@@ -333,6 +346,69 @@ function FieldControl({
   }
 }
 
+/**
+ * Regex pattern control. The stored value is the pattern body (no surrounding
+ * slashes); the UI draws /…/ for clarity and validates the pattern as the user types.
+ */
+function RegexControl({
+  node,
+  value,
+  overridden,
+  onChange,
+}: {
+  node: ConfigFieldNode;
+  value: unknown;
+  overridden: boolean;
+  onChange: (value: unknown) => void;
+}) {
+  const pattern = typeof value === "string" ? value : "";
+  const inheritedClass = overridden ? "" : " opacity-70";
+
+  let syntaxError: string | null = null;
+  if (pattern !== "") {
+    try {
+      // eslint-disable-next-line no-new -- validate pattern syntax only
+      new RegExp(pattern);
+    } catch (error: unknown) {
+      syntaxError = error instanceof Error ? error.message : "Invalid regular expression";
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-1 w-full sm:w-56">
+      <div
+        className={`flex items-center w-full bg-tertiary border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-accent/40 ${
+          syntaxError ? "border-red-400/60" : "border-primary"
+        }${inheritedClass}`}
+      >
+        <span className="pl-2.5 text-sm font-mono text-muted select-none" aria-hidden>
+          /
+        </span>
+        <input
+          type="text"
+          className="flex-1 min-w-0 px-1 py-1.5 bg-transparent text-sm font-mono text-primary placeholder:text-muted focus:outline-none"
+          value={pattern}
+          placeholder={node.placeholder ?? (node.defaultValue !== undefined ? formatDefaultValue(node.defaultValue) : "pattern")}
+          onChange={event => onChange(event.target.value === "" ? undefined : event.target.value)}
+          aria-label={node.label}
+          aria-invalid={syntaxError != null}
+          spellCheck={false}
+          autoCorrect="off"
+          autoCapitalize="off"
+        />
+        <span className="pr-2.5 text-sm font-mono text-muted select-none" aria-hidden>
+          /
+        </span>
+      </div>
+      {syntaxError && (
+        <p className="text-2xs text-red-400 max-w-full text-right" role="alert">
+          {syntaxError}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function StringListControl({
   node,
   value,
@@ -388,7 +464,9 @@ function StringListControl({
               {String(item)}
               <button
                 type="button"
-                onClick={() => onChange(items.length === 1 ? undefined : items.filter((_, itemIndex) => itemIndex !== index))}
+                // Empty array is a real override ("no items"); only the field reset
+                // control clears back to the inherited default.
+                onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))}
                 className="text-muted hover:text-red-400 cursor-pointer"
                 aria-label={`Remove ${String(item)}`}
               >
@@ -406,23 +484,28 @@ function JsonControl({ node, value, onChange }: { node: ConfigFieldNode; value: 
   const serialized = value === undefined ? "" : JSON.stringify(value, null, 2);
   const [text, setText] = useState(serialized);
   const [parseError, setParseError] = useState<string | null>(null);
+  const focusedRef = useRef(false);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- resync only when the external value changes
+  // Resync from the draft only when the field is not focused — otherwise a
+  // commit-as-you-type pretty-print would yank the caret mid-edit.
   useEffect(() => {
+    if (focusedRef.current) return;
     setText(serialized);
     setParseError(null);
   }, [serialized]);
 
-  const commit = () => {
-    const trimmed = text.trim();
+  /** Push valid JSON into the draft as the user types so Save never misses unblurred edits. */
+  const commitText = (nextText: string) => {
+    const trimmed = nextText.trim();
     if (trimmed === "") {
       setParseError(null);
-      onChange(undefined);
+      if (value !== undefined) onChange(undefined);
       return;
     }
     try {
-      onChange(JSON.parse(trimmed));
+      const parsed: unknown = JSON.parse(trimmed);
       setParseError(null);
+      if (!deepEqual(parsed, value)) onChange(parsed);
     } catch {
       setParseError("Invalid JSON");
     }
@@ -434,8 +517,29 @@ function JsonControl({ node, value, onChange }: { node: ConfigFieldNode; value: 
         className={inputClass + " font-mono text-xs w-full sm:w-72"}
         rows={5}
         value={text}
-        onChange={event => setText(event.target.value)}
-        onBlur={commit}
+        onFocus={() => {
+          focusedRef.current = true;
+        }}
+        onChange={event => {
+          const nextText = event.target.value;
+          setText(nextText);
+          commitText(nextText);
+        }}
+        onBlur={() => {
+          focusedRef.current = false;
+          commitText(text);
+          // Adopt pretty-printed form once editing ends (valid JSON only).
+          const trimmed = text.trim();
+          if (trimmed === "") {
+            setText("");
+            return;
+          }
+          try {
+            setText(JSON.stringify(JSON.parse(trimmed), null, 2));
+          } catch {
+            /* keep the invalid local text + error */
+          }
+        }}
         aria-label={node.label}
         spellCheck={false}
       />
@@ -453,6 +557,7 @@ function JsonControl({ node, value, onChange }: { node: ConfigFieldNode; value: 
 function ListRenderer(props: NodeRendererProps & { node: ConfigListNode }) {
   const { node } = props;
   const overridden = props.overrideValue !== undefined;
+  const effectiveItems: unknown[] = Array.isArray(props.effectiveValue) ? (props.effectiveValue as unknown[]) : [];
   const items: unknown[] = Array.isArray(overridden ? props.overrideValue : props.effectiveValue)
     ? [...((overridden ? props.overrideValue : props.effectiveValue) as unknown[])]
     : [];
@@ -500,9 +605,29 @@ function ListRenderer(props: NodeRendererProps & { node: ConfigListNode }) {
           <ConfigNodeRenderer
             node={node.item}
             absPath={[...props.absPath, index]}
-            overrideValue={item}
-            effectiveValue={undefined}
-            onChange={value => update(items.map((existing, itemIndex) => (itemIndex === index ? (value ?? {}) : existing)))}
+            // Inherited lists must not treat effective items as overrides (false "modified" badges).
+            // Once overridden, array merge replaces the whole list, so items are complete values
+            // with no per-field effective fallback.
+            overrideValue={overridden ? item : undefined}
+            effectiveValue={overridden ? undefined : effectiveItems[index]}
+            onChange={value =>
+              update(
+                items.map((existing, itemIndex) => {
+                  if (itemIndex !== index) return existing;
+                  if (value === undefined) {
+                    // Groups clear to an empty object; leaf items clear to null so we never
+                    // replace a string/secret with `{}`.
+                    return isPlainObject(existing) || existing === undefined ? {} : null;
+                  }
+                  // First edit of an inherited list: child groups emit a partial object because
+                  // overrideValue was undefined — merge onto the effective item so siblings survive.
+                  if (!overridden && isPlainObject(value) && isPlainObject(existing)) {
+                    return { ...existing, ...value };
+                  }
+                  return value;
+                }),
+              )
+            }
             issues={props.issues}
           />
         </div>
@@ -697,25 +822,88 @@ function SecretRenderer(props: NodeRendererProps & { node: ConfigSecretNode }) {
 
   // The chosen source sticks even before the new source has a usable value.
   const [pickedSource, setPickedSource] = useState<SecretSource | null>(null);
-  const source: SecretSource | null = pickedSource ?? (displayed === undefined ? null : secretSourceOf(displayed));
+  // Stash the previous override when the user explores a different source so
+  // switching Value → Env → Value does not permanently destroy a stored secret.
+  const stashRef = useRef<{ source: SecretSource; overrideValue: unknown } | null>(null);
 
-  const record = isPlainObject(displayed) ? displayed : {};
+  const actualSource: SecretSource | null = displayed === undefined ? null : secretSourceOf(displayed);
+  const source: SecretSource | null = pickedSource ?? actualSource;
+
+  // Only read env/vault fields from the displayed value when it matches the UI source;
+  // otherwise show empty inputs for the newly picked source.
+  const record = isPlainObject(displayed) && actualSource === source ? displayed : {};
   const envName = source === "env" && typeof record.env === "string" ? record.env : "";
   const vaultCategory = source === "vault" && typeof record.category === "string" ? record.category : "";
   const vaultKey = source === "vault" && typeof record.key === "string" ? record.key : "";
-  const isSet = isRedactedSensitiveValue(displayed) ? displayed.isSet : typeof displayed === "string" && displayed.length > 0;
+  const isSet =
+    source === "value" && actualSource === "value"
+      ? isRedactedSensitiveValue(displayed)
+        ? displayed.isSet
+        : typeof displayed === "string" && displayed.length > 0
+      : false;
+  const valueInput = source === "value" && actualSource === "value" && typeof displayed === "string" ? displayed : "";
 
-  const emitEnv = (name: string) => props.onChange(name === "" ? undefined : { source: "env", env: name });
-  const emitVault = (category: string, key: string) => props.onChange(category === "" && key === "" ? undefined : { source: "vault", category, key });
+  const clearStash = () => {
+    stashRef.current = null;
+  };
+
+  const emitValue = (raw: string) => {
+    clearStash();
+    setPickedSource(null);
+    props.onChange(raw === "" ? undefined : raw);
+  };
+  const emitEnv = (name: string) => {
+    clearStash();
+    setPickedSource(null);
+    props.onChange(name === "" ? undefined : { source: "env", env: name });
+  };
+  const emitVault = (category: string, key: string) => {
+    clearStash();
+    setPickedSource(null);
+    props.onChange(category === "" && key === "" ? undefined : { source: "vault", category, key });
+  };
 
   const changeSource = (next: string) => {
     if (next === "") {
       setPickedSource(null);
+      clearStash();
       props.onChange(undefined);
       return;
     }
-    setPickedSource(next as SecretSource);
-    props.onChange(undefined); // the new source has no value until it's filled in
+    const nextSource = next as SecretSource;
+
+    // User returned to the source they left before committing a replacement.
+    if (stashRef.current && stashRef.current.source === nextSource) {
+      const restored = stashRef.current.overrideValue;
+      clearStash();
+      setPickedSource(null);
+      props.onChange(restored);
+      return;
+    }
+
+    // Re-selecting the source of the current displayed value — keep it.
+    if (actualSource === nextSource) {
+      setPickedSource(null);
+      return;
+    }
+
+    // Leaving a committed override: stash once so multi-hop source browsing
+    // (value → env → vault → value) can still restore the original secret.
+    if (!stashRef.current && props.overrideValue !== undefined && actualSource !== null) {
+      stashRef.current = { source: actualSource, overrideValue: props.overrideValue };
+    }
+
+    setPickedSource(nextSource);
+    // Incomplete placeholder so the draft is dirty and Save cannot silently keep
+    // the old source while the UI shows a different one. Empty env/vault fails
+    // server validation until the user fills them in (or switches back / discards).
+    if (nextSource === "env") {
+      props.onChange({ source: "env", env: "" });
+    } else if (nextSource === "vault") {
+      props.onChange({ source: "vault", category: "", key: "" });
+    } else {
+      props.onChange(undefined);
+    }
   };
 
   const defaultDescription = describeSecretDefault(node.defaultValue);
@@ -762,11 +950,11 @@ function SecretRenderer(props: NodeRendererProps & { node: ConfigSecretNode }) {
               <input
                 type={node.sensitive ? "password" : "text"}
                 className={inputClass + (overridden ? "" : " opacity-70")}
-                value={typeof displayed === "string" ? displayed : ""}
+                value={valueInput}
                 placeholder={
                   node.sensitive ? (isSet ? "•••••••• (set — type to replace)" : (node.placeholder ?? "Secret value")) : (node.placeholder ?? "Value")
                 }
-                onChange={event => props.onChange(event.target.value === "" ? undefined : event.target.value)}
+                onChange={event => emitValue(event.target.value)}
                 aria-label={`${node.label} value`}
               />
             )}
@@ -808,6 +996,7 @@ function SecretRenderer(props: NodeRendererProps & { node: ConfigSecretNode }) {
               type="button"
               onClick={() => {
                 setPickedSource(null);
+                clearStash();
                 props.onChange(undefined);
               }}
               className="p-1 text-muted hover:text-primary transition-colors cursor-pointer"

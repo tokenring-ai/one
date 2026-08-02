@@ -2,9 +2,10 @@ import type { ChatAttachment } from "@tokenring-ai/agent/AgentEvents";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2 } from "lucide-react";
 import type React from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAgentEventState } from "../../hooks/useAgentEventState.ts";
+import { resolveAppLink } from "../../lib/appLinks.ts";
 import { cn } from "../../lib/utils.ts";
 import { agentRPCClient, useAvailableCommands, useCommandHistory } from "../../rpc.ts";
 import { useChatInput } from "../ChatInputContext.tsx";
@@ -46,6 +47,32 @@ export default function ChatPanel({ agentId, dockMode, onDockModeChange, onClose
     useAgentEventState(agentId);
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
+
+  /**
+   * Intercept custom-scheme markdown links (agent://…, workflow://…, etc.) so the
+   * browser does not try to open an external protocol handler. Primary rendering
+   * rewrites these via MarkdownLink; this capture is a safety net for any raw hrefs.
+   */
+  const handleAppLinkClickCapture = useCallback(
+    (event: React.MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const anchor = target.closest("a[href]");
+      if (!(anchor instanceof HTMLAnchorElement)) return;
+      if (!event.currentTarget.contains(anchor)) return;
+
+      const href = anchor.getAttribute("href");
+      const path = resolveAppLink(href);
+      if (!path) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      void navigate(path);
+    },
+    [navigate],
+  );
 
   const idle = agentStatus.status === "running" && agentStatus.inputExecutionQueue.length === 0;
 
@@ -185,7 +212,7 @@ export default function ChatPanel({ agentId, dockMode, onDockModeChange, onClose
 
       <FileBrowserOverlay agentId={agentId} isOpen={showFileBrowser} onClose={() => setShowFileBrowser(false)} />
 
-      <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex flex-col flex-1 min-h-0" onClickCapture={handleAppLinkClickCapture}>
         <AutoScrollContainer>
           <MessageList messages={messages} agentId={agentId} agentStatus={agentStatus} />
         </AutoScrollContainer>

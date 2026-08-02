@@ -2,6 +2,7 @@ import formatError from "@tokenring-ai/utility/error/formatError";
 import {
   BookOpen,
   Bot,
+  Bug,
   CalendarDays,
   Cpu,
   DollarSign,
@@ -199,6 +200,14 @@ const APPS: AppCardDef[] = [
     description: "Live cost tracking across agents and models",
     icon: <DollarSign />,
     gradient: "from-emerald-500 to-teal-600",
+  },
+  {
+    id: "debug",
+    path: "/debug",
+    label: "Debugging",
+    description: "Capture and inspect app and agent state",
+    icon: <Bug />,
+    gradient: "from-rose-500 to-red-600",
   },
   {
     id: "settings",

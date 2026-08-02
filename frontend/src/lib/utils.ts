@@ -1,4 +1,3 @@
-import deepEqual from "@tokenring-ai/utility/object/deepEqual";
 import { isPlainObject } from "@tokenring-ai/utility/object/isPlainObject";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -6,8 +5,6 @@ import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-export { deepEqual };
 
 export interface RedactedSensitiveValue {
   __sensitive: true;

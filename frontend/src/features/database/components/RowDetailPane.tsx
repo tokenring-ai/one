@@ -32,7 +32,15 @@ export default function RowDetailPane({ row, columns, onClose }: { row: Row; col
                 {column && <span className="font-normal normal-case tracking-normal opacity-70">· {column.dataType}</span>}
               </dt>
               <dd className="text-xs text-primary font-mono break-words whitespace-pre-wrap">
-                {value === null ? <span className="text-muted italic opacity-60">null</span> : String(value)}
+                {value === null ? (
+                  <span className="text-muted italic opacity-60">null</span>
+                ) : value === "" ? (
+                  <span className="text-muted italic opacity-60">empty</span>
+                ) : typeof value === "boolean" ? (
+                  <span className="text-muted">{String(value)}</span>
+                ) : (
+                  String(value)
+                )}
               </dd>
             </div>
           );

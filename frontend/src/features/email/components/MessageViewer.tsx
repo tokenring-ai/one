@@ -2,7 +2,7 @@ import type { EmailMessage } from "@tokenring-ai/email";
 import { AlertCircle, Bot, Clock, Forward, Loader2, Mail, Reply, ReplyAll } from "lucide-react";
 import { useEmailMessage } from "../../../rpc.ts";
 import type { ComposeMode } from "../types.ts";
-import { formatAddress, formatAddressList, senderName } from "../utils.ts";
+import { formatAddress, formatAddressList, messageTimestamp, senderName } from "../utils.ts";
 
 export default function MessageViewer({
   provider,
@@ -40,6 +40,8 @@ export default function MessageViewer({
     );
   }
 
+  const displayTimestamp = messageTimestamp(msg);
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="shrink-0 px-5 pt-5 pb-4 border-b border-primary space-y-3">
@@ -65,7 +67,7 @@ export default function MessageViewer({
             <span className="font-medium text-secondary w-8 shrink-0">Date</span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {msg.receivedAt != null ? new Date(msg.receivedAt).toLocaleString() : "—"}
+              {displayTimestamp != null ? new Date(displayTimestamp).toLocaleString() : "—"}
             </span>
           </div>
         </div>

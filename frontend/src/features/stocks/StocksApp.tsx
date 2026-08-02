@@ -47,6 +47,7 @@ export default function StocksApp() {
 
           {activeSymbol ? (
             <StockDetail
+              key={activeSymbol}
               symbol={activeSymbol}
               onClear={() => {
                 setActiveSymbol(null);

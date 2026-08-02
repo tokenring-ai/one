@@ -1,5 +1,5 @@
 import { ChevronRight, Database, Eye, Lock, Pencil, Plus, RefreshCw, Table2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ErrorState from "../../../components/ui/ErrorState.tsx";
 import LoadingState from "../../../components/ui/LoadingState.tsx";
 import { cn } from "../../../lib/utils.ts";
@@ -40,6 +40,11 @@ export default function DatasourceSidebar({
   onRefresh: () => void;
 }) {
   const [tableFilter, setTableFilter] = useState("");
+
+  // A filter typed for one datasource shouldn't hide tables after switching.
+  useEffect(() => {
+    setTableFilter("");
+  }, [activeDatasource]);
 
   const filteredTables = tableFilter.trim() ? tables.filter(table => table.name.toLowerCase().includes(tableFilter.trim().toLowerCase())) : tables;
 

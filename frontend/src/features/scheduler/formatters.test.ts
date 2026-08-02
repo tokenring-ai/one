@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { formatDuration, formatRelativeTime, formatScheduleSummary, formatScheduleTime, truncateMessage } from "./formatters.ts";
+import {
+  formatDuration,
+  formatRelativeTime,
+  formatScheduleSummary,
+  formatScheduleTime,
+  isValidRepeatInterval,
+  parseTimeOfDayMinutes,
+  truncateMessage,
+} from "./formatters.ts";
 
 describe("formatScheduleTime", () => {
   test("returns em dash for empty values", () => {
@@ -45,7 +53,11 @@ describe("formatScheduleSummary", () => {
         weekdays: "mon tue wed thu fri",
         timezone: "UTC",
       }),
-    ).toBe("Every 1 day · 09:00–17:00 · mon tue wed thu fri · UTC");
+    ).toBe("Every 1 day · 09:00–17:00 · Mon Tue Wed Thu Fri · UTC");
+  });
+
+  test("capitalizes comma-separated weekdays", () => {
+    expect(formatScheduleSummary({ weekdays: "mon,wed,fri" })).toBe("One-time · Mon Wed Fri");
   });
 });
 
@@ -70,5 +82,35 @@ describe("truncateMessage", () => {
     const result = truncateMessage(long, 20);
     expect(result.length).toBe(20);
     expect(result.endsWith("…")).toBe(true);
+  });
+});
+
+describe("isValidRepeatInterval", () => {
+  test("accepts backend-supported intervals", () => {
+    expect(isValidRepeatInterval("5 minutes")).toBe(true);
+    expect(isValidRepeatInterval("1 hour")).toBe(true);
+    expect(isValidRepeatInterval("  2 days  ")).toBe(true);
+    expect(isValidRepeatInterval("30 seconds")).toBe(true);
+  });
+
+  test("rejects invalid intervals", () => {
+    expect(isValidRepeatInterval("")).toBe(false);
+    expect(isValidRepeatInterval("daily")).toBe(false);
+    expect(isValidRepeatInterval("every 5 minutes")).toBe(false);
+    expect(isValidRepeatInterval("0 minutes")).toBe(false);
+    expect(isValidRepeatInterval("5 foos")).toBe(false);
+  });
+});
+
+describe("parseTimeOfDayMinutes", () => {
+  test("parses HH:mm", () => {
+    expect(parseTimeOfDayMinutes("09:00")).toBe(9 * 60);
+    expect(parseTimeOfDayMinutes("17:30")).toBe(17 * 60 + 30);
+  });
+
+  test("rejects invalid times", () => {
+    expect(parseTimeOfDayMinutes("")).toBeNull();
+    expect(parseTimeOfDayMinutes("25:00")).toBeNull();
+    expect(parseTimeOfDayMinutes("12:60")).toBeNull();
   });
 });

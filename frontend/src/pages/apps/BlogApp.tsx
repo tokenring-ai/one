@@ -3,6 +3,7 @@ import { formatDate } from "@tokenring-ai/utility/date/formatDate";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { BookOpen, Calendar, ChevronDown, ExternalLink, FilePlus, Globe, Loader2, Pencil, RefreshCw, Save, Tag, WifiOff, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
@@ -163,7 +164,16 @@ function PostEditor({ post, provider, onCancel, onSaved }: { post: BlogPost; pro
   const [status, setStatus] = useState<PostStatus>(post.status);
   const [saving, setSaving] = useState(false);
 
+  // Parent should remount via key={post.id}; this guards against stale form state if it does not.
+  useEffect(() => {
+    setTitle(post.title);
+    setHtml(post.html);
+    setTags((post.tags ?? []).join(", "));
+    setStatus(post.status);
+  }, [post.id]);
+
   const handleSave = async () => {
+    if (saving) return;
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
       toastManager.error("Title is required", { duration: 3000 });
@@ -313,7 +323,13 @@ function PostViewer({
   const [editing, setEditing] = useState(false);
   const sanitizedHtml = useMemo(() => (post.html ? sanitizeBlogHtml(post.html) : ""), [post.html]);
 
+  // Leaving a post must exit edit mode so form state cannot spill onto another post.
+  useEffect(() => {
+    setEditing(false);
+  }, [post.id]);
+
   const handleWorkOnPost = async () => {
+    if (starting) return;
     setStarting(true);
     try {
       await onWorkOnPost(post.id);
@@ -323,14 +339,14 @@ function PostViewer({
   };
 
   const setStatus = async (status: PostStatus) => {
-    if (post.status === status) return;
+    if (post.status === status || statusBusy) return;
     setStatusBusy(true);
     try {
       const result = await blogRPCClient.updatePost({ provider, id: post.id, updatedData: { status } });
       const label = status === "published" ? "Post published!" : status === "draft" ? "Post unpublished (draft)" : `Status set to ${status}`;
       toastManager.success(result.message || label, { duration: 3000 });
+      // Keep optimistic override; onUpdated revalidates list/detail without clearing it.
       onUpdated(result.post);
-      onRefresh();
     } catch (err) {
       toastManager.error(formatError(err), { duration: 5000 });
     } finally {
@@ -341,13 +357,13 @@ function PostViewer({
   if (editing) {
     return (
       <PostEditor
+        key={post.id}
         post={post}
         provider={provider}
         onCancel={() => setEditing(false)}
         onSaved={updated => {
           setEditing(false);
           onUpdated(updated);
-          onRefresh();
         }}
       />
     );
@@ -560,14 +576,19 @@ function PostListSidebar({
       </div>
 
       {provider && !postsLoading && !postsError && (
-        <div className="shrink-0 border-t border-primary px-3 py-2 flex items-center justify-between">
-          <span className="text-2xs text-muted">
-            {filteredPosts.length} of {totalCount} posts
+        <div className="shrink-0 border-t border-primary px-3 py-2 flex items-center justify-between gap-2">
+          <span
+            className="text-2xs text-muted min-w-0 truncate"
+            title={totalCount > filteredPosts.length ? `${filteredPosts.length} shown of ${totalCount} total` : undefined}
+          >
+            {statusFilter === "all" && !search && filteredPosts.length < totalCount
+              ? `Showing first ${filteredPosts.length} of ${totalCount}`
+              : `${filteredPosts.length} of ${totalCount} posts`}
           </span>
           <button
             type="button"
             onClick={onRefresh}
-            className="p-1 text-muted hover:text-primary transition-colors cursor-pointer rounded focus-ring"
+            className="p-1 text-muted hover:text-primary transition-colors cursor-pointer rounded focus-ring shrink-0"
             title="Refresh"
           >
             <RefreshCw className={cn("w-3 h-3", isValidating && "animate-spin")} />
@@ -585,7 +606,6 @@ function PostViewerArea({
   provider,
   selectedPostId,
   selectedPost,
-  selectedPostLoading,
   selectedPostError,
   availableProviders,
   onWorkOnPost,
@@ -598,7 +618,6 @@ function PostViewerArea({
   provider: string | null;
   selectedPostId: string | null;
   selectedPost: BlogPost | null;
-  selectedPostLoading: boolean;
   selectedPostError: unknown;
   availableProviders: string[];
   onWorkOnPost: (postId: string) => Promise<void>;
@@ -636,15 +655,16 @@ function PostViewerArea({
   }
 
   if (selectedPostId) {
-    if (selectedPostLoading && !selectedPost) {
-      return <LoadingState message="Loading post…" className="h-full" />;
+    if (selectedPost) {
+      return (
+        <PostViewer key={selectedPost.id} post={selectedPost} provider={provider} onWorkOnPost={onWorkOnPost} onRefresh={onRefresh} onUpdated={onUpdated} />
+      );
     }
-    if (selectedPostError && !selectedPost) {
+    if (selectedPostError) {
       return <ErrorState title="Failed to load post" error={selectedPostError} onRetry={onRetryPost} variant="page" />;
     }
-    if (selectedPost) {
-      return <PostViewer post={selectedPost} provider={provider} onWorkOnPost={onWorkOnPost} onRefresh={onRefresh} onUpdated={onUpdated} />;
-    }
+    // Selected but not yet loaded (or still resolving after a provider/id change)
+    return <LoadingState message="Loading post…" className="h-full" />;
   }
 
   return (
@@ -670,6 +690,11 @@ function PostViewerArea({
 // ─── Main BlogApp ─────────────────────────────────────────────────────────────
 
 export default function BlogApp() {
+  const navigate = useNavigate();
+  const { blogId: routeBlogId } = useParams<{ blogId?: string }>();
+  // URL is the source of truth for which post is open (params are already decoded).
+  const selectedPostId = routeBlogId ?? null;
+
   const {
     agentId,
     initialising,
@@ -683,7 +708,6 @@ export default function BlogApp() {
   const [provider, setProvider] = useState<string | null>(null);
   const [availableProviders, setAvailableProviders] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   /** Optimistic override after local mutations until SWR revalidates */
@@ -694,6 +718,20 @@ export default function BlogApp() {
   // Always fetch all statuses so counts and client-side filters stay accurate
   const posts = useBlogPosts(provider ?? undefined, "all", 200);
   const selectedPostQuery = useBlogPost(provider ?? undefined, selectedPostId ?? undefined);
+
+  const openPost = useCallback(
+    (id: string, options?: { replace?: boolean }) => {
+      void navigate(`/blog/${encodeURIComponent(id)}`, options?.replace ? { replace: true } : undefined);
+    },
+    [navigate],
+  );
+
+  const clearPost = useCallback(
+    (options?: { replace?: boolean }) => {
+      void navigate("/blog", options?.replace ? { replace: true } : undefined);
+    },
+    [navigate],
+  );
 
   // Sync provider and available providers from blog state
   useEffect(() => {
@@ -710,12 +748,15 @@ export default function BlogApp() {
   }, [blogStateData, provider]);
 
   // Clear selection and override when provider changes
-  const handleProviderChange = useCallback((p: string) => {
-    setProvider(p);
-    setSelectedPostId(null);
-    setPostOverride(null);
-    setSearch("");
-  }, []);
+  const handleProviderChange = useCallback(
+    (p: string) => {
+      setProvider(p);
+      setPostOverride(null);
+      setSearch("");
+      clearPost();
+    },
+    [clearPost],
+  );
 
   // Keep the chat agent’s current post in sync so addSelectedPost can attach it to chat input.
   useEffect(() => {
@@ -769,6 +810,8 @@ export default function BlogApp() {
   }, [posts.mutate]);
 
   const refreshSelected = useCallback(() => {
+    // Drop optimistic override so revalidated server data can surface
+    setPostOverride(null);
     void selectedPostQuery.mutate();
     void posts.mutate();
   }, [selectedPostQuery.mutate, posts.mutate]);
@@ -807,7 +850,7 @@ export default function BlogApp() {
 
   const handlePostCreated = (postId: string) => {
     setShowCreateModal(false);
-    setSelectedPostId(postId);
+    openPost(postId);
     setPostOverride(null);
     void posts.mutate();
   };
@@ -872,7 +915,7 @@ export default function BlogApp() {
           isValidating={posts.isValidating}
           onStatusFilter={setStatusFilter}
           onSearch={setSearch}
-          onSelectPost={setSelectedPostId}
+          onSelectPost={openPost}
           onNewPost={openCreate}
           onRefresh={refreshPosts}
         />
@@ -886,7 +929,6 @@ export default function BlogApp() {
             provider={provider}
             selectedPostId={selectedPostId}
             selectedPost={selectedPost}
-            selectedPostLoading={!!selectedPostId && selectedPostQuery.isLoading && !selectedPost}
             selectedPostError={selectedPostQuery.error}
             availableProviders={availableProviders}
             onWorkOnPost={handleWorkOnPost}
@@ -940,6 +982,7 @@ export default function BlogApp() {
         <button
           type="button"
           onClick={() => {
+            setPostOverride(null);
             void blogState.mutate();
             refreshPosts();
             if (selectedPostId) void selectedPostQuery.mutate();

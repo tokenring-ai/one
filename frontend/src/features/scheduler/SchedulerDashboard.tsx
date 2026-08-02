@@ -81,7 +81,8 @@ export default function SchedulerDashboard() {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [tab, setTab] = useState<MainTab>("tasks");
   const [showAddForm, setShowAddForm] = useState(false);
-  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+  /** Capture agentId with the task name so a mid-dialog agent switch cannot delete from the wrong agent. */
+  const [confirmRemove, setConfirmRemove] = useState<{ agentId: string; name: string } | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
@@ -101,6 +102,16 @@ export default function SchedulerDashboard() {
       setSelectedAgentId(list[0]!.id);
     }
   }, [agents.data, selectedAgentId]);
+
+  // Drop agent-scoped UI state when the selected agent changes
+  useEffect(() => {
+    setConfirmRemove(null);
+    setShowAddForm(false);
+    setExpandedTask(null);
+    setHistoryTaskFilter("");
+    setHistoryStatusFilter("all");
+    setTab("tasks");
+  }, [selectedAgentId]);
 
   const tasksQuery = useSchedulerTasks(selectedAgentId ?? undefined);
   const statusQuery = useSchedulerStatus(selectedAgentId ?? undefined);
@@ -209,17 +220,19 @@ export default function SchedulerDashboard() {
   };
 
   const handleRemove = async () => {
-    if (!selectedAgentId || !confirmRemove) return;
-    const name = confirmRemove;
+    if (!confirmRemove) return;
+    const { agentId, name } = confirmRemove;
     setConfirmRemove(null);
     setBusyAction(`remove:${name}`);
     try {
-      const result = await schedulerRPCClient.removeTask({ agentId: selectedAgentId, name });
+      const result = await schedulerRPCClient.removeTask({ agentId, name });
       if (result.status === "agentNotFound") {
         toastManager.error("Agent no longer exists", { duration: 4000 });
         return;
       }
       toastManager.success(result.message, { duration: 2500 });
+      if (expandedTask === name) setExpandedTask(null);
+      if (historyTaskFilter === name) setHistoryTaskFilter("");
       await refreshAll();
     } catch (err) {
       toastManager.error(formatError(err), { duration: 5000 });
@@ -317,7 +330,7 @@ export default function SchedulerDashboard() {
                 <SummaryStat
                   label="Running now"
                   value={String(runningTaskCount)}
-                  sub={runningTaskCount === 1 ? "1 task executing" : "tasks executing"}
+                  sub={runningTaskCount === 1 ? "1 task executing" : `${runningTaskCount} tasks executing`}
                   icon={<Activity className="w-4 h-4" />}
                   accentClass="text-amber-500"
                 />
@@ -339,11 +352,6 @@ export default function SchedulerDashboard() {
                       value={selectedAgentId ?? ""}
                       onChange={e => {
                         setSelectedAgentId(e.target.value || null);
-                        setShowAddForm(false);
-                        setTab("tasks");
-                        setExpandedTask(null);
-                        setHistoryTaskFilter("");
-                        setHistoryStatusFilter("all");
                       }}
                       className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary focus-accent"
                     >
@@ -439,100 +447,118 @@ export default function SchedulerDashboard() {
                     />
                   ) : null}
 
-                  {tab === "tasks" ? (
-                    taskEntries.length === 0 ? (
-                      <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
-                        <Clock className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
-                        <p className="text-sm font-medium text-secondary mb-1">No scheduled tasks</p>
-                        <p className="text-2xs text-muted max-w-xs mx-auto mb-4">
-                          Add a recurring prompt—health checks, daily briefs, cleanup, monitoring—to this agent.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setShowAddForm(true)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg focus-ring cursor-pointer"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          Add your first task
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
-                        {taskEntries.map(entry => {
-                          const isExpanded = expandedTask === entry.name;
-                          return (
-                            <div key={entry.name} className="px-4 py-3 hover:bg-hover/30 transition-colors">
-                              <div className="flex items-start gap-3">
-                                <button
-                                  type="button"
-                                  onClick={() => setExpandedTask(isExpanded ? null : entry.name)}
-                                  className="mt-0.5 p-0.5 text-muted hover:text-primary rounded focus-ring cursor-pointer shrink-0"
-                                  aria-expanded={isExpanded}
-                                  aria-label={isExpanded ? `Collapse ${entry.name}` : `Expand ${entry.name}`}
-                                >
-                                  {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                                </button>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                    <span className="text-sm font-medium text-primary truncate">{entry.name}</span>
-                                    <TaskStatusBadge status={entry.status} />
-                                  </div>
-                                  <p className="text-2xs text-muted mb-1.5" title={entry.task.message}>
-                                    {isExpanded ? entry.task.message : truncateMessage(entry.task.message)}
-                                  </p>
-                                  <p className="text-2xs text-muted/90 mb-2">{formatScheduleSummary(entry.task)}</p>
-                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs">
+                  {tab === "tasks" && taskEntries.length === 0 && !showAddForm ? (
+                    <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
+                      <Clock className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
+                      <p className="text-sm font-medium text-secondary mb-1">No scheduled tasks</p>
+                      <p className="text-2xs text-muted max-w-xs mx-auto mb-4">
+                        Add a recurring prompt—health checks, daily briefs, cleanup, monitoring—to this agent.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddForm(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg focus-ring cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add your first task
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {tab === "tasks" && taskEntries.length > 0 ? (
+                    <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
+                      {taskEntries.map(entry => {
+                        const isExpanded = expandedTask === entry.name;
+                        return (
+                          <div key={entry.name} className="px-4 py-3 hover:bg-hover/30 transition-colors">
+                            <div className="flex items-start gap-3">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedTask(isExpanded ? null : entry.name)}
+                                className="mt-0.5 p-0.5 text-muted hover:text-primary rounded focus-ring cursor-pointer shrink-0"
+                                aria-expanded={isExpanded}
+                                aria-label={isExpanded ? `Collapse ${entry.name}` : `Expand ${entry.name}`}
+                              >
+                                {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                              </button>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                  <span className="text-sm font-medium text-primary truncate">{entry.name}</span>
+                                  <TaskStatusBadge status={entry.status} />
+                                </div>
+                                <p className="text-2xs text-muted mb-1.5" title={entry.task.message}>
+                                  {isExpanded ? entry.task.message : truncateMessage(entry.task.message)}
+                                </p>
+                                <p className="text-2xs text-muted/90 mb-2">{formatScheduleSummary(entry.task)}</p>
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs">
+                                  {entry.status === "running" ? (
+                                    <span className="text-muted">
+                                      Started:{" "}
+                                      <span className="text-primary font-medium" title={formatScheduleTime(entry.startTime)}>
+                                        {entry.startTime ? `${formatScheduleTime(entry.startTime)} (${formatRelativeTime(entry.startTime)})` : "just now"}
+                                      </span>
+                                    </span>
+                                  ) : (
                                     <span className="text-muted">
                                       Next:{" "}
                                       <span className="text-primary font-medium" title={formatScheduleTime(entry.nextRunTime)}>
                                         {entry.nextRunTime ? `${formatScheduleTime(entry.nextRunTime)} (${formatRelativeTime(entry.nextRunTime)})` : "—"}
                                       </span>
                                     </span>
-                                    <span className="text-muted">
-                                      Last:{" "}
-                                      <span className="text-primary font-medium" title={formatScheduleTime(entry.task.lastRunTime)}>
-                                        {entry.task.lastRunTime
-                                          ? `${formatScheduleTime(entry.task.lastRunTime)} (${formatRelativeTime(entry.task.lastRunTime)})`
-                                          : "Never"}
-                                      </span>
-                                    </span>
-                                  </div>
-                                  {isExpanded ? (
-                                    <div className="mt-2 flex flex-wrap gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => openHistoryForTask(entry.name)}
-                                        className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer"
-                                      >
-                                        <History className="w-3 h-3" />
-                                        View run history
-                                      </button>
-                                    </div>
-                                  ) : null}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmRemove(entry.name)}
-                                  disabled={busyAction === `remove:${entry.name}`}
-                                  className="p-1.5 text-muted hover:text-red-500 transition-colors rounded-md focus-ring cursor-pointer disabled:opacity-50 shrink-0"
-                                  aria-label={`Remove task ${entry.name}`}
-                                  title="Remove task"
-                                >
-                                  {busyAction === `remove:${entry.name}` ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-3.5 h-3.5" />
                                   )}
-                                </button>
+                                  <span className="text-muted">
+                                    Last:{" "}
+                                    <span className="text-primary font-medium" title={formatScheduleTime(entry.task.lastRunTime)}>
+                                      {entry.task.lastRunTime
+                                        ? `${formatScheduleTime(entry.task.lastRunTime)} (${formatRelativeTime(entry.task.lastRunTime)})`
+                                        : "Never"}
+                                    </span>
+                                  </span>
+                                </div>
+                                {isExpanded ? (
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => openHistoryForTask(entry.name)}
+                                      className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer"
+                                    >
+                                      <History className="w-3 h-3" />
+                                      View run history
+                                    </button>
+                                  </div>
+                                ) : null}
                               </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!selectedAgentId) return;
+                                  setConfirmRemove({ agentId: selectedAgentId, name: entry.name });
+                                }}
+                                disabled={!selectedAgentId || busyAction === `remove:${entry.name}`}
+                                className="p-1.5 text-muted hover:text-red-500 transition-colors rounded-md focus-ring cursor-pointer disabled:opacity-50 shrink-0"
+                                aria-label={`Remove task ${entry.name}`}
+                                title="Remove task"
+                              >
+                                {busyAction === `remove:${entry.name}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                              </button>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )
-                  ) : historyQuery.error && !historyQuery.data ? (
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+
+                  {tab === "history" && historyQuery.isLoading && !historyQuery.data ? (
+                    <div className="flex justify-center py-12">
+                      <Loader2 className="w-6 h-6 text-muted animate-spin" />
+                    </div>
+                  ) : null}
+
+                  {tab === "history" && historyQuery.error && !historyQuery.data ? (
                     <ErrorState title="Unable to load history" error={historyQuery.error} onRetry={() => void historyQuery.mutate()} variant="page" />
-                  ) : historyEntries.length === 0 ? (
+                  ) : null}
+
+                  {tab === "history" && historyQuery.data && historyEntries.length === 0 ? (
                     <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
                       <History className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
                       <p className="text-sm font-medium text-secondary mb-1">No runs yet</p>
@@ -540,7 +566,9 @@ export default function SchedulerDashboard() {
                         Execution history is kept in memory for this session. Completed and failed runs will appear here.
                       </p>
                     </div>
-                  ) : (
+                  ) : null}
+
+                  {tab === "history" && historyEntries.length > 0 ? (
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
                         <label className="flex-1 min-w-0 space-y-1">
@@ -639,7 +667,7 @@ export default function SchedulerDashboard() {
                         </div>
                       )}
                     </div>
-                  )}
+                  ) : null}
                 </>
               )}
             </>
@@ -650,7 +678,7 @@ export default function SchedulerDashboard() {
       {confirmRemove ? (
         <ConfirmDialog
           title="Remove scheduled task"
-          message={`Remove "${confirmRemove}" from this agent's schedule? This cannot be undone.`}
+          message={`Remove "${confirmRemove.name}" from this agent's schedule? This cannot be undone.`}
           confirmText="Remove"
           cancelText="Cancel"
           variant="danger"

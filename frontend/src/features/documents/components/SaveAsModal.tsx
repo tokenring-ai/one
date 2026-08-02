@@ -35,6 +35,15 @@ export default function SaveAsModal({ providers, initialPath, initialProvider, o
     if (!provider && providers[0]) setProvider(providers[0]);
   }, [providers, provider]);
 
+  // Escape closes when not mid-save (input handler covers focused field; this covers elsewhere)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !saving) onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose, saving]);
+
   const handleSubmit = async () => {
     const finalPath = ensureMarkdownExtension(path);
     if (!finalPath || !provider) return;

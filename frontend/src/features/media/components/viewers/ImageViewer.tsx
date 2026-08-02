@@ -1,6 +1,6 @@
 import type { ImageIndexEntry } from "@tokenring-ai/media-library/rpc/schema";
-import { Download, Loader2, Sparkles, X, ZoomIn } from "lucide-react";
-import { useState } from "react";
+import { Download, ImageIcon, Loader2, Sparkles, X, ZoomIn } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { aspectLabel, downloadMedia, mediaUrl } from "../../utils.ts";
 import ActionButton from "./ActionButton.tsx";
@@ -18,25 +18,36 @@ export default function ImageViewer({
   onClose: () => void;
 }) {
   const [lightbox, setLightbox] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const busy = workingOn ?? false;
 
+  useEffect(() => {
+    setLightbox(false);
+    setLoadError(false);
+  }, [image.filename]);
+
+  // Escape must be handled on document — the lightbox backdrop is not focused.
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightbox(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [lightbox]);
+
   const handleDownload = () => {
-    try {
-      downloadMedia(image.filename);
-    } catch {
+    void downloadMedia(image.filename).catch(() => {
       toastManager.error("Download failed", { duration: 3000 });
-    }
+    });
   };
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {lightbox && (
+      {lightbox && !loadError && (
         <div
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
           onClick={() => setLightbox(false)}
-          onKeyDown={e => {
-            if (e.key === "Escape") setLightbox(false);
-          }}
           role="dialog"
           aria-modal="true"
           aria-label="Full size image"
@@ -73,7 +84,7 @@ export default function ImageViewer({
             >
               {busy ? "Opening..." : "Work on this image"}
             </ActionButton>
-            <ActionButton onClick={() => setLightbox(true)} icon={<ZoomIn className="w-3.5 h-3.5" />}>
+            <ActionButton onClick={() => setLightbox(true)} disabled={loadError} icon={<ZoomIn className="w-3.5 h-3.5" />}>
               Full size
             </ActionButton>
             <ActionButton onClick={handleDownload} icon={<Download className="w-3.5 h-3.5" />}>
@@ -84,12 +95,22 @@ export default function ImageViewer({
       />
 
       <div className="flex-1 overflow-hidden flex items-center justify-center p-4 bg-primary">
-        <img
-          src={mediaUrl(image.filename)}
-          alt={image.keywords.join(", ") || image.filename}
-          className="max-w-full max-h-full object-contain rounded-xl shadow-lg cursor-zoom-in"
-          onClick={() => setLightbox(true)}
-        />
+        {loadError ? (
+          <div className="flex flex-col items-center gap-2 text-center px-4">
+            <ImageIcon className="w-10 h-10 text-muted opacity-40" />
+            <p className="text-sm text-muted">Failed to load image</p>
+            <p className="text-2xs text-muted opacity-70 font-mono break-all">{image.filename}</p>
+          </div>
+        ) : (
+          <img
+            key={image.filename}
+            src={mediaUrl(image.filename)}
+            alt={image.keywords.join(", ") || image.filename}
+            className="max-w-full max-h-full object-contain rounded-xl shadow-lg cursor-zoom-in"
+            onClick={() => setLightbox(true)}
+            onError={() => setLoadError(true)}
+          />
+        )}
       </div>
     </div>
   );

@@ -26,8 +26,8 @@ import {
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
@@ -56,7 +56,7 @@ const TARGET_PATTERN = /^[^:]+:.+/;
 
 /** Plugin package name used by ConfigurationApp deep links. */
 const BOT_PLUGIN_NAME = "@tokenring-ai/bot";
-const BOT_CONFIG_HREF = `/configuration?plugin=${encodeURIComponent(BOT_PLUGIN_NAME)}`;
+const BOT_CONFIG_HREF = `/configuration/${encodeURIComponent(BOT_PLUGIN_NAME)}`;
 
 const CONFIG_EXAMPLE = `bot:
   bots:
@@ -136,10 +136,13 @@ function EmptyPanel({ icon, title, hint }: { icon: ReactNode; title: string; hin
 
 export default function BotsDashboard() {
   const navigate = useNavigate();
+  const { botId: routeBotId } = useParams<{ botId?: string }>();
   const bots = useBots();
   const configSchema = useConfigSchema();
 
-  const [selectedBotName, setSelectedBotName] = useState<string | null>(null);
+  // URL is the source of truth for which bot is open (params are already decoded).
+  const selectedBotName = routeBotId ?? null;
+
   const [tab, setTab] = useState<DetailTab>("conversations");
   const [conversationFilter, setConversationFilter] = useState<ConversationFilter>("all");
   const [listQuery, setListQuery] = useState("");
@@ -162,20 +165,32 @@ export default function BotsDashboard() {
 
   /** Only offer to connect a platform whose plugin is actually installed. */
   const availablePlatforms = useMemo<ConnectablePlatform[]>(() => {
-    const slices = new Set((configSchema.data?.plugins ?? []).flatMap(plugin => Object.keys(plugin.slices)));
+    const plugins = configSchema.data?.plugins;
+    // Schema still loading or failed: keep the connect affordance available.
+    // Once the schema arrives empty of these slices, hide it (plugin not installed).
+    if (!plugins) return Object.keys(PLATFORMS) as ConnectablePlatform[];
+    const slices = new Set(plugins.flatMap(plugin => Object.keys(plugin.slices)));
     return (Object.keys(PLATFORMS) as ConnectablePlatform[]).filter(platform => slices.has(PLATFORMS[platform].configKey));
   }, [configSchema.data]);
 
-  // Keep a valid bot selected as the list loads and changes
+  const openBot = useCallback(
+    (name: string, options?: { replace?: boolean }) => {
+      void navigate(`/bots/${encodeURIComponent(name)}`, options?.replace ? { replace: true } : undefined);
+    },
+    [navigate],
+  );
+
+  // Keep a valid bot selected as the list loads and changes; bare `/bots` opens the first bot.
   useEffect(() => {
+    if (bots.isLoading) return;
     if (botList.length === 0) {
-      setSelectedBotName(null);
+      if (routeBotId) void navigate("/bots", { replace: true });
       return;
     }
     if (!selectedBotName || !botList.some(bot => bot.name === selectedBotName)) {
-      setSelectedBotName(botList[0]!.name);
+      openBot(botList[0]!.name, { replace: true });
     }
-  }, [botList, selectedBotName]);
+  }, [botList, selectedBotName, routeBotId, bots.isLoading, navigate, openBot]);
 
   // Live-tick relative timestamps while conversations exist
   useEffect(() => {
@@ -339,20 +354,24 @@ export default function BotsDashboard() {
     }
   };
 
-  const handleSetUserRole = async (bot: string, target: string, role: BotUser["role"]) => {
+  const handleSetUserRole = async (bot: string, target: string, role: BotUser["role"]): Promise<boolean> => {
     setBusyAction(`user:${target}`);
     try {
       const result = await botRPCClient.setUserRole({ bot, target, role });
       if (result.status === "botNotFound") {
         toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
-      } else if (result.status === "configRejected") {
-        toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
-      } else {
-        toastManager.success(`${target} is now ${role === "admin" ? "an admin" : "a user"} of "${bot}"`, { duration: 2500 });
+        return false;
       }
+      if (result.status === "configRejected") {
+        toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
+        return false;
+      }
+      toastManager.success(`${target} is now ${role === "admin" ? "an admin" : "a user"} of "${bot}"`, { duration: 2500 });
       await bots.mutate();
+      return true;
     } catch (err) {
       toastManager.error(formatError(err), { duration: 5000 });
+      return false;
     } finally {
       setBusyAction(null);
     }
@@ -379,10 +398,14 @@ export default function BotsDashboard() {
     }
   };
 
-  const handleJoin = async (bot: string, target: string) => {
+  const handleJoin = async (bot: string, target: string, name?: string) => {
     setBusyAction(`join:${target}`);
     try {
-      const result = await botRPCClient.joinChannel({ bot, target });
+      const result = await botRPCClient.joinChannel({
+        bot,
+        target,
+        ...(name?.trim() ? { name: name.trim() } : {}),
+      });
       if (result.status === "botNotFound") {
         toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
       } else if (result.status === "providerNotFound") {
@@ -390,7 +413,7 @@ export default function BotsDashboard() {
       } else if (result.status === "configRejected") {
         toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
       } else {
-        toastManager.success(`"${bot}" joined ${target}`, { duration: 2500 });
+        toastManager.success(`"${bot}" joined ${name?.trim() || target}`, { duration: 2500 });
       }
       await bots.mutate();
     } catch (err) {
@@ -557,7 +580,7 @@ export default function BotsDashboard() {
                   services={services.map(service => service.name)}
                   onCreated={name => {
                     setShowCreateBot(false);
-                    setSelectedBotName(name);
+                    openBot(name);
                     setTab("channels");
                     void bots.mutate();
                   }}
@@ -567,6 +590,9 @@ export default function BotsDashboard() {
 
               {showSendForm ? (
                 <SendMessageForm
+                  // Remount when the prefilled target changes so "Message" on a
+                  // different row does not leave the previous selection stuck.
+                  key={sendTarget ?? "__default__"}
                   options={targetOptions}
                   initialTarget={sendTarget}
                   onSent={() => {
@@ -577,7 +603,7 @@ export default function BotsDashboard() {
                 />
               ) : null}
 
-              {botList.length === 0 ? (
+              {botList.length === 0 && !showCreateBot ? (
                 <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
                   <Bot className="w-10 h-10 text-muted mx-auto mb-3 opacity-50" />
                   <p className="text-sm font-medium text-primary mb-1">No bots yet</p>
@@ -595,7 +621,11 @@ export default function BotsDashboard() {
                         availablePlatforms.length > 0 ? (
                           <button
                             type="button"
-                            onClick={() => setConnectPlatform("any")}
+                            onClick={() => {
+                              setConnectPlatform("any");
+                              setShowCreateBot(false);
+                              setShowSendForm(false);
+                            }}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 text-2xs font-medium bg-teal-600 hover:bg-teal-500 text-white rounded-md focus-ring cursor-pointer"
                           >
                             <PlugZap className="w-3 h-3" /> Connect
@@ -614,7 +644,11 @@ export default function BotsDashboard() {
                       action={
                         <button
                           type="button"
-                          onClick={() => setShowCreateBot(true)}
+                          onClick={() => {
+                            setShowCreateBot(true);
+                            setConnectPlatform(null);
+                            setShowSendForm(false);
+                          }}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 text-2xs font-medium bg-teal-600 hover:bg-teal-500 text-white rounded-md focus-ring cursor-pointer"
                         >
                           <Plus className="w-3 h-3" /> New bot
@@ -633,7 +667,7 @@ export default function BotsDashboard() {
                     </Link>
                   </details>
                 </div>
-              ) : (
+              ) : botList.length === 0 ? null : (
                 <>
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {botList.map(bot => {
@@ -645,7 +679,7 @@ export default function BotsDashboard() {
                           key={bot.name}
                           type="button"
                           onClick={() => {
-                            setSelectedBotName(bot.name);
+                            openBot(bot.name);
                             setTab("conversations");
                             setConversationFilter("all");
                             setListQuery("");
@@ -856,7 +890,7 @@ export default function BotsDashboard() {
                             services={services.map(service => service.name)}
                             existingTargets={selectedBot.users.map(user => user.target)}
                             busy={busyAction?.startsWith("user:") ?? false}
-                            onAdd={(target, role) => void handleSetUserRole(selectedBot.name, target, role)}
+                            onAdd={(target, role) => handleSetUserRole(selectedBot.name, target, role)}
                           />
                           {selectedBot.users.length === 0 ? (
                             <EmptyPanel
@@ -865,7 +899,9 @@ export default function BotsDashboard() {
                               hint={
                                 selectedBot.directMessages === "anyone"
                                   ? "This bot answers DMs from anyone, so no one has to be listed — but only listed admins can run commands."
-                                  : "Nobody can DM this bot until someone is listed here. Admins may also run slash commands."
+                                  : selectedBot.directMessages === "none"
+                                    ? "Direct messages are disabled for this bot. List admins here so they can still run slash commands."
+                                    : "Nobody can DM this bot until someone is listed here. Admins may also run slash commands."
                               }
                             />
                           ) : filteredUsers.length === 0 ? (
@@ -910,7 +946,11 @@ export default function BotsDashboard() {
                       {availablePlatforms.length > 0 ? (
                         <button
                           type="button"
-                          onClick={() => setConnectPlatform("any")}
+                          onClick={() => {
+                            setConnectPlatform("any");
+                            setShowCreateBot(false);
+                            setShowSendForm(false);
+                          }}
                           className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
                           title="Connect a Slack or Telegram account"
                         >
@@ -927,7 +967,11 @@ export default function BotsDashboard() {
                           <button
                             key={platform}
                             type="button"
-                            onClick={() => setConnectPlatform(platform)}
+                            onClick={() => {
+                              setConnectPlatform(platform);
+                              setShowCreateBot(false);
+                              setShowSendForm(false);
+                            }}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 text-2xs font-medium text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
                           >
                             <PlugZap className="w-3 h-3" /> Connect {PLATFORMS[platform].label}
@@ -1009,7 +1053,7 @@ export default function BotsDashboard() {
                         channel={channel}
                         botName={selectedBot?.name}
                         busyAction={busyAction}
-                        onJoin={() => void (selectedBot && handleJoin(selectedBot.name, channel.target))}
+                        onJoin={() => void (selectedBot && handleJoin(selectedBot.name, channel.target, channel.title))}
                       />
                     ))}
                   </div>
@@ -1297,7 +1341,8 @@ function AddPersonForm({
   services: string[];
   existingTargets: string[];
   busy: boolean;
-  onAdd: (target: string, role: BotUser["role"]) => void;
+  /** Resolves true when the person was saved so the field can clear. */
+  onAdd: (target: string, role: BotUser["role"]) => boolean | Promise<boolean>;
 }) {
   const [target, setTarget] = useState("");
   const [role, setRole] = useState<BotUser["role"]>("user");
@@ -1306,9 +1351,11 @@ function AddPersonForm({
   const error = !trimmed ? null : !TARGET_PATTERN.test(trimmed) ? "Looks like service:userId" : existingTargets.includes(trimmed) ? "Already listed" : null;
 
   const submit = () => {
-    if (!trimmed || error) return;
-    onAdd(trimmed, role);
-    setTarget("");
+    if (!trimmed || error || busy) return;
+    void (async () => {
+      const ok = await onAdd(trimmed, role);
+      if (ok) setTarget("");
+    })();
   };
 
   return (

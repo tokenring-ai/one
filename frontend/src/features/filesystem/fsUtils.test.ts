@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { formatFileSize, getBasename, getParentPath, isHiddenEntry, isImageFile, isLikelyTextFile, joinPath } from "./fsUtils.ts";
+import { formatFileSize, getBasename, getParentPath, isHiddenEntry, isHiddenPath, isImageFile, isLikelyTextFile, joinPath } from "./fsUtils.ts";
 
 describe("getBasename", () => {
   test("returns last segment", () => {
@@ -37,6 +37,14 @@ describe("isHiddenEntry", () => {
     expect(isHiddenEntry(".env")).toBe(true);
     expect(isHiddenEntry("src/.gitkeep")).toBe(true);
     expect(isHiddenEntry("readme.md")).toBe(false);
+  });
+});
+
+describe("isHiddenPath", () => {
+  test("detects any hidden segment", () => {
+    expect(isHiddenPath(".git/config")).toBe(true);
+    expect(isHiddenPath("src/.env")).toBe(true);
+    expect(isHiddenPath("src/app.ts")).toBe(false);
   });
 });
 

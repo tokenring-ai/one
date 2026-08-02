@@ -46,7 +46,12 @@ export default function SpeechGeneratePanel({ agentId, onGenerated }: { agentId:
         keywords: keywordsFromPrompt(text),
       });
       if (result.status === "success") {
-        toastManager.success(result.filename ? `Speech generated: ${result.filename}` : "Speech generated!", { duration: 3000 });
+        if (!result.filename) {
+          toastManager.error("Speech generation returned no file", { duration: 4000 });
+          onGenerated();
+          return;
+        }
+        toastManager.success(`Speech generated: ${result.filename}`, { duration: 3000 });
         setText("");
         onGenerated(result.filename);
       } else {

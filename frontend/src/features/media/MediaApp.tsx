@@ -148,6 +148,11 @@ export default function MediaApp() {
   };
 
   const handleGenerated = (filename?: string) => {
+    // Clear search so the newly generated item is not filtered out of the gallery stream.
+    if (search || debouncedSearch) {
+      setSearch("");
+      setDebouncedSearch("");
+    }
     if (kind === "image") void imagesData.mutate();
     else if (kind === "video") void videosData.mutate();
     else void audiosData.mutate();
@@ -209,7 +214,10 @@ export default function MediaApp() {
             videos={videos}
             audios={audios}
             onSearch={setSearch}
-            onSelect={setSelected}
+            onSelect={entry => {
+              setPendingSelect(null);
+              setSelected(entry);
+            }}
             onRefresh={handleRefresh}
           />
         </div>
@@ -220,7 +228,10 @@ export default function MediaApp() {
             selected={selected}
             workingOn={workingOn}
             onWorkOnSelection={handleWorkOnSelection}
-            onClearSelection={() => setSelected(null)}
+            onClearSelection={() => {
+              setPendingSelect(null);
+              setSelected(null);
+            }}
             onGenerated={handleGenerated}
           />
         </div>

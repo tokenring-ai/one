@@ -1,7 +1,5 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import {
-  ArrowDown,
-  ArrowUp,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -24,9 +22,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
+import LoadingState from "../../components/ui/LoadingState.tsx";
 import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
-import { useAgentList, useAgentTypes, useTypedSWR, useWorkflowRuns, useWorkflows, workflowRPCClient } from "../../rpc.ts";
+import type { AvailableAgentCommand, WorkflowStep } from "../../features/workflows/commandStep.ts";
+import { formatStepLabel, isStepFilled, normalizeSteps } from "../../features/workflows/commandStep.ts";
+import StepEditor from "../../features/workflows/StepEditor.tsx";
+import { useAgentList, useAgentTypes, useAvailableCommands, useTypedSWR, useWorkflowRuns, useWorkflows, workflowRPCClient } from "../../rpc.ts";
 
 const NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
 /** Draft key for the not-yet-created workflow; can never collide with a real name. */
@@ -53,7 +55,7 @@ interface WorkflowDraft {
   category: string;
   description: string;
   agentType: string;
-  steps: string[];
+  steps: WorkflowStep[];
   subAgent: SubAgentSettings;
 }
 
@@ -71,7 +73,7 @@ interface WorkflowRun {
   displayName: string;
   agentType: string;
   agentId: string | null;
-  steps: string[];
+  steps: WorkflowStep[];
   currentStep: number;
   status: WorkflowRunStatus;
   message: string;
@@ -223,7 +225,8 @@ function normalizeDraft(draft: WorkflowDraft): WorkflowDraft {
     ...draft,
     displayName: draft.displayName.trim(),
     category: draft.category.trim() || DEFAULT_CATEGORY,
-    steps: draft.steps.map(step => step.trimEnd()).filter(step => step.trim() !== ""),
+    description: draft.description.trim(),
+    steps: normalizeSteps(draft.steps),
   };
 }
 
@@ -351,13 +354,15 @@ function WorkflowSidebar({
                 onClick={() => (run.agentId ? onOpenAgent(run.agentId) : onSelectRunWorkflow(run.workflowName))}
                 className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-hover transition-colors cursor-pointer focus-ring"
                 aria-label={run.agentId ? `Open agent running ${run.displayName || run.workflowName}` : `View workflow ${run.displayName || run.workflowName}`}
-                title={run.steps[run.currentStep] ?? ""}
+                title={run.steps[run.currentStep] != null ? formatStepLabel(run.steps[run.currentStep]!) : ""}
               >
                 <div className="w-3 h-3 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin shrink-0" />
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-medium text-primary truncate">{run.displayName || run.workflowName}</div>
                   <div className="text-2xs text-muted truncate">
-                    {run.status === "starting" ? "Starting agent…" : `Step ${run.currentStep + 1} of ${run.steps.length}: ${run.steps[run.currentStep] ?? ""}`}
+                    {run.status === "starting"
+                      ? "Starting agent…"
+                      : `Step ${run.currentStep + 1} of ${run.steps.length}: ${run.steps[run.currentStep] != null ? formatStepLabel(run.steps[run.currentStep]!) : ""}`}
                   </div>
                 </div>
               </button>
@@ -458,7 +463,7 @@ function WorkflowSidebar({
                         <GitBranch className="w-3 h-3 shrink-0 opacity-70" />
                         <span className="flex-1 min-w-0 truncate text-xs">{workflow.displayName || workflow.name}</span>
                         {hasActiveRun && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" title="Running" />}
-                        {dirtyNames.has(workflow.name) && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" title="Unsaved changes" />}
+                        {dirtyNames.has(workflow.name) && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" title="Unsaved changes" />}
                       </button>
                       <button
                         type="button"
@@ -481,77 +486,6 @@ function WorkflowSidebar({
           ))
         )}
       </div>
-    </div>
-  );
-}
-
-// ─── StepEditor ────────────────────────────────────────────────────────────────
-
-function StepEditor({ steps, onChange }: { steps: string[]; onChange: (steps: string[]) => void }) {
-  const update = (index: number, value: string) => onChange(steps.map((step, i) => (i === index ? value : step)));
-  const remove = (index: number) => {
-    const next = steps.filter((_, i) => i !== index);
-    onChange(next.length > 0 ? next : [""]);
-  };
-  const move = (index: number, delta: number) => {
-    const target = index + delta;
-    if (target < 0 || target >= steps.length) return;
-    const next = [...steps];
-    [next[index], next[target]] = [next[target]!, next[index]!];
-    onChange(next);
-  };
-
-  return (
-    <div className="space-y-2">
-      {steps.map((step, index) => (
-        <div key={index} className="flex items-start gap-2">
-          <span className="mt-2 w-5 shrink-0 text-2xs font-mono text-muted text-right">{index + 1}</span>
-          <textarea
-            value={step}
-            onChange={e => update(index, e.target.value)}
-            rows={Math.min(14, Math.max(2, step.split("\n").length))}
-            placeholder="/agent run --type code-quality-engineer Review the code in $file"
-            spellCheck={false}
-            className="flex-1 bg-input border border-primary rounded-lg px-3 py-2 text-xs font-mono text-primary placeholder-muted focus-accent resize-y"
-            aria-label={`Step ${index + 1}`}
-          />
-          <div className="flex flex-col gap-0.5 shrink-0 pt-0.5">
-            <button
-              type="button"
-              onClick={() => move(index, -1)}
-              disabled={index === 0}
-              title="Move step up"
-              className="p-1 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ArrowUp className="w-3 h-3" />
-            </button>
-            <button
-              type="button"
-              onClick={() => move(index, 1)}
-              disabled={index === steps.length - 1}
-              title="Move step down"
-              className="p-1 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ArrowDown className="w-3 h-3" />
-            </button>
-            <button
-              type="button"
-              onClick={() => remove(index)}
-              title="Remove step"
-              className="p-1 text-muted hover:text-red-500 rounded transition-colors cursor-pointer focus-ring"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() => onChange([...steps, ""])}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 border border-dashed border-primary text-muted hover:text-primary hover:bg-hover text-2xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
-      >
-        <Plus className="w-3 h-3" /> Add step
-      </button>
     </div>
   );
 }
@@ -653,13 +587,13 @@ function ActiveRunPanel({ run, onOpenAgent }: { run: WorkflowRun; onOpenAgent: (
 
       <ol className="px-3 py-2 space-y-1.5">
         {run.steps.map((step, index) => {
-          let state: "done" | "current" | "pending" | "failed" = "pending";
+          let state: "done" | "current" | "pending" | "failed" | "cancelled" = "pending";
           if (run.status === "completed" || (isRunActive(run) && index < run.currentStep) || (isRunFinished(run) && index < run.currentStep)) {
             state = "done";
           } else if (isRunActive(run) && index === run.currentStep) {
             state = "current";
           } else if (isRunFinished(run) && index === run.currentStep) {
-            state = "failed";
+            state = run.status === "cancelled" ? "cancelled" : "failed";
           }
 
           return (
@@ -671,6 +605,8 @@ function ActiveRunPanel({ run, onOpenAgent }: { run: WorkflowRun; onOpenAgent: (
                   <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin" />
                 ) : state === "failed" ? (
                   <XCircle className="w-3.5 h-3.5 text-red-500" />
+                ) : state === "cancelled" ? (
+                  <X className="w-3.5 h-3.5 text-muted" />
                 ) : (
                   <Circle className="w-3.5 h-3.5 text-muted/50" />
                 )}
@@ -685,10 +621,10 @@ function ActiveRunPanel({ run, onOpenAgent }: { run: WorkflowRun; onOpenAgent: (
                         ? "text-red-600 dark:text-red-400"
                         : "text-muted/70"
                 }`}
-                title={step}
+                title={formatStepLabel(step)}
               >
                 <span className="text-muted mr-1.5 not-italic font-sans">{index + 1}.</span>
-                {step}
+                {formatStepLabel(step)}
               </span>
             </li>
           );
@@ -740,7 +676,9 @@ function WorkflowRunHistory({
               )}
               {isRunActive(run) && run.steps.length > 0 && (
                 <p className="text-2xs text-muted truncate">
-                  {run.status === "starting" ? "Starting agent…" : `Step ${run.currentStep + 1}/${run.steps.length}: ${run.steps[run.currentStep] ?? ""}`}
+                  {run.status === "starting"
+                    ? "Starting agent…"
+                    : `Step ${run.currentStep + 1}/${run.steps.length}: ${run.steps[run.currentStep] != null ? formatStepLabel(run.steps[run.currentStep]!) : ""}`}
                 </p>
               )}
             </div>
@@ -809,6 +747,7 @@ function WorkflowEditor({
   workflowRuns,
   categories,
   agentTypes,
+  commands,
   saving,
   launching,
   onSave,
@@ -831,6 +770,7 @@ function WorkflowEditor({
   workflowRuns: WorkflowRun[];
   categories: string[];
   agentTypes: { type: string; displayName: string; category?: string }[];
+  commands: AvailableAgentCommand[];
   saving: boolean;
   launching: boolean;
   onSave: () => void;
@@ -842,7 +782,7 @@ function WorkflowEditor({
 }) {
   const trimmedName = nameValue.trim();
   const nameError = creating && trimmedName !== "" && !NAME_PATTERN.test(trimmedName);
-  const hasSteps = draft.steps.some(step => step.trim() !== "");
+  const hasSteps = draft.steps.some(isStepFilled);
   const canSave =
     !saving && draft.displayName.trim() !== "" && draft.agentType.trim() !== "" && hasSteps && (creating ? NAME_PATTERN.test(trimmedName) : isDirty);
   const unknownAgentType = draft.agentType !== "" && agentTypes.length > 0 && !agentTypes.some(a => a.type === draft.agentType);
@@ -1047,9 +987,9 @@ function WorkflowEditor({
           <div className="space-y-2">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-2xs font-semibold text-muted uppercase tracking-wide">Steps</span>
-              <span className="text-2xs text-muted">Commands run in order on the workflow agent</span>
+              <span className="text-2xs text-muted">Chat messages or structured agent commands</span>
             </div>
-            <StepEditor steps={draft.steps} onChange={steps => onDraftChange({ ...draft, steps })} />
+            <StepEditor steps={draft.steps} onChange={steps => onDraftChange({ ...draft, steps })} commands={commands} />
             {!hasSteps && <p className="text-2xs text-red-500">Add at least one step.</p>}
           </div>
 
@@ -1068,8 +1008,10 @@ export default function WorkflowsApp() {
   const workflows = useWorkflows();
   const agents = useAgentList();
   const agentTypes = useAgentTypes();
+  const availableCommands = useAvailableCommands();
   const workflowRuns = useWorkflowRuns();
   const workflowDirectory = useTypedSWR("/workflow/getWorkflowDirectory", () => workflowRPCClient.getWorkflowDirectory({}));
+  const commandList = useMemo(() => availableCommands.data ?? [], [availableCommands.data]);
 
   const [drafts, setDrafts] = useState<Record<string, WorkflowDraft>>({});
   const [creating, setCreating] = useState(false);
@@ -1103,13 +1045,13 @@ export default function WorkflowsApp() {
     return names;
   }, [drafts, workflowList]);
 
-  // A route pointing at a workflow that no longer exists (deleted elsewhere) resets to the empty state.
+  // A route pointing at a workflow that no longer exists (deleted elsewhere, bad deep-link) resets to the empty state.
   useEffect(() => {
-    if (routeWorkflowName && !workflows.isLoading && workflowList.length > 0 && !selectedWorkflow) {
+    if (routeWorkflowName && !workflows.isLoading && !workflows.error && !selectedWorkflow) {
       toastManager.error(`Workflow "${routeWorkflowName}" not found`, { duration: 4000 });
       void navigate("/workflows", { replace: true });
     }
-  }, [routeWorkflowName, selectedWorkflow, workflowList.length, workflows.isLoading, navigate]);
+  }, [routeWorkflowName, selectedWorkflow, workflows.isLoading, workflows.error, navigate]);
 
   const draftKey = creating ? NEW_DRAFT_KEY : (selectedWorkflow?.name ?? null);
   const savedDraft = useMemo(() => (creating ? emptyDraft() : selectedWorkflow ? toDraft(selectedWorkflow) : null), [creating, selectedWorkflow]);
@@ -1156,6 +1098,11 @@ export default function WorkflowsApp() {
     if (!draft) return;
     const name = creating ? newName.trim() : (selectedWorkflow?.name ?? "");
     if (!name) return;
+    if (creating && !NAME_PATTERN.test(name)) return;
+    if (creating && workflowList.some(workflow => workflow.name === name)) {
+      toastManager.error(`A workflow named "${name}" already exists`, { duration: 4000 });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -1178,7 +1125,7 @@ export default function WorkflowsApp() {
     } finally {
       setSaving(false);
     }
-  }, [clearDraft, creating, draft, navigate, newName, selectedWorkflow, workflows]);
+  }, [clearDraft, creating, draft, navigate, newName, selectedWorkflow, workflowList, workflows]);
 
   const handleDelete = useCallback(
     async (name: string) => {
@@ -1255,6 +1202,7 @@ export default function WorkflowsApp() {
             workflowRuns={creating ? [] : selectedWorkflowRuns}
             categories={categories}
             agentTypes={agentTypes.data ?? []}
+            commands={commandList}
             saving={saving}
             launching={launching === selectedWorkflow?.name}
             onSave={() => void handleSave()}
@@ -1264,6 +1212,10 @@ export default function WorkflowsApp() {
             onCancelCreate={handleCancelCreate}
             onOpenAgent={openAgent}
           />
+        ) : workflows.isLoading && workflowList.length === 0 ? (
+          <div className="h-full flex flex-col bg-primary">
+            <LoadingState message="Loading workflows…" className="flex-1" />
+          </div>
         ) : workflows.error && workflowList.length === 0 ? (
           <ErrorState title="Unable to load workflows" error={workflows.error} onRetry={() => void workflows.mutate()} variant="page" />
         ) : (

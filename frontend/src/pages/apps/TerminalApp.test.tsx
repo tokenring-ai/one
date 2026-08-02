@@ -75,11 +75,11 @@ const EMPTY_OUTPUT = { output: "", position: 0, complete: false };
 void mock.module("../../hooks/useTerminalOutput.ts", () => ({
   useTerminalOutput: (terminalName: string | null) => {
     if (!terminalName) {
-      return { data: undefined, error: undefined, isLoading: false, mutate: mock() };
+      return { data: undefined, error: undefined, isLoading: false, isValidating: false, mutate: mock() };
     }
     // Stable empty object — a fresh `{}` each render would loop the sessions cache effect.
     const data = outputByTerminal[terminalName] ?? EMPTY_OUTPUT;
-    return { data, error: undefined, isLoading: false, mutate: mock() };
+    return { data, error: undefined, isLoading: false, isValidating: false, mutate: mock() };
   },
 }));
 
@@ -189,6 +189,10 @@ describe("TerminalApp", () => {
 
     await waitFor(() => expect(spawnTerminal).toHaveBeenCalledTimes(1));
     expect(mutateTerminals).toHaveBeenCalled();
+    // List stream has not caught up yet — show a spinner rather than "Terminal not found".
+    await waitFor(() => {
+      expect(screen.queryByText("Terminal not found")).not.toBeInTheDocument();
+    });
   });
 
   it("sends input through the terminal RPC client", async () => {
@@ -216,6 +220,11 @@ describe("TerminalApp", () => {
 
     await waitFor(() => expect(terminateTerminal).toHaveBeenCalledWith({ terminalName: "term-b" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    // Optimistically drops the tab even if the list stream still reports it.
+    await waitFor(() => {
+      expect(screen.queryByRole("tab", { name: /echo hi/ })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("No terminals")).toBeInTheDocument();
   });
 
   it("confirms before closing a running terminal", async () => {
@@ -233,6 +242,24 @@ describe("TerminalApp", () => {
     await user.click(screen.getByRole("button", { name: "Close" }));
 
     await waitFor(() => expect(terminateTerminal).toHaveBeenCalledWith({ terminalName: "term-a" }));
+  });
+
+  it("switches to a neighbour tab when closing the active one", async () => {
+    const user = userEvent.setup();
+    terminalList = [termA, termB];
+    outputByTerminal["term-a"] = { output: "output-a", position: 8, complete: false };
+    outputByTerminal["term-b"] = { output: "output-b", position: 8, complete: true };
+
+    renderApp("/terminal/term-a");
+
+    await user.click(screen.getByRole("button", { name: /Close terminal ls -la/i }));
+    await user.click(screen.getByRole("button", { name: "Close" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("xterm-output")).toHaveTextContent("output-b");
+    });
+    expect(screen.queryByRole("tab", { name: /ls -la/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /echo hi/ })).toHaveAttribute("aria-selected", "true");
   });
 
   it("shows a not-found state for a stale terminal URL", () => {

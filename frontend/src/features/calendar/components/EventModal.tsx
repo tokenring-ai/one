@@ -4,7 +4,7 @@ import { toastManager } from "../../../components/ui/toast.tsx";
 import { cn } from "../../../lib/utils.ts";
 import { useAgentTypes, useWorkflows } from "../../../rpc.ts";
 import { EVENT_COLORS } from "../constants.ts";
-import { addOneHour } from "../dateUtils.ts";
+import { addOneHour, isValidDateKey } from "../dateUtils.ts";
 import type { CalendarEvent, CalendarEventType } from "../types.ts";
 
 export interface EventModalProps {
@@ -55,6 +55,10 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
   const handleSave = async () => {
     if (!title.trim()) {
       toastManager.error("Title is required");
+      return;
+    }
+    if (!isValidDateKey(date)) {
+      toastManager.error("A valid date is required");
       return;
     }
     if (type === "workflow" && !workflowKey) {

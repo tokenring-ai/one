@@ -65,19 +65,21 @@ export default function LeadersSection({ onSymbolSelect }: LeadersSectionProps) 
                 const change = row.Change ?? "";
                 const changePct = row.ChangePercent ?? "";
                 const vol = row.Volume ?? "";
-                const isUp = Number(change) >= 0;
+                const changeNum = Number(change);
+                const isUp = changeNum > 0;
+                const isDown = changeNum < 0;
                 return (
                   <tr
-                    key={i}
+                    key={sym || i}
                     onClick={() => sym && onSymbolSelect(sym.toUpperCase())}
                     className="border-b border-primary/50 hover:bg-hover transition-colors cursor-pointer"
                   >
                     <td className="px-3 py-2 font-bold text-accent-soft">{sym}</td>
                     <td className="px-3 py-2 text-secondary truncate max-w-40">{name}</td>
-                    <td className="px-3 py-2 text-right font-medium text-primary">${fmtPrice(price)}</td>
-                    <td className={`px-3 py-2 text-right font-medium ${isUp ? "text-emerald-500" : "text-red-500"}`}>
+                    <td className="px-3 py-2 text-right font-medium text-primary">{price === "" ? "-" : `$${fmtPrice(price)}`}</td>
+                    <td className={`px-3 py-2 text-right font-medium ${isUp ? "text-emerald-500" : isDown ? "text-red-500" : "text-muted"}`}>
                       <span className="flex items-center justify-end gap-0.5">
-                        {isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                        {isUp ? <ArrowUpRight className="w-3 h-3" /> : isDown ? <ArrowDownRight className="w-3 h-3" /> : null}
                         {changeSign(change)}
                         {fmt(change)} ({changeSign(changePct)}
                         {fmt(changePct)}%)

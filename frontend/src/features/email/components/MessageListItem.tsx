@@ -1,11 +1,9 @@
 import type { EmailMessage } from "@tokenring-ai/email";
 import { formatDate } from "@tokenring-ai/utility/date/formatDate";
 import { cn } from "../../../lib/utils.ts";
-import { senderName } from "../utils.ts";
+import { messageTimestamp, senderName } from "../utils.ts";
 
 export default function MessageListItem({ msg, selected, onClick }: { msg: EmailMessage; selected: boolean; onClick: () => void }) {
-  console.log(msg);
-
   return (
     <button
       type="button"
@@ -18,7 +16,7 @@ export default function MessageListItem({ msg, selected, onClick }: { msg: Email
     >
       <div className="flex items-center justify-between gap-2 pr-3">
         <span className={cn("text-xs truncate flex-1 min-w-0", msg.isRead ? "text-muted" : "text-primary font-semibold")}>{senderName(msg)}</span>
-        <span className="text-2xs text-muted shrink-0">{formatDate(msg.receivedAt)}</span>
+        <span className="text-2xs text-muted shrink-0">{formatDate(messageTimestamp(msg))}</span>
       </div>
       <span className={cn("text-xs truncate", msg.isRead ? "text-muted" : "text-secondary font-medium")}>{msg.subject || "(no subject)"}</span>
       {msg.snippet && <span className="text-2xs text-muted truncate">{msg.snippet}</span>}

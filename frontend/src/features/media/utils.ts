@@ -26,14 +26,32 @@ export function keywordsFromPrompt(prompt: string, limit = 10): string[] {
     .slice(0, limit);
 }
 
-export function downloadMedia(filename: string) {
-  const a = document.createElement("a");
-  a.href = mediaUrl(filename);
-  a.download = filename;
-  a.rel = "noopener";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+/** Trigger a browser download for a media-library file. Falls back to opening the URL if fetch fails. */
+export async function downloadMedia(filename: string): Promise<void> {
+  const url = mediaUrl(filename);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    // Fallback for environments where fetch is blocked or offline caching fails.
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
 }
 
 export function workOnMediaMessage(kind: "image" | "video" | "audio", filename: string, keywords: string[] = []): string {

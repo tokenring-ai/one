@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+  bufferedHistoryRange,
   changeSign,
   fmt,
   fmtHistoryDate,
@@ -10,6 +11,8 @@ import {
   isoDateOffset,
   parseHistoryDate,
   pricePrecision,
+  shiftIsoDate,
+  toLocalIsoDate,
 } from "./formatters.ts";
 
 describe("pricePrecision", () => {
@@ -113,9 +116,49 @@ describe("fmtHistoryDate", () => {
   });
 });
 
+describe("toLocalIsoDate", () => {
+  it("formats local calendar date without UTC skew", () => {
+    // 8pm local on July 29 — toISOString would often roll to the next UTC day
+    const d = new Date(2026, 6, 29, 20, 0, 0);
+    expect(toLocalIsoDate(d)).toBe("2026-07-29");
+  });
+});
+
 describe("isoDateOffset", () => {
   it("returns YYYY-MM-DD", () => {
     expect(isoDateOffset(0)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("offsets from local calendar day, not UTC", () => {
+    const base = new Date(2026, 6, 29, 22, 0, 0);
+    expect(isoDateOffset(0, base)).toBe("2026-07-29");
+    expect(isoDateOffset(-1, base)).toBe("2026-07-28");
+    expect(isoDateOffset(1, base)).toBe("2026-07-30");
+  });
+});
+
+describe("shiftIsoDate", () => {
+  it("shifts plain YYYY-MM-DD dates", () => {
+    expect(shiftIsoDate("2026-07-29", -1)).toBe("2026-07-28");
+    expect(shiftIsoDate("2026-07-29", 1)).toBe("2026-07-30");
+  });
+
+  it("returns null for invalid input", () => {
+    expect(shiftIsoDate("", -1)).toBeNull();
+    expect(shiftIsoDate("not-a-date", 1)).toBeNull();
+  });
+});
+
+describe("bufferedHistoryRange", () => {
+  it("applies ±1 day buffer", () => {
+    expect(bufferedHistoryRange("2026-01-10", "2026-04-10")).toEqual({
+      from: "2026-01-09",
+      to: "2026-04-11",
+    });
+  });
+
+  it("returns null when dates invalid", () => {
+    expect(bufferedHistoryRange("", "2026-04-10")).toBeNull();
   });
 });
 

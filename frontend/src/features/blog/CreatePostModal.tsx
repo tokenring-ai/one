@@ -1,6 +1,6 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { FilePlus, Loader2, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { blogRPCClient } from "../../rpc.ts";
 import { parseTagsInput } from "./constants.ts";
@@ -17,17 +17,36 @@ export default function CreatePostModal({ provider, onClose, onCreated }: Create
   const [tags, setTags] = useState("");
   const [saving, setSaving] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
+  const savingRef = useRef(false);
 
   useEffect(() => {
     titleRef.current?.focus();
   }, []);
 
+  const requestClose = useCallback(() => {
+    if (savingRef.current) return;
+    onClose();
+  }, [onClose]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        requestClose();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [requestClose]);
+
   const handleSubmit = async () => {
+    if (savingRef.current) return;
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
       toastManager.error("Title is required", { duration: 3000 });
       return;
     }
+    savingRef.current = true;
     setSaving(true);
     try {
       const parsedTags = parseTagsInput(tags);
@@ -41,13 +60,13 @@ export default function CreatePostModal({ provider, onClose, onCreated }: Create
       onCreated(result.post.id);
     } catch (err) {
       toastManager.error(formatError(err), { duration: 5000 });
-    } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={requestClose}>
       <div
         className="bg-secondary border border-primary rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
         onClick={e => e.stopPropagation()}
@@ -61,8 +80,9 @@ export default function CreatePostModal({ provider, onClose, onCreated }: Create
           </h2>
           <button
             type="button"
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-hover transition-colors text-muted hover:text-primary cursor-pointer focus-ring"
+            onClick={requestClose}
+            disabled={saving}
+            className="p-1 rounded-lg hover:bg-hover transition-colors text-muted hover:text-primary cursor-pointer focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Close"
           >
             <X size={18} />
@@ -88,10 +108,10 @@ export default function CreatePostModal({ provider, onClose, onCreated }: Create
                   e.preventDefault();
                   void handleSubmit();
                 }
-                if (e.key === "Escape") onClose();
               }}
+              disabled={saving}
               placeholder="Post title…"
-              className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-sm text-primary placeholder-muted focus-accent transition-colors"
+              className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-sm text-primary placeholder-muted focus-accent transition-colors disabled:opacity-60"
             />
           </div>
 
@@ -104,8 +124,9 @@ export default function CreatePostModal({ provider, onClose, onCreated }: Create
               value={content}
               onChange={e => setContent(e.target.value)}
               rows={8}
+              disabled={saving}
               placeholder="Write your post in Markdown…"
-              className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-sm text-primary placeholder-muted focus-accent transition-colors resize-y min-h-32 font-mono"
+              className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-sm text-primary placeholder-muted focus-accent transition-colors resize-y min-h-32 font-mono disabled:opacity-60"
             />
           </div>
 
@@ -117,15 +138,16 @@ export default function CreatePostModal({ provider, onClose, onCreated }: Create
               id="create-post-tags"
               value={tags}
               onChange={e => setTags(e.target.value)}
+              disabled={saving}
               placeholder="news, product, launch"
-              className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-sm text-primary placeholder-muted focus-accent transition-colors"
+              className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-sm text-primary placeholder-muted focus-accent transition-colors disabled:opacity-60"
             />
           </div>
 
           <div className="flex gap-2 pt-1">
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               disabled={saving}
               className="flex-1 py-2 border border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-50"
             >

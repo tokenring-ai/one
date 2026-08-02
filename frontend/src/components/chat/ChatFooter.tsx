@@ -100,11 +100,11 @@ function recordingFileName(mimeType: string): string {
   return `recording-${stamp}.${extensionForMimeType(mimeType)}`;
 }
 
-/** Percent of context window remaining, or null when max is unknown. */
-function contextPercentLeft(contextLength: number, maxContextLength: number | null | undefined): number | null {
+/** Percent of context window used, or null when max is unknown. */
+function contextPercentUsed(contextLength: number, maxContextLength: number | null | undefined): number | null {
   if (maxContextLength == null || maxContextLength <= 0) return null;
   const usedPercent = Math.min(100, Math.floor((contextLength * 100) / maxContextLength));
-  return Math.max(0, 100 - usedPercent);
+  return Math.max(0, usedPercent);
 }
 
 /** Compact token counts for the status strip (e.g. 1.2k, 3.4m). */
@@ -132,10 +132,10 @@ function shortenWorkingDirectory(path: string, maxLen = 28): string {
   return `…${tail.slice(-(maxLen - 1))}`;
 }
 
-function contextToneClass(percentLeft: number | null): string {
-  if (percentLeft == null) return "text-muted";
-  if (percentLeft <= 10) return "text-error";
-  if (percentLeft <= 25) return "text-warning";
+function contextToneClass(percentUsed: number | null): string {
+  if (percentUsed == null) return "text-muted";
+  if (percentUsed > 80) return "text-error";
+  if (percentUsed > 50) return "text-warning";
   return "text-muted";
 }
 
@@ -206,17 +206,17 @@ export default function ChatFooter({
   const footerMetrics = useMemo(() => {
     const contextLength = usageSnapshot?.contextLength ?? 0;
     const maxContextLength = usageSnapshot?.maxContextLength ?? null;
-    const percentLeft = contextPercentLeft(contextLength, maxContextLength);
+    const percentUsed = contextPercentUsed(contextLength, maxContextLength);
     const costTotal = usageSnapshot?.cost.total ?? null;
     const workingDirectory = fsSnapshot?.workingDirectory ?? null;
 
     return {
-      percentLeft,
+      percentUsed,
       contextLabel:
-        percentLeft != null ? `${percentLeft}% ctx` : maxContextLength == null && contextLength === 0 ? null : `${formatCompactTokens(contextLength)} tok`,
+        percentUsed != null ? `${percentUsed}% ctx` : maxContextLength == null && contextLength === 0 ? null : `${formatCompactTokens(contextLength)} tok`,
       contextTitle:
-        percentLeft != null && maxContextLength != null
-          ? `${formatCompactTokens(contextLength)} / ${formatCompactTokens(maxContextLength)} tokens · ${percentLeft}% context left`
+        percentUsed != null && maxContextLength != null
+          ? `${formatCompactTokens(contextLength)} / ${formatCompactTokens(maxContextLength)} tokens · ${percentUsed}% context used`
           : contextLength > 0
             ? `${formatCompactTokens(contextLength)} tokens in context`
             : "Context usage unavailable",
@@ -1107,7 +1107,7 @@ export default function ChatFooter({
           {(footerMetrics.contextLabel || footerMetrics.costLabel || footerMetrics.cwdLabel) && (
             <div className="flex flex-wrap items-center gap-x-2 min-w-0 shrink" data-testid="chat-footer-metrics" aria-live="polite" aria-atomic="true">
               {footerMetrics.contextLabel && (
-                <span className={`text-xs font-mono tabular-nums shrink-0 ${contextToneClass(footerMetrics.percentLeft)}`} title={footerMetrics.contextTitle}>
+                <span className={`text-xs font-mono tabular-nums shrink-0 ${contextToneClass(footerMetrics.percentUsed)}`} title={footerMetrics.contextTitle}>
                   {footerMetrics.contextLabel}
                 </span>
               )}

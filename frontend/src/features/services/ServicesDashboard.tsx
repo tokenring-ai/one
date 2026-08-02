@@ -105,6 +105,7 @@ function AgentContextBar({
 }) {
   const navigate = useNavigate();
   const selectedAgent = agents.data?.find(a => a.id === selectedAgentId);
+  const agentCount = agents.data?.length ?? 0;
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between mb-4">
@@ -113,10 +114,27 @@ function AgentContextBar({
           <User className="w-3 h-3" />
           Agent context
         </span>
-        {agents.isLoading ? (
+        {agents.isLoading && agentCount === 0 ? (
           <Loader2 className="w-3.5 h-3.5 text-muted animate-spin" />
-        ) : (agents.data?.length ?? 0) === 0 ? (
-          <span className="text-2xs text-muted">No agents — browse only. Open Agents to create one for enable/disable.</span>
+        ) : agents.error && agentCount === 0 ? (
+          <span className="text-2xs text-warning flex items-center gap-2 flex-wrap">
+            Failed to load agents
+            <button type="button" onClick={() => void agents.mutate()} className="underline-offset-2 hover:underline focus-ring rounded text-accent">
+              Retry
+            </button>
+          </span>
+        ) : agentCount === 0 ? (
+          <span className="text-2xs text-muted flex items-center gap-1.5 flex-wrap">
+            No agents — browse only.
+            <button
+              type="button"
+              onClick={() => void navigate("/agents")}
+              className="text-violet-600 dark:text-violet-400 underline-offset-2 hover:underline focus-ring rounded"
+            >
+              Open Agents
+            </button>
+            to create one for enable/disable.
+          </span>
         ) : (
           <select
             value={selectedAgentId ?? ""}
@@ -195,15 +213,32 @@ export default function ServicesDashboard() {
 
   const refreshActive = useCallback(async () => {
     const jobs: Promise<unknown>[] = [agents.mutate()];
-    if (activeTab === "tools") {
-      jobs.push(availableTools.mutate(), enabledTools.mutate());
-    } else if (activeTab === "models") {
-      jobs.push(modelsByProvider.mutate());
-    } else if (activeTab === "hooks") {
-      jobs.push(availableHooks.mutate(), enabledHooks.mutate());
+    switch (activeTab) {
+      case "tools":
+        jobs.push(availableTools.mutate(), enabledTools.mutate());
+        break;
+      case "models":
+        jobs.push(modelsByProvider.mutate());
+        break;
+      case "hooks":
+        jobs.push(availableHooks.mutate(), enabledHooks.mutate());
+        break;
+      case "logs":
+        jobs.push(appLogs.mutate());
+        break;
+      default: {
+        const exhaustive: string = activeTab satisfies never;
+        throw new Error(`Unhandled activeTab: ${exhaustive}`);
+      }
     }
     await Promise.all(jobs);
-  }, [activeTab, agents, availableTools, enabledTools, modelsByProvider, availableHooks, enabledHooks]);
+  }, [activeTab, agents, availableTools, enabledTools, modelsByProvider, availableHooks, enabledHooks, appLogs]);
+
+  const handleAgentGone = useCallback(async () => {
+    toastManager.error("Agent no longer exists", { duration: 4000 });
+    // Refresh agent list; selection effect drops a missing agent automatically.
+    await agents.mutate();
+  }, [agents]);
 
   const handleToggleTool = async (toolName: string) => {
     if (!selectedAgentId) {
@@ -217,7 +252,7 @@ export default function ServicesDashboard() {
         ? await chatRPCClient.disableTools({ agentId: selectedAgentId, tools: [toolName] })
         : await chatRPCClient.enableTools({ agentId: selectedAgentId, tools: [toolName] });
       if (result.status === "agentNotFound") {
-        toastManager.error("Agent no longer exists", { duration: 4000 });
+        await handleAgentGone();
         return;
       }
       await enabledTools.mutate();
@@ -237,7 +272,7 @@ export default function ServicesDashboard() {
         ? await chatRPCClient.disableTools({ agentId: selectedAgentId, tools: toolNames })
         : await chatRPCClient.enableTools({ agentId: selectedAgentId, tools: toolNames });
       if (result.status === "agentNotFound") {
-        toastManager.error("Agent no longer exists", { duration: 4000 });
+        await handleAgentGone();
         return;
       }
       await enabledTools.mutate();
@@ -260,7 +295,7 @@ export default function ServicesDashboard() {
         ? await lifecycleRPCClient.disableHooks({ agentId: selectedAgentId, hooks: [hookName] })
         : await lifecycleRPCClient.enableHooks({ agentId: selectedAgentId, hooks: [hookName] });
       if (result.status === "agentNotFound") {
-        toastManager.error("Agent no longer exists", { duration: 4000 });
+        await handleAgentGone();
         return;
       }
       await enabledHooks.mutate();
@@ -282,7 +317,7 @@ export default function ServicesDashboard() {
         ? await lifecycleRPCClient.disableHooks({ agentId: selectedAgentId, hooks: allNames })
         : await lifecycleRPCClient.enableHooks({ agentId: selectedAgentId, hooks: allNames });
       if (result.status === "agentNotFound") {
-        toastManager.error("Agent no longer exists", { duration: 4000 });
+        await handleAgentGone();
         return;
       }
       await enabledHooks.mutate();
@@ -338,6 +373,7 @@ export default function ServicesDashboard() {
               selectedAgentId={selectedAgentId}
               onSelectAgent={setSelectedAgentId}
               enabledSet={enabledToolNames}
+              enabledLoading={Boolean(selectedAgentId) && enabledTools.isLoading}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               busyAction={busyAction}
@@ -391,6 +427,7 @@ function ToolsTab({
   selectedAgentId,
   onSelectAgent,
   enabledSet,
+  enabledLoading,
   searchQuery,
   onSearchChange,
   busyAction,
@@ -402,6 +439,7 @@ function ToolsTab({
   selectedAgentId: string | null;
   onSelectAgent: (id: string | null) => void;
   enabledSet: Set<string>;
+  enabledLoading: boolean;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   busyAction: string | null;
@@ -409,6 +447,8 @@ function ToolsTab({
   onToggleCategory: (names: string[]) => void;
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Only auto-expand on agent/search/catalog changes — not when the user toggles enable state.
+  const autoExpandKeyRef = useRef<string>("");
 
   const toolRecord = tools.data?.tools;
 
@@ -433,16 +473,41 @@ function ToolsTab({
 
   const categories = useMemo(() => Object.keys(grouped).sort((a, b) => a.localeCompare(b)), [grouped]);
   const total = Object.keys(toolRecord ?? {}).length;
+  const totalPackages = useMemo(() => {
+    const cats = new Set<string>();
+    for (const tool of Object.values(toolRecord ?? {})) {
+      cats.add(categoryFromDisplayName(tool.displayName).category);
+    }
+    return cats.size;
+  }, [toolRecord]);
   const enabledCount = selectedAgentId ? [...enabledSet].filter(n => toolRecord?.[n]).length : 0;
 
-  // Expand all categories when searching; collapse to enabled-only when not.
+  // Expand all categories when searching; otherwise expand packages with enabled tools (or first few).
+  // Wait for enabled-tools stream so first paint uses real enable state; skip re-runs on toggles.
   useEffect(() => {
+    if (categories.length === 0) return;
+
     if (searchQuery.trim()) {
       setExpanded(new Set(categories));
+      autoExpandKeyRef.current = `search:${searchQuery}:${categories.join("\0")}`;
       return;
     }
+
+    if (enabledLoading) {
+      // Provisional expand while enable-state streams in; final pass runs once loading ends.
+      const loadingKey = `loading|${selectedAgentId ?? "none"}|${categories.join("\0")}`;
+      if (autoExpandKeyRef.current !== loadingKey) {
+        autoExpandKeyRef.current = loadingKey;
+        setExpanded(new Set(categories.slice(0, 3)));
+      }
+      return;
+    }
+
+    const key = `${selectedAgentId ?? "none"}|${categories.join("\0")}`;
+    if (autoExpandKeyRef.current === key) return;
+    autoExpandKeyRef.current = key;
+
     if (!selectedAgentId || enabledSet.size === 0) {
-      // Keep first few expanded for discoverability
       setExpanded(new Set(categories.slice(0, 3)));
       return;
     }
@@ -451,7 +516,7 @@ function ToolsTab({
       if (items.some(i => enabledSet.has(i.toolName))) withEnabled.add(cat);
     }
     setExpanded(withEnabled.size > 0 ? withEnabled : new Set(categories.slice(0, 3)));
-  }, [searchQuery, categories, selectedAgentId, enabledSet, grouped]);
+  }, [searchQuery, categories, selectedAgentId, enabledSet, grouped, enabledLoading]);
 
   if (tools.isLoading && !toolRecord) {
     return <LoadingState message="Loading tools…" className="py-16" />;
@@ -491,8 +556,8 @@ function ToolsTab({
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="text-2xs text-muted px-1">
-          {total} tools across {Object.keys(grouped).length || categories.length} packages
-          {searchQuery.trim() ? ` · ${filteredEntries.length} match` : ""}
+          {total} tools across {totalPackages} {totalPackages === 1 ? "package" : "packages"}
+          {searchQuery.trim() ? ` · ${filteredEntries.length} ${filteredEntries.length === 1 ? "match" : "matches"}` : ""}
         </p>
         <SearchField value={searchQuery} onChange={onSearchChange} placeholder="Filter tools…" aria-label="Filter tools" />
       </div>
@@ -879,7 +944,7 @@ function LogsTab({
   autoScroll: boolean;
   onAutoScrollChange: (v: boolean) => void;
 }) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const entries = logs.data?.logs ?? [];
 
   const filtered = useMemo(() => {
@@ -893,10 +958,12 @@ function LogsTab({
 
   const errorCount = useMemo(() => entries.filter(e => e.level === "error").length, [entries]);
 
+  // Scroll only the log list container — scrollIntoView can jump the whole page.
   useEffect(() => {
-    if (autoScroll && typeof bottomRef.current?.scrollIntoView === "function") {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    if (!autoScroll) return;
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
   }, [filtered.length, autoScroll]);
 
   if (logs.isLoading && entries.length === 0) {
@@ -951,13 +1018,13 @@ function LogsTab({
       </div>
 
       <p className="text-2xs text-muted px-1">
-        {entries.length} log entries
+        {entries.length} log {entries.length === 1 ? "entry" : "entries"}
         {filtered.length !== entries.length ? ` · showing ${filtered.length}` : ""}
-        {logs.isLoading ? " · streaming…" : ""}
+        {logs.isLoading || logs.isValidating ? " · streaming…" : ""}
       </p>
 
       <div className="bg-secondary border border-primary rounded-xl overflow-hidden">
-        <div className="font-mono text-2xs divide-y divide-primary max-h-[min(70vh,720px)] overflow-y-auto">
+        <div ref={listRef} className="font-mono text-2xs divide-y divide-primary max-h-[min(70vh,720px)] overflow-y-auto">
           {filtered.length === 0 ? (
             <p className="text-muted text-center py-8">{entries.length === 0 ? "No log entries yet" : "No logs match the current filters"}</p>
           ) : (
@@ -974,7 +1041,6 @@ function LogsTab({
               </div>
             ))
           )}
-          <div ref={bottomRef} />
         </div>
       </div>
     </div>

@@ -1,14 +1,22 @@
 import { describe, expect, test } from "bun:test";
-import { addDays, addOneHour, eventRangeToIso, parseTime, startOfWeek, toDateKey } from "./dateUtils.ts";
+import { addDays, addOneHour, eventDurationHours, eventRangeToIso, isValidDateKey, parseTime, startOfWeek, toDateKey, toUtcDateKey } from "./dateUtils.ts";
 
 describe("dateUtils", () => {
   test("toDateKey formats local date", () => {
     expect(toDateKey(new Date(2026, 2, 9))).toBe("2026-03-09");
   });
 
+  test("toUtcDateKey formats UTC date", () => {
+    // 2026-03-10T00:00:00.000Z — local western TZ would be previous evening
+    const utcMidnight = new Date("2026-03-10T00:00:00.000Z");
+    expect(toUtcDateKey(utcMidnight)).toBe("2026-03-10");
+  });
+
   test("addDays and startOfWeek", () => {
     const wed = new Date(2026, 2, 11); // Wednesday
-    expect(startOfWeek(wed).getDay()).toBe(0);
+    const weekStart = startOfWeek(wed);
+    expect(weekStart.getDay()).toBe(0);
+    expect(weekStart.getHours()).toBe(0);
     expect(toDateKey(addDays(wed, 2))).toBe("2026-03-13");
   });
 
@@ -21,6 +29,13 @@ describe("dateUtils", () => {
   test("addOneHour wraps within day", () => {
     expect(addOneHour("09:00")).toBe("10:00");
     expect(addOneHour("23:30")).toBe("00:30");
+  });
+
+  test("isValidDateKey", () => {
+    expect(isValidDateKey("2026-03-10")).toBe(true);
+    expect(isValidDateKey("")).toBe(false);
+    expect(isValidDateKey("2026-02-31")).toBe(false);
+    expect(isValidDateKey(undefined)).toBe(false);
   });
 
   test("eventRangeToIso timed event", () => {
@@ -39,13 +54,12 @@ describe("dateUtils", () => {
     expect(end.getTime()).toBeGreaterThan(start.getTime());
   });
 
-  test("eventRangeToIso all-day spans full local day", () => {
+  test("eventRangeToIso all-day uses UTC midnight of calendar date", () => {
     const { startAt, endAt } = eventRangeToIso({ date: "2026-03-10", allDay: true });
-    const start = new Date(startAt);
-    const end = new Date(endAt);
-    expect(start.getHours()).toBe(0);
-    expect(start.getMinutes()).toBe(0);
-    expect(end.getTime() - start.getTime()).toBe(24 * 60 * 60 * 1000);
+    expect(startAt).toBe("2026-03-10T00:00:00.000Z");
+    expect(endAt).toBe("2026-03-11T00:00:00.000Z");
+    // Provider date-only conversion (toISOString().slice(0,10)) keeps the day
+    expect(new Date(startAt).toISOString().slice(0, 10)).toBe("2026-03-10");
   });
 
   test("eventRangeToIso defaults end to +1h", () => {
@@ -54,5 +68,28 @@ describe("dateUtils", () => {
       startTime: "09:00",
     });
     expect(new Date(endAt).getTime() - new Date(startAt).getTime()).toBe(60 * 60 * 1000);
+  });
+
+  test("eventRangeToIso overnight end spans to next day", () => {
+    const { startAt, endAt } = eventRangeToIso({
+      date: "2026-03-10",
+      startTime: "22:00",
+      endTime: "01:00",
+    });
+    const start = new Date(startAt);
+    const end = new Date(endAt);
+    expect(end.getTime()).toBeGreaterThan(start.getTime());
+    expect(end.getDate()).toBe(start.getDate() + 1);
+    expect(end.getHours()).toBe(1);
+  });
+
+  test("eventRangeToIso rejects invalid date", () => {
+    expect(() => eventRangeToIso({ date: "", allDay: true })).toThrow();
+  });
+
+  test("eventDurationHours handles overnight", () => {
+    expect(eventDurationHours("09:00", "10:30")).toBe(1.5);
+    expect(eventDurationHours("22:00", "01:00")).toBe(2); // until midnight
+    expect(eventDurationHours("09:00")).toBe(1);
   });
 });

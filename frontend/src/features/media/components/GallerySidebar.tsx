@@ -64,9 +64,16 @@ export default function GallerySidebar({
         {error && (
           <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-2xs text-amber-200">
             <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="font-medium">Library stream error</p>
               <p className="opacity-80 break-words">{error}</p>
+              <button
+                type="button"
+                onClick={onRefresh}
+                className="mt-1.5 text-2xs font-medium underline underline-offset-2 hover:text-white transition-colors cursor-pointer"
+              >
+                Retry
+              </button>
             </div>
           </div>
         )}
@@ -95,8 +102,7 @@ export default function GallerySidebar({
 
       <div className="shrink-0 border-t border-primary px-3 py-2 flex items-center justify-between">
         <span className="text-2xs text-muted">
-          {entries.length} {kind}
-          {entries.length !== 1 ? "s" : ""}
+          {entries.length} {kind === "audio" ? (entries.length === 1 ? "clip" : "clips") : entries.length === 1 ? kind : `${kind}s`}
           {loading && entries.length > 0 && <Loader2 className="inline-block w-3 h-3 ml-1.5 animate-spin opacity-60 align-[-2px]" aria-label="Refreshing" />}
         </span>
         <button

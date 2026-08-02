@@ -40,16 +40,27 @@ export default function ComposeForm({
   const toRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
+  // Reset fields when parent swaps the draft without unmounting (e.g. Compose while already composing)
   useEffect(() => {
+    setTo(initial.to);
+    setCc(initial.cc);
+    setBcc(initial.bcc);
+    setSubject(initial.subject);
+    setBody(initial.body);
+    setShowCcBcc(Boolean(initial.cc || initial.bcc));
+    setSending(false);
+
     // Focus To for new/forward; body for replies (recipients already filled)
-    if (initial.mode === "reply" || initial.mode === "replyAll") {
-      bodyRef.current?.focus();
-      // Place caret at start so user types above the quote
-      bodyRef.current?.setSelectionRange(0, 0);
-    } else {
-      toRef.current?.focus();
-    }
-  }, [initial.mode]);
+    requestAnimationFrame(() => {
+      if (initial.mode === "reply" || initial.mode === "replyAll") {
+        bodyRef.current?.focus();
+        // Place caret at start so user types above the quote
+        bodyRef.current?.setSelectionRange(0, 0);
+      } else {
+        toRef.current?.focus();
+      }
+    });
+  }, [initial]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -92,6 +103,18 @@ export default function ComposeForm({
       if (created.status === "agentNotFound") {
         toastManager.error("Email agent is no longer available. Try again.", { duration: 4000 });
         return;
+      }
+
+      // createDraft RPC omits threadId; attach it via update so replies stay in-thread
+      if (initial.relatedThreadId) {
+        const updated = await emailRPCClient.updateDraft({
+          agentId,
+          updatedData: { threadId: initial.relatedThreadId },
+        });
+        if (updated.status === "agentNotFound") {
+          toastManager.error("Email agent is no longer available. Try again.", { duration: 4000 });
+          return;
+        }
       }
 
       const sent = await emailRPCClient.sendCurrentDraft({ agentId });

@@ -54,6 +54,7 @@ const mutateAgentTypes = mock(async () => undefined);
 const mutateWorkflows = mock(async () => undefined);
 
 let agentList: (typeof runningAgent)[] = [];
+let agentsError: Error | undefined;
 let agentTypesData: (typeof codeAgentType)[] = [codeAgentType, researchAgentType];
 let agentTypesLoading = false;
 let agentTypesError: Error | undefined;
@@ -62,7 +63,7 @@ let workflowsLoading = false;
 let workflowsError: Error | undefined;
 
 void mock.module("../../rpc.ts", () => ({
-  useAgentList: () => ({ data: agentList, isLoading: false, error: undefined, mutate: mutateAgents }),
+  useAgentList: () => ({ data: agentList, isLoading: false, error: agentsError, mutate: mutateAgents }),
   useAgentTypes: () => ({
     data: agentTypesData,
     isLoading: agentTypesLoading,
@@ -98,7 +99,7 @@ function renderApp(initialPath = "/agents") {
       <Routes>
         <Route path="/agents/:agentType?" element={<AgentsApp />} />
         <Route path="/agent/:agentId/*" element={<AgentsApp />} />
-        <Route path="/configuration" element={<div>Configuration app</div>} />
+        <Route path="/configuration/:plugin?" element={<div>Configuration app</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -110,9 +111,11 @@ describe("AgentsApp", () => {
     deleteAgent.mockClear();
     spawnWorkflow.mockClear();
     mutateAgents.mockClear();
+    mutateAgents.mockImplementation(async () => undefined);
     mutateAgentTypes.mockClear();
     mutateWorkflows.mockClear();
     agentList = [];
+    agentsError = undefined;
     agentTypesData = [codeAgentType, researchAgentType];
     agentTypesLoading = false;
     agentTypesError = undefined;
@@ -177,6 +180,15 @@ describe("AgentsApp", () => {
     expect(todoList).toHaveTextContent("Wire up launching");
 
     await user.click(screen.getByRole("button", { name: "Open agent Code Engineer #1" }));
+    expect(screen.getByText(/Chat with agent-1/)).toBeInTheDocument();
+  });
+
+  it("opens a running agent when clicking its todo text", async () => {
+    const user = userEvent.setup();
+    agentList = [runningAgent];
+    renderApp();
+
+    await user.click(screen.getByText("Add the sidebar"));
     expect(screen.getByText(/Chat with agent-1/)).toBeInTheDocument();
   });
 
@@ -302,5 +314,62 @@ describe("AgentsApp", () => {
 
     await user.click(screen.getByRole("button", { name: "Agents" }));
     expect(screen.getByText("Select an agent type")).toBeInTheDocument();
+  });
+
+  it("keeps showing cached running agents when the agent stream has a transient error", () => {
+    agentList = [runningAgent];
+    agentsError = new Error("stream reconnect failed");
+    renderApp();
+
+    expect(screen.getByText("Code Engineer #1")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open agent Code Engineer #1" })).toBeInTheDocument();
+    expect(screen.queryByText("Failed to load agents")).not.toBeInTheDocument();
+  });
+
+  it("keeps showing cached agent types when a revalidation error arrives with data", () => {
+    agentTypesError = new Error("stale revalidation failed");
+    renderApp();
+
+    expect(screen.getByText("Code Engineer")).toBeInTheDocument();
+    expect(screen.getByText("Select an agent type")).toBeInTheDocument();
+    // Sidebar should not swap the type list for a full error state when types are cached.
+    expect(screen.queryByText("Failed to load agent types")).not.toBeInTheDocument();
+  });
+
+  it("keeps showing workflows when a revalidation error arrives with data", () => {
+    workflowsError = new Error("workflow revalidation failed");
+    renderApp();
+
+    expect(screen.getByRole("button", { name: "Spawn workflow: Bug Hunter" })).toBeInTheDocument();
+    expect(screen.queryByText("Failed to load workflows")).not.toBeInTheDocument();
+  });
+
+  it("navigates to the new agent even if the agent list refresh fails", async () => {
+    const user = userEvent.setup();
+    mutateAgents.mockImplementation(async () => {
+      throw new Error("mutate failed");
+    });
+    renderApp();
+
+    await user.click(screen.getByRole("button", { name: "Launch Researcher" }));
+
+    await waitFor(() => expect(createAgent).toHaveBeenCalledWith({ agentType: "research", headless: false }));
+    expect(screen.getByText(/Chat with agent-2/)).toBeInTheDocument();
+  });
+
+  it("navigates away from a deleted agent's chat even if the list refresh fails", async () => {
+    const user = userEvent.setup();
+    agentList = [runningAgent];
+    mutateAgents.mockImplementation(async () => {
+      throw new Error("mutate failed");
+    });
+    renderApp("/agent/agent-1");
+
+    await user.click(screen.getByRole("button", { name: "Delete agent Code Engineer #1" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => expect(deleteAgent).toHaveBeenCalledTimes(1));
+    expect(screen.getByText("Select an agent type")).toBeInTheDocument();
+    expect(screen.queryByText(/Chat with agent-1/)).not.toBeInTheDocument();
   });
 });

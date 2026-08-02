@@ -3,19 +3,48 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
-const helper = {
+type BotFixture = {
+  name: string;
+  displayName: string;
+  agentType: string;
+  directMessages: "listed" | "anyone" | "none";
+  requireMention: boolean;
+  users: { target: string; service: string; userId: string; role: "admin" | "user" }[];
+  channels: {
+    name: string;
+    target: string;
+    service: string;
+    channelId: string;
+    agentType: string;
+    allowedUsers: string[];
+    connected: boolean;
+  }[];
+  conversations: {
+    key: string;
+    service: string;
+    conversationId: string;
+    agentId: string;
+    agentType: string;
+    channelName?: string;
+    startedAt: number;
+    lastActivityAt: number;
+    busy: boolean;
+  }[];
+};
+
+const helper: BotFixture = {
   name: "helper",
   displayName: "Helper",
   agentType: "assistant",
-  directMessages: "listed" as const,
+  directMessages: "listed",
   requireMention: true,
-  users: [{ target: "slack:U-admin", service: "slack", userId: "U-admin", role: "admin" as const }],
+  users: [{ target: "slack:U-admin", service: "slack", userId: "U-admin", role: "admin" }],
   channels: [{ name: "engineering", target: "slack:C-eng", service: "slack", channelId: "C-eng", agentType: "assistant", allowedUsers: [], connected: true }],
   conversations: [],
 };
 
 let botsData: {
-  bots: (typeof helper)[];
+  bots: BotFixture[];
   services: { name: string; maxMessageLength: number }[];
   groups: { name: string; members: string[] }[];
   discoveredChannels: { target: string; service: string; channelId: string; title?: string; discoveredAt: number; invitedBy?: string }[];
@@ -64,12 +93,12 @@ void mock.module("../../components/ui/toast.tsx", () => ({
 
 const { default: BotsDashboard } = await import("./BotsDashboard.tsx");
 
-function renderDashboard() {
+function renderDashboard(initialPath = "/bots") {
   return render(
-    <MemoryRouter initialEntries={["/bots"]}>
+    <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
-        <Route path="/bots" element={<BotsDashboard />} />
-        <Route path="/configuration" element={<div>Configuration</div>} />
+        <Route path="/bots/:botId?" element={<BotsDashboard />} />
+        <Route path="/configuration/:plugin?" element={<div>Configuration</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -244,6 +273,74 @@ describe("BotsDashboard", () => {
 
       const step = screen.getByText("Connect a messaging service");
       expect(step.className).toContain("line-through");
+    });
+  });
+
+  describe("sending a message", () => {
+    it("prefills a conversation target that is not already in the picker", async () => {
+      botsData = {
+        bots: [
+          {
+            ...helper,
+            conversations: [
+              {
+                key: "slack:D-stranger",
+                service: "slack",
+                conversationId: "D-stranger",
+                agentId: "agent-1",
+                agentType: "assistant",
+                startedAt: Date.now() - 60_000,
+                lastActivityAt: Date.now() - 10_000,
+                busy: false,
+              },
+            ],
+          },
+        ],
+        services: [{ name: "slack", maxMessageLength: 3900 }],
+        groups: [],
+        discoveredChannels: [],
+      };
+
+      const user = userEvent.setup();
+      renderDashboard();
+
+      // Conversation row action — not the header "Send message" control.
+      await user.click(screen.getByRole("button", { name: /^message$/i }));
+
+      expect(screen.getByRole("heading", { name: /send a message/i })).toBeTruthy();
+      // Unlisted DM keys are free-text targets, not swapped for the first picker option.
+      expect(screen.getByDisplayValue("slack:D-stranger")).toBeTruthy();
+    });
+  });
+
+  describe("joining a discovered channel", () => {
+    it("sends the discovered title so the channel is named sensibly", async () => {
+      botsData = {
+        bots: [helper],
+        services: [{ name: "slack", maxMessageLength: 3900 }],
+        groups: [],
+        discoveredChannels: [
+          {
+            target: "slack:C-new",
+            service: "slack",
+            channelId: "C-new",
+            title: "product-design",
+            discoveredAt: Date.now() - 5_000,
+          },
+        ],
+      };
+
+      const user = userEvent.setup();
+      renderDashboard();
+
+      await user.click(screen.getByRole("button", { name: /^join$/i }));
+
+      await waitFor(() => expect(joinChannel).toHaveBeenCalledTimes(1));
+      expect(joinChannel.mock.calls[0]![0]).toEqual({
+        bot: "helper",
+        target: "slack:C-new",
+        name: "product-design",
+      });
     });
   });
 });

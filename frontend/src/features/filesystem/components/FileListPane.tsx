@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { toastManager } from "../../../components/ui/toast.tsx";
 import { cn } from "../../../lib/utils.ts";
 import { filesystemRPCClient, useDirectoryListing, useWorkspaceFileSearch } from "../../../rpc.ts";
-import { getBasename, getFileIcon, isHiddenEntry } from "../fsUtils.ts";
+import { getBasename, getFileIcon, isHiddenEntry, isHiddenPath } from "../fsUtils.ts";
 
 interface FileListPaneProps {
   provider: string | null;
@@ -46,8 +46,11 @@ export default function FileListPane({
 
   const sortedFiles = useMemo(() => {
     if (isSearching) {
-      const files = workspaceSearch.data?.files ?? [];
-      return [...files].sort((a, b) => {
+      let files = [...(workspaceSearch.data?.files ?? [])];
+      if (!showHidden) {
+        files = files.filter(f => !isHiddenPath(f));
+      }
+      return files.sort((a, b) => {
         const dA = a.endsWith("/"),
           dB = b.endsWith("/");
         if (dA && !dB) return -1;
@@ -87,6 +90,15 @@ export default function FileListPane({
 
   const isLoading = isSearching ? workspaceSearch.isLoading : listing.isLoading;
   const loadError = isSearching ? workspaceSearch.error : listing.error;
+
+  // provider can briefly be null while parents load; avoid a false "empty directory" flash
+  if (!provider) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="w-5 h-5 text-muted animate-spin" />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -231,7 +243,8 @@ export default function FileListPane({
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                     )}
-                    {onDelete && (
+                    {/* deleteFile RPC only supports files, not directories */}
+                    {onDelete && !isDir && (
                       <button
                         type="button"
                         onClick={() => onDelete(file)}

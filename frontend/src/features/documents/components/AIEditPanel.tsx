@@ -157,7 +157,7 @@ export default function AIEditPanel({
       {/* Action bar — only when selection is active */}
       {selection && (
         <div className="shrink-0 border-t border-primary p-3 flex flex-col gap-2">
-          {response && !loading && (
+          {response !== null && !loading && (
             <button
               type="button"
               onClick={onApply}
@@ -182,7 +182,7 @@ export default function AIEditPanel({
               className="w-full flex items-center justify-center gap-2 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition-colors focus-ring shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              {response ? "Re-generate" : "Ask AI"}
+              {response !== null ? "Re-generate" : "Ask AI"}
             </button>
           )}
         </div>

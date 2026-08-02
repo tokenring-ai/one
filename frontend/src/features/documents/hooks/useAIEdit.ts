@@ -31,19 +31,42 @@ Respond with ONLY the rewritten text. No explanation, no preamble, no code fence
       try {
         // Snapshot position before sending so we only read the new response
         const startResult = await agentRPCClient.getAgentEvents({ agentId, fromPosition: 0 });
-        if (startResult.status !== "success") return;
+        if (startResult.status !== "success") {
+          if (!ac.signal.aborted) toastManager.error("Could not connect to the AI agent", { duration: 4000 });
+          return;
+        }
         await agentRPCClient.sendInput({ agentId, input: { from: "Documents app", message: prompt } });
 
         let accumulated = "";
         let gotResponse = false;
 
         for await (const chunk of agentRPCClient.streamAgentEvents({ agentId, fromPosition: startResult.position }, ac.signal)) {
-          if (chunk.status !== "success") continue;
+          switch (chunk.status) {
+            case "agentNotFound":
+              if (!ac.signal.aborted) toastManager.error("AI agent is no longer available", { duration: 4000 });
+              return;
+            case "success":
+              break;
+            default: {
+              const { status } = chunk satisfies never as { status: string };
+              throw new Error(`Unexpected agent event stream status: ${status}`);
+            }
+          }
           for (const event of chunk.events) {
             if (event.type === "output.chat") {
               accumulated += event.message;
               setResponse(accumulated);
               gotResponse = true;
+            }
+            // Definitive completion (success / error / cancel) — stream stays open forever otherwise
+            if (event.type === "agent.response") {
+              if (event.status === "error" && !ac.signal.aborted) {
+                toastManager.error(event.message || "AI edit failed", { duration: 4000 });
+              } else if (event.status === "success" && !gotResponse && !ac.signal.aborted) {
+                toastManager.warning("AI returned no text to apply", { duration: 3000 });
+              }
+              setLoading(false);
+              return;
             }
             if (event.type === "agent.status" && event.inputExecutionQueue.length === 0 && gotResponse) {
               setLoading(false);

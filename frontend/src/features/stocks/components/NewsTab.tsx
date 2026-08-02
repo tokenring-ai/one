@@ -1,11 +1,20 @@
 import { ExternalLink, Loader2, Newspaper } from "lucide-react";
 import { useMemo } from "react";
 import { useNewsRPMIndexedDataSearchResults, useStockHeadlines } from "../../../rpc.ts";
+import { parseHistoryDate } from "../formatters.ts";
 import type { StockNewsItem } from "../types.ts";
 
 interface NewsTabProps {
   symbol: string;
   symbolId?: string;
+}
+
+function formatNewsDate(raw: string | number | null | undefined): string {
+  if (raw == null || raw === "") return "";
+  if (typeof raw === "string" && /^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+  const ts = typeof raw === "number" ? parseHistoryDate(raw) : Date.parse(raw);
+  if (!ts || Number.isNaN(ts)) return typeof raw === "string" ? raw.slice(0, 10) : "";
+  return new Date(ts).toLocaleDateString("en-CA");
 }
 
 function normalizeItem(item: StockNewsItem | Record<string, unknown>): {
@@ -18,8 +27,7 @@ function normalizeItem(item: StockNewsItem | Record<string, unknown>): {
   const row = item as StockNewsItem;
   const slug = row.slug ?? row.Slug ?? "";
   const headline = row.headline ?? row.Headline ?? row.title ?? "(no headline)";
-  const rawDate = row.date ?? row.Date ?? row.publishDate ?? "";
-  const date = rawDate ? String(rawDate).slice(0, 10) : "";
+  const date = formatNewsDate(row.date ?? row.Date ?? row.publishDate);
   const provider = row.provider ?? row.Provider ?? row.source ?? "";
   const link = slug ? `https://www.financialcontent.com/article/${slug}` : (row.link ?? row.Link ?? "");
   return {

@@ -90,6 +90,16 @@ describe("DocumentsApp", () => {
     expect(screen.getByRole("button", { name: /^Save$/i })).toBeInTheDocument();
   });
 
+  it("allows Save As for a clean untitled document", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const saveAs = screen.getByRole("button", { name: /Save As/i });
+    expect(saveAs).not.toBeDisabled();
+    await user.click(saveAs);
+    expect(screen.getByRole("dialog", { name: /Save As/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("documents/my-file.md")).toBeInTheDocument();
+  });
+
   it("opens the Save As modal when saving an unsaved document", async () => {
     const user = userEvent.setup();
     renderApp();

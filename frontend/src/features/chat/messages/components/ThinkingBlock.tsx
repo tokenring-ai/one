@@ -2,6 +2,7 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { markdownLinkComponents } from "../../../../components/chat/MarkdownLink.tsx";
 
 interface ThinkingBlockProps {
   message: string;
@@ -22,7 +23,9 @@ export default function ThinkingBlock({ message }: ThinkingBlockProps) {
       </button>
       {isExpanded && (
         <div className="mt-1.5 ml-5 pl-2 border-l border-primary/20 prose prose-sm dark:prose-invert text-secondary italic">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{message}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownLinkComponents}>
+            {message}
+          </ReactMarkdown>
         </div>
       )}
     </div>

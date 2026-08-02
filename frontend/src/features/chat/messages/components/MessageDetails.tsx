@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { markdownLinkComponents } from "../../../../components/chat/MarkdownLink.tsx";
 
 export default function MessageDetails({ details }: { details: string[] }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -20,7 +21,9 @@ export default function MessageDetails({ details }: { details: string[] }) {
       </button>
       {isExpanded && (
         <div className="mt-1 prose prose-sm dark:prose-invert">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdownList(details)}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownLinkComponents}>
+            {markdownList(details)}
+          </ReactMarkdown>
         </div>
       )}
     </div>

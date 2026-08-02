@@ -1,9 +1,9 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { AlertTriangle, CheckCircle2, Database, Loader2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toastManager } from "../../../components/ui/toast.tsx";
 import { type ConfigScope, formatConfigIssues, SENSITIVE_KEEP, updateConfigLayer } from "../../../lib/configWrites.ts";
-import { databaseRPCClient } from "../../../rpc.ts";
+import { configRPCClient, databaseRPCClient } from "../../../rpc.ts";
 import { CONNECTION_STRING_PLACEHOLDER } from "../constants.ts";
 import type { DatasourceSummary } from "../types.ts";
 
@@ -17,13 +17,11 @@ import type { DatasourceSummary } from "../types.ts";
  */
 export default function DatasourceFormModal({
   existing,
-  scope,
   onClose,
   onSaved,
 }: {
   /** Present when editing; absent when adding. */
   existing?: DatasourceSummary;
-  scope: ConfigScope;
   onClose: () => void;
   onSaved: (name: string) => void;
 }) {
@@ -31,9 +29,32 @@ export default function DatasourceFormModal({
   const [name, setName] = useState(existing?.name ?? "");
   const [url, setUrl] = useState("");
   const [allowWrites, setAllowWrites] = useState(existing?.allowWrites ?? false);
+  // Project is the usual place for shared connection strings; user can still choose.
+  // When editing, we prefer the scope that already owns this name (project wins if both).
+  const [scope, setScope] = useState<ConfigScope>("project");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!existing) return;
+
+    const abortController = new AbortController();
+    void (async () => {
+      const signal = abortController.signal;
+      try {
+        const values = await configRPCClient.getConfigValues({});
+        if (signal.aborted) return;
+        const projectDb = values.overrides.project.database as Record<string, unknown> | undefined;
+        const userDb = values.overrides.user.database as Record<string, unknown> | undefined;
+        if (projectDb && existing.name in projectDb) setScope("project");
+        else if (userDb && existing.name in userDb) setScope("user");
+      } catch {
+        // Leave the default — the user can still pick a scope manually.
+      }
+    })();
+    return () => abortController.abort();
+  }, [existing]);
 
   const trimmedName = name.trim();
   const trimmedUrl = url.trim();
@@ -171,6 +192,21 @@ export default function DatasourceFormModal({
               </span>
             </span>
           </label>
+
+          <div>
+            <label htmlFor="datasource-scope" className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">
+              Save to
+            </label>
+            <select
+              id="datasource-scope"
+              value={scope}
+              onChange={e => setScope(e.target.value as ConfigScope)}
+              className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-sm text-primary focus-accent cursor-pointer"
+            >
+              <option value="project">Project configuration — everyone on this project</option>
+              <option value="user">User configuration — only you</option>
+            </select>
+          </div>
 
           {testResult && (
             <div

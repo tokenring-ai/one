@@ -79,9 +79,15 @@ export const researchRPCClient = createWsRPCClient(baseURL, ResearchRpcSchema, r
 export const configRPCClient = createWsRPCClient(baseURL, ConfigRpcSchema, rpcAuth);
 export const databaseRPCClient = createWsRPCClient(baseURL, DatabaseRpcSchema, rpcAuth);
 
-export function useAvailableCommands(agentId: string) {
-  return useTypedSWR(agentId ? `/agent/getAvailableCommands/${agentId}` : null, async () => {
-    const result = await agentRPCClient.getAvailableCommands({ agentId });
+/**
+ * Registered agent commands (name, description, inputSchema).
+ * Pass an agent id for the agent-scoped view, or omit to list the app-level registry
+ * (used by the workflow editor when no agent is open).
+ */
+export function useAvailableCommands(agentId?: string | null) {
+  const key = agentId ? `/agent/getAvailableCommands/${agentId}` : "/agent/getAvailableCommands";
+  return useTypedSWR(key, async () => {
+    const result = await agentRPCClient.getAvailableCommands(agentId ? { agentId } : {});
     return result.status === "success" ? result.commands : null;
   });
 }
@@ -117,6 +123,24 @@ export function useAgentTypes() {
 
 export function useWorkflows() {
   return useTypedSWR("/workflow/listWorkflows", () => workflowRPCClient.listWorkflows({}));
+}
+
+/** Everything the debugger can capture right now: the app itself plus each running agent. */
+export function useDebugTargets() {
+  return useTypedSWR("/app/listDebugTargets", async () => (await appRPCClient.listDebugTargets({})).targets, { refreshInterval: 5000 });
+}
+
+/** Snapshot files already written to `<dataDirectory>/debug`, newest first. */
+export function useDebugSnapshots() {
+  return useTypedSWR("/app/listDebugSnapshots", async () => (await appRPCClient.listDebugSnapshots({})).snapshots);
+}
+
+/** Live recorder status, so the record button reflects captures made elsewhere. */
+export function useDebugRecording() {
+  return useRPCStreamSWR({
+    key: "debug-recording",
+    subscribe: signal => appRPCClient.streamDebugRecording({}, signal),
+  });
 }
 
 /** Live view of every tracked workflow run: which agent is running it and which step it is on. */

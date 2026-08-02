@@ -33,15 +33,36 @@ function packageShortName(name: string): string {
 
 async function copyText(text: string, label: string) {
   try {
-    await navigator.clipboard.writeText(text);
-    toastManager.success(`Copied ${label}`, { duration: 2000 });
+    //oxlint-disable typescript/no-unnecessary-condition
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      toastManager.success(`Copied ${label}`, { duration: 2000 });
+      return;
+    }
   } catch {
-    toastManager.error("Could not copy to clipboard", { duration: 3000 });
+    // fall through to execCommand fallback
   }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (ok) {
+      toastManager.success(`Copied ${label}`, { duration: 2000 });
+      return;
+    }
+  } catch {
+    // ignore
+  }
+  toastManager.error("Could not copy to clipboard", { duration: 3000 });
 }
 
 function PluginCard({ plugin, selected, onSelect }: { plugin: InstalledPlugin; selected: boolean; onSelect: () => void }) {
-  const configHref = `/configuration?plugin=${encodeURIComponent(plugin.name)}`;
+  const configHref = `/configuration/${encodeURIComponent(plugin.name)}`;
 
   return (
     <div
@@ -97,7 +118,7 @@ function PluginCard({ plugin, selected, onSelect }: { plugin: InstalledPlugin; s
 }
 
 function PluginDetail({ plugin, onClose }: { plugin: InstalledPlugin; onClose: () => void }) {
-  const configHref = `/configuration?plugin=${encodeURIComponent(plugin.name)}`;
+  const configHref = `/configuration/${encodeURIComponent(plugin.name)}`;
 
   return (
     <aside className="bg-secondary border border-primary rounded-xl p-4 space-y-3" aria-label={`Details for ${plugin.displayName}`}>
@@ -203,7 +224,11 @@ export default function PluginsApp() {
     });
   }, [installedPlugins, search, filter, sort]);
 
-  const selectedPlugin = selectedName ? (installedPlugins.find(plugin => plugin.name === selectedName) ?? null) : null;
+  // Only surface details for plugins still visible under current filters.
+  const selectedPlugin = selectedName ? (filteredPlugins.find(plugin => plugin.name === selectedName) ?? null) : null;
+  // Treat as hard failure only when there is no cached payload (matches other apps).
+  const hardError = Boolean(plugins.error && !plugins.data);
+  const showStats = !(plugins.isLoading && !plugins.data) && !hardError;
 
   useEffect(() => {
     if (selectedName && !plugins.isLoading && !installedPlugins.some(plugin => plugin.name === selectedName)) {
@@ -229,10 +254,10 @@ export default function PluginsApp() {
         <button
           type="button"
           onClick={() => void plugins.mutate()}
-          disabled={plugins.isLoading}
+          disabled={plugins.isLoading && !plugins.data}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary hover:bg-hover border border-primary transition-colors focus-ring disabled:opacity-50"
         >
-          <RefreshCw className={cn("w-3.5 h-3.5", plugins.isLoading && "animate-spin")} />
+          <RefreshCw className={cn("w-3.5 h-3.5", plugins.isValidating && "animate-spin")} />
           Refresh
         </button>
       </AppPageHeader>
@@ -242,7 +267,7 @@ export default function PluginsApp() {
           {/* Stats + filters */}
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              {!plugins.isLoading && !plugins.error && (
+              {showStats && (
                 <>
                   <span className="text-2xs px-2 py-0.5 bg-secondary border border-primary rounded-full text-muted">{installedPlugins.length} installed</span>
                   <span className="text-2xs px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-full">
@@ -304,55 +329,68 @@ export default function PluginsApp() {
               </Link>
             </div>
 
-            {plugins.isLoading && installedPlugins.length === 0 ? (
+            {plugins.isLoading && !plugins.data ? (
               <LoadingState message="Loading plugins…" className="py-16" />
-            ) : plugins.error ? (
+            ) : hardError ? (
               <ErrorState title="Failed to load plugins" error={plugins.error} onRetry={() => void plugins.mutate()} variant="inline" className="py-6" />
-            ) : installedPlugins.length === 0 ? (
-              <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
-                <Package className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
-                <p className="text-sm font-medium text-secondary mb-1">No plugins installed</p>
-                <p className="text-2xs text-muted max-w-sm mx-auto">
-                  Plugins are bundled with your TokenRing instance at startup. Once loaded, they appear here for inspection and configuration.
-                </p>
-              </div>
-            ) : filteredPlugins.length === 0 ? (
-              <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
-                <Search className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
-                <p className="text-sm font-medium text-secondary mb-1">No matching plugins</p>
-                <p className="text-2xs text-muted max-w-sm mx-auto mb-3">
-                  Nothing matches{search.trim() ? ` “${search.trim()}”` : ""}
-                  {filter === "configurable" ? " in configurable plugins" : ""}.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearch("");
-                    setFilter("all");
-                  }}
-                  className="text-2xs text-accent hover:text-accent-soft transition-colors focus-ring cursor-pointer"
-                >
-                  Clear filters
-                </button>
-              </div>
             ) : (
-              <div className={cn("grid gap-4", selectedPlugin ? "lg:grid-cols-[1fr_20rem]" : "grid-cols-1")}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0 content-start">
-                  {filteredPlugins.map(plugin => (
-                    <PluginCard
-                      key={plugin.name}
-                      plugin={plugin}
-                      selected={plugin.name === selectedName}
-                      onSelect={() => setSelectedName(current => (current === plugin.name ? null : plugin.name))}
-                    />
-                  ))}
-                </div>
-                {selectedPlugin && (
-                  <div className="lg:sticky lg:top-4 self-start">
-                    <PluginDetail plugin={selectedPlugin} onClose={() => setSelectedName(null)} />
+              <>
+                {plugins.error && (
+                  <ErrorState
+                    title="Could not refresh plugins"
+                    error={plugins.error}
+                    onRetry={() => void plugins.mutate()}
+                    variant="inline"
+                    className="py-3 mb-3"
+                  />
+                )}
+                {installedPlugins.length === 0 ? (
+                  <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
+                    <Package className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
+                    <p className="text-sm font-medium text-secondary mb-1">No plugins installed</p>
+                    <p className="text-2xs text-muted max-w-sm mx-auto">
+                      Plugins are bundled with your TokenRing instance at startup. Once loaded, they appear here for inspection and configuration.
+                    </p>
+                  </div>
+                ) : filteredPlugins.length === 0 ? (
+                  <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
+                    <Search className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
+                    <p className="text-sm font-medium text-secondary mb-1">No matching plugins</p>
+                    <p className="text-2xs text-muted max-w-sm mx-auto mb-3">
+                      Nothing matches{search.trim() ? ` “${search.trim()}”` : ""}
+                      {filter === "configurable" ? " in configurable plugins" : ""}.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearch("");
+                        setFilter("all");
+                      }}
+                      className="text-2xs text-accent hover:text-accent-soft transition-colors focus-ring cursor-pointer"
+                    >
+                      Clear filters
+                    </button>
+                  </div>
+                ) : (
+                  <div className={cn("grid gap-4", selectedPlugin ? "lg:grid-cols-[1fr_20rem]" : "grid-cols-1")}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0 content-start">
+                      {filteredPlugins.map(plugin => (
+                        <PluginCard
+                          key={plugin.name}
+                          plugin={plugin}
+                          selected={plugin.name === selectedName}
+                          onSelect={() => setSelectedName(current => (current === plugin.name ? null : plugin.name))}
+                        />
+                      ))}
+                    </div>
+                    {selectedPlugin && (
+                      <div className="lg:sticky lg:top-4 self-start">
+                        <PluginDetail plugin={selectedPlugin} onClose={() => setSelectedName(null)} />
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
+              </>
             )}
           </section>
 

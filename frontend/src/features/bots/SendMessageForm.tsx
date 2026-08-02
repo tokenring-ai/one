@@ -25,8 +25,15 @@ const CUSTOM_TARGET = "__custom__";
 const TARGET_PATTERN = /^[^:]+:.+/;
 
 export default function SendMessageForm({ options, initialTarget, onSent, onCancel }: SendMessageFormProps) {
+  // Prefer a known option; if the caller prefilled something outside the list
+  // (a live conversation key, an unlisted DM, a forum topic), fall back to free text
+  // rather than silently swapping in the first picker entry.
   const knownTarget = initialTarget && options.some(option => option.target === initialTarget) ? initialTarget : undefined;
-  const [selected, setSelected] = useState<string>(knownTarget ?? (options.length > 0 ? options[0]!.target : CUSTOM_TARGET));
+  const [selected, setSelected] = useState<string>(() => {
+    if (knownTarget) return knownTarget;
+    if (initialTarget) return CUSTOM_TARGET;
+    return options.length > 0 ? options[0]!.target : CUSTOM_TARGET;
+  });
   const [customTarget, setCustomTarget] = useState(knownTarget ? "" : (initialTarget ?? ""));
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);

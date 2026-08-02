@@ -24,7 +24,10 @@ export interface PlatformDef {
   kind: PlatformKind;
 }
 
-/** Platforms the Social app surfaces. Only Slack and Telegram ship in this product today. */
+/**
+ * Platforms the Social app surfaces.
+ * Slack, Telegram, Discord, X, and Reddit are messaging transports for bots.
+ */
 export const SOCIAL_PLATFORMS: PlatformDef[] = [
   {
     id: "slack",
@@ -47,29 +50,29 @@ export const SOCIAL_PLATFORMS: PlatformDef[] = [
   {
     id: "discord",
     name: "Discord",
-    description: "Servers and channels (plugin not bundled)",
+    description: "Servers, channels, and DMs via bot accounts",
     color: "from-accent to-violet-600",
     pluginName: "@tokenring-ai/discord",
     configSlice: "discord",
     kind: "messaging",
   },
   {
-    id: "reddit",
-    name: "Reddit",
-    description: "Browse and post to communities (plugin not bundled)",
-    color: "from-orange-500 to-red-600",
-    pluginName: "@tokenring-ai/reddit",
-    configSlice: "reddit",
-    kind: "social",
-  },
-  {
     id: "x",
     name: "X / Twitter",
-    description: "Post and browse X (plugin not bundled)",
+    description: "Mentions and DMs via X accounts",
     color: "from-gray-700 to-gray-900",
     pluginName: "@tokenring-ai/x",
     configSlice: "x",
-    kind: "social",
+    kind: "messaging",
+  },
+  {
+    id: "reddit",
+    name: "Reddit",
+    description: "Subreddit comments and private messages via bot accounts",
+    color: "from-orange-500 to-red-600",
+    pluginName: "@tokenring-ai/reddit",
+    configSlice: "reddit",
+    kind: "messaging",
   },
 ];
 
@@ -163,7 +166,9 @@ export function statusDetail(info: PlatformStatus): string {
   switch (status) {
     case "connected": {
       const n = connectedAccountNames.length;
-      return n === 1 ? `1 account live (${connectedAccountNames[0]})` : `${n} accounts live`;
+      if (n === 1) return `1 account live (${connectedAccountNames[0]})`;
+      if (n <= 3) return `${n} accounts live (${connectedAccountNames.join(", ")})`;
+      return `${n} accounts live`;
     }
     case "configured": {
       if (platform.kind === "messaging" && accountNames.length > 0) {

@@ -7,12 +7,24 @@ import StatCard from "./StatCard.tsx";
 
 interface OverviewTabProps {
   quote: StockQuote | undefined;
+  quoteLoading?: boolean;
+  quoteError?: boolean;
   history: StockHistoricalRow[] | undefined;
   historyLoading?: boolean;
   historyError?: boolean;
 }
 
-export default function OverviewTab({ quote, history, historyLoading, historyError }: OverviewTabProps) {
+function money(n: number | null | undefined): string {
+  return n != null && !Number.isNaN(Number(n)) ? `$${fmtPrice(n)}` : "—";
+}
+
+export default function OverviewTab({ quote, quoteLoading, quoteError, history, historyLoading, historyError }: OverviewTabProps) {
+  if (quoteLoading && !quote) {
+    return <div className="py-8 text-center text-muted text-sm">Loading quote…</div>;
+  }
+  if (quoteError && !quote) {
+    return <div className="py-8 text-center text-red-400 text-sm">Failed to load quote</div>;
+  }
   if (!quote) return <div className="py-8 text-center text-muted text-sm">No quote data</div>;
 
   const price = quote.Price;
@@ -26,19 +38,31 @@ export default function OverviewTab({ quote, history, historyLoading, historyErr
           <div className="flex justify-between items-baseline mb-2">
             <span className="text-2xs uppercase tracking-wide text-muted">Day Range</span>
             <span className="text-2xs text-muted font-mono">
-              ${fmtPrice(quote.Low)} – ${fmtPrice(quote.High)}
+              {money(quote.Low)} – {money(quote.High)}
             </span>
           </div>
-          <RangeBar low={quote.Low} high={quote.High} current={price} lowLabel={`L $${fmtPrice(quote.Low)}`} highLabel={`H $${fmtPrice(quote.High)}`} />
+          <RangeBar
+            low={quote.Low}
+            high={quote.High}
+            current={price}
+            lowLabel={quote.Low != null ? `L ${money(quote.Low)}` : "L —"}
+            highLabel={quote.High != null ? `H ${money(quote.High)}` : "H —"}
+          />
         </div>
         <div className="px-4 py-3 bg-secondary rounded-xl border border-primary">
           <div className="flex justify-between items-baseline mb-2">
             <span className="text-2xs uppercase tracking-wide text-muted">52-Week Range</span>
             <span className="text-2xs text-muted font-mono">
-              ${fmtPrice(quote.Low52)} – ${fmtPrice(quote.High52)}
+              {money(quote.Low52)} – {money(quote.High52)}
             </span>
           </div>
-          <RangeBar low={quote.Low52} high={quote.High52} current={price} lowLabel={`L $${fmtPrice(quote.Low52)}`} highLabel={`H $${fmtPrice(quote.High52)}`} />
+          <RangeBar
+            low={quote.Low52}
+            high={quote.High52}
+            current={price}
+            lowLabel={quote.Low52 != null ? `L ${money(quote.Low52)}` : "L —"}
+            highLabel={quote.High52 != null ? `H ${money(quote.High52)}` : "H —"}
+          />
         </div>
       </div>
 
@@ -61,8 +85,8 @@ export default function OverviewTab({ quote, history, historyLoading, historyErr
       <div>
         <div className="text-2xs uppercase tracking-wide text-muted font-bold mb-2 px-1">Key Stats</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-          <StatCard label="Open" value={`$${fmtPrice(quote.Open)}`} />
-          <StatCard label="Prev Close" value={`$${fmtPrice(quote.PrevClose)}`} />
+          <StatCard label="Open" value={money(quote.Open)} />
+          <StatCard label="Prev Close" value={money(quote.PrevClose)} />
           <StatCard label="Volume" value={fmtVol(quote.Volume)} sub={quote.AverageVolume ? `Avg ${fmtVol(quote.AverageVolume)}` : undefined} />
           <StatCard label="Market Cap" value={fmtMarketCap(quote.Price, quote.SharesOutstanding)} />
           <StatCard label="P/E Ratio" value={peRatio != null ? fmt(peRatio) : "—"} sub={quote.EPS != null ? `EPS $${fmt(quote.EPS)}` : undefined} />
@@ -73,19 +97,19 @@ export default function OverviewTab({ quote, history, historyLoading, historyErr
           />
           <StatCard
             label="50-Day MA"
-            value={`$${fmtPrice(quote.MovingAverage50)}`}
+            value={money(quote.MovingAverage50)}
             accent={price && quote.MovingAverage50 ? (price >= quote.MovingAverage50 ? "up" : "down") : "neutral"}
           />
           <StatCard
             label="200-Day MA"
-            value={`$${fmtPrice(quote.MovingAverage200)}`}
+            value={money(quote.MovingAverage200)}
             accent={price && quote.MovingAverage200 ? (price >= quote.MovingAverage200 ? "up" : "down") : "neutral"}
           />
-          <StatCard label="Bid" value={quote.Bid != null ? `$${fmtPrice(quote.Bid)}` : "—"} sub={quote.BidSize ? `× ${fmtVol(quote.BidSize)}` : undefined} />
-          <StatCard label="Ask" value={quote.Ask != null ? `$${fmtPrice(quote.Ask)}` : "—"} sub={quote.AskSize ? `× ${fmtVol(quote.AskSize)}` : undefined} />
+          <StatCard label="Bid" value={money(quote.Bid)} sub={quote.BidSize ? `× ${fmtVol(quote.BidSize)}` : undefined} />
+          <StatCard label="Ask" value={money(quote.Ask)} sub={quote.AskSize ? `× ${fmtVol(quote.AskSize)}` : undefined} />
           <StatCard
             label="After Hours"
-            value={quote.AfterHoursPrice != null ? `$${fmtPrice(quote.AfterHoursPrice)}` : "—"}
+            value={money(quote.AfterHoursPrice)}
             sub={quote.AfterHoursTradeTime ? fmtTs(quote.AfterHoursTradeTime, "datetime") : undefined}
           />
           <StatCard label="Shares Out" value={quote.SharesOutstanding ? fmtVol(quote.SharesOutstanding) : "—"} />

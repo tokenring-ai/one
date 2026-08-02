@@ -1,6 +1,6 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, Lock, Pencil, Plus, RefreshCw, Save, Search, Trash2, Upload, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
@@ -16,6 +16,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const DEFAULT_CATEGORIES = ["env", "token"] as const;
+
+/** Auto-hide revealed secrets so values do not linger on screen / in React state. */
+const REVEAL_AUTO_HIDE_MS = 30_000;
 
 function categoryLabel(id: string): string {
   return CATEGORY_LABELS[id] ?? id;
@@ -80,12 +83,35 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
   const [revealedValue, setRevealedValue] = useState<string | null>(null);
   const [revealing, setRevealing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const copiedTimeoutRef = useRef<number | null>(null);
 
   const resetReveal = () => {
     setRevealed(false);
     setRevealedValue(null);
-    setCopied(false);
   };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setValue("");
+    setShowValue(false);
+  };
+
+  // Drop revealed secrets from UI/state after a short window (and on unmount).
+  useEffect(() => {
+    if (!revealed) return;
+    const t = window.setTimeout(() => {
+      resetReveal();
+    }, REVEAL_AUTO_HIDE_MS);
+    return () => window.clearTimeout(t);
+  }, [revealed, revealedValue]);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimeoutRef.current != null) {
+        window.clearTimeout(copiedTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleReveal = async () => {
     if (revealed) {
@@ -109,7 +135,8 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
   };
 
   const handleCopy = async () => {
-    let text = revealedValue;
+    // Prefer already-revealed value; otherwise fetch for clipboard only (do not force reveal).
+    let text: string | null = revealed && revealedValue != null ? revealedValue : null;
     if (text == null) {
       setRevealing(true);
       try {
@@ -119,8 +146,6 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
           return;
         }
         text = result.value;
-        setRevealedValue(text);
-        setRevealed(true);
       } catch (err) {
         toastManager.error(formatError(err), { duration: 5000 });
         return;
@@ -128,11 +153,15 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
         setRevealing(false);
       }
     }
+    if (text == null) return;
     const ok = await copyText(text);
     if (ok) {
       setCopied(true);
       toastManager.success("Copied to clipboard", { duration: 2000 });
-      window.setTimeout(() => setCopied(false), 1500);
+      if (copiedTimeoutRef.current != null) {
+        window.clearTimeout(copiedTimeoutRef.current);
+      }
+      copiedTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
     } else {
       toastManager.error("Could not copy to clipboard", { duration: 3000 });
     }
@@ -145,9 +174,7 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
       const result = await vaultRPCClient.setItems({ updates: [{ category, key: keyName, value }] });
       await assertMutationOk(result, "Failed to save key");
       toastManager.success(`"${keyName}" saved`, { duration: 3000 });
-      setEditing(false);
-      setValue("");
-      setShowValue(false);
+      cancelEdit();
       resetReveal();
       onSaved();
     } catch (err) {
@@ -167,6 +194,9 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
       const result = await vaultRPCClient.deleteItems({ updates: [{ category, key: keyName }] });
       await assertMutationOk(result, "Failed to delete key");
       toastManager.success(`"${keyName}" deleted`, { duration: 3000 });
+      // Clear local secret state before the row may unmount after revalidate
+      resetReveal();
+      cancelEdit();
       onDeleted();
     } catch (err) {
       toastManager.error(formatError(err), { duration: 5000 });
@@ -274,11 +304,7 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
               onChange={e => setValue(e.target.value)}
               onKeyDown={e => {
                 if (e.key === "Enter") void handleSave();
-                if (e.key === "Escape") {
-                  setEditing(false);
-                  setValue("");
-                  setShowValue(false);
-                }
+                if (e.key === "Escape") cancelEdit();
               }}
               autoFocus
               className="w-full bg-input border border-primary rounded-lg py-1.5 pl-3 pr-8 text-xs text-primary placeholder-muted focus-accent font-mono"
@@ -305,11 +331,7 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
           </button>
           <button
             type="button"
-            onClick={() => {
-              setEditing(false);
-              setValue("");
-              setShowValue(false);
-            }}
+            onClick={cancelEdit}
             className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring cursor-pointer"
             aria-label="Cancel edit"
           >
@@ -330,6 +352,13 @@ function AddKeyForm({ category, onAdded }: { category: string; onAdded: () => vo
   const [showValue, setShowValue] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const resetForm = () => {
+    setKey("");
+    setValue("");
+    setShowValue(false);
+    setOpen(false);
+  };
+
   const handleSave = async () => {
     if (!key.trim() || !value) return;
     setSaving(true);
@@ -337,10 +366,7 @@ function AddKeyForm({ category, onAdded }: { category: string; onAdded: () => vo
       const result = await vaultRPCClient.setItems({ updates: [{ category, key: key.trim(), value }] });
       await assertMutationOk(result, "Failed to add key");
       toastManager.success(`"${key.trim()}" added`, { duration: 3000 });
-      setKey("");
-      setValue("");
-      setShowValue(false);
-      setOpen(false);
+      resetForm();
       onAdded();
     } catch (err) {
       toastManager.error(formatError(err), { duration: 5000 });
@@ -368,6 +394,9 @@ function AddKeyForm({ category, onAdded }: { category: string; onAdded: () => vo
         placeholder="Key name"
         value={key}
         onChange={e => setKey(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === "Escape") resetForm();
+        }}
         autoFocus
         className="w-full bg-input border border-primary rounded-lg py-1.5 px-3 text-xs text-primary placeholder-muted focus-accent font-mono"
       />
@@ -380,10 +409,7 @@ function AddKeyForm({ category, onAdded }: { category: string; onAdded: () => vo
             onChange={e => setValue(e.target.value)}
             onKeyDown={e => {
               if (e.key === "Enter") void handleSave();
-              if (e.key === "Escape") {
-                setOpen(false);
-                setShowValue(false);
-              }
+              if (e.key === "Escape") resetForm();
             }}
             className="w-full bg-input border border-primary rounded-lg py-1.5 pl-3 pr-8 text-xs text-primary placeholder-muted focus-accent font-mono"
           />
@@ -409,10 +435,7 @@ function AddKeyForm({ category, onAdded }: { category: string; onAdded: () => vo
         </button>
         <button
           type="button"
-          onClick={() => {
-            setOpen(false);
-            setShowValue(false);
-          }}
+          onClick={resetForm}
           className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring cursor-pointer"
           aria-label="Cancel"
         >

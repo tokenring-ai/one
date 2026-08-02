@@ -33,6 +33,7 @@ export default function OpenDocumentModal({ providers, initialProvider, onOpen, 
   const [searching, setSearching] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchGen = useRef(0);
 
   useEffect(() => {
     if (!provider && providers[0]) setProvider(providers[0]);
@@ -41,6 +42,15 @@ export default function OpenDocumentModal({ providers, initialProvider, onOpen, 
   useEffect(() => {
     searchRef.current?.focus();
   }, []);
+
+  // Escape closes the modal
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !opening) onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose, opening]);
 
   const loadDirectory = useCallback(async (dir: string, prov: string) => {
     if (!prov) return;
@@ -68,16 +78,18 @@ export default function OpenDocumentModal({ providers, initialProvider, onOpen, 
     if (provider) void loadDirectory(".", provider);
   }, [provider, loadDirectory]);
 
-  // Debounced workspace search for markdown files
+  // Debounced workspace search for markdown files (ignore stale responses)
   useEffect(() => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
     const q = query.trim();
     if (!q || !provider) {
+      searchGen.current += 1;
       setSearchResults(null);
       setSearching(false);
       return;
     }
     setSearching(true);
+    const gen = ++searchGen.current;
     searchTimer.current = setTimeout(() => {
       void (async () => {
         try {
@@ -86,12 +98,14 @@ export default function OpenDocumentModal({ providers, initialProvider, onOpen, 
             query: q,
             limit: 80,
           });
+          if (gen !== searchGen.current) return;
           setSearchResults(result.files.filter(isMarkdown));
         } catch (e: unknown) {
+          if (gen !== searchGen.current) return;
           setError(formatError(e));
           setSearchResults([]);
         } finally {
-          setSearching(false);
+          if (gen === searchGen.current) setSearching(false);
         }
       })();
     }, 250);

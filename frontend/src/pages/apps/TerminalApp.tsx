@@ -1,6 +1,6 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2, Plus, Terminal } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import TerminalTabBar from "../../components/terminal/TerminalTabBar.tsx";
@@ -27,8 +27,49 @@ export default function TerminalApp() {
   const [sessions, setSessions] = useState<Record<string, TerminalSession>>({});
   const [spawning, setSpawning] = useState(false);
   const [confirmClose, setConfirmClose] = useState<string | null>(null);
+  /**
+   * Names we have closed client-side but the list stream may still include until the next
+   * snapshot. Filtering them out avoids ghost tabs and auto-select re-opening a just-closed session.
+   */
+  const [hiddenNames, setHiddenNames] = useState<ReadonlySet<string>>(() => new Set());
+  /**
+   * Terminal just spawned: navigate immediately, but the list stream may lag. Avoid flashing
+   * "Terminal not found" for a session we know exists.
+   */
+  const [pendingOpenName, setPendingOpenName] = useState<string | null>(null);
 
-  const terminalList = terminals.data?.status === "success" ? terminals.data.terminals : EMPTY_TERMINALS;
+  const serverList = terminals.data?.status === "success" ? terminals.data.terminals : EMPTY_TERMINALS;
+
+  // Drop hidden entries once the server list no longer reports them.
+  useEffect(() => {
+    if (hiddenNames.size === 0) return;
+    const serverNames = new Set(serverList.map(t => t.name));
+    setHiddenNames(prev => {
+      let changed = false;
+      const next = new Set<string>();
+      for (const name of prev) {
+        if (serverNames.has(name)) {
+          next.add(name);
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [serverList, hiddenNames.size]);
+
+  // Clear the spawn-pending flag once the new session appears in the live list.
+  useEffect(() => {
+    if (pendingOpenName && serverList.some(t => t.name === pendingOpenName)) {
+      setPendingOpenName(null);
+    }
+  }, [pendingOpenName, serverList]);
+
+  const terminalList = useMemo(() => {
+    if (hiddenNames.size === 0) return serverList;
+    return serverList.filter(t => !hiddenNames.has(t.name));
+  }, [serverList, hiddenNames]);
+
   const listError = terminals.error ? formatError(terminals.error) : null;
   const firstTerminalName = terminalList[0]?.name;
 
@@ -85,6 +126,14 @@ export default function TerminalApp() {
       switch (result.status) {
         case "success": {
           const { terminalName } = result;
+          // Mark pending before navigation so a lagging list snapshot doesn't flash not-found.
+          setPendingOpenName(terminalName);
+          setHiddenNames(prev => {
+            if (!prev.has(terminalName)) return prev;
+            const next = new Set(prev);
+            next.delete(terminalName);
+            return next;
+          });
           await terminals.mutate();
           openTerminal(terminalName);
           break;
@@ -114,7 +163,27 @@ export default function TerminalApp() {
       const next = terminalList[index + 1] ?? terminalList[index - 1];
 
       try {
-        await terminalRPCClient.terminateTerminal({ terminalName: name });
+        const result = await terminalRPCClient.terminateTerminal({ terminalName: name });
+        switch (result.status) {
+          case "success":
+          case "terminalNotFound":
+            // Already gone server-side — still clean up the tab locally.
+            break;
+          case "terminalNotInteractive":
+            toastManager.error("Terminal could not be closed", { duration: 5000 });
+            return;
+          default: {
+            const exhaustive: never = result;
+            throw new Error(`Unexpected status: ${(exhaustive as { status: string }).status}`);
+          }
+        }
+
+        setHiddenNames(prev => {
+          const nextHidden = new Set(prev);
+          nextHidden.add(name);
+          return nextHidden;
+        });
+        setPendingOpenName(prev => (prev === name ? null : prev));
         setSessions(prev => {
           const remaining = { ...prev };
           delete remaining[name];
@@ -197,9 +266,12 @@ export default function TerminalApp() {
   }
 
   // A bookmarked or stale URL can name a terminal that no longer exists.
-  const missingTerminal = activeTerminalName !== null && !activeTerminal;
+  const awaitingPendingOpen = activeTerminalName !== null && !activeTerminal && activeTerminalName === pendingOpenName;
+  const missingTerminal = activeTerminalName !== null && !activeTerminal && !awaitingPendingOpen;
   // While auto-select is navigating to the first tab, avoid flashing the empty state.
   const awaitingAutoSelect = activeTerminalName === null && terminalList.length > 0;
+  // useTerminalOutput seeds initialData, so isLoading stays false; isValidating tracks the live connect.
+  const connectingOutput = Boolean(outputStream.isValidating) && !activeSession?.output;
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">
@@ -255,7 +327,7 @@ export default function TerminalApp() {
               />
               {!activeSession?.output && (
                 <div className="absolute inset-0 flex items-start p-4 pointer-events-none font-mono text-xs text-muted">
-                  {outputStream.isLoading ? "Connecting..." : "Waiting for output..."}
+                  {connectingOutput ? "Connecting..." : "Waiting for output..."}
                 </div>
               )}
             </div>
@@ -285,7 +357,7 @@ export default function TerminalApp() {
               </span>
             </div>
           </>
-        ) : awaitingAutoSelect ? (
+        ) : awaitingAutoSelect || awaitingPendingOpen ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="w-6 h-6 text-muted animate-spin" />
           </div>

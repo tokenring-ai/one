@@ -1,7 +1,7 @@
 import type { AudioIndexEntry } from "@tokenring-ai/media-library/rpc/schema";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Download, Loader2, Music, Pause, Play, Sparkles, Type, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { audioRPCClient } from "../../../../rpc.ts";
 import { downloadMedia, formatDuration, mediaUrl } from "../../utils.ts";
@@ -26,6 +26,18 @@ export default function AudioViewer({
   const [transcript, setTranscript] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
+
+  // Reset per-clip UI when selection changes so transcript/playback don't leak across files.
+  useEffect(() => {
+    setTranscript(null);
+    setTranscribing(false);
+    setPlaying(false);
+    const el = audioRef.current;
+    if (el) {
+      el.pause();
+      el.currentTime = 0;
+    }
+  }, [audio.filename]);
 
   const subtitleParts: string[] = [];
   if (audio.duration !== undefined) subtitleParts.push(formatDuration(audio.duration));
@@ -63,11 +75,9 @@ export default function AudioViewer({
   };
 
   const handleDownload = () => {
-    try {
-      downloadMedia(audio.filename);
-    } catch {
+    void downloadMedia(audio.filename).catch(() => {
       toastManager.error("Download failed", { duration: 3000 });
-    }
+    });
   };
 
   return (
@@ -89,7 +99,7 @@ export default function AudioViewer({
             </ActionButton>
             <ActionButton
               onClick={() => void handleTranscribe()}
-              disabled={transcribing}
+              disabled={transcribing || !agentId}
               icon={transcribing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Type className="w-3.5 h-3.5" />}
             >
               {transcribing ? "Transcribing..." : "Transcribe"}
@@ -115,6 +125,7 @@ export default function AudioViewer({
             {playing ? "Pause" : "Play"}
           </button>
           <audio
+            key={audio.filename}
             ref={audioRef}
             src={mediaUrl(audio.filename)}
             controls

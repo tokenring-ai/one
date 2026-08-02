@@ -72,11 +72,29 @@ export function fmtHistoryDate(v: number | string | null | undefined): string {
   return new Date(ts).toLocaleDateString("en-CA"); // YYYY-MM-DD
 }
 
-/** ISO date (YYYY-MM-DD) offset by `days` from today (local). */
+/** Format a Date as local calendar YYYY-MM-DD (avoids UTC skew from toISOString). */
+export function toLocalIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** ISO date (YYYY-MM-DD) offset by `days` from today (local calendar). */
 export function isoDateOffset(days: number, from = new Date()): string {
-  const d = new Date(from);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + days);
+  return toLocalIsoDate(d);
+}
+
+/**
+ * Shift a YYYY-MM-DD calendar date by `days` without timezone skew.
+ * Returns null if `iso` is not a plain date string.
+ */
+export function shiftIsoDate(iso: string, days: number): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + days);
+  return toLocalIsoDate(d);
 }
 
 /**
@@ -90,7 +108,15 @@ export function historyRange(monthsBack: number): { from: string; to: string } {
   start.setMonth(start.getMonth() - monthsBack);
   start.setDate(start.getDate() - 1);
   return {
-    from: start.toISOString().slice(0, 10),
-    to: end.toISOString().slice(0, 10),
+    from: toLocalIsoDate(start),
+    to: toLocalIsoDate(end),
   };
+}
+
+/** ±1 day buffer around a user-selected history range for the CloudQuote RPC. */
+export function bufferedHistoryRange(from: string, to: string): { from: string; to: string } | null {
+  const bufferedFrom = shiftIsoDate(from, -1);
+  const bufferedTo = shiftIsoDate(to, 1);
+  if (!bufferedFrom || !bufferedTo) return null;
+  return { from: bufferedFrom, to: bufferedTo };
 }

@@ -1,6 +1,6 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { ChevronDown, ChevronRight, Cpu, GitBranch, Glasses, Loader2, Pause, Play, Search, Trash2, User, Wrench, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AgentTodoList from "../../components/AgentTodoList.tsx";
 import CheckpointBrowser from "../../components/CheckpointBrowser.tsx";
@@ -57,7 +57,8 @@ function matchesTypeFilter(agentType: AgentType, query: string): boolean {
     agentType.displayName.toLowerCase().includes(q) ||
     agentType.type.toLowerCase().includes(q) ||
     agentType.description.toLowerCase().includes(q) ||
-    (agentType.category ?? "").toLowerCase().includes(q)
+    agentType.category?.toLowerCase().includes(q) ||
+    false
   );
 }
 
@@ -152,7 +153,7 @@ function AgentSidebar({
           </div>
           {agentsLoading && agents.length === 0 ? (
             <LoadingState size="sm" className="py-6" />
-          ) : agentsError ? (
+          ) : agentsError && agents.length === 0 ? (
             <ErrorState title="Failed to load agents" error={agentsError} onRetry={onRetryAgents} variant="inline" />
           ) : agents.length === 0 ? (
             <div className="px-3 py-4 text-center text-muted text-2xs italic">No active agents</div>
@@ -162,40 +163,46 @@ function AgentSidebar({
               return (
                 <div
                   key={agent.id}
-                  className={`group mx-1.5 mb-0.5 px-2 py-1.5 rounded-md border transition-all ${
-                    isSelected ? "bg-active border-primary" : "border-transparent hover:bg-hover"
+                  className={`group relative mx-1.5 mb-0.5 rounded-md border transition-all ${
+                    isSelected ? "bg-active border-primary" : "border-transparent hover:bg-[var(--bg-hover)] hover:border-primary/40"
                   }`}
                   aria-current={isSelected ? "page" : undefined}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="shrink-0" aria-hidden="true">
-                      {agent.idle ? (
-                        <Pause className="w-3 h-3 text-muted" />
-                      ) : (
-                        <div className="w-3 h-3 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
-                      )}
+                  {/* Whole card (including todos) opens the agent; delete sits above it. */}
+                  <button
+                    type="button"
+                    onClick={() => onOpenAgent(agent.id)}
+                    className="w-full px-2 py-1.5 text-left cursor-pointer focus-ring rounded-md"
+                    aria-label={`Open agent ${agent.displayName}`}
+                    title={agent.currentActivity || agent.agentType}
+                  >
+                    <div className="flex items-center gap-2 pr-6">
+                      <div className="shrink-0" aria-hidden="true">
+                        {agent.idle ? (
+                          <Pause className="w-3 h-3 text-muted" />
+                        ) : (
+                          <div className="w-3 h-3 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 flex flex-col">
+                        <span className={`text-xs font-medium truncate ${isSelected ? "text-primary" : "text-secondary"}`}>{agent.displayName}</span>
+                        <span className="text-2xs text-muted truncate">{agent.currentActivity || agent.agentType}</span>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => onOpenAgent(agent.id)}
-                      className="min-w-0 flex-1 flex flex-col text-left cursor-pointer focus-ring rounded"
-                      aria-label={`Open agent ${agent.displayName}`}
-                      title={agent.currentActivity || agent.agentType}
-                    >
-                      <span className={`text-xs font-medium truncate ${isSelected ? "text-primary" : "text-secondary"}`}>{agent.displayName}</span>
-                      <span className="text-2xs text-muted truncate">{agent.currentActivity || agent.agentType}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDeleteAgent(agent.id)}
-                      disabled={deletingAgentId === agent.id}
-                      className="p-1 text-muted hover:text-red-500 rounded transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                      aria-label={`Delete agent ${agent.displayName}`}
-                    >
-                      {deletingAgentId === agent.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                    </button>
-                  </div>
-                  <AgentTodoList agentId={agent.id} agentName={agent.displayName} className="mt-1.5 ml-7 border-t border-primary/40 pt-1.5" />
+                    <AgentTodoList agentId={agent.id} agentName={agent.displayName} className="mt-1.5 ml-7 border-t border-primary/40 pt-1.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation();
+                      onDeleteAgent(agent.id);
+                    }}
+                    disabled={deletingAgentId === agent.id}
+                    className="absolute top-1.5 right-1.5 p-1 text-muted hover:text-red-500 rounded transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                    aria-label={`Delete agent ${agent.displayName}`}
+                  >
+                    {deletingAgentId === agent.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                  </button>
                 </div>
               );
             })
@@ -241,7 +248,7 @@ function AgentSidebar({
 
           {agentTypesLoading && agentTypes.length === 0 ? (
             <LoadingState size="sm" className="py-6" />
-          ) : agentTypesError ? (
+          ) : agentTypesError && agentTypes.length === 0 ? (
             <ErrorState title="Failed to load agent types" error={agentTypesError} onRetry={onRetryAgentTypes} variant="inline" />
           ) : agentTypes.length === 0 ? (
             <div className="px-3 py-6 text-center">
@@ -277,8 +284,10 @@ function AgentSidebar({
                     return (
                       <div
                         key={agentType.type}
-                        className={`group flex items-center gap-0.5 pl-5 pr-1.5 py-1 transition-colors ${
-                          isSelected ? "bg-accent-muted text-accent" : "hover:bg-hover text-primary"
+                        className={`group flex items-center gap-0.5 mx-1.5 pl-4 pr-1.5 py-1 rounded-md border transition-all ${
+                          isSelected
+                            ? "bg-accent-muted border-accent/30 text-accent"
+                            : "border-transparent text-primary hover:bg-[var(--bg-hover)] hover:border-primary/40"
                         }`}
                       >
                         <button
@@ -476,7 +485,7 @@ function AgentsOverview({
 
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
         <div className="max-w-3xl mx-auto space-y-6">
-          {agentTypesError ? (
+          {agentTypesError && !hasAgentTypes ? (
             <ErrorState title="Failed to load agent types" error={agentTypesError} onRetry={onRetryAgentTypes} variant="page" className="py-8" />
           ) : (
             <div className="flex flex-col items-center text-center gap-3 py-4">
@@ -504,7 +513,7 @@ function AgentsOverview({
 
           <CheckpointBrowser agents={agents} />
 
-          {workflowsError ? (
+          {workflowsError && workflows.length === 0 ? (
             <ErrorState title="Failed to load workflows" error={workflowsError} onRetry={onRetryWorkflows} variant="inline" />
           ) : workflowsLoading && workflows.length === 0 ? (
             <LoadingState size="sm" message="Loading workflows…" className="py-4" />
@@ -565,6 +574,11 @@ export default function AgentsApp() {
   const [spawningWorkflow, setSpawningWorkflow] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  // Synchronous guards so double-clicks cannot start the same action twice before re-render disables the control.
+  const launchingTypesRef = useRef(new Set<string>());
+  const spawningWorkflowsRef = useRef(new Set<string>());
+  const deletingAgentsRef = useRef(new Set<string>());
+
   const agentList = (agents.data ?? []) as RunningAgent[];
   const agentTypeList = (agentTypes.data ?? []) as AgentType[];
   const workflowList = (workflows.data ?? []) as WorkflowSummary[];
@@ -588,62 +602,77 @@ export default function AgentsApp() {
 
   const handleSelectType = useCallback((type: string) => void navigate(`/agents/${encodeURIComponent(type)}`), [navigate]);
 
+  const refreshAgents = useCallback(() => {
+    // Sidebar refresh is best-effort; stream reconnect can fail without undoing the action.
+    void Promise.resolve(agents.mutate()).catch(() => {});
+  }, [agents]);
+
   const handleLaunch = useCallback(
     async (type: string) => {
+      if (launchingTypesRef.current.has(type)) return;
+      launchingTypesRef.current.add(type);
       setLaunchingType(type);
       try {
         const { id } = await agentRPCClient.createAgent({ agentType: type, headless: false });
-        await agents.mutate();
+        // Refresh the sidebar list in the background; don't block navigation if reconnect is slow.
+        refreshAgents();
         void navigate(`/agent/${id}`);
       } catch (error) {
         toastManager.error(formatError(error), { duration: 5000 });
       } finally {
-        setLaunchingType(null);
+        launchingTypesRef.current.delete(type);
+        // Only clear our own spinner — a concurrent launch of another type may own the flag.
+        setLaunchingType(prev => (prev === type ? null : prev));
       }
     },
-    [agents, navigate],
+    [navigate, refreshAgents],
   );
 
   const handleSpawnWorkflow = useCallback(
     async (name: string) => {
+      if (spawningWorkflowsRef.current.has(name)) return;
+      spawningWorkflowsRef.current.add(name);
       setSpawningWorkflow(name);
       try {
         const { id } = await workflowRPCClient.spawnWorkflow({ name, headless: false });
-        await agents.mutate();
+        refreshAgents();
         void navigate(`/agent/${id}`);
       } catch (error) {
         toastManager.error(formatError(error), { duration: 5000 });
       } finally {
-        setSpawningWorkflow(null);
+        spawningWorkflowsRef.current.delete(name);
+        setSpawningWorkflow(prev => (prev === name ? null : prev));
       }
     },
-    [agents, navigate],
+    [navigate, refreshAgents],
   );
 
   const handleConfirmDelete = useCallback(async () => {
-    if (!confirmDeleteId) return;
+    if (!confirmDeleteId || deletingAgentsRef.current.has(confirmDeleteId)) return;
     const agentId = confirmDeleteId;
     const displayName = confirmDeleteAgent?.displayName ?? agentId;
+    deletingAgentsRef.current.add(agentId);
     setConfirmDeleteId(null);
     setDeletingAgentId(agentId);
     try {
       const result = await agentRPCClient.deleteAgent({ agentId, reason: "User initiated agent deletion from Agents app" });
       if (result.status === "agentNotFound") {
         toastManager.error(`Agent "${displayName}" is no longer running`, { duration: 4000 });
-        await agents.mutate();
+        refreshAgents();
         if (routeAgentId === agentId) void navigate("/agents");
         return;
       }
-      await agents.mutate();
       toastManager.success(`Deleted "${displayName}"`, { duration: 3000 });
-      // The open chat would point at a deleted agent, so fall back to the overview.
+      // Leave the deleted chat before refreshing so the sidebar doesn't briefly re-highlight it.
       if (routeAgentId === agentId) void navigate("/agents");
+      refreshAgents();
     } catch (error) {
       toastManager.error(formatError(error), { duration: 5000 });
     } finally {
-      setDeletingAgentId(null);
+      deletingAgentsRef.current.delete(agentId);
+      setDeletingAgentId(prev => (prev === agentId ? null : prev));
     }
-  }, [agents, confirmDeleteAgent, confirmDeleteId, navigate, routeAgentId]);
+  }, [confirmDeleteAgent, confirmDeleteId, navigate, refreshAgents, routeAgentId]);
 
   const detailPane = (() => {
     if (routeAgentId) {

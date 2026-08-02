@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   BookOpen,
   Bot,
+  Bug,
   CalendarDays,
   Cpu,
   Database,
@@ -65,6 +66,7 @@ const APP_NAV_ITEMS: AppNavItem[] = [
   { path: "/configuration", icon: <SlidersHorizontal className="w-4 h-4" />, label: "Configuration", color: "text-amber-400" },
   { path: "/services", icon: <Plug className="w-4 h-4" />, label: "Services", color: "text-violet-400" },
   { path: "/metrics", icon: <DollarSign className="w-4 h-4" />, label: "Metrics", color: "text-emerald-400" },
+  { path: "/debug", icon: <Bug className="w-4 h-4" />, label: "Debugging", color: "text-rose-400" },
   { path: "/settings", icon: <Settings className="w-4 h-4" />, label: "Settings", color: "text-stone-400" },
   { path: "/vault", icon: <Lock className="w-4 h-4" />, label: "Vault", color: "text-amber-400" },
 ];

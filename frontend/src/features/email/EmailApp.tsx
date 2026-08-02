@@ -1,5 +1,6 @@
 import { Loader2, Mail, PenSquare, Search, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
 import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
@@ -16,6 +17,8 @@ function EmailBrowserPane({
   provider,
   availableProviders,
   providersLoading,
+  providersError,
+  onProvidersRetry,
   selectedMessageId,
   onSelectMessage,
   onProviderChange,
@@ -27,6 +30,8 @@ function EmailBrowserPane({
   provider: string | null;
   availableProviders: string[];
   providersLoading: boolean;
+  providersError?: unknown;
+  onProvidersRetry?: () => void;
   selectedMessageId: string | null;
   onSelectMessage: (id: string | null) => void;
   onProviderChange: (p: string) => void | Promise<void>;
@@ -79,6 +84,27 @@ function EmailBrowserPane({
   };
 
   if (!providersLoading && availableProviders.length === 0) {
+    if (providersError) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
+          <WifiOff className="w-10 h-10 text-muted opacity-30" />
+          <div>
+            <h2 className="text-base font-semibold text-primary mb-1">Failed to load email providers</h2>
+            <p className="text-sm text-muted max-w-xs mb-3">Could not reach the email service.</p>
+            {onProvidersRetry && (
+              <button
+                type="button"
+                onClick={() => onProvidersRetry()}
+                className="px-3 py-1.5 text-xs bg-secondary border border-primary rounded-lg hover:bg-hover focus-ring cursor-pointer"
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
         <WifiOff className="w-10 h-10 text-muted opacity-30" />
@@ -95,6 +121,15 @@ function EmailBrowserPane({
       <div className="h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
         <Loader2 className="w-6 h-6 text-muted animate-spin" />
         <p className="text-sm text-muted">Loading email providers…</p>
+      </div>
+    );
+  }
+
+  if (boxesLoading && boxes.length === 0) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
+        <Loader2 className="w-6 h-6 text-muted animate-spin" />
+        <p className="text-sm text-muted">Loading mailboxes…</p>
       </div>
     );
   }
@@ -232,8 +267,12 @@ function EmailBrowserPane({
 }
 
 export default function EmailApp() {
+  const navigate = useNavigate();
+  const { provider: routeProvider } = useParams<{ provider?: string }>();
+  // URL is the source of truth for which provider is open (params are already decoded).
+  const provider = routeProvider ?? null;
+
   const providers = useEmailProviders();
-  const [provider, setProvider] = useState<string | null>(null);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const {
     agentId,
@@ -245,16 +284,30 @@ export default function EmailApp() {
     headless: false,
   });
 
-  useEffect(() => {
-    const availableProviders = providers.data?.providers ?? [];
-    if (!availableProviders.length) return;
+  const openProvider = useCallback(
+    (name: string | null, options?: { replace?: boolean }) => {
+      const path = name ? `/email/${encodeURIComponent(name)}` : "/email";
+      void navigate(path, options?.replace ? { replace: true } : undefined);
+    },
+    [navigate],
+  );
 
-    const newProvider = availableProviders[0];
-    if (!provider && newProvider) {
-      setProvider(newProvider);
+  useEffect(() => {
+    if (providers.isLoading) return;
+    const availableProviders = providers.data?.providers ?? [];
+    if (!availableProviders.length) {
+      if (routeProvider) {
+        openProvider(null, { replace: true });
+        setSelectedMessageId(null);
+      }
+      return;
+    }
+
+    if (!provider || !availableProviders.includes(provider)) {
+      openProvider(availableProviders[0]!, { replace: true });
       setSelectedMessageId(null);
     }
-  }, [providers.data, provider]);
+  }, [providers.data, providers.isLoading, provider, routeProvider, openProvider]);
 
   useEffect(() => {
     if (!agentId || (!provider && !selectedMessageId)) return;
@@ -282,10 +335,12 @@ export default function EmailApp() {
         provider={provider}
         availableProviders={providers.data?.providers ?? []}
         providersLoading={providers.isLoading}
+        providersError={providers.error}
+        onProvidersRetry={() => void providers.mutate()}
         selectedMessageId={selectedMessageId}
         onSelectMessage={setSelectedMessageId}
         onProviderChange={p => {
-          setProvider(p);
+          openProvider(p);
           setSelectedMessageId(null);
         }}
         onSendToAgent={handleSendToAgent}

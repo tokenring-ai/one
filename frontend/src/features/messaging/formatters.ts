@@ -40,6 +40,11 @@ export function serviceGradient(service: string): string {
       return "from-sky-500 to-blue-600";
     case "discord":
       return "from-indigo-500 to-violet-600";
+    case "x":
+    case "twitter":
+      return "from-gray-700 to-gray-900";
+    case "reddit":
+      return "from-orange-500 to-red-600";
     case "email":
       return "from-red-500 to-rose-600";
     default:

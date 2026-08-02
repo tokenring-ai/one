@@ -1,17 +1,14 @@
 /** Format a USD cost with adaptive precision for small amounts. */
 export function formatUsd(amount: number): string {
-  if (!Number.isFinite(amount)) return "$0.00";
-  if (amount === 0) return "$0.00";
-  if (Math.abs(amount) < 0.01) {
-    return `$${amount.toLocaleString(undefined, {
-      minimumFractionDigits: 4,
-      maximumFractionDigits: 6,
-    })}`;
-  }
-  return `$${amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
-  })}`;
+  if (!Number.isFinite(amount) || amount === 0) return "$0.00";
+
+  // Always en-US so `$` + decimal point stay stable across host locales.
+  const abs = Math.abs(amount);
+  const body = abs.toLocaleString("en-US", {
+    minimumFractionDigits: abs < 0.01 ? 4 : 2,
+    maximumFractionDigits: abs < 0.01 ? 6 : 4,
+  });
+  return amount < 0 ? `-$${body}` : `$${body}`;
 }
 
 /** Format a 0–1 share as a percentage string. */

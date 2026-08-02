@@ -77,6 +77,11 @@ const deleteItem = mock(async (args: { topicName: string; name: string }) => {
 });
 const getItem = mock(async (_args: { topicName: string; name: string }) => ({ item: getItemResult }));
 const listItems = mock(async (args: { topicName: string }) => ({ items: itemsByTopic[args.topicName] ?? [] }));
+const updateResearchState = mock(async () => ({
+  status: "success" as const,
+  selectedTopicName: null,
+  selectedItemName: null,
+}));
 const mutateTopics = mock(async () => undefined);
 
 void mock.module("../../rpc.ts", () => ({
@@ -100,6 +105,7 @@ void mock.module("../../rpc.ts", () => ({
     deleteItem,
     getItem,
     listItems,
+    updateResearchState,
   },
 }));
 
@@ -157,6 +163,7 @@ describe("ResearchApp", () => {
     deleteItem.mockClear();
     getItem.mockClear();
     listItems.mockClear();
+    updateResearchState.mockClear();
     mutateTopics.mockClear();
   });
 
@@ -239,5 +246,41 @@ describe("ResearchApp", () => {
     await user.click(screen.getByRole("button", { name: "Create" }));
 
     await waitFor(() => expect(createTopic).toHaveBeenCalledWith({ name: "quantum-sensors" }));
+  });
+
+  it("shows a retry action when an item fails to load", async () => {
+    const user = userEvent.setup();
+    getItemResult = null;
+    renderApp("/research/solid-state-batteries/summary");
+
+    await waitFor(() => expect(screen.getByText(/not found/i)).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back to topics" })).toBeInTheDocument();
+
+    getItemResult = { ...summaryItem };
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => expect(screen.getByText("Solid-state batteries are promising.")).toBeInTheDocument());
+  });
+
+  it("prompts before discarding unsaved edits when opening another item", async () => {
+    const user = userEvent.setup();
+    renderApp("/research/solid-state-batteries/summary");
+
+    await waitFor(() => expect(screen.getByText("Solid-state batteries are promising.")).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: /Edit/i }));
+    const editor = await screen.findByLabelText("Markdown editor");
+    await user.clear(editor);
+    await user.type(editor, "# Unsaved draft");
+
+    // Selected topic is auto-expanded from the route, so toc is already listed
+    await user.click(await screen.findByText("toc"));
+
+    expect(screen.getByText("Discard unsaved changes?")).toBeInTheDocument();
+    expect(getItem).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole("button", { name: "Discard" }));
+
+    await waitFor(() => expect(getItem).toHaveBeenCalledWith({ topicName: "solid-state-batteries", name: "toc" }));
   });
 });

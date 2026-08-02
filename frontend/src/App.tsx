@@ -17,6 +17,7 @@ import BotsApp from "./pages/apps/BotsApp.tsx";
 import CalendarApp from "./pages/apps/CalendarApp.tsx";
 import ConfigurationApp from "./pages/apps/ConfigurationApp.tsx";
 import DatabaseApp from "./pages/apps/DatabaseApp.tsx";
+import DebugApp from "./pages/apps/DebugApp.tsx";
 import DocumentsApp from "./pages/apps/DocumentsApp.tsx";
 import EmailApp from "./pages/apps/EmailApp.tsx";
 import FilesApp from "./pages/apps/FilesApp.tsx";
@@ -123,7 +124,8 @@ export default function App() {
                     <Route path="/agents/:agentType?" element={<AgentsApp />} />
                     {/* Optional param keeps the app mounted while navigating between workflows */}
                     <Route path="/workflows/:workflowName?" element={<WorkflowsApp />} />
-                    <Route path="/bots" element={<BotsApp />} />
+                    {/* Optional param keeps the app mounted while navigating between bots */}
+                    <Route path="/bots/:botId?" element={<BotsApp />} />
                     <Route path="/scheduler" element={<SchedulerApp />} />
                     <Route path="/queue" element={<QueueApp />} />
                     <Route path="/skills" element={<SkillsApp />} />
@@ -131,20 +133,27 @@ export default function App() {
                     <Route path="/web-design/:flowName?/:designName?" element={<WebDesignApp />} />
                     <Route path="/documents" element={<DocumentsApp />} />
                     <Route path="/research/:topicName?/:itemName?" element={<ResearchApp />} />
-                    <Route path="/blog" element={<BlogApp />} />
-                    <Route path="/files" element={<FilesApp />} />
+                    {/* Optional param keeps the app mounted while navigating between posts */}
+                    <Route path="/blog/:blogId?" element={<BlogApp />} />
+                    {/* Optional param keeps the app mounted while navigating between files */}
+                    <Route path="/files/:fileId?" element={<FilesApp />} />
                     <Route path="/terminal/:terminalId?" element={<TerminalApp />} />
-                    <Route path="/email" element={<EmailApp />} />
-                    <Route path="/database" element={<DatabaseApp />} />
-                    <Route path="/calendar" element={<CalendarApp />} />
+                    {/* Optional param keeps the app mounted while navigating between email providers */}
+                    <Route path="/email/:provider?" element={<EmailApp />} />
+                    {/* Optional param keeps the app mounted while navigating between datasources */}
+                    <Route path="/database/:datasource?" element={<DatabaseApp />} />
+                    {/* Optional param keeps the app mounted while navigating between calendar providers */}
+                    <Route path="/calendar/:provider?" element={<CalendarApp />} />
                     <Route path="/media" element={<MediaApp />} />
                     <Route path="/social" element={<SocialApp />} />
                     <Route path="/messaging" element={<MessagingApp />} />
                     <Route path="/stocks" element={<StocksApp />} />
                     <Route path="/plugins" element={<PluginsApp />} />
-                    <Route path="/configuration" element={<ConfigurationApp />} />
+                    {/* Optional param keeps the app mounted while navigating between plugins */}
+                    <Route path="/configuration/:plugin?" element={<ConfigurationApp />} />
                     <Route path="/services" element={<ServicesApp />} />
                     <Route path="/metrics" element={<MetricsApp />} />
+                    <Route path="/debug" element={<DebugApp />} />
                     <Route path="/settings" element={<SettingsApp />} />
                     <Route path="/vault" element={<VaultApp />} />
 

@@ -45,13 +45,13 @@ function SegmentedControl<T extends string>({
   ariaLabel: string;
 }) {
   return (
-    <div className="flex items-center gap-1 bg-tertiary rounded-lg p-1" role="group" aria-label={ariaLabel}>
+    <div className="flex items-center gap-1 bg-tertiary rounded-lg p-1 w-full sm:w-auto" role="group" aria-label={ariaLabel}>
       {options.map(option => (
         <button
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+          className={`flex flex-1 sm:flex-initial items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
             value === option.value ? "bg-secondary text-primary shadow-sm" : "text-muted hover:text-primary"
           }`}
           aria-pressed={value === option.value}
@@ -66,12 +66,12 @@ function SegmentedControl<T extends string>({
 
 function SettingsRow({ title, description, children, border = true }: { title: string; description?: string; children: ReactNode; border?: boolean }) {
   return (
-    <div className={`flex items-center justify-between gap-4 px-4 py-3.5 ${border ? "border-b border-primary" : ""}`}>
+    <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 px-4 py-3.5 ${border ? "border-b border-primary" : ""}`}>
       <div className="min-w-0">
         <p className="text-sm font-medium text-primary">{title}</p>
         {description ? <p className="text-2xs text-muted mt-0.5">{description}</p> : null}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="shrink-0 self-stretch sm:self-auto flex sm:block items-center justify-end">{children}</div>
     </div>
   );
 }
@@ -89,7 +89,7 @@ function NavRow({ to, title, description, icon, border = true }: { to: string; t
           <p className="text-2xs text-muted mt-0.5">{description}</p>
         </div>
       </div>
-      <ChevronRight className="w-4 h-4 text-muted shrink-0" />
+      <ChevronRight className="w-4 h-4 text-muted shrink-0" aria-hidden="true" />
     </Link>
   );
 }
@@ -103,9 +103,9 @@ export default function SettingsApp() {
   const themeOptions = useMemo(
     () =>
       [
-        { value: "light" as const, label: "Light", icon: <Sun className="w-3.5 h-3.5" /> },
-        { value: "dark" as const, label: "Dark", icon: <Moon className="w-3.5 h-3.5" /> },
-        { value: "system" as const, label: "System", icon: <Monitor className="w-3.5 h-3.5" /> },
+        { value: "light" as const, label: "Light", icon: <Sun className="w-3.5 h-3.5" aria-hidden="true" /> },
+        { value: "dark" as const, label: "Dark", icon: <Moon className="w-3.5 h-3.5" aria-hidden="true" /> },
+        { value: "system" as const, label: "System", icon: <Monitor className="w-3.5 h-3.5" aria-hidden="true" /> },
       ] satisfies { value: ThemePreference; label: string; icon: ReactNode }[],
     [],
   );
@@ -117,6 +117,8 @@ export default function SettingsApp() {
   };
 
   const handleClearPreferences = () => {
+    // Remove known client keys only — do not call setTheme/resetToDefaults first,
+    // which would re-write theme/sidebar into storage before reload.
     for (const key of CLIENT_PREFERENCE_KEYS) {
       try {
         localStorage.removeItem(key);
@@ -124,11 +126,9 @@ export default function SettingsApp() {
         // ignore storage errors
       }
     }
-    setTheme("system");
-    resetToDefaults();
     setConfirmClear(false);
     notificationManager.success("Local preferences cleared");
-    // Reload so chat draft context and other modules re-read storage
+    // Reload so theme, sidebar, and chat draft modules re-initialize from empty storage
     window.setTimeout(() => {
       window.location.reload();
     }, 400);
@@ -188,7 +188,7 @@ export default function SettingsApp() {
                   onClick={() => setConfirmResetLayout(true)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-tertiary text-primary hover:bg-hover border border-primary transition-colors focus-ring cursor-pointer"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                   Reset
                 </button>
               </SettingsRow>
@@ -232,7 +232,7 @@ export default function SettingsApp() {
                 >
                   {localStorageAvailable ? (
                     <>
-                      <Check className="w-3 h-3" /> Available
+                      <Check className="w-3 h-3" aria-hidden="true" /> Available
                     </>
                   ) : (
                     "Unavailable"
@@ -244,9 +244,10 @@ export default function SettingsApp() {
                   type="button"
                   onClick={() => setConfirmClear(true)}
                   disabled={!localStorageAvailable}
+                  title={!localStorageAvailable ? "Browser storage is unavailable — nothing to clear" : undefined}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                   Clear
                 </button>
               </SettingsRow>
@@ -289,8 +290,7 @@ export default function SettingsApp() {
                   className={`flex items-center justify-between px-4 py-3.5 hover:bg-hover transition-colors focus-ring text-sm font-medium text-primary ${i < arr.length - 1 ? "border-b border-primary" : ""}`}
                 >
                   {link.label}
-                  <svg className="w-3.5 h-3.5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <title>{link.label}</title>
+                  <svg className="w-3.5 h-3.5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"

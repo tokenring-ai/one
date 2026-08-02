@@ -1,5 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { markdownLinkComponents } from "../../../../components/chat/MarkdownLink.tsx";
 import type { InteractionResponseMessage, QuestionPromptMessage } from "../../../../types/agent-events.ts";
 
 export default function QuestionWithResponseDisplay({ question, response }: { question: QuestionPromptMessage; response?: InteractionResponseMessage }) {
@@ -27,7 +28,9 @@ export default function QuestionWithResponseDisplay({ question, response }: { qu
   return (
     <div className="font-medium text-sm">
       <div className="text-primary">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{question.message}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownLinkComponents}>
+          {question.message}
+        </ReactMarkdown>
       </div>
 
       {response && <div className="py-3 text-success">{formatResult(response.result)}</div>}

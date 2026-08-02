@@ -17,10 +17,10 @@ export default function MarkdownEditor({ content, onContentChange }: FileViewerP
   }, [content]);
 
   const handleContentChange = (value?: string) => {
-    if (value) {
-      setEditorContent(value);
-      onContentChange?.(value);
-    }
+    // Empty string is valid (user cleared the document); only skip undefined.
+    if (value === undefined) return;
+    setEditorContent(value);
+    onContentChange?.(value);
   };
 
   // Calculate content statistics

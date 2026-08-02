@@ -32,12 +32,14 @@ const mutatePlugins = mock(async () => undefined);
 let pluginsData: { plugins: typeof fixturePlugins } | undefined = { plugins: fixturePlugins };
 let pluginsError: Error | undefined;
 let pluginsLoading = false;
+let pluginsValidating = false;
 
 void mock.module("../../rpc.ts", () => ({
   usePlugins: () => ({
     data: pluginsData,
     error: pluginsError,
     isLoading: pluginsLoading,
+    isValidating: pluginsValidating,
     mutate: mutatePlugins,
   }),
 }));
@@ -58,7 +60,7 @@ function renderApp() {
     <MemoryRouter initialEntries={["/plugins"]}>
       <Routes>
         <Route path="/plugins" element={<PluginsApp />} />
-        <Route path="/configuration" element={<div>Configuration page</div>} />
+        <Route path="/configuration/:plugin?" element={<div>Configuration page</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -69,6 +71,7 @@ describe("PluginsApp", () => {
     pluginsData = { plugins: fixturePlugins };
     pluginsError = undefined;
     pluginsLoading = false;
+    pluginsValidating = false;
     mutatePlugins.mockClear();
   });
 
@@ -123,7 +126,7 @@ describe("PluginsApp", () => {
     const filesystemCard = screen.getByText("Filesystem").closest("[data-plugin-name]");
     expect(filesystemCard).toBeTruthy();
     const configure = within(filesystemCard as HTMLElement).getByRole("link", { name: /Configure/i });
-    expect(configure).toHaveAttribute("href", "/configuration?plugin=%40tokenring-ai%2Ffilesystem");
+    expect(configure).toHaveAttribute("href", "/configuration/%40tokenring-ai%2Ffilesystem");
   });
 
   it("opens a detail panel when a plugin is selected", async () => {
@@ -135,7 +138,30 @@ describe("PluginsApp", () => {
     const detail = screen.getByLabelText("Details for Vault");
     expect(within(detail).getByRole("heading", { name: "Vault" })).toBeInTheDocument();
     expect(within(detail).getAllByText("@tokenring-ai/vault").length).toBeGreaterThan(0);
-    expect(within(detail).getByRole("link", { name: /Open configuration/i })).toHaveAttribute("href", "/configuration?plugin=%40tokenring-ai%2Fvault");
+    expect(within(detail).getByRole("link", { name: /Open configuration/i })).toHaveAttribute("href", "/configuration/%40tokenring-ai%2Fvault");
+  });
+
+  it("hides the detail panel when the selected plugin is filtered out", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getByRole("button", { name: /Select Vault/i }));
+    expect(screen.getByLabelText("Details for Vault")).toBeInTheDocument();
+
+    await user.type(screen.getByRole("searchbox", { name: "Search plugins" }), "filesystem");
+    expect(screen.queryByLabelText("Details for Vault")).not.toBeInTheDocument();
+    expect(screen.getByText("Filesystem")).toBeInTheDocument();
+  });
+
+  it("sorts plugins by version", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    // Default display-name order is Filesystem, Metrics, Vault.
+    await user.selectOptions(screen.getByRole("combobox", { name: "Sort plugins" }), "version");
+
+    const cards = screen.getAllByRole("button", { name: /Select /i });
+    expect(cards.map(card => card.getAttribute("aria-label"))).toEqual(["Select Metrics", "Select Filesystem", "Select Vault"]);
   });
 
   it("refreshes via the header button", async () => {
@@ -159,6 +185,17 @@ describe("PluginsApp", () => {
     renderApp();
     expect(screen.getByText("Failed to load plugins")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(/rpc down/);
+  });
+
+  it("keeps cached plugins when refresh fails", () => {
+    pluginsError = new Error("rpc down");
+    pluginsData = { plugins: fixturePlugins };
+    renderApp();
+
+    expect(screen.getByText("Could not refresh plugins")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(/rpc down/);
+    expect(screen.getByText("Filesystem")).toBeInTheDocument();
+    expect(screen.getByText("3 installed")).toBeInTheDocument();
   });
 
   it("shows empty installed state when there are no plugins", () => {

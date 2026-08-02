@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { markdownLinkComponents } from "../../../../components/chat/MarkdownLink.tsx";
 
 export default function ToolCallDisplay({ msg }: { msg: Extract<AgentEventEnvelope, { type: "toolCall" }> }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -11,7 +12,7 @@ export default function ToolCallDisplay({ msg }: { msg: Extract<AgentEventEnvelo
     <div className="cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
       <button type="button" className="flex items-center gap-1.5 w-full text-left hover:opacity-80 transition-opacity">
         <div className={`text-primary font-medium prose prose-sm dark:prose-invert ${msg.failed ? "text-error" : "text-success"}`}>
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ p: ({ children }) => <>{children}</> }}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ ...markdownLinkComponents, p: ({ children }) => <>{children}</> }}>
             {msg.message}
           </ReactMarkdown>
         </div>

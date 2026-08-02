@@ -123,7 +123,16 @@ export default function StockDetail({ symbol, onClear }: StockDetailProps) {
       </div>
 
       <div>
-        {tab === "overview" && <OverviewTab quote={quoteRow} history={history.data?.rows} historyLoading={history.isLoading} historyError={!!history.error} />}
+        {tab === "overview" && (
+          <OverviewTab
+            quote={quoteRow}
+            quoteLoading={quote.isLoading}
+            quoteError={!!quote.error}
+            history={history.data?.rows}
+            historyLoading={history.isLoading}
+            historyError={!!history.error}
+          />
+        )}
         {tab === "chart" && <ChartTab symbol={symbol} />}
         {tab === "history" && <HistoryTab symbol={symbol} />}
         {tab === "news" && <NewsTab symbol={symbol} {...(quoteRow?.SymbolID !== undefined && { symbolId: quoteRow.SymbolID })} />}

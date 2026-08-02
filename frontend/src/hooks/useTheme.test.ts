@@ -1,16 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
-import { useTheme } from "./useTheme.ts";
+import { resetThemeStoreForTests, useTheme } from "./useTheme.ts";
 
 describe("useTheme", () => {
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.classList.remove("dark");
+    resetThemeStoreForTests();
   });
 
   afterEach(() => {
     localStorage.clear();
     document.documentElement.classList.remove("dark");
+    resetThemeStoreForTests();
   });
 
   it("defaults to system when nothing is stored", () => {
@@ -21,6 +23,7 @@ describe("useTheme", () => {
 
   it("restores a stored light preference", () => {
     localStorage.setItem("theme", "light");
+    resetThemeStoreForTests();
     const { result } = renderHook(() => useTheme());
     const [resolved, , preference] = result.current;
     expect(preference).toBe("light");
@@ -30,6 +33,7 @@ describe("useTheme", () => {
 
   it("restores a stored dark preference and applies the class", () => {
     localStorage.setItem("theme", "dark");
+    resetThemeStoreForTests();
     const { result } = renderHook(() => useTheme());
     const [resolved, , preference] = result.current;
     expect(preference).toBe("dark");
@@ -61,5 +65,20 @@ describe("useTheme", () => {
     });
     expect(result.current[2]).toBe("system");
     expect(localStorage.getItem("theme")).toBe("system");
+  });
+
+  it("keeps multiple consumers in sync", () => {
+    const a = renderHook(() => useTheme());
+    const b = renderHook(() => useTheme());
+
+    act(() => {
+      a.result.current[1]("dark");
+    });
+
+    expect(a.result.current[0]).toBe("dark");
+    expect(a.result.current[2]).toBe("dark");
+    expect(b.result.current[0]).toBe("dark");
+    expect(b.result.current[2]).toBe("dark");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
   });
 });

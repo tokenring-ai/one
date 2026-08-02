@@ -66,12 +66,42 @@ describe("derivePlatformStatus", () => {
     expect(status.status).toBe("connected");
     expect(status.connectedAccountNames).toEqual(["telegram", "ops"]);
     expect(statusDetail(status)).toContain("2 accounts live");
+    expect(statusDetail(status)).toContain("telegram");
+    expect(statusDetail(status)).toContain("ops");
   });
 
-  it("treats social platforms with accounts as configured when installed", () => {
-    const status = derivePlatformStatus(reddit, [{ name: "@tokenring-ai/reddit", hasConfig: true }], { reddit: { accounts: { main: {} } } }, new Set());
-    expect(status.status).toBe("configured");
+  it("treats discord like other bundled messaging platforms when installed", () => {
+    const status = derivePlatformStatus(
+      discord,
+      [...installedPlugins, { name: "@tokenring-ai/discord", hasConfig: true }],
+      { discord: { accounts: { discord: {} } } },
+      new Set(["discord"]),
+    );
+    expect(status.status).toBe("connected");
     expect(status.pluginInstalled).toBe(true);
+    expect(statusDetail(status)).toContain("1 account live");
+  });
+
+  it("treats Reddit as a messaging platform when installed and connected", () => {
+    expect(reddit.kind).toBe("messaging");
+    const status = derivePlatformStatus(
+      reddit,
+      [...installedPlugins, { name: "@tokenring-ai/reddit", hasConfig: true }],
+      { reddit: { accounts: { reddit: {} } } },
+      new Set(["reddit"]),
+    );
+    expect(status.status).toBe("connected");
+    expect(status.pluginInstalled).toBe(true);
+    expect(statusDetail(status)).toContain("1 account live");
+  });
+
+  it("treats X as a messaging platform when installed and connected", () => {
+    const x = SOCIAL_PLATFORMS.find(p => p.id === "x")!;
+    expect(x.kind).toBe("messaging");
+    const status = derivePlatformStatus(x, [...installedPlugins, { name: "@tokenring-ai/x", hasConfig: true }], { x: { accounts: { x: {} } } }, new Set(["x"]));
+    expect(status.status).toBe("connected");
+    expect(status.pluginInstalled).toBe(true);
+    expect(statusDetail(status)).toContain("1 account live");
   });
 });
 

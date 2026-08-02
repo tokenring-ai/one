@@ -93,6 +93,33 @@ describe("VaultApp", () => {
     await waitFor(() => {
       expect(screen.getByText("super-secret")).toBeInTheDocument();
     });
+
+    // Hide should clear the value from the DOM
+    await user.click(within(row as HTMLElement).getByTitle("Hide value"));
+    expect(screen.queryByText("super-secret")).not.toBeInTheDocument();
+  });
+
+  it("copies a secret without forcing reveal", async () => {
+    const user = userEvent.setup();
+    const writeText = mock(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(<VaultApp />);
+
+    const row = screen.getByText("API_KEY").closest("div.flex.flex-col") ?? screen.getByText("API_KEY").parentElement!.parentElement!;
+    await user.click(within(row as HTMLElement).getByTitle("Copy value"));
+
+    await waitFor(() => {
+      expect(getItem).toHaveBeenCalledWith({ category: "env", key: "API_KEY" });
+    });
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith("super-secret");
+    });
+    // Copy must not leave the secret visible on screen
+    expect(screen.queryByText("super-secret")).not.toBeInTheDocument();
   });
 
   it("adds a new key via setItems", async () => {
@@ -112,6 +139,26 @@ describe("VaultApp", () => {
       });
     });
     expect(mutateVault).toHaveBeenCalled();
+  });
+
+  it("clears add-form fields on cancel so secrets do not linger", async () => {
+    const user = userEvent.setup();
+    render(<VaultApp />);
+
+    const addButtons = screen.getAllByText("Add new key");
+    await user.click(addButtons[0]!);
+
+    await user.type(screen.getByPlaceholderText("Key name"), "TEMP_KEY");
+    await user.type(screen.getByPlaceholderText("Value"), "temp-secret");
+    await user.click(screen.getByLabelText("Cancel"));
+
+    // Form closed
+    expect(screen.queryByPlaceholderText("Key name")).not.toBeInTheDocument();
+
+    // Re-open — previous secret must not reappear
+    await user.click(screen.getAllByText("Add new key")[0]!);
+    expect(screen.getByPlaceholderText("Key name")).toHaveValue("");
+    expect(screen.getByPlaceholderText("Value")).toHaveValue("");
   });
 
   it("deletes a key after confirmation", async () => {

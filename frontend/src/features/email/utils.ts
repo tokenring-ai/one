@@ -6,6 +6,11 @@ export function senderName(msg: EmailMessage): string {
   return msg.from.name || msg.from.email;
 }
 
+/** Prefer receivedAt; fall back to sentAt (e.g. Sent folder). */
+export function messageTimestamp(msg: EmailMessage): number | undefined {
+  return msg.receivedAt ?? msg.sentAt;
+}
+
 export function formatAddress(addr: EmailAddress): string {
   return addr.name ? `${addr.name} <${addr.email}>` : addr.email;
 }
@@ -80,13 +85,14 @@ function ensureFwdSubject(subject: string): string {
   return /^(fwd|fw):\s/i.test(s) ? s : `Fwd: ${s}`;
 }
 
-function formatReceivedAt(receivedAt: number | undefined): string {
-  return receivedAt != null ? new Date(receivedAt).toLocaleString() : "—";
+function formatMessageDate(msg: EmailMessage): string {
+  const ts = messageTimestamp(msg);
+  return ts != null ? new Date(ts).toLocaleString() : "—";
 }
 
 function quoteOriginal(msg: EmailMessage): string {
   const from = formatAddress(msg.from);
-  const date = formatReceivedAt(msg.receivedAt);
+  const date = formatMessageDate(msg);
   const body = msg.textBody?.trim() || msg.snippet?.trim() || "";
   const quoted = body
     .split("\n")
@@ -100,7 +106,7 @@ function forwardBody(msg: EmailMessage): string {
     "",
     "---------- Forwarded message ----------",
     `From: ${formatAddress(msg.from)}`,
-    `Date: ${formatReceivedAt(msg.receivedAt)}`,
+    `Date: ${formatMessageDate(msg)}`,
     `Subject: ${msg.subject || "(no subject)"}`,
     `To: ${formatAddressList(msg.to)}`,
   ];

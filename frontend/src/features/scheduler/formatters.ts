@@ -47,7 +47,16 @@ export function formatScheduleSummary(task: {
     const window = [task.after ?? "…", task.before ?? "…"].join("–");
     parts.push(window);
   }
-  if (task.weekdays) parts.push(task.weekdays);
+  if (task.weekdays) {
+    // Capitalize weekday tokens for display (mon tue → Mon Tue)
+    parts.push(
+      task.weekdays
+        .split(/[\s,]+/)
+        .filter(Boolean)
+        .map(d => d.charAt(0).toUpperCase() + d.slice(1).toLowerCase())
+        .join(" "),
+    );
+  }
   if (task.dayOfMonth != null) parts.push(`day ${task.dayOfMonth}`);
   if (task.timezone) parts.push(task.timezone);
   return parts.join(" · ");
@@ -72,6 +81,31 @@ export function truncateMessage(message: string, max = 120): string {
   const cleaned = message.replace(/\s+/g, " ").trim();
   if (cleaned.length <= max) return cleaned;
   return `${cleaned.slice(0, max - 1)}…`;
+}
+
+/**
+ * Validate a custom repeat interval against the backend parseInterval format:
+ * "<number> <unit>" with unit in seconds|minutes|hours|days|weeks|months (singular or plural).
+ * Number must be >= 1.
+ */
+export function isValidRepeatInterval(interval: string): boolean {
+  const match = interval.trim().match(/^(\d+)\s+(seconds?|minutes?|hours?|days?|weeks?|months?)$/i);
+  if (!match) return false;
+  return Number.parseInt(match[1]!, 10) >= 1;
+}
+
+/**
+ * Compare HH:mm (optional :ss) wall-clock strings. Returns minutes since midnight, or null if invalid.
+ */
+export function parseTimeOfDayMinutes(value: string): number | null {
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return null;
+  }
+  return hours * 60 + minutes;
 }
 
 export const WEEKDAY_OPTIONS = [

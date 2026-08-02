@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { cn } from "../../lib/utils.ts";
 import { schedulerRPCClient } from "../../rpc.ts";
-import { COMMON_TIMEZONES, REPEAT_PRESETS, WEEKDAY_OPTIONS } from "./formatters.ts";
+import { COMMON_TIMEZONES, isValidRepeatInterval, parseTimeOfDayMinutes, REPEAT_PRESETS, WEEKDAY_OPTIONS } from "./formatters.ts";
 
 type AddTaskFormProps = {
   agentId: string;
@@ -67,10 +67,39 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
       toastManager.error("Enter a custom interval (e.g. 2 hours)", { duration: 3000 });
       return;
     }
+    if (repeat && !isValidRepeatInterval(repeat)) {
+      toastManager.error('Interval must look like "2 hours", "30 minutes", or "1 day"', { duration: 4000 });
+      return;
+    }
+
+    const afterTrimmed = after.trim();
+    const beforeTrimmed = before.trim();
+    if (afterTrimmed) {
+      const afterMins = parseTimeOfDayMinutes(afterTrimmed);
+      if (afterMins == null) {
+        toastManager.error("Earliest time must be a valid time (HH:mm)", { duration: 3000 });
+        return;
+      }
+    }
+    if (beforeTrimmed) {
+      const beforeMins = parseTimeOfDayMinutes(beforeTrimmed);
+      if (beforeMins == null) {
+        toastManager.error("Latest time must be a valid time (HH:mm)", { duration: 3000 });
+        return;
+      }
+    }
+    if (afterTrimmed && beforeTrimmed) {
+      const afterMins = parseTimeOfDayMinutes(afterTrimmed)!;
+      const beforeMins = parseTimeOfDayMinutes(beforeTrimmed)!;
+      if (afterMins >= beforeMins) {
+        toastManager.error("Earliest time must be before latest time", { duration: 4000 });
+        return;
+      }
+    }
 
     const day = dayOfMonth.trim() ? Number(dayOfMonth) : undefined;
-    if (day != null && (Number.isNaN(day) || day < 1 || day > 31)) {
-      toastManager.error("Day of month must be between 1 and 31", { duration: 3000 });
+    if (day != null && (!Number.isInteger(day) || day < 1 || day > 31)) {
+      toastManager.error("Day of month must be a whole number between 1 and 31", { duration: 3000 });
       return;
     }
 
@@ -83,8 +112,8 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
           message: trimmedMessage,
           lastRunTime: 0,
           ...(repeat ? { repeat } : {}),
-          ...(after.trim() ? { after: after.trim() } : {}),
-          ...(before.trim() ? { before: before.trim() } : {}),
+          ...(afterTrimmed ? { after: afterTrimmed } : {}),
+          ...(beforeTrimmed ? { before: beforeTrimmed } : {}),
           ...(weekdays.length > 0 ? { weekdays: weekdays.join(" ") } : {}),
           ...(day != null ? { dayOfMonth: day } : {}),
           ...(timezone ? { timezone } : {}),
@@ -149,7 +178,17 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
         {repeatPreset === "custom" ? (
           <label className="block space-y-1">
             <span className="text-2xs font-medium text-muted">Custom interval</span>
-            <input type="text" value={customRepeat} onChange={e => setCustomRepeat(e.target.value)} placeholder="2 hours" className={inputClass} />
+            <input
+              type="text"
+              value={customRepeat}
+              onChange={e => setCustomRepeat(e.target.value)}
+              placeholder="2 hours"
+              className={inputClass}
+              aria-describedby="custom-interval-hint"
+            />
+            <span id="custom-interval-hint" className="text-2xs text-muted">
+              Format: number + unit (e.g. 15 minutes, 2 hours, 1 day)
+            </span>
           </label>
         ) : (
           <label className="block space-y-1">

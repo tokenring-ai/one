@@ -9,7 +9,14 @@ const bugHunter = {
   category: "Code Review",
   description: "Finds and fixes bugs",
   agentType: "leader",
-  steps: ["/list @packages = getPackages()", "/eval /agent run fix bugs"],
+  steps: [
+    "List all packages in the monorepo",
+    {
+      command: "agent run",
+      arguments: { type: "code-quality-engineer" },
+      remainder: "fix bugs",
+    },
+  ],
   subAgent: {
     forwardChatOutput: false,
     forwardStatusMessages: true,
@@ -48,11 +55,33 @@ const activeRun: { agentId: string | null; status: string; [key: string]: unknow
 
 let workflowRuns: (typeof activeRun)[] = [];
 
+const sampleCommands = [
+  {
+    name: "chat",
+    description: "Send a chat message",
+    inputSchema: {
+      remainder: { name: "message", description: "Message to send", required: true },
+    },
+  },
+  {
+    name: "agent run",
+    description: "Run an agent with a message",
+    inputSchema: {
+      args: {
+        type: { type: "string", description: "Agent type", required: true },
+        bg: { type: "flag", description: "Background" },
+      },
+      remainder: { name: "message", description: "Message", required: true },
+    },
+  },
+];
+
 void mock.module("../../rpc.ts", () => ({
   useWorkflows: () => ({ data: [bugHunter], isLoading: false, mutate: mutateWorkflows }),
   useWorkflowRuns: () => ({ data: { status: "success", runs: workflowRuns }, isLoading: false }),
   useAgentList: () => ({ data: [], isLoading: false, mutate: mock() }),
   useAgentTypes: () => ({ data: [{ type: "leader", displayName: "Leader", description: "", category: "General", enabledTools: [] }], isLoading: false }),
+  useAvailableCommands: () => ({ data: sampleCommands, isLoading: false }),
   useTypedSWR: () => ({ data: { directory: "/project/.tokenring/workflows" }, isLoading: false }),
   workflowRPCClient: { createWorkflow, updateWorkflow, deleteWorkflow, spawnWorkflow },
 }));
@@ -96,8 +125,11 @@ describe("WorkflowsApp", () => {
 
     expect(screen.getByText("bugHunter.yaml")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Finds and fixes bugs")).toBeInTheDocument();
-    expect(screen.getByLabelText("Step 1")).toHaveValue("/list @packages = getPackages()");
-    expect(screen.getByLabelText("Step 2")).toHaveValue("/eval /agent run fix bugs");
+    // Step 1 is a plain chat message; step 2 is a structured command.
+    expect(screen.getByLabelText("Step 1 chat message")).toHaveValue("List all packages in the monorepo");
+    expect(screen.getByLabelText("Step 2 command")).toHaveValue("agent run");
+    expect(screen.getByDisplayValue("code-quality-engineer")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("fix bugs")).toBeInTheDocument();
   });
 
   it("saves edits to an existing workflow", async () => {
@@ -119,16 +151,15 @@ describe("WorkflowsApp", () => {
     expect(updateWorkflow.mock.calls[0]![0]).toEqual({ name: "bugHunter", workflow: { ...body, displayName: "Renamed Hunter" } });
   });
 
-  it("creates a new workflow", async () => {
+  it("creates a new workflow with a chat step", async () => {
     const user = userEvent.setup();
     renderApp();
 
-    // The sidebar and the empty state both offer "New workflow"; either opens the create form.
     await user.click(screen.getAllByRole("button", { name: "New workflow" })[0]!);
     await user.type(screen.getByLabelText("Name"), "newFlow");
     await user.type(screen.getByLabelText("Display name"), "New Flow");
     await user.selectOptions(screen.getByLabelText("Agent type"), "leader");
-    await user.type(screen.getByLabelText("Step 1"), "/chat do the thing");
+    await user.type(screen.getByLabelText("Step 1 chat message"), "do the thing");
     await user.click(screen.getByRole("button", { name: "Create" }));
 
     await waitFor(() => expect(createWorkflow).toHaveBeenCalledTimes(1));
@@ -136,7 +167,26 @@ describe("WorkflowsApp", () => {
     expect(call.name).toBe("newFlow");
     expect(call.workflow.displayName).toBe("New Flow");
     expect(call.workflow.agentType).toBe("leader");
-    expect(call.workflow.steps).toEqual(["/chat do the thing"]);
+    expect(call.workflow.steps).toEqual(["do the thing"]);
+  });
+
+  it("shows required and optional args when a schema-rich command is selected", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getAllByRole("button", { name: "New workflow" })[0]!);
+    await user.click(screen.getByRole("button", { name: "Add command step" }));
+    // New workflows start with one empty chat step; the command step is step 2.
+    await user.selectOptions(screen.getByLabelText("Step 2 command"), "agent run");
+
+    expect(screen.getByText("Run an agent with a message")).toBeInTheDocument();
+    expect(screen.getByLabelText(/--type/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/--bg/)).toBeInTheDocument();
+    expect(screen.getByText("Required: type, message")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/--type/), "leader");
+    await user.type(screen.getByLabelText(/^message/), "analyze the repo");
+    expect(screen.getByText("/agent run --type leader analyze the repo")).toBeInTheDocument();
   });
 
   it("deletes a workflow after confirmation", async () => {
@@ -173,7 +223,7 @@ describe("WorkflowsApp", () => {
     renderApp("/workflows/bugHunter");
 
     expect(screen.getByText(/running step 2 of 2/)).toBeInTheDocument();
-    expect(screen.getByText(`Step 2 of 2: ${bugHunter.steps[1]}`)).toBeInTheDocument();
+    expect(screen.getByText(/Step 2 of 2: \/agent run --type code-quality-engineer fix bugs/)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Open agent running All-Package Bug Hunter" }));
     expect(screen.getByText("Agent page")).toBeInTheDocument();
@@ -239,14 +289,13 @@ describe("WorkflowsApp", () => {
         id: "run-done",
         status: "completed",
         currentStep: 2,
-        message: "done",
+        message: 'Workflow "bugHunter" completed',
         finishedAt: 1_700_000_100_000,
       },
     ];
     renderApp();
 
-    await user.click(screen.getByRole("button", { name: "View runs for All-Package Bug Hunter" }));
+    await user.click(screen.getByLabelText("View runs for All-Package Bug Hunter"));
     expect(screen.getByText("bugHunter.yaml")).toBeInTheDocument();
-    expect(screen.getByLabelText("Workflow run progress")).toBeInTheDocument();
   });
 });

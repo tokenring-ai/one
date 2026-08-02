@@ -139,4 +139,71 @@ describe("SettingsApp", () => {
     expect(screen.getByRole("button", { name: /System/i })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText(/currently dark/i)).toBeInTheDocument();
   });
+
+  it("clears local preference keys after confirmation without resetting in-memory first", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("theme", "dark");
+    localStorage.setItem("tokenring-sidebar-expanded", "false");
+    localStorage.setItem("tokenring-mobile-open", "true");
+    localStorage.setItem("tokenring-chat-inputs", JSON.stringify({ a: "draft" }));
+    localStorage.setItem("tokenring:calendar:events", "[]");
+
+    const reload = mock(() => undefined);
+    const reloadTimers: Array<() => void> = [];
+    const originalSetTimeout = globalThis.setTimeout;
+    const originalReload = window.location.reload;
+
+    // Intercept only the post-clear reload delay; leave other timers alone for userEvent.
+    globalThis.setTimeout = ((fn: TimerHandler, delay?: number, ...args: unknown[]) => {
+      if (delay === 400 && typeof fn === "function") {
+        reloadTimers.push(fn as () => void);
+        return 0 as unknown as ReturnType<typeof setTimeout>;
+      }
+      return originalSetTimeout(fn as Parameters<typeof setTimeout>[0], delay as number, ...args);
+    }) as unknown as typeof setTimeout;
+    try {
+      Object.defineProperty(window.location, "reload", { configurable: true, value: reload });
+    } catch {
+      // jsdom may freeze Location#reload; storage assertions still cover clear behavior
+    }
+
+    try {
+      renderSettings();
+
+      await user.click(screen.getByRole("button", { name: /^Clear$/i }));
+      expect(screen.getByText("Clear local preferences?")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: /Clear preferences/i }));
+
+      expect(localStorage.getItem("theme")).toBeNull();
+      expect(localStorage.getItem("tokenring-sidebar-expanded")).toBeNull();
+      expect(localStorage.getItem("tokenring-mobile-open")).toBeNull();
+      expect(localStorage.getItem("tokenring-chat-inputs")).toBeNull();
+      // User content keys are intentionally preserved
+      expect(localStorage.getItem("tokenring:calendar:events")).toBe("[]");
+      // Avoid re-writing defaults before reload
+      expect(setTheme).not.toHaveBeenCalled();
+      expect(resetToDefaults).not.toHaveBeenCalled();
+      expect(successToast).toHaveBeenCalledWith("Local preferences cleared");
+
+      expect(reloadTimers).toHaveLength(1);
+      reloadTimers[0]!();
+      if (window.location.reload === reload) {
+        expect(reload).toHaveBeenCalled();
+      }
+    } finally {
+      globalThis.setTimeout = originalSetTimeout;
+      try {
+        Object.defineProperty(window.location, "reload", { configurable: true, value: originalReload });
+      } catch {
+        // ignore restore failures in jsdom
+      }
+    }
+  });
+
+  it("exposes external resource links", () => {
+    renderSettings();
+    expect(screen.getByRole("link", { name: "GitHub" })).toHaveAttribute("href", "https://github.com/tokenring-ai");
+    expect(screen.getByRole("link", { name: "Website" })).toHaveAttribute("href", "https://tokenring.ai");
+    expect(screen.getByRole("link", { name: "X / Twitter" })).toHaveAttribute("href", "https://x.com/TokenRingAI");
+  });
 });

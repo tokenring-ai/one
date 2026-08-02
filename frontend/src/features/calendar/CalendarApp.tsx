@@ -1,11 +1,11 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { cn } from "../../lib/utils.ts";
-import { agentRPCClient, calendarRPCClient, useCalendarEvents, useCalendarProviders, workflowRPCClient } from "../../rpc.ts";
+import { agentRPCClient, calendarRPCClient, useCalendarProviders, useTypedSWR, workflowRPCClient } from "../../rpc.ts";
 import DayView from "./components/DayView.tsx";
 import EventModal from "./components/EventModal.tsx";
 import MonthView from "./components/MonthView.tsx";
@@ -18,18 +18,24 @@ import { rpcToLocalEvent } from "./rpcToLocalEvent.ts";
 import { loadEvents, saveEvents } from "./storage.ts";
 import type { CalendarEvent, ViewMode } from "./types.ts";
 
+/** Google Calendar maxResults defaults to 10 when omitted — request enough for a dense month. */
+const EVENTS_FETCH_LIMIT = 250;
+
 export default function CalendarApp() {
   const navigate = useNavigate();
-  const today = useMemo(() => new Date(), []);
+  const { provider: routeProvider } = useParams<{ provider?: string }>();
+  // URL is the source of truth for which provider is open (params are already decoded).
+  const provider = routeProvider ?? null;
+
+  // Recompute each render so "Today" and highlighting stay correct across midnight
+  const today = new Date();
 
   const [view, setView] = useState<ViewMode>("month");
-  const [cursor, setCursor] = useState<Date>(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [events, setEvents] = useState<CalendarEvent[]>(() =>
-    loadEvents().map(e => ({
-      ...e,
-      source: e.source ?? "local",
-    })),
-  );
+  const [cursor, setCursor] = useState<Date>(() => {
+    const t = new Date();
+    return new Date(t.getFullYear(), t.getMonth(), 1);
+  });
+  const [events, setEvents] = useState<CalendarEvent[]>(() => loadEvents());
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -41,37 +47,58 @@ export default function CalendarApp() {
 
   // Calendar provider state
   const providers = useCalendarProviders();
-  const [provider, setProvider] = useState<string | null>(null);
   const [rpcDetailEvent, setRpcDetailEvent] = useState<CalendarEvent | null>(null);
 
+  const openProvider = useCallback(
+    (name: string | null, options?: { replace?: boolean }) => {
+      const path = name ? `/calendar/${encodeURIComponent(name)}` : "/calendar";
+      void navigate(path, options?.replace ? { replace: true } : undefined);
+    },
+    [navigate],
+  );
+
   useEffect(() => {
+    if (providers.isLoading) return;
     const available = providers.data?.providers ?? [];
     if (!available[0]) {
-      if (provider) setProvider(null);
+      if (routeProvider) openProvider(null, { replace: true });
       return;
     }
     if (!provider || !available.includes(provider)) {
-      setProvider(available[0]);
+      openProvider(available[0], { replace: true });
     }
-  }, [providers.data, provider]);
+  }, [providers.data, providers.isLoading, provider, routeProvider, openProvider]);
 
+  // Visible range including month-grid padding days so adjacent-month cells stay populated
   const { fetchFrom, fetchTo } = useMemo(() => {
     let from: Date, to: Date;
     if (view === "month") {
-      from = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
-      to = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 23, 59, 59, 999);
+      const firstOfMonth = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+      from = startOfWeek(firstOfMonth);
+      // 6-week grid (42 days), exclusive end at start of day after last cell
+      to = addDays(from, 42);
     } else if (view === "week") {
       from = startOfWeek(cursor);
       to = addDays(from, 7);
-      to.setHours(23, 59, 59, 999);
     } else {
       from = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
+      from.setHours(0, 0, 0, 0);
       to = addDays(from, 1);
     }
     return { fetchFrom: from.toISOString(), fetchTo: to.toISOString() };
   }, [view, cursor]);
 
-  const rpcEventsResult = useCalendarEvents(provider ?? undefined, fetchFrom, fetchTo);
+  const rpcEventsResult = useTypedSWR(
+    provider ? `/calendar/getUpcomingEvents/${provider}/${fetchFrom}/${fetchTo}/${EVENTS_FETCH_LIMIT}` : null,
+    () =>
+      calendarRPCClient.getUpcomingEvents({
+        provider: provider!,
+        from: fetchFrom,
+        to: fetchTo,
+        limit: EVENTS_FETCH_LIMIT,
+      }),
+    { refreshInterval: 30000 },
+  );
 
   const allEvents = useMemo(() => {
     const rpc = (rpcEventsResult.data?.events ?? []).map(ev => rpcToLocalEvent(ev, provider!));
@@ -107,30 +134,33 @@ export default function CalendarApp() {
   }, [view]);
 
   const goToday = useCallback(() => {
-    if (view === "month") setCursor(new Date(today.getFullYear(), today.getMonth(), 1));
-    else setCursor(new Date(today));
-  }, [view, today]);
+    const t = new Date();
+    if (view === "month") setCursor(new Date(t.getFullYear(), t.getMonth(), 1));
+    else setCursor(new Date(t));
+  }, [view]);
 
   const titleLabel = useMemo(() => {
     if (view === "month") return `${MONTHS[cursor.getMonth()]} ${cursor.getFullYear()}`;
     if (view === "week") {
       const ws = startOfWeek(cursor);
       const we = addDays(ws, 6);
-      if (ws.getMonth() === we.getMonth()) return `${MONTHS[ws.getMonth()]} ${ws.getFullYear()}`;
-      return `${MONTHS[ws.getMonth()]!.slice(0, 3)} – ${MONTHS[we.getMonth()]!.slice(0, 3)} ${we.getFullYear()}`;
+      if (ws.getMonth() === we.getMonth() && ws.getFullYear() === we.getFullYear()) {
+        return `${MONTHS[ws.getMonth()]} ${ws.getFullYear()}`;
+      }
+      if (ws.getFullYear() === we.getFullYear()) {
+        return `${MONTHS[ws.getMonth()]!.slice(0, 3)} – ${MONTHS[we.getMonth()]!.slice(0, 3)} ${we.getFullYear()}`;
+      }
+      return `${MONTHS[ws.getMonth()]!.slice(0, 3)} ${ws.getFullYear()} – ${MONTHS[we.getMonth()]!.slice(0, 3)} ${we.getFullYear()}`;
     }
     return `${MONTHS[cursor.getMonth()]} ${cursor.getDate()}, ${cursor.getFullYear()}`;
   }, [view, cursor]);
 
-  const openNew = useCallback(
-    (date?: Date, hour?: number) => {
-      setEditingEvent(null);
-      setDefaultDate(toDateKey(date ?? today));
-      setDefaultHour(hour ?? null);
-      setModalOpen(true);
-    },
-    [today],
-  );
+  const openNew = useCallback((date?: Date, hour?: number) => {
+    setEditingEvent(null);
+    setDefaultDate(toDateKey(date ?? new Date()));
+    setDefaultHour(hour ?? null);
+    setModalOpen(true);
+  }, []);
 
   const openEdit = useCallback((ev: CalendarEvent) => {
     if (ev.source === "rpc") {
@@ -172,14 +202,14 @@ export default function CalendarApp() {
       // Provider-backed calendar event (create or update)
       if (ev.type === "calendar" && ev.source === "rpc" && (ev.provider || provider)) {
         const p = ev.provider ?? provider!;
-        const { startAt, endAt } = eventRangeToIso({
-          date: ev.date,
-          ...(ev.allDay !== undefined && { allDay: ev.allDay }),
-          ...(ev.startTime && { startTime: ev.startTime }),
-          ...(ev.endTime && { endTime: ev.endTime }),
-        });
         setSaving(true);
         try {
+          const { startAt, endAt } = eventRangeToIso({
+            date: ev.date,
+            ...(ev.allDay !== undefined && { allDay: ev.allDay }),
+            ...(ev.startTime && { startTime: ev.startTime }),
+            ...(ev.endTime && { endTime: ev.endTime }),
+          });
           const isUpdate = Boolean(editingEvent?.source === "rpc" && editingEvent.id);
           if (isUpdate) {
             await calendarRPCClient.updateEvent({
@@ -345,7 +375,7 @@ export default function CalendarApp() {
           availableProviders={availableProviders}
           loading={providersLoading}
           error={providersError}
-          onProviderChange={setProvider}
+          onProviderChange={name => openProvider(name)}
           onRetry={() => void providers.mutate()}
         />
 
@@ -418,28 +448,27 @@ export default function CalendarApp() {
         </div>
       )}
 
-      {/* Calendar body */}
+      {/* Calendar body — keep grid visible while RPC loads so local events stay usable */}
       <div className="flex-1 min-h-0 flex flex-col relative">
-        {eventsLoading ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-2 text-muted">
-            <Loader2 className="w-6 h-6 animate-spin" />
-            <p className="text-xs">Loading calendar events…</p>
+        {view === "month" && (
+          <MonthView
+            year={cursor.getFullYear()}
+            month={cursor.getMonth()}
+            today={today}
+            events={allEvents}
+            onDayClick={handleDayClick}
+            onEventClick={openEdit}
+          />
+        )}
+        {view === "week" && <WeekView weekStart={weekStart} today={today} events={allEvents} onSlotClick={handleSlotClick} onEventClick={openEdit} />}
+        {view === "day" && <DayView date={cursor} today={today} events={allEvents} onSlotClick={handleSlotClick} onEventClick={openEdit} />}
+        {eventsLoading && (
+          <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-8 bg-primary/40" aria-hidden>
+            <div className="flex items-center gap-2 rounded-lg border border-primary bg-secondary/90 px-3 py-1.5 text-xs text-muted shadow-sm">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Loading calendar events…
+            </div>
           </div>
-        ) : (
-          <>
-            {view === "month" && (
-              <MonthView
-                year={cursor.getFullYear()}
-                month={cursor.getMonth()}
-                today={today}
-                events={allEvents}
-                onDayClick={handleDayClick}
-                onEventClick={openEdit}
-              />
-            )}
-            {view === "week" && <WeekView weekStart={weekStart} today={today} events={allEvents} onSlotClick={handleSlotClick} onEventClick={openEdit} />}
-            {view === "day" && <DayView date={cursor} today={today} events={allEvents} onSlotClick={handleSlotClick} onEventClick={openEdit} />}
-          </>
         )}
       </div>
 

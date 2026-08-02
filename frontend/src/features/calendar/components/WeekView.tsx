@@ -2,7 +2,7 @@ import { Bot, Calendar, GitBranch } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { cn } from "../../../lib/utils.ts";
 import { HOUR_H, HOURS, WEEKDAYS_LETTER } from "../constants.ts";
-import { addDays, toDateKey } from "../dateUtils.ts";
+import { addDays, eventDurationHours, toDateKey } from "../dateUtils.ts";
 import type { CalendarEvent } from "../types.ts";
 import EventChip from "./EventChip.tsx";
 
@@ -120,9 +120,8 @@ export default function WeekView({
                   .flatMap(([, evs]) => evs)
                   .map(ev => {
                     const [h, min] = ev.startTime!.split(":").map(Number) as [number, number];
-                    const [eh, emin] = ev.endTime ? (ev.endTime.split(":").map(Number) as [number, number]) : [h + 1, min];
                     const top = (h + min / 60) * HOUR_H;
-                    const height = Math.max((eh - h + (emin - min) / 60) * HOUR_H, 20);
+                    const height = Math.max(eventDurationHours(ev.startTime!, ev.endTime) * HOUR_H, 20);
                     return (
                       <button
                         type="button"

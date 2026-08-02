@@ -1,7 +1,7 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2, Plus, X } from "lucide-react";
 import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { cn } from "../../lib/utils.ts";
 import { queueRPCClient, useAgentTypes } from "../../rpc.ts";
@@ -15,7 +15,7 @@ type CreateQueueFormProps = {
 
 export default function CreateQueueForm({ existingNames, onCreated, onCancel }: CreateQueueFormProps) {
   const agentTypes = useAgentTypes();
-  const typeList = agentTypes.data ?? [];
+  const typeList = useMemo(() => agentTypes.data ?? [], [agentTypes.data]);
   const [name, setName] = useState("");
   const [agentType, setAgentType] = useState("");
   const [concurrency, setConcurrency] = useState("1");
@@ -32,6 +32,9 @@ export default function CreateQueueForm({ existingNames, onCreated, onCancel }: 
     });
   }, [typeList]);
 
+  const effectiveAgentType = agentType.trim();
+  const typesLoading = agentTypes.isLoading && typeList.length === 0;
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
@@ -43,8 +46,8 @@ export default function CreateQueueForm({ existingNames, onCreated, onCancel }: 
       toastManager.error(`A queue named "${trimmedName}" already exists`, { duration: 4000 });
       return;
     }
-    if (!agentType) {
-      toastManager.error("Select an agent type", { duration: 3000 });
+    if (!effectiveAgentType) {
+      toastManager.error(typesLoading ? "Still loading agent types" : "Select or enter an agent type", { duration: 3000 });
       return;
     }
     const conc = Number.parseInt(concurrency, 10);
@@ -67,7 +70,7 @@ export default function CreateQueueForm({ existingNames, onCreated, onCancel }: 
     try {
       const result = await queueRPCClient.createQueue({
         name: trimmedName,
-        agentType,
+        agentType: effectiveAgentType,
         concurrency: conc,
         ...(size != null ? { maxSize: size } : {}),
         ...(resultsCap != null ? { maxResults: resultsCap } : {}),
@@ -77,14 +80,14 @@ export default function CreateQueueForm({ existingNames, onCreated, onCancel }: 
           toastManager.error(`A queue named "${trimmedName}" already exists`, { duration: 4000 });
           return;
         case "invalidAgentType":
-          toastManager.error(`Agent type "${agentType}" is not registered`, { duration: 4000 });
+          toastManager.error(`Agent type "${effectiveAgentType}" is not registered`, { duration: 4000 });
           return;
         case "success":
           toastManager.success(result.message, { duration: 2500 });
           onCreated(trimmedName);
       }
     } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
+      toastManager.error(formatError(err, { includeStack: false }), { duration: 5000 });
     } finally {
       setSaving(false);
     }
@@ -112,23 +115,49 @@ export default function CreateQueueForm({ existingNames, onCreated, onCancel }: 
 
         <label className="block space-y-1">
           <span className="text-2xs font-medium text-muted">Agent type</span>
-          <select
-            value={agentType}
-            onChange={e => setAgentType(e.target.value)}
-            className={inputClass}
-            required
-            disabled={typeList.length === 0 && agentTypes.isLoading}
-          >
-            {typeList.length === 0 ? (
-              <option value="">{agentTypes.isLoading ? "Loading agent types…" : "No agent types available"}</option>
-            ) : (
-              typeList.map(t => (
+          {typesLoading ? (
+            <div className="flex items-center gap-2 text-2xs text-muted px-3 py-2 border border-primary rounded-lg">
+              <Loader2 className="w-3 h-3 animate-spin" /> Loading agent types…
+            </div>
+          ) : typeList.length === 0 ? (
+            <>
+              <input
+                type="text"
+                value={agentType}
+                onChange={e => setAgentType(e.target.value)}
+                placeholder="code"
+                className={inputClass}
+                required
+                spellCheck={false}
+                autoComplete="off"
+              />
+              <span className="block text-2xs text-muted">
+                {agentTypes.error ? (
+                  <>
+                    Could not load agent types.{" "}
+                    <button
+                      type="button"
+                      onClick={() => void agentTypes.mutate()}
+                      className="text-sky-600 dark:text-sky-400 hover:underline focus-ring rounded cursor-pointer"
+                    >
+                      Retry
+                    </button>{" "}
+                    or enter a type id manually.
+                  </>
+                ) : (
+                  "No agent types listed — enter a registered type id (e.g. code)."
+                )}
+              </span>
+            </>
+          ) : (
+            <select value={agentType} onChange={e => setAgentType(e.target.value)} className={inputClass} required>
+              {typeList.map(t => (
                 <option key={t.type} value={t.type}>
                   {t.displayName} ({t.type})
                 </option>
-              ))
-            )}
-          </select>
+              ))}
+            </select>
+          )}
         </label>
 
         <label className="block space-y-1">
@@ -157,7 +186,7 @@ export default function CreateQueueForm({ existingNames, onCreated, onCancel }: 
         </button>
         <button
           type="submit"
-          disabled={saving || !agentType}
+          disabled={saving || typesLoading || !effectiveAgentType}
           className={cn(
             "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-sky-600 hover:bg-sky-500 text-white rounded-lg focus-ring cursor-pointer disabled:opacity-50 shadow-sm",
           )}

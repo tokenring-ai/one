@@ -4,9 +4,29 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 const mutate = mock(async () => undefined);
 
-let pluginsData: {
+type PluginsData = {
   plugins: Array<{ name: string; displayName: string; version: string; description: string; hasConfig: boolean }>;
-} = {
+};
+
+type ConfigData = { effective: Record<string, unknown>; overrides: { user: Record<string, unknown>; project: Record<string, unknown> } };
+
+type BotsData = {
+  status: "success";
+  bots: Array<{
+    name: string;
+    displayName: string;
+    agentType: string;
+    directMessages: "listed";
+    requireMention: boolean;
+    users: [];
+    channels: Array<{ name: string; target: string; service: string; channelId: string; agentType: string; allowedUsers: string[]; connected: boolean }>;
+    conversations: [];
+  }>;
+  services: Array<{ name: string; maxMessageLength: number }>;
+  groups: [];
+};
+
+let pluginsData: PluginsData = {
   plugins: [
     {
       name: "@tokenring-ai/slack",
@@ -32,7 +52,7 @@ let pluginsData: {
   ],
 };
 
-let configData: { effective: Record<string, unknown>; overrides: { user: Record<string, unknown>; project: Record<string, unknown> } } = {
+let configData: ConfigData = {
   effective: {
     slack: { accounts: { slack: { botToken: { __sensitive: true, isSet: true } } } },
     telegram: { accounts: {} },
@@ -40,21 +60,7 @@ let configData: { effective: Record<string, unknown>; overrides: { user: Record<
   overrides: { user: {}, project: {} },
 };
 
-let botsData: {
-  status: "success";
-  bots: Array<{
-    name: string;
-    displayName: string;
-    agentType: string;
-    directMessages: "listed";
-    requireMention: boolean;
-    users: [];
-    channels: Array<{ name: string; target: string; service: string; channelId: string; agentType: string; allowedUsers: string[]; connected: boolean }>;
-    conversations: [];
-  }>;
-  services: Array<{ name: string; maxMessageLength: number }>;
-  groups: [];
-} = {
+let botsData: BotsData | undefined = {
   status: "success",
   bots: [
     {
@@ -82,10 +88,12 @@ let botsData: {
   groups: [],
 };
 
+let botsError: Error | undefined;
+
 void mock.module("../../rpc.ts", () => ({
   usePlugins: () => ({ data: pluginsData, isLoading: false, error: undefined, isValidating: false, mutate }),
   useConfigValues: () => ({ data: configData, isLoading: false, error: undefined, isValidating: false, mutate }),
-  useBots: () => ({ data: botsData, isLoading: false, error: undefined, isValidating: false, mutate }),
+  useBots: () => ({ data: botsData, isLoading: false, error: botsError, isValidating: false, mutate }),
   useAgentList: () => ({ data: [], isLoading: false, mutate }),
   agentRPCClient: {
     createAgent: mock(async () => ({ id: "agent-1", displayName: "Social", description: "" })),
@@ -99,8 +107,8 @@ function renderApp() {
     <MemoryRouter initialEntries={["/social"]}>
       <Routes>
         <Route path="/social" element={<SocialApp />} />
-        <Route path="/configuration" element={<div>Configuration page</div>} />
-        <Route path="/bots" element={<div>Bots page</div>} />
+        <Route path="/configuration/:plugin?" element={<div>Configuration page</div>} />
+        <Route path="/bots/:botId?" element={<div>Bots page</div>} />
         <Route path="/plugins" element={<div>Plugins page</div>} />
         <Route path="/vault" element={<div>Vault page</div>} />
       </Routes>
@@ -111,6 +119,7 @@ function renderApp() {
 describe("SocialApp", () => {
   beforeEach(() => {
     mutate.mockClear();
+    botsError = undefined;
     pluginsData = {
       plugins: [
         {
@@ -189,6 +198,8 @@ describe("SocialApp", () => {
     expect(screen.getByText("Discord")).toBeTruthy();
     expect(screen.getByText("Reddit")).toBeTruthy();
     expect(screen.getByText("X / Twitter")).toBeTruthy();
+    // Discord description must not claim the plugin is unbundled — it ships with One.
+    expect(screen.queryByText(/plugin not bundled/i)).toBeNull();
     const notInstalled = screen.getAllByText("Not installed");
     expect(notInstalled.length).toBeGreaterThanOrEqual(3);
   });
@@ -210,6 +221,49 @@ describe("SocialApp", () => {
     expect(screen.getByText("Open Bots")).toBeTruthy();
     // Summary stats: 1 bot, 1 channel, 0 conversations, 1 service
     expect(screen.getByText("Bots", { selector: "span" })).toBeTruthy();
+  });
+
+  it("shows soft error when bots fail without fabricating zero counts", () => {
+    botsData = undefined;
+    botsError = new Error("bot service unavailable");
+    renderApp();
+
+    expect(screen.getByText("Unable to load bots status")).toBeTruthy();
+    expect(screen.getByText("bot service unavailable")).toBeTruthy();
+    expect(screen.queryByText("No messaging services connected")).toBeNull();
+  });
+
+  it("reports offline configured platforms in the platforms headline", () => {
+    // Only Slack installed + configured, no live service — avoids a competing "ready to configure" headline.
+    pluginsData = {
+      plugins: [
+        {
+          name: "@tokenring-ai/slack",
+          displayName: "Slack Integration",
+          version: "0.2.0",
+          description: "Slack transport",
+          hasConfig: true,
+        },
+        {
+          name: "@tokenring-ai/bot",
+          displayName: "Bots",
+          version: "0.2.0",
+          description: "Bots",
+          hasConfig: true,
+        },
+      ],
+    };
+    botsData = { status: "success", bots: [], services: [], groups: [] };
+    configData = {
+      effective: {
+        slack: { accounts: { workspace: { botToken: { __sensitive: true, isSet: true } } } },
+      },
+      overrides: { user: {}, project: {} },
+    };
+    renderApp();
+
+    expect(screen.getByText("Configured")).toBeTruthy();
+    expect(screen.getByText(/1 configured \(offline\)/)).toBeTruthy();
   });
 
   it("still offers launching a social agent", () => {

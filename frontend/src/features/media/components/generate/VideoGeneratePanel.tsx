@@ -56,7 +56,12 @@ export default function VideoGeneratePanel({ agentId, onGenerated }: { agentId: 
         },
       });
       if (result.status === "success") {
-        toastManager.success(result.filename ? `Video generated: ${result.filename}` : "Video generated!", { duration: 3000 });
+        if (!result.filename) {
+          toastManager.error("Video generation returned no file", { duration: 4000 });
+          onGenerated();
+          return;
+        }
+        toastManager.success(`Video generated: ${result.filename}`, { duration: 3000 });
         setPrompt("");
         onGenerated(result.filename);
       } else {

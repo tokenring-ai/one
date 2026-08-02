@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { EmailMessage } from "@tokenring-ai/email";
-import { draftFromMessage, formatAddress, isValidEmailList, parseEmailAddresses, senderName } from "./utils.ts";
+import { draftFromMessage, formatAddress, isValidEmailList, messageTimestamp, parseEmailAddresses, senderName } from "./utils.ts";
 
 const sampleMessage: EmailMessage = {
   id: "m1",
@@ -62,6 +62,16 @@ describe("senderName", () => {
 describe("formatAddress", () => {
   it("includes name when present", () => {
     expect(formatAddress({ email: "a@b.com", name: "A" })).toBe("A <a@b.com>");
+  });
+});
+
+describe("messageTimestamp", () => {
+  it("prefers receivedAt", () => {
+    expect(messageTimestamp(sampleMessage)).toBe(sampleMessage.receivedAt);
+  });
+
+  it("falls back to sentAt", () => {
+    expect(messageTimestamp({ ...sampleMessage, receivedAt: 0, sentAt: 99 })).toBe(99);
   });
 });
 

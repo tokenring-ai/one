@@ -94,16 +94,20 @@ const sendInput = mock(async (_args: { agentId: string; input: { from: string; m
 const getAgentTypes = mock(async () => [codeAgentType]);
 
 let agentList: (typeof runningAgent)[] = [runningAgent];
+let agentsLoading = false;
+let agentsError: Error | undefined;
 let skillsList = [...sampleSkills];
+let skillsLoading = false;
+let skillsError: Error | undefined;
 let enabledNames = sampleSkills.filter(s => s.enabled).map(s => s.name);
 
 void mock.module("../../rpc.ts", () => ({
-  useAgentList: () => ({ data: agentList, isLoading: false, mutate: mutateAgents }),
+  useAgentList: () => ({ data: agentsLoading ? undefined : agentList, isLoading: agentsLoading, error: agentsError, mutate: mutateAgents }),
   useAgentTypes: () => ({ data: [codeAgentType], isLoading: false, mutate: mock() }),
   useSkills: () => ({
-    data: { status: "success" as const, skills: skillsList },
-    isLoading: false,
-    error: undefined,
+    data: skillsError || skillsLoading ? undefined : { status: "success" as const, skills: skillsList },
+    isLoading: skillsLoading,
+    error: skillsError,
     mutate: mutateSkills,
   }),
   useEnabledSkills: () => ({
@@ -147,7 +151,11 @@ function renderApp(initialPath = "/skills") {
 describe("SkillsApp", () => {
   beforeEach(() => {
     agentList = [runningAgent];
+    agentsLoading = false;
+    agentsError = undefined;
     skillsList = sampleSkills.map(s => ({ ...s }));
+    skillsLoading = false;
+    skillsError = undefined;
     enabledNames = sampleSkills.filter(s => s.enabled).map(s => s.name);
     mutateSkills.mockClear();
     mutateAgents.mockClear();
@@ -290,5 +298,47 @@ describe("SkillsApp", () => {
     renderApp();
     expect(screen.queryByRole("button", { name: "Try internal-hook" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Try code-review" })).toBeInTheDocument();
+  });
+
+  it("shows loading state while agents or skills load", () => {
+    agentsLoading = true;
+    renderApp();
+    expect(screen.getByText("Loading skills…")).toBeInTheDocument();
+    expect(screen.queryByText("/code-review")).not.toBeInTheDocument();
+  });
+
+  it("shows empty state when no skills are installed", () => {
+    skillsList = [];
+    enabledNames = [];
+    renderApp();
+    expect(screen.getByText("No skills installed")).toBeInTheDocument();
+    expect(screen.getByText(/Download a skill zip above/)).toBeInTheDocument();
+  });
+
+  it("shows skills load error with retry", async () => {
+    const user = userEvent.setup();
+    skillsError = new Error("skills boom");
+    renderApp();
+    expect(screen.getByText("Failed to load skills")).toBeInTheDocument();
+    expect(screen.getByText("skills boom")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(mutateSkills).toHaveBeenCalled();
+  });
+
+  it("shows agents load error with retry", async () => {
+    const user = userEvent.setup();
+    agentsError = new Error("agents boom");
+    agentList = [];
+    renderApp();
+    expect(screen.getByText("Failed to load agents")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(mutateAgents).toHaveBeenCalled();
+  });
+
+  it("disables download for whitespace-only URL", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await user.type(screen.getByLabelText("Skill zip URL"), "   ");
+    expect(screen.getByRole("button", { name: /Download/i })).toBeDisabled();
   });
 });

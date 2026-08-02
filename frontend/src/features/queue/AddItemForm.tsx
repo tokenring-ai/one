@@ -32,7 +32,11 @@ export default function AddItemForm({ queueName, onCreated, onCancel }: AddItemF
 
     setSaving(true);
     try {
-      const result = await queueRPCClient.enqueue({ queueName, name: trimmedName, input: trimmedInput, from: "ui" });
+      const result = await queueRPCClient.enqueue({
+        queueName,
+        name: trimmedName,
+        input: { from: "ui", message: trimmedInput },
+      });
       if (result.status === "queueNotFound") {
         toastManager.error(`Queue "${queueName}" no longer exists`, { duration: 4000 });
         return;
@@ -40,7 +44,8 @@ export default function AddItemForm({ queueName, onCreated, onCancel }: AddItemF
       toastManager.success(result.message, { duration: 2500 });
       onCreated();
     } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
+      // maxSize and other service errors are thrown rather than returned as status codes
+      toastManager.error(formatError(err, { includeStack: false }), { duration: 5000 });
     } finally {
       setSaving(false);
     }

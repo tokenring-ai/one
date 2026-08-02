@@ -55,7 +55,12 @@ export default function ImageGeneratePanel({ agentId, onGenerated }: { agentId: 
       });
       if (result.status === "success") {
         const fileName = result.results[0]?.fileName;
-        toastManager.success(fileName ? `Image generated: ${fileName}` : "Image generated!", { duration: 3000 });
+        if (!fileName) {
+          toastManager.error("Image generation returned no files", { duration: 4000 });
+          onGenerated();
+          return;
+        }
+        toastManager.success(`Image generated: ${fileName}`, { duration: 3000 });
         setPrompt("");
         onGenerated(fileName);
       } else {

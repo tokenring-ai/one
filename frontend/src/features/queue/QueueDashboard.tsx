@@ -52,27 +52,29 @@ export default function QueueDashboard() {
   const allQueues = queues.data?.queues ?? {};
   const queueNames = useMemo(() => Object.keys(allQueues).sort((a, b) => a.localeCompare(b)), [allQueues]);
 
-  // Apply selection after create once the stream reflects the new queue
+  // Resolve selection during render so the first frame with data is not blank
+  // (effect-only selection left tabs/content missing until the next paint).
+  const selectedQueueName = useMemo(() => {
+    if (pendingSelect && queueNames.includes(pendingSelect)) return pendingSelect;
+    if (selectedQueue && queueNames.includes(selectedQueue)) return selectedQueue;
+    if (queueNames.length === 0) return null;
+    return queueNames.includes("default") ? "default" : (queueNames[0] ?? null);
+  }, [pendingSelect, selectedQueue, queueNames]);
+
+  // Persist resolved selection into state once stream/create catches up
   useEffect(() => {
-    if (!pendingSelect) return;
-    if (queueNames.includes(pendingSelect)) {
+    if (pendingSelect && queueNames.includes(pendingSelect)) {
       setSelectedQueue(pendingSelect);
       setPendingSelect(null);
-    }
-  }, [pendingSelect, queueNames]);
-
-  // Auto-select the "default" queue (or the first available)
-  useEffect(() => {
-    if (pendingSelect) return;
-    if (queueNames.length === 0) {
-      setSelectedQueue(null);
       return;
     }
-    if (!selectedQueue || !queueNames.includes(selectedQueue)) {
-      setSelectedQueue(queueNames.includes("default") ? "default" : (queueNames[0] ?? null));
+    if (pendingSelect) return;
+    if (selectedQueueName !== selectedQueue) {
+      setSelectedQueue(selectedQueueName);
     }
-  }, [queueNames, selectedQueue, pendingSelect]);
-  const queueData = selectedQueue ? allQueues[selectedQueue] : undefined;
+  }, [pendingSelect, queueNames, selectedQueueName, selectedQueue]);
+
+  const queueData = selectedQueueName ? allQueues[selectedQueueName] : undefined;
   const pending = useMemo(() => queueData?.items.filter(i => i.status === "pending") ?? [], [queueData]);
   const running = useMemo(() => queueData?.items.filter(i => i.status === "running") ?? [], [queueData]);
   // Stream stores oldest→newest; show newest first for a usable results feed.
@@ -93,7 +95,7 @@ export default function QueueDashboard() {
   // Reset expand state when switching queues/tabs so rows don't stay open with stale ids
   useEffect(() => {
     setExpandedIds(new Set());
-  }, [selectedQueue, tab]);
+  }, [selectedQueueName, tab]);
 
   const tabs = useMemo<FilterTabOption<MainTab>[]>(
     () => [
@@ -126,39 +128,38 @@ export default function QueueDashboard() {
   };
 
   const handleCancel = async () => {
-    if (!selectedQueue || !confirmCancel) return;
+    if (!selectedQueueName || !confirmCancel) return;
     const itemId = confirmCancel;
     setConfirmCancel(null);
     setBusyAction(`cancel:${itemId}`);
     try {
-      const result = await queueRPCClient.cancelItem({ queueName: selectedQueue, itemId });
+      const result = await queueRPCClient.cancelItem({ queueName: selectedQueueName, itemId });
       if (!result.cancelled) {
         toastManager.warning(result.message, { duration: 3000 });
       } else {
         toastManager.success(result.message, { duration: 2500 });
       }
-      await queues.mutate();
+      // Live stream already reflects state mutations; reconnect only on failure recovery paths.
     } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
+      toastManager.error(formatError(err, { includeStack: false }), { duration: 5000 });
     } finally {
       setBusyAction(null);
     }
   };
 
   const handleClear = async () => {
-    if (!selectedQueue) return;
+    if (!selectedQueueName) return;
     setConfirmClear(false);
     setBusyAction("clear");
     try {
-      const result = await queueRPCClient.clear({ queueName: selectedQueue });
+      const result = await queueRPCClient.clear({ queueName: selectedQueueName });
       if (result.status === "queueNotFound") {
-        toastManager.error(`Queue "${selectedQueue}" no longer exists`, { duration: 4000 });
+        toastManager.error(`Queue "${selectedQueueName}" no longer exists`, { duration: 4000 });
         return;
       }
       toastManager.success(result.message, { duration: 2500 });
-      await queues.mutate();
     } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
+      toastManager.error(formatError(err, { includeStack: false }), { duration: 5000 });
     } finally {
       setBusyAction(null);
     }
@@ -214,9 +215,9 @@ export default function QueueDashboard() {
                     onCreated={name => {
                       setShowCreateForm(false);
                       setPendingSelect(name);
+                      setSelectedQueue(name);
                       setTab("pending");
                       setShowAddForm(false);
-                      void queues.mutate();
                     }}
                   />
                 </div>
@@ -233,12 +234,26 @@ export default function QueueDashboard() {
             </div>
           ) : (
             <>
+              {queues.error ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-2xs text-amber-800 dark:text-amber-200">
+                  <span>Live queue updates interrupted. Showing the last snapshot.</span>
+                  <button
+                    type="button"
+                    onClick={refresh}
+                    className="inline-flex items-center gap-1 font-medium text-amber-900 dark:text-amber-100 hover:underline focus-ring rounded cursor-pointer"
+                  >
+                    <RefreshCw className={cn("w-3 h-3", queues.isValidating && "animate-spin")} />
+                    Reconnect
+                  </button>
+                </div>
+              ) : null}
+
               {/* Summary */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <SummaryStat label="Queues" value={String(queueNames.length)} icon={<Layers className="w-4 h-4" />} accentClass="text-sky-500" />
                 <SummaryStat label="Pending" value={String(totalPending)} icon={<Clock className="w-4 h-4" />} accentClass="text-indigo-500" />
                 <SummaryStat label="Running" value={String(totalRunning)} icon={<Activity className="w-4 h-4" />} accentClass="text-amber-500" />
-                <SummaryStat label="Completed" value={String(totalResults)} icon={<History className="w-4 h-4" />} accentClass="text-violet-500" />
+                <SummaryStat label="Results" value={String(totalResults)} icon={<History className="w-4 h-4" />} accentClass="text-violet-500" />
               </div>
 
               {/* Queue picker + controls */}
@@ -247,10 +262,12 @@ export default function QueueDashboard() {
                   <label className="flex-1 min-w-0 space-y-1">
                     <span className="text-2xs font-bold text-muted uppercase tracking-widest">Queue</span>
                     <select
-                      value={selectedQueue ?? ""}
+                      value={selectedQueueName ?? ""}
                       onChange={e => {
                         setSelectedQueue(e.target.value || null);
+                        setPendingSelect(null);
                         setShowAddForm(false);
+                        setShowCreateForm(false);
                         setTab("pending");
                         setResultFilter("all");
                       }}
@@ -273,7 +290,10 @@ export default function QueueDashboard() {
                     ) : null}
                     <button
                       type="button"
-                      onClick={() => setShowCreateForm(v => !v)}
+                      onClick={() => {
+                        setShowCreateForm(v => !v);
+                        setShowAddForm(false);
+                      }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-tertiary border border-primary text-primary hover:bg-hover rounded-lg focus-ring cursor-pointer transition-colors"
                     >
                       <Layers className="w-3.5 h-3.5" />
@@ -307,14 +327,14 @@ export default function QueueDashboard() {
                   onCreated={name => {
                     setShowCreateForm(false);
                     setPendingSelect(name);
+                    setSelectedQueue(name);
                     setTab("pending");
                     setShowAddForm(false);
-                    void queues.mutate();
                   }}
                 />
               ) : null}
 
-              {selectedQueue && queueData ? (
+              {selectedQueueName && queueData ? (
                 <>
                   <div className="flex items-center justify-between gap-3">
                     <FilterTabs
@@ -342,7 +362,10 @@ export default function QueueDashboard() {
                         ) : null}
                         <button
                           type="button"
-                          onClick={() => setShowAddForm(v => !v)}
+                          onClick={() => {
+                            setShowAddForm(v => !v);
+                            setShowCreateForm(false);
+                          }}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-sky-600 hover:bg-sky-500 text-white rounded-lg focus-ring cursor-pointer shadow-sm shrink-0"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -354,11 +377,10 @@ export default function QueueDashboard() {
 
                   {tab === "pending" && showAddForm ? (
                     <AddItemForm
-                      queueName={selectedQueue}
+                      queueName={selectedQueueName}
                       onCancel={() => setShowAddForm(false)}
                       onCreated={() => {
                         setShowAddForm(false);
-                        void queues.mutate();
                       }}
                     />
                   ) : null}
@@ -396,19 +418,22 @@ export default function QueueDashboard() {
                                       <Clock className="w-3 h-3" /> Pending
                                     </span>
                                   </div>
-                                  <p className="text-2xs text-muted mb-1.5" title={item.input}>
-                                    {expanded ? null : truncateText(item.input)}
+                                  <p className="text-2xs text-muted mb-1.5" title={item.input.message}>
+                                    {expanded ? null : truncateText(item.input.message)}
                                   </p>
                                   {expanded ? (
                                     <div className="mt-1 mb-2 space-y-2">
-                                      <DetailBlock label="Task / prompt" value={item.input} />
+                                      <DetailBlock label="Task / prompt" value={item.input.message} />
+                                      {item.input.attachments?.length ? (
+                                        <DetailBlock label="Attachments" value={item.input.attachments.map(a => a.name).join(", ")} />
+                                      ) : null}
                                       <p className="text-2xs text-muted">
                                         Id: <span className="font-mono text-secondary">{item.id}</span>
                                       </p>
                                     </div>
                                   ) : null}
                                   <p className="text-2xs text-muted/90">
-                                    Queued {formatRelativeTime(item.createdAt)} · from {item.from}
+                                    Queued {formatRelativeTime(item.createdAt)} · from {item.input.from}
                                   </p>
                                 </div>
                                 <CancelButton itemId={item.id} busy={busyAction === `cancel:${item.id}`} onClick={() => setConfirmCancel(item.id)} />
@@ -449,12 +474,15 @@ export default function QueueDashboard() {
                                     </span>
                                   </div>
                                   {!expanded ? (
-                                    <p className="text-2xs text-muted mb-1.5" title={item.input}>
-                                      {truncateText(item.input)}
+                                    <p className="text-2xs text-muted mb-1.5" title={item.input.message}>
+                                      {truncateText(item.input.message)}
                                     </p>
                                   ) : (
-                                    <div className="mt-1 mb-2">
-                                      <DetailBlock label="Task / prompt" value={item.input} />
+                                    <div className="mt-1 mb-2 space-y-2">
+                                      <DetailBlock label="Task / prompt" value={item.input.message} />
+                                      {item.input.attachments?.length ? (
+                                        <DetailBlock label="Attachments" value={item.input.attachments.map(a => a.name).join(", ")} />
+                                      ) : null}
                                     </div>
                                   )}
                                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
@@ -535,27 +563,22 @@ export default function QueueDashboard() {
                                     ) : null}
                                     {expanded ? (
                                       <div className="mt-2 space-y-2">
-                                        <DetailBlock label="Task / prompt" value={item.input} />
+                                        <DetailBlock label="Task / prompt" value={item.input.message} />
+                                        {item.input.attachments?.length ? (
+                                          <DetailBlock label="Attachments" value={item.input.attachments.map(a => a.name).join(", ")} />
+                                        ) : null}
                                         {item.resultMessage ? <DetailBlock label="Result" value={item.resultMessage} /> : null}
                                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
                                           <span>
-                                            From <span className="text-secondary">{item.from}</span>
+                                            From <span className="text-secondary">{item.input.from}</span>
                                           </span>
                                           <span>Queued {formatQueueTime(item.createdAt)}</span>
                                           {item.startedAt ? <span>Started {formatQueueTime(item.startedAt)}</span> : null}
                                           <span className="font-mono">id {item.id}</span>
+                                          {/* Worker agents are deleted when the item finishes; keep id as metadata only. */}
+                                          {item.agentId ? <span className="font-mono">agent {item.agentId}</span> : null}
                                         </div>
                                       </div>
-                                    ) : null}
-                                    {item.agentId ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => openAgent(item.agentId)}
-                                        className="inline-flex items-center gap-1 text-2xs text-sky-600 dark:text-sky-400 hover:underline focus-ring rounded cursor-pointer mt-1.5"
-                                      >
-                                        <ExternalLink className="w-3 h-3" />
-                                        Open agent chat
-                                      </button>
                                     ) : null}
                                   </div>
                                 </div>
@@ -588,7 +611,7 @@ export default function QueueDashboard() {
       {confirmClear ? (
         <ConfirmDialog
           title="Clear pending items"
-          message={`Remove all pending items from queue "${selectedQueue}"? Running items will not be affected. This cannot be undone.`}
+          message={`Remove all pending items from queue "${selectedQueueName}"? Running items will not be affected. This cannot be undone.`}
           confirmText="Clear all"
           cancelText="Keep"
           variant="danger"

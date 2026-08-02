@@ -27,6 +27,7 @@ export default function RowGrid({
   onSort,
   onRetry,
   onOpenRow,
+  hasActiveFilters = false,
 }: {
   rows: Row[];
   columns: ColumnDef[];
@@ -41,6 +42,8 @@ export default function RowGrid({
   onSort: (column: string) => void;
   onRetry: () => void;
   onOpenRow: (row: Row) => void;
+  /** When true, empty state mentions filters rather than an empty table. */
+  hasActiveFilters?: boolean;
 }) {
   if (loading && rows.length === 0) {
     return <LoadingState message="Loading rows…" className="flex-1" />;
@@ -51,13 +54,14 @@ export default function RowGrid({
   if (rows.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center px-6">
-        <p className="text-sm text-muted">No rows match the current filters.</p>
+        <p className="text-sm text-muted">{hasActiveFilters ? "No rows match the current filters." : "This table has no rows."}</p>
       </div>
     );
   }
 
   const columnByName = new Map(columns.map(column => [column.name, column]));
   const allSelected = rows.every((row, index) => selectedKeys.has(rowKeyOf(row, index)));
+  const someSelected = !allSelected && rows.some((row, index) => selectedKeys.has(rowKeyOf(row, index)));
 
   return (
     <div className="flex-1 overflow-auto">
@@ -68,6 +72,9 @@ export default function RowGrid({
               <input
                 type="checkbox"
                 checked={allSelected}
+                ref={el => {
+                  if (el) el.indeterminate = someSelected;
+                }}
                 onChange={onToggleAll}
                 aria-label={allSelected ? "Deselect all rows" : "Select all rows"}
                 className="w-3.5 h-3.5 rounded border-primary bg-input accent-accent cursor-pointer align-middle"
@@ -127,7 +134,7 @@ export default function RowGrid({
                         "px-3 py-1.5 align-top text-secondary max-w-xs truncate font-mono",
                         column && isNumericType(column.dataType) && "text-right tabular-nums",
                       )}
-                      title={row[field] === null ? "null" : String(row[field])}
+                      title={row[field] === null || row[field] === undefined ? "null" : String(row[field])}
                     >
                       <CellContent value={row[field] ?? null} />
                     </td>

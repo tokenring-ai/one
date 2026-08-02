@@ -112,6 +112,14 @@ describe("MetricsDashboard", () => {
     summaryState = { data: undefined, error: undefined, isLoading: true, isValidating: true };
     renderDashboard();
     expect(screen.getByText("Loading metrics…")).toBeInTheDocument();
+    expect(screen.getByTestId("metrics-live-status")).toHaveTextContent("Connecting");
+  });
+
+  it("does not claim Live status while waiting for the first snapshot", () => {
+    summaryState = { data: undefined, error: undefined, isLoading: false, isValidating: false };
+    renderDashboard();
+    expect(screen.getByText("Waiting for metrics…")).toBeInTheDocument();
+    expect(screen.getByTestId("metrics-live-status")).toHaveTextContent("Connecting");
   });
 
   it("shows error state with retry", async () => {
@@ -209,7 +217,18 @@ describe("MetricsDashboard", () => {
       isValidating: false,
     };
     renderDashboard();
-    expect(screen.getByTestId("metrics-stale-banner")).toHaveTextContent("connection lost");
+    const banner = screen.getByTestId("metrics-stale-banner");
+    expect(banner).toHaveTextContent("connection lost");
+    expect(banner).toHaveTextContent("last known snapshot");
+    // Keep the banner single-line — no stack dump.
+    expect(banner.textContent ?? "").not.toMatch(/\s+at\s+/);
     expect(screen.getByTestId("metrics-live-status")).toHaveTextContent("Reconnecting");
+  });
+
+  it("shows filtered-empty state when search matches nothing", async () => {
+    const user = userEvent.setup();
+    renderDashboard();
+    await user.type(screen.getByTestId("metrics-agent-search"), "zzz-no-match");
+    expect(screen.getByTestId("metrics-agents-filtered-empty")).toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 import { Loader2, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useStockPriceHistory } from "../../../rpc.ts";
-import { fmt, fmtHistoryDate, fmtVol, historyRange, isoDateOffset } from "../formatters.ts";
+import { bufferedHistoryRange, fmt, fmtHistoryDate, fmtVol, isoDateOffset } from "../formatters.ts";
 import PriceLineChart from "./PriceLineChart.tsx";
 
 interface HistoryTabProps {
@@ -9,26 +9,32 @@ interface HistoryTabProps {
 }
 
 export default function HistoryTab({ symbol }: HistoryTabProps) {
-  const defaults = historyRange(3);
-  // UI dates are the range the user wants; API gets ±1 day buffer on apply.
-  const [from, setFrom] = useState(isoDateOffset(-90));
-  const [to, setTo] = useState(isoDateOffset(0));
-  const [fetchParams, setFetchParams] = useState(() => ({
-    from: defaults.from,
-    to: defaults.to,
-  }));
+  // UI dates are the range the user wants; API gets ±1 day buffer (initial + on apply).
+  const [from, setFrom] = useState(() => isoDateOffset(-90));
+  const [to, setTo] = useState(() => isoDateOffset(0));
+  const [rangeError, setRangeError] = useState<string | null>(null);
+  const [fetchParams, setFetchParams] = useState(() => {
+    const buffered = bufferedHistoryRange(isoDateOffset(-90), isoDateOffset(0));
+    return buffered ?? { from: isoDateOffset(-91), to: isoDateOffset(1) };
+  });
   const history = useStockPriceHistory(symbol, fetchParams.from, fetchParams.to);
 
   const apply = () => {
-    // Buffer ±1 day for CloudQuote price history API
-    const fromDate = new Date(from);
-    fromDate.setDate(fromDate.getDate() - 1);
-    const toDate = new Date(to);
-    toDate.setDate(toDate.getDate() + 1);
-    setFetchParams({
-      from: fromDate.toISOString().slice(0, 10),
-      to: toDate.toISOString().slice(0, 10),
-    });
+    if (!from || !to) {
+      setRangeError("Select both start and end dates");
+      return;
+    }
+    if (from > to) {
+      setRangeError("Start date must be on or before end date");
+      return;
+    }
+    const buffered = bufferedHistoryRange(from, to);
+    if (!buffered) {
+      setRangeError("Invalid date range");
+      return;
+    }
+    setRangeError(null);
+    setFetchParams(buffered);
   };
 
   return (
@@ -37,7 +43,10 @@ export default function HistoryTab({ symbol }: HistoryTabProps) {
         <input
           type="date"
           value={from}
-          onChange={e => setFrom(e.target.value)}
+          onChange={e => {
+            setFrom(e.target.value);
+            setRangeError(null);
+          }}
           className="text-xs bg-secondary border border-primary rounded-lg px-3 py-1.5 text-primary focus:border-accent outline-none"
           aria-label="History start date"
         />
@@ -45,7 +54,10 @@ export default function HistoryTab({ symbol }: HistoryTabProps) {
         <input
           type="date"
           value={to}
-          onChange={e => setTo(e.target.value)}
+          onChange={e => {
+            setTo(e.target.value);
+            setRangeError(null);
+          }}
           className="text-xs bg-secondary border border-primary rounded-lg px-3 py-1.5 text-primary focus:border-accent outline-none"
           aria-label="History end date"
         />
@@ -58,9 +70,10 @@ export default function HistoryTab({ symbol }: HistoryTabProps) {
         </button>
       </div>
 
+      {rangeError && <div className="py-1 text-center text-red-400 text-sm">{rangeError}</div>}
       {history.error && <div className="py-2 text-center text-red-400 text-sm">Failed to load price history</div>}
 
-      {history.data?.rows && history.data.rows.length > 0 && (
+      {history.data?.rows && history.data.rows.length > 1 && (
         <div className="bg-secondary rounded-xl border border-primary p-3">
           <PriceLineChart rows={history.data.rows} />
         </div>

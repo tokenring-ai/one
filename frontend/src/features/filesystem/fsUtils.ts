@@ -24,6 +24,13 @@ export const isDirectoryPath = (p: string) => p.endsWith("/");
 
 export const isHiddenEntry = (p: string) => getBasename(p).startsWith(".");
 
+/** True if any path segment is a dotfile/dotdir (e.g. `.git/config`, `src/.env`). */
+export const isHiddenPath = (p: string) =>
+  p
+    .split("/")
+    .filter(Boolean)
+    .some(seg => seg.startsWith("."));
+
 export const isImageFile = (p: string) => /\.(png|jpe?g|gif|svg|webp|ico|bmp)$/i.test(p);
 
 /** Extensions we treat as text-editable in the Files app editor. */
