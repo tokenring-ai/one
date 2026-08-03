@@ -8,7 +8,11 @@ export function senderName(msg: EmailMessage): string {
 
 /** Prefer receivedAt; fall back to sentAt (e.g. Sent folder). */
 export function messageTimestamp(msg: EmailMessage): number | undefined {
-  return msg.receivedAt ?? msg.sentAt;
+  const received = msg.receivedAt;
+  if (typeof received === "number" && Number.isFinite(received) && received > 0) {
+    return received;
+  }
+  return msg.sentAt;
 }
 
 export function formatAddress(addr: EmailAddress): string {

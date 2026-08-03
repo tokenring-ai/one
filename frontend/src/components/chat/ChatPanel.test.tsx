@@ -46,7 +46,7 @@ void mock.module("../overlay/file-browser.tsx", () => ({ default: () => null }))
 void mock.module("../HookSelector.tsx", () => ({ default: () => null }));
 void mock.module("../ModelSelector.tsx", () => ({ default: () => null }));
 void mock.module("../SkillSelector.tsx", () => ({ default: () => null }));
-void mock.module("../SubAgentSelector.tsx", () => ({ default: () => null }));
+void mock.module("../ToolApprovalSelector.tsx", () => ({ default: () => null }));
 void mock.module("../ToolSelector.tsx", () => ({ default: () => null }));
 void mock.module("../ui/toast.tsx", () => ({
   toastManager: {

@@ -1,27 +1,35 @@
 # TokenRing One
 
+<img src="assets/tokenring-one-logo.webp">
+
 **An AI-powered coding assistant with a comprehensive ecosystem for local development**
 
-TokenRing One is an interactive AI assistant designed to help developers with coding tasks like editing, refactoring, testing, and git operations. It runs locally on your machine and supports multiple AI providers while keeping your code secure. The modular ecosystem includes specialized packages covering everything from audio processing to cloud services, communication platforms, and advanced development tools.
+TokenRing One is an interactive AI assistant designed to help developers with coding tasks like editing, refactoring,
+testing, and git operations. It runs locally on your machine and supports multiple AI providers while keeping your code
+secure. The modular ecosystem includes specialized packages covering everything from audio processing to cloud services,
+communication platforms, and advanced development tools.
 
 ## How it works: Backend (daemon) and CLI
 
 TokenRing One is packaged as **two separate binaries** plus optional web frontend assets:
 
-| Component | Role | Typical command |
-|-----------|------|-----------------|
-| **Backend (daemon)** | Long-running server: agents, tools, plugins, HTTP/WebSocket API, and the web UI | `tokenring-one-server` (npm/deb) or `tokenring-one` (binary install) |
-| **CLI** | Native terminal UI that talks to a backend over WebSocket JSON-RPC | `tokenring` / `one`, or `tokenring-one` from the full meta-package (starts the CLI) |
-| **Frontend** | Static web UI assets served by the backend | installed with the full package |
+| Component            | Role                                                                            | Typical command                                                                     |
+|----------------------|---------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| **Backend (daemon)** | Long-running server: agents, tools, plugins, HTTP/WebSocket API, and the web UI | `tokenring-one-server` (npm/deb) or `tokenring-one` (binary install)                |
+| **CLI**              | Native terminal UI that talks to a backend over WebSocket JSON-RPC              | `tokenring` / `one`, or `tokenring-one` from the full meta-package (starts the CLI) |
+| **Frontend**         | Static web UI assets served by the backend                                      | installed with the full package                                                     |
 
-**Backend** binds an HTTP server (`--listen` / `--port`), loads plugins, stores session data, and exposes the RPC endpoint used by clients. It is the process that actually runs agents and tools.
+**Backend** binds an HTTP server (`--listen` / `--port`), loads plugins, stores session data, and exposes the RPC
+endpoint used by clients. It is the process that actually runs agents and tools.
 
 **CLI** is a standalone Ratatui terminal client. It does **not** embed the agent runtime. On start it either:
 
 1. **Connects to a remote (or already-running) backend** when you pass a URL (`ws://…`, `wss://…`, or `http(s)://…`), or
-2. **Offers to launch a local backend** when no URL is given — discovering `tokenring-one` via `TOKENRING_ONE_BINARY` or common install paths, then attaching with generated session credentials.
+2. **Offers to launch a local backend** when no URL is given — discovering `tokenring-one` via `TOKENRING_ONE_BINARY` or
+   common install paths, then attaching with generated session credentials.
 
-You can also open the **web UI** in a browser against the same backend. Multiple CLIs (and browsers) can attach to one daemon.
+You can also open the **web UI** in a browser against the same backend. Multiple CLIs (and browsers) can attach to one
+daemon.
 
 ## Features
 
@@ -34,7 +42,8 @@ You can also open the **web UI** in a browser against the same backend. Multiple
 
 ### Communication and Collaboration
 
-- **Bot Service**: Channel-agnostic bots with per-conversation agents, group broadcasting, and human-in-the-loop channels
+- **Bot Service**: Channel-agnostic bots with per-conversation agents, group broadcasting, and human-in-the-loop
+  channels
 - **Slack Integration**: Slack transport for bots
 - **Telegram Integration**: Telegram transport for bots
 - **Human Feedback Tools**: File reviews, React component previews, and interactive Q&A
@@ -107,7 +116,8 @@ TokenRing One includes 27 specialized AI agents organized into two categories:
 - **Team Leader** - Orchestrates full-stack projects, coordinates specialists, manages workflow
 - **Planning Agent** - Creates detailed project plans and task breakdowns
 - **Swarm Agent** - Coordinates multiple agents working in parallel on complex tasks
-- **Research Agent** - Conducts research and gathers information from multiple sources (uses web search for factual, verified information)
+- **Research Agent** - Conducts research and gathers information from multiple sources (uses web search for factual,
+  verified information)
 
 **Background Specialists (22)**
 
@@ -162,10 +172,9 @@ The release script is available for inspection here:
 
 [https://github.com/tokenring-ai/one/releases/latest/download/install.sh](https://github.com/tokenring-ai/one/releases/latest/download/install.sh)
 
-Each published `install.sh` pins an explicit release version (bumped with the rest of
-the project via `.bumpversion.cfg`), so installs from that script are deterministic.
-Override with `TOKENRING_INSTALL_VERSION=x.y.z` only when you intentionally want a
-different release.
+Each published `install.sh` pins an explicit release version (bumped with the rest of the project via
+`.bumpversion.cfg`), so installs from that script are deterministic. Override with `TOKENRING_INSTALL_VERSION=x.y.z`
+only when you intentionally want a different release.
 
 The installer chooses the best method for your machine:
 
@@ -173,23 +182,24 @@ The installer chooses the best method for your machine:
    (`tokenring-one` on your PATH). That meta-package pulls in CLI, backend, and frontend.
 2. **Otherwise on macOS or Linux** — downloads the CLI, backend, and frontend  
    assets for that same version and installs them to:
-   - `~/.local/bin/one` — terminal client (CLI)
-   - `~/.local/bin/tokenring-one` — backend (daemon)
-   - `~/.local/share/tokenring-ai/one-frontend` — web frontend assets
+ - `~/.local/bin/one` — terminal client (CLI)
+ - `~/.local/bin/tokenring-one` — backend (daemon)
+ - `~/.local/share/tokenring-ai/one-frontend` — web frontend assets
 
 Supported platforms for the binary install path: macOS and Linux on arm64 and x64.  
 Ensure `~/.local/bin` is on your `PATH` after a binary install.
 
 ### Packages
 
-| npm package | What it installs |
-|-------------|------------------|
-| [`@tokenring-ai/one`](packaging/npm/one) | **Full stack** — CLI + backend + frontend (`tokenring-one` wires them together) |
-| [`@tokenring-ai/one-cli`](packaging/npm/cli) | **CLI only** — connect to an existing backend, or launch one if available |
-| [`@tokenring-ai/one-backend`](packaging/npm/backend) | **Backend only** — headless daemon / server (`tokenring-one-server`) |
-| [`@tokenring-ai/one-frontend`](packaging/npm/frontend) | **Web UI assets** — served by the backend |
+| npm package                                            | What it installs                                                                |
+|--------------------------------------------------------|---------------------------------------------------------------------------------|
+| [`@tokenring-ai/one`](packaging/npm/one)               | **Full stack** — CLI + backend + frontend (`tokenring-one` wires them together) |
+| [`@tokenring-ai/one-cli`](packaging/npm/cli)           | **CLI only** — connect to an existing backend, or launch one if available       |
+| [`@tokenring-ai/one-backend`](packaging/npm/backend)   | **Backend only** — headless daemon / server (`tokenring-one-server`)            |
+| [`@tokenring-ai/one-frontend`](packaging/npm/frontend) | **Web UI assets** — served by the backend                                       |
 
-Debian/RPM packages follow the same split (`tokenring-one-cli`, `tokenring-one-backend`, `tokenring-one-frontend`, and the `tokenring-one` meta-package). See [`packaging/`](packaging/).
+Debian/RPM packages follow the same split (`tokenring-one-cli`, `tokenring-one-backend`, `tokenring-one-frontend`, and
+the `tokenring-one` meta-package). See [`packaging/`](packaging/).
 
 ### Environment Variables
 
@@ -211,7 +221,8 @@ export SERPER_API_KEY=...
 
 ### Option 1: Full install (CLI launches local backend)
 
-Recommended for local use. The meta-package starts the terminal client and points it at the installed backend and frontend:
+Recommended for local use. The meta-package starts the terminal client and points it at the installed backend and
+frontend:
 
 ```bash
 npx @tokenring-ai/one
@@ -222,7 +233,8 @@ npm install -g @tokenring-ai/one
 tokenring-one
 ```
 
-With no URL argument, the CLI **prompts to launch a local backend** (using `TOKENRING_ONE_BINARY` when set). Backend stdout/stderr are captured so they do not clobber the TUI.
+With no URL argument, the CLI **prompts to launch a local backend** (using `TOKENRING_ONE_BINARY` when set). Backend
+stdout/stderr are captured so they do not clobber the TUI.
 
 ```bash
 # Project directory for a locally launched backend
@@ -239,7 +251,9 @@ npx @tokenring-ai/one-cli http://127.0.0.1:3000
 npx @tokenring-ai/one-cli ws://127.0.0.1:3000/rpc:ws
 ```
 
-HTTP(S) URLs are rewritten to WebSocket and `/rpc:ws` is appended when missing. Auth for remote backends uses WebSocket session credentials (`--auth-user` / `--auth-password`, or env `TR_ADMIN_USER` / `TR_ADMIN_PASSWORD` / `TR_AUTH_PASSWORD`) and optional `--auth-bearer`.
+HTTP (S) URLs are rewritten to WebSocket and `/rpc:ws` is appended when missing. Auth for remote backends uses WebSocket
+session credentials (`--auth-user` / `--auth-password`, or env `TR_ADMIN_USER` / `TR_ADMIN_PASSWORD` /
+`TR_AUTH_PASSWORD`) and optional `--auth-bearer`.
 
 ### Option 3: Backend only (daemon / server)
 
@@ -254,7 +268,8 @@ tokenring-one-server --listen 0.0.0.0 --port 3000 --projectDirectory ./your-proj
 ```
 
 Then open the web UI at `http://127.0.0.1:3000`, or connect a CLI (Option 2).  
-Admin credentials default to user `admin` (override with `TR_ADMIN_USER` / `TR_ADMIN_PASSWORD`); if no password is set, one is generated and stored in the system keychain on first run.
+Admin credentials default to user `admin` (override with `TR_ADMIN_USER` / `TR_ADMIN_PASSWORD`); if no password is set,
+one is generated and stored in the system keychain on first run.
 
 ### Option 4: Run from source
 
@@ -288,11 +303,11 @@ cargo run --manifest-path cli/Cargo.toml -- http://127.0.0.1:3000
 
 Published images:
 
-| Tag | Contents |
-|-----|----------|
-| `ghcr.io/tokenring-ai/one:full` | CLI + backend + frontend (entrypoint is the CLI) |
+| Tag                               | Contents                                            |
+|-----------------------------------|-----------------------------------------------------|
+| `ghcr.io/tokenring-ai/one:full`   | CLI + backend + frontend (entrypoint is the CLI)    |
 | `ghcr.io/tokenring-ai/one:server` | Backend daemon only (listens on port 80 by default) |
-| `ghcr.io/tokenring-ai/one:cli` | CLI only (pass a backend URL) |
+| `ghcr.io/tokenring-ai/one:cli`    | CLI only (pass a backend URL)                       |
 
 ```bash
 # Full stack (CLI will launch / use the in-image backend)
@@ -322,13 +337,13 @@ Entry point: `backend/tokenring.ts` · installed as `tokenring-one-server` (npm/
 tokenring-one-server [options]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--projectDirectory <path>` | Working directory for agents (default: cwd) |
-| `--dataDirectory <path>` | Knowledge, session data, etc. (default: `<projectDirectory>/.tokenring`) |
-| `--listen <host>` | HTTP bind address (default: `127.0.0.1`) |
-| `--port <port>` | HTTP port; `0` picks a free port (default: `0`) |
-| `--vaultFile <path>` | Secrets vault path (default: `~/.config/tokenring/secrets.vault`) |
+| Option                      | Description                                                              |
+|-----------------------------|--------------------------------------------------------------------------|
+| `--projectDirectory <path>` | Working directory for agents (default: cwd)                              |
+| `--dataDirectory <path>`    | Knowledge, session data, etc. (default: `<projectDirectory>/.tokenring`) |
+| `--listen <host>`           | HTTP bind address (default: `127.0.0.1`)                                 |
+| `--port <port>`             | HTTP port; `0` picks a free port (default: `0`)                          |
+| `--vaultFile <path>`        | Secrets vault path (default: `~/.config/tokenring/secrets.vault`)        |
 
 ```bash
 # Local daemon with fixed port and web UI
@@ -340,26 +355,27 @@ TR_ADMIN_PASSWORD=… tokenring-one-server --listen 0.0.0.0 --port 3000
 
 ### CLI (terminal client)
 
-Entry point: native binary from `cli/` · installed as `tokenring` / `one`, or `tokenring-one` when using the full meta-package (which invokes the CLI)
+Entry point: native binary from `cli/` · installed as `tokenring` / `one`, or `tokenring-one` when using the full
+meta-package (which invokes the CLI)
 
 ```bash
 tokenring [URL] [options]
 # or: one [URL] [options]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `URL` | Backend URL (`ws://`, `wss://`, `http://`, `https://`). If omitted, the CLI offers to **launch a local backend** |
-| `--one-binary <path>` | Backend executable for local launch (`TOKENRING_ONE_BINARY`) |
-| `--project-directory <path>` | Project directory for a locally launched backend (default: `.`) |
-| `--agent-id <id>` | Attach to an existing agent (`TR_AGENT_ID`) |
-| `--agent-type <type>` | Agent type to create (default from config / `code`) |
-| `--select` / `--no-select` | Show or skip agent selection on startup |
-| `--auth-user` / `--auth-password` | WebSocket session auth for remote backends |
-| `--auth-bearer <token>` | Optional bearer on the WebSocket upgrade |
-| `--prompt <text>` | Send an initial message after attach |
-| `--shutdown-when-done` | Exit when the agent stops (pairs with `--prompt`) |
-| `--verbose` / `--theme` / `--config` / `--profile` | TUI and config options — see `cli/README.md` |
+| Option                                             | Description                                                                                                      |
+|----------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| `URL`                                              | Backend URL (`ws://`, `wss://`, `http://`, `https://`). If omitted, the CLI offers to **launch a local backend** |
+| `--one-binary <path>`                              | Backend executable for local launch (`TOKENRING_ONE_BINARY`)                                                     |
+| `--project-directory <path>`                       | Project directory for a locally launched backend (default: `.`)                                                  |
+| `--agent-id <id>`                                  | Attach to an existing agent (`TR_AGENT_ID`)                                                                      |
+| `--agent-type <type>`                              | Agent type to create (default from config / `code`)                                                              |
+| `--select` / `--no-select`                         | Show or skip agent selection on startup                                                                          |
+| `--auth-user` / `--auth-password`                  | WebSocket session auth for remote backends                                                                       |
+| `--auth-bearer <token>`                            | Optional bearer on the WebSocket upgrade                                                                         |
+| `--prompt <text>`                                  | Send an initial message after attach                                                                             |
+| `--shutdown-when-done`                             | Exit when the agent stops (pairs with `--prompt`)                                                                |
+| `--verbose` / `--theme` / `--config` / `--profile` | TUI and config options — see `cli/README.md`                                                                     |
 
 ```bash
 # Launch local backend from the startup menu (no URL)
@@ -376,7 +392,8 @@ tokenring http://127.0.0.1:3000 \
   --shutdown-when-done
 ```
 
-Optional CLI config: `~/.config/tokenring/cli.toml` (profiles, themes, notifications). See [`cli/README.md`](cli/README.md).
+Optional CLI config: `~/.config/tokenring/cli.toml` (profiles, themes, notifications). See [
+`cli/README.md`](cli/README.md).
 
 ## Architecture
 
@@ -491,7 +508,8 @@ TokenRing One is built as a modular TypeScript monorepo with specialized package
 
 ## Configuration
 
-Configuration is loaded from `.tokenring/one-config.mjs` in your working directory. The file uses the same schema as the plugin config. A minimal example:
+Configuration is loaded from `.tokenring/one-config.mjs` in your working directory. The file uses the same schema as the
+plugin config. A minimal example:
 
 ```javascript
 export default {
@@ -500,7 +518,7 @@ export default {
   },
   filesystem: {
     providers: {
-      local: { type: "posix" }
+      local: {type: "posix"}
     }
   }
 };
@@ -553,11 +571,11 @@ Local launches (CLI starts the backend itself) use generated session credentials
 
 ### Image variants
 
-| Image | Entrypoint | Use when |
-|-------|------------|----------|
-| `ghcr.io/tokenring-ai/one:full` | CLI (`tokenring`) with backend + frontend on image | Interactive TUI in a container |
-| `ghcr.io/tokenring-ai/one:server` | Backend daemon on port 80 | Headless / web UI / remote CLI clients |
-| `ghcr.io/tokenring-ai/one:cli` | CLI only | Connecting to a backend elsewhere |
+| Image                             | Entrypoint                                         | Use when                               |
+|-----------------------------------|----------------------------------------------------|----------------------------------------|
+| `ghcr.io/tokenring-ai/one:full`   | CLI (`tokenring`) with backend + frontend on image | Interactive TUI in a container         |
+| `ghcr.io/tokenring-ai/one:server` | Backend daemon on port 80                          | Headless / web UI / remote CLI clients |
+| `ghcr.io/tokenring-ai/one:cli`    | CLI only                                           | Connecting to a backend elsewhere      |
 
 ```bash
 # Full stack
@@ -651,20 +669,21 @@ bun run package:cli
 
 ### Available Scripts
 
-| Script | Description |
-|--------|-------------|
-| `bun run check:tsc` | Type-check the monorepo |
-| `bun run run:one` | Start the backend daemon from source (`backend/tokenring.ts`) |
-| `bun run run:cli` | Start the CLI; launches the backend via `TOKENRING_ONE_BINARY` |
-| `bun run run:cli-remote` | Start the CLI against `ws://0.0.0.0:14008` |
-| `bun run package:cli` | Release-build the native CLI |
-| `bun run package:one:frontend` | Build web frontend assets |
-| `bun run package:one:docker` | Build full / server / cli Docker images |
-| `bun test` | Run Bun tests |
+| Script                         | Description                                                    |
+|--------------------------------|----------------------------------------------------------------|
+| `bun run check:tsc`            | Type-check the monorepo                                        |
+| `bun run run:one`              | Start the backend daemon from source (`backend/tokenring.ts`)  |
+| `bun run run:cli`              | Start the CLI; launches the backend via `TOKENRING_ONE_BINARY` |
+| `bun run run:cli-remote`       | Start the CLI against `ws://0.0.0.0:14008`                     |
+| `bun run package:cli`          | Release-build the native CLI                                   |
+| `bun run package:one:frontend` | Build web frontend assets                                      |
+| `bun run package:one:docker`   | Build full / server / cli Docker images                        |
+| `bun test`                     | Run Bun tests                                                  |
 
 ### Package Ecosystem Overview
 
-The TokenRing One ecosystem consists of specialized packages organized into functional categories. For a complete list of dependencies, see the package.json file.
+The TokenRing One ecosystem consists of specialized packages organized into functional categories. For a complete list
+of dependencies, see the package.json file.
 
 #### Core Foundation
 
@@ -786,4 +805,5 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Ready to supercharge your coding workflow with AI? Explore the complete TokenRing ecosystem and transform your development experience!**
+**Ready to supercharge your coding workflow with AI? Explore the complete TokenRing ecosystem and transform your
+development experience!**

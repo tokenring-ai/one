@@ -28,9 +28,15 @@ defineGlobal("localStorage", window.localStorage);
 defineGlobal("sessionStorage", window.sessionStorage);
 defineGlobal("Storage", window.Storage);
 defineGlobal("HTMLElement", window.HTMLElement);
+defineGlobal("HTMLAnchorElement", window.HTMLAnchorElement);
+defineGlobal("HTMLDivElement", window.HTMLDivElement);
+defineGlobal("HTMLFormElement", window.HTMLFormElement);
 defineGlobal("HTMLInputElement", window.HTMLInputElement);
 defineGlobal("HTMLTextAreaElement", window.HTMLTextAreaElement);
 defineGlobal("HTMLButtonElement", window.HTMLButtonElement);
+defineGlobal("HTMLSelectElement", window.HTMLSelectElement);
+defineGlobal("HTMLOptionElement", window.HTMLOptionElement);
+defineGlobal("SVGElement", window.SVGElement);
 defineGlobal("Element", window.Element);
 defineGlobal("Node", window.Node);
 defineGlobal("DocumentFragment", window.DocumentFragment);
@@ -47,6 +53,11 @@ defineGlobal("File", window.File);
 defineGlobal("URL", window.URL);
 defineGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => setTimeout(() => cb(Date.now()), 16) as unknown as number);
 defineGlobal("cancelAnimationFrame", (id: number) => clearTimeout(id));
+
+// jsdom does not implement layout-based scrolling APIs.
+if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
 
 // Keep window.globalThis aligned for libraries that compare identities
 (window as unknown as { globalThis: typeof globalThis }).globalThis = globalThis;

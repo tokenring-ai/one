@@ -2,7 +2,7 @@ import { getTreeNodeValue, isTreeBranch, type ParsedTreeSelectQuestion, type Tre
 import type { MaybePromise } from "bun";
 import { Check, ChevronDown, ChevronRight, Send, X } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { sendInteractionResponse } from "../sendInteractionResponse.ts";
 
 interface TreeInlineProps {
@@ -13,6 +13,52 @@ interface TreeInlineProps {
   onSubmitValue?: (value: string[] | null) => MaybePromise<void>;
   onClose: () => void;
   autoFocus?: boolean;
+}
+
+/** True when the node has no children (only leaves are selectable). */
+function isLeafNode(node: TreeLeaf): boolean {
+  return !isTreeBranch(node) || node.children.length === 0;
+}
+
+/** Collect every selectable leaf value under a node. */
+function collectLeafValues(node: TreeLeaf): string[] {
+  if (isLeafNode(node)) return [getTreeNodeValue(node)];
+  if (!isTreeBranch(node)) return [];
+  return node.children.flatMap(collectLeafValues);
+}
+
+/**
+ * Keep only default values that exist as selectable leaves.
+ * Walks into children even when a branch name collides with a leaf value.
+ */
+function filterSelectableDefaults(tree: TreeLeaf[], values: string[] | undefined): string[] {
+  if (!values?.length) return [];
+
+  const leafValues = new Set(tree.flatMap(collectLeafValues));
+  return values.filter(value => leafValues.has(value));
+}
+
+/** Ancestor branch keys that must be expanded so `targetValue` leaves are visible. */
+function findAncestorKeys(tree: TreeLeaf[], targetValue: string): string[] {
+  const walk = (node: TreeLeaf, ancestors: string[]): string[] | null => {
+    const value = getTreeNodeValue(node);
+    if (isLeafNode(node)) {
+      return value === targetValue ? ancestors : null;
+    }
+    if (!isTreeBranch(node)) return null;
+    const nextAncestors = [...ancestors, value];
+    for (const child of node.children) {
+      const found = walk(child, nextAncestors);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  for (const root of tree) {
+    const found = walk(root, []);
+    if (found) return found;
+  }
+  return [];
 }
 
 const CompactTreeNode: React.FC<{
@@ -90,9 +136,10 @@ const CompactTreeNode: React.FC<{
         aria-selected={isSelectableNode ? isSelected : undefined}
         tabIndex={0}
         data-tree-value={value}
+        data-tree-selectable={isSelectableNode ? "true" : undefined}
         className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors outline-none focus-ring ${
-          isFocused ? "bg-accent/10" : ""
-        } ${isSelected && !isFocused ? "bg-accent/20" : ""} ${!isSelected && !isFocused ? "hover:bg-hover" : ""}`}
+          isSelected ? "bg-accent/20" : isFocused ? "bg-accent/10" : "hover:bg-hover"
+        }`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
@@ -105,7 +152,7 @@ const CompactTreeNode: React.FC<{
         ) : (
           <span className="w-3.5" aria-hidden="true"></span>
         )}
-        <span className={`text-sm ${isFocused ? "text-accent font-medium" : isSelected ? "text-accent font-medium" : "text-primary"}`}>{node.name}</span>
+        <span className={`text-sm ${isSelected || isFocused ? "text-accent font-medium" : "text-primary"}`}>{node.name}</span>
         {isSelectableNode && isSelected && <Check className="w-3.5 h-3.5 text-accent ml-auto" aria-hidden="true" />}
       </div>
       {isExpanded && hasChildren && (
@@ -137,75 +184,123 @@ const CompactTreeNode: React.FC<{
 };
 
 export default function TreeInlineQuestion({ question, agentId, requestId, interactionId, onSubmitValue, onClose, autoFocus = true }: TreeInlineProps) {
-  // Helper to check if a node is a leaf (not a branch)
-  const isLeafNode = (node: TreeLeaf): boolean => !isTreeBranch(node) || node.children.length === 0;
+  const { minimumSelections, maximumSelections, tree, defaultValue } = question;
+  const multiple = maximumSelections !== 1;
 
-  // Filter default values to only include leaf nodes
-  const filterSelectableDefaults = (values: string[]): string[] => {
-    const isValueInTree = (value: string): boolean => {
-      const checkNode = (node: TreeLeaf): boolean => {
-        if (getTreeNodeValue(node) === value) return isLeafNode(node);
-        if (isTreeBranch(node)) return node.children.some(checkNode);
-        return false;
-      };
-      return question.tree.some(checkNode);
-    };
-    return values.filter(isValueInTree);
-  };
+  const initialSelected = useMemo(() => filterSelectableDefaults(tree, defaultValue), [tree, defaultValue]);
 
-  const [selected, setSelected] = useState<Set<string>>(new Set(filterSelectableDefaults(question.defaultValue)));
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(initialSelected));
+  // Keep a ref so submit always sees the latest selection (avoids stale closure if defaults were set on mount)
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
 
-  // Initialize with the first root node expanded
+  // Expand first root plus every ancestor of pre-selected leaves so defaults are visible and interactable
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
-    if (question.tree[0]) {
-      return new Set([getTreeNodeValue(question.tree[0])]);
+    const expanded = new Set<string>();
+    if (tree[0]) {
+      expanded.add(getTreeNodeValue(tree[0]));
     }
-    return new Set();
+    for (const value of initialSelected) {
+      for (const ancestor of findAncestorKeys(tree, value)) {
+        expanded.add(ancestor);
+      }
+    }
+    return expanded;
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedValue, setFocusedValue] = useState<string | null>(null);
+  const focusedValueRef = useRef<string | null>(null);
+  focusedValueRef.current = focusedValue;
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { minimumSelections, maximumSelections } = question;
-  const multiple = maximumSelections !== 1;
-
-  // Auto-focus on mount and scroll into view
+  // Seed selection from defaults once. Avoid re-running when parent re-creates the question object.
+  const didSeedDefaultsRef = useRef(initialSelected.length > 0);
   useEffect(() => {
-    if (autoFocus && containerRef.current) {
-      containerRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      const firstFocusable = containerRef.current.querySelector("[data-tree-value]") as HTMLElement | null;
-      if (firstFocusable) {
-        firstFocusable.focus();
-        const value = firstFocusable.getAttribute("data-tree-value");
-        if (value) setFocusedValue(value);
+    if (didSeedDefaultsRef.current) return;
+    const defaults = filterSelectableDefaults(tree, defaultValue);
+    if (defaults.length === 0) return;
+
+    didSeedDefaultsRef.current = true;
+    const next = new Set(defaults);
+    selectedRef.current = next;
+    setSelected(next);
+
+    setExpandedNodes(prev => {
+      const expanded = new Set(prev);
+      for (const value of defaults) {
+        for (const ancestor of findAncestorKeys(tree, value)) {
+          expanded.add(ancestor);
+        }
       }
-    }
-  }, [autoFocus]);
-
-  const canSelect = (value: string): boolean => {
-    if (!multiple) return true;
-    const isCurrentlySelected = selected.has(value);
-    if (isCurrentlySelected) {
-      return minimumSelections === undefined || selected.size > minimumSelections;
-    }
-    return maximumSelections === undefined || selected.size < maximumSelections;
-  };
-
-  const handleToggle = (value: string) => {
-    if (!canSelect(value)) return;
-
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(value)) {
-        next.delete(value);
-      } else {
-        if (!multiple) next.clear();
-        next.add(value);
-      }
-      return next;
+      return expanded;
     });
-  };
+  }, [tree, defaultValue]);
+
+  // Auto-focus on mount: prefer a pre-selected leaf, else the first focusable row.
+  // For single-select, if a selectable leaf receives initial focus and nothing is selected yet,
+  // treat it as selected so Submit works without an extra click (matches CLI Enter-on-focus).
+  useEffect(() => {
+    if (!autoFocus || !containerRef.current) return;
+
+    containerRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    const preferredValue = initialSelected[0];
+    const preferredEl = preferredValue ? (containerRef.current.querySelector(`[data-tree-value="${CSS.escape(preferredValue)}"]`) as HTMLElement | null) : null;
+    const target = preferredEl ?? (containerRef.current.querySelector("[data-tree-value]") as HTMLElement | null);
+
+    if (!target) return;
+
+    target.focus();
+    const value = target.getAttribute("data-tree-value");
+    if (!value) return;
+
+    setFocusedValue(value);
+
+    const isSelectableLeaf = target.getAttribute("data-tree-selectable") === "true";
+    if (!multiple && isSelectableLeaf && selectedRef.current.size === 0) {
+      const next = new Set([value]);
+      selectedRef.current = next;
+      setSelected(next);
+    }
+  }, [autoFocus, initialSelected, multiple]);
+
+  const canSelect = useCallback(
+    (value: string): boolean => {
+      if (!multiple) return true;
+      const current = selectedRef.current;
+      const isCurrentlySelected = current.has(value);
+      if (isCurrentlySelected) {
+        return minimumSelections === undefined || current.size > minimumSelections;
+      }
+      return maximumSelections === undefined || current.size < maximumSelections;
+    },
+    [multiple, minimumSelections, maximumSelections],
+  );
+
+  const handleToggle = useCallback(
+    (value: string) => {
+      if (!canSelect(value)) return;
+
+      setSelected(prev => {
+        const next = new Set(prev);
+        if (next.has(value)) {
+          // Single-select (radio): re-clicking the selected item keeps it selected
+          // when at least one selection is required (or single-select in general)
+          if (!multiple) {
+            return prev;
+          }
+          next.delete(value);
+        } else {
+          if (!multiple) next.clear();
+          next.add(value);
+        }
+        selectedRef.current = next;
+        return next;
+      });
+    },
+    [canSelect, multiple],
+  );
 
   const toggleExpand = (nodeValue: string) => {
     setExpandedNodes(prev => {
@@ -259,18 +354,51 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
     setFocusedValue(value);
   };
 
-  const isSelectionValid = () => {
-    const count = selected.size;
+  /** Resolve values to submit: current selection, or focused leaf for single-select when nothing checked. */
+  const resolveSubmitValues = (): string[] => {
+    const current = selectedRef.current;
+    if (current.size > 0) {
+      return Array.from(current);
+    }
+
+    // Single-select: focused leaf counts as the choice (matches CLI Enter-on-focused-leaf behavior).
+    // This covers the case where the initial focused item looks selected but was never toggled.
+    if (!multiple) {
+      const focused = focusedValueRef.current;
+      if (focused) {
+        const leafValues = new Set(tree.flatMap(collectLeafValues));
+        if (leafValues.has(focused)) {
+          return [focused];
+        }
+      }
+    }
+
+    return [];
+  };
+
+  const isSelectionValid = (values: string[]) => {
+    const count = values.length;
     if (minimumSelections !== undefined && count < minimumSelections) return false;
     if (maximumSelections !== undefined && count > maximumSelections) return false;
     return true;
   };
 
   const handleSubmit = async () => {
-    if (!isSelectionValid()) return;
+    const values = resolveSubmitValues();
+    if (!isSelectionValid(values)) return;
+
+    // Persist resolved single-select focus into visible selection before sending
+    if (values.length > 0 && selectedRef.current.size === 0) {
+      const next = new Set(values);
+      selectedRef.current = next;
+      setSelected(next);
+    }
+
     setIsSubmitting(true);
-    const values = Array.from(selected);
-    const result = values.length > 0 ? values : null;
+    // Multi-select: always send the array (empty means "none selected"). Cancel is the Cancel button.
+    // Single-select: send the chosen value(s); empty should not happen when valid.
+    const result = multiple ? values : values.length > 0 ? values : null;
+
     if (onSubmitValue) {
       await onSubmitValue(result);
     } else if (interactionId) {
@@ -298,8 +426,10 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
     onClose();
   };
 
-  const selectionCount = selected.size;
-  const isValid = isSelectionValid();
+  // For validity display, include the single-select focus fallback so Submit enables when a leaf is focused
+  const effectiveValues = resolveSubmitValues();
+  const selectionCount = effectiveValues.length;
+  const isValid = isSelectionValid(effectiveValues);
 
   return (
     <div ref={containerRef} className="p-4 space-y-3">
@@ -308,7 +438,7 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
         aria-label="Select from tree"
         className="max-h-75 overflow-y-auto custom-scrollbar border border-primary rounded-lg bg-secondary shadow-md"
       >
-        {question.tree.map(root => {
+        {tree.map(root => {
           const rootValue = getTreeNodeValue(root);
           return (
             <CompactTreeNode
@@ -354,7 +484,7 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
           </button>
           <button
             type="button"
-            onClick={handleSubmit}
+            onClick={() => void handleSubmit()}
             disabled={isSubmitting || !isValid}
             className="flex items-center gap-1.5 bg-accent hover:bg-accent/90 text-white text-xs font-medium px-3 py-1.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-ring"
           >

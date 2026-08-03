@@ -48,19 +48,14 @@ const todos = [
 
 const createAgent = mock(async (_args: { agentType: string; headless: boolean }) => ({ id: "agent-2", displayName: "New", description: "" }));
 const deleteAgent = mock(async (_args: { agentId: string; reason: string }) => ({ status: "success" as const }));
-const spawnWorkflow = mock(async (_args: { name: string; headless: boolean }) => ({ id: "agent-3", displayName: "Leader", description: "" }));
 const mutateAgents = mock(async () => undefined);
 const mutateAgentTypes = mock(async () => undefined);
-const mutateWorkflows = mock(async () => undefined);
 
 let agentList: (typeof runningAgent)[] = [];
 let agentsError: Error | undefined;
 let agentTypesData: (typeof codeAgentType)[] = [codeAgentType, researchAgentType];
 let agentTypesLoading = false;
 let agentTypesError: Error | undefined;
-let workflowsData = [{ name: "bugHunter", displayName: "Bug Hunter", description: "Finds bugs" }];
-let workflowsLoading = false;
-let workflowsError: Error | undefined;
 
 void mock.module("../../rpc.ts", () => ({
   useAgentList: () => ({ data: agentList, isLoading: false, error: agentsError, mutate: mutateAgents }),
@@ -70,16 +65,9 @@ void mock.module("../../rpc.ts", () => ({
     error: agentTypesError,
     mutate: mutateAgentTypes,
   }),
-  useWorkflows: () => ({
-    data: workflowsData,
-    isLoading: workflowsLoading,
-    error: workflowsError,
-    mutate: mutateWorkflows,
-  }),
   useTodos: () => ({ data: { status: "success", todos }, isLoading: false }),
   useCheckpointList: () => ({ data: [], isLoading: false }),
   agentRPCClient: { createAgent, deleteAgent },
-  workflowRPCClient: { spawnWorkflow },
   checkpointRPCClient: {},
 }));
 
@@ -109,19 +97,14 @@ describe("AgentsApp", () => {
   beforeEach(() => {
     createAgent.mockClear();
     deleteAgent.mockClear();
-    spawnWorkflow.mockClear();
     mutateAgents.mockClear();
     mutateAgents.mockImplementation(async () => undefined);
     mutateAgentTypes.mockClear();
-    mutateWorkflows.mockClear();
     agentList = [];
     agentsError = undefined;
     agentTypesData = [codeAgentType, researchAgentType];
     agentTypesLoading = false;
     agentTypesError = undefined;
-    workflowsData = [{ name: "bugHunter", displayName: "Bug Hunter", description: "Finds bugs" }];
-    workflowsLoading = false;
-    workflowsError = undefined;
   });
 
   it("groups agent types by category and shows the empty selection state", () => {
@@ -225,15 +208,6 @@ describe("AgentsApp", () => {
     expect(deleteAgent.mock.calls[0]![0]!.agentId).toBe("agent-1");
   });
 
-  it("spawns a workflow from the overview pane", async () => {
-    const user = userEvent.setup();
-    renderApp();
-
-    await user.click(screen.getByRole("button", { name: "Spawn workflow: Bug Hunter" }));
-
-    await waitFor(() => expect(spawnWorkflow).toHaveBeenCalledWith({ name: "bugHunter", headless: false }));
-  });
-
   it("filters agent types by search query", async () => {
     const user = userEvent.setup();
     renderApp();
@@ -298,16 +272,6 @@ describe("AgentsApp", () => {
     expect(links.length).toBeGreaterThan(0);
   });
 
-  it("surfaces workflow load errors on the overview", () => {
-    workflowsData = [];
-    workflowsError = new Error("workflow service unavailable");
-    renderApp();
-
-    expect(screen.getByText("Failed to load workflows")).toBeInTheDocument();
-    // formatError includes the stack; match the message substring.
-    expect(screen.getByText(/workflow service unavailable/)).toBeInTheDocument();
-  });
-
   it("navigates to overview when the Agents header is clicked", async () => {
     const user = userEvent.setup();
     renderApp("/agents/code");
@@ -334,14 +298,6 @@ describe("AgentsApp", () => {
     expect(screen.getByText("Select an agent type")).toBeInTheDocument();
     // Sidebar should not swap the type list for a full error state when types are cached.
     expect(screen.queryByText("Failed to load agent types")).not.toBeInTheDocument();
-  });
-
-  it("keeps showing workflows when a revalidation error arrives with data", () => {
-    workflowsError = new Error("workflow revalidation failed");
-    renderApp();
-
-    expect(screen.getByRole("button", { name: "Spawn workflow: Bug Hunter" })).toBeInTheDocument();
-    expect(screen.queryByText("Failed to load workflows")).not.toBeInTheDocument();
   });
 
   it("navigates to the new agent even if the agent list refresh fails", async () => {

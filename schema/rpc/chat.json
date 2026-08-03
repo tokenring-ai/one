@@ -542,6 +542,169 @@
       "additionalProperties": false
     },
     {
+      "title": "getToolApprovalLevels request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.getToolApprovalLevels"
+        },
+        "params": {
+          "$ref": "#/$defs/getToolApprovalLevelsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getToolApprovalLevels response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getToolApprovalLevelsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamToolApproval request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.streamToolApproval"
+        },
+        "params": {
+          "$ref": "#/$defs/streamToolApprovalParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamToolApproval response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamToolApprovalResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamToolApproval stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setToolApproval request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.setToolApproval"
+        },
+        "params": {
+          "$ref": "#/$defs/setToolApprovalParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setToolApproval response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/setToolApprovalResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "clearChatMessages request",
       "type": "object",
       "properties": {
@@ -1422,6 +1585,165 @@
         }
       ]
     },
+    "getToolApprovalLevelsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getToolApprovalLevelsResult": {
+      "type": "object",
+      "properties": {
+        "levels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "level": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "level",
+              "description"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "levels"
+      ],
+      "additionalProperties": false
+    },
+    "streamToolApprovalParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "streamToolApprovalResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "autoToolApprovalLevel": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "toolApprovalMode": {
+              "type": "string",
+              "enum": [
+                "ask",
+                "reject",
+                "auto"
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "autoToolApprovalLevel",
+            "toolApprovalMode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "setToolApprovalParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "autoToolApprovalLevel": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "toolApprovalMode": {
+          "type": "string",
+          "enum": [
+            "ask",
+            "reject",
+            "auto"
+          ]
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "setToolApprovalResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "autoToolApprovalLevel": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "toolApprovalMode": {
+              "type": "string",
+              "enum": [
+                "ask",
+                "reject",
+                "auto"
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "autoToolApprovalLevel",
+            "toolApprovalMode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
     "clearChatMessagesParams": {
       "type": "object",
       "properties": {
@@ -1522,6 +1844,21 @@
         "type": "mutation",
         "params": "#/$defs/disableToolsParams",
         "result": "#/$defs/disableToolsResult"
+      },
+      "getToolApprovalLevels": {
+        "type": "query",
+        "params": "#/$defs/getToolApprovalLevelsParams",
+        "result": "#/$defs/getToolApprovalLevelsResult"
+      },
+      "streamToolApproval": {
+        "type": "stream",
+        "params": "#/$defs/streamToolApprovalParams",
+        "result": "#/$defs/streamToolApprovalResult"
+      },
+      "setToolApproval": {
+        "type": "mutation",
+        "params": "#/$defs/setToolApprovalParams",
+        "result": "#/$defs/setToolApprovalResult"
       },
       "clearChatMessages": {
         "type": "mutation",

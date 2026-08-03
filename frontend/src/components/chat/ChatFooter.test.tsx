@@ -52,7 +52,7 @@ void mock.module("../../rpc.ts", () => ({
 void mock.module("../HookSelector.tsx", () => ({ default: () => null }));
 void mock.module("../ModelSelector.tsx", () => ({ default: () => null }));
 void mock.module("../SkillSelector.tsx", () => ({ default: () => null }));
-void mock.module("../SubAgentSelector.tsx", () => ({ default: () => null }));
+void mock.module("../ToolApprovalSelector.tsx", () => ({ default: () => null }));
 void mock.module("../ToolSelector.tsx", () => ({ default: () => null }));
 
 function renderChatFooter(overrides: Partial<Parameters<typeof ChatFooter>[0]> = {}) {
@@ -143,7 +143,8 @@ describe("ChatFooter usage metrics", () => {
     renderChatFooter();
 
     const metrics = screen.getByTestId("chat-footer-metrics");
-    expect(metrics).toHaveTextContent("87% ctx");
+    // 26k / 200k → 13% of context window used
+    expect(metrics).toHaveTextContent("13% ctx");
     expect(metrics).toHaveTextContent("$0.42");
     expect(metrics).toHaveTextContent("…/tokenring/one");
     expect(screen.getByLabelText(/26k \/ 200k tokens/i)).toBeInTheDocument();

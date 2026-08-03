@@ -9,7 +9,7 @@ import { agentRPCClient, useChatUsage, useFilesystemState } from "../../rpc.ts";
 import HookSelector from "../HookSelector.tsx";
 import ModelSelector from "../ModelSelector.tsx";
 import SkillSelector from "../SkillSelector.tsx";
-import SubAgentSelector from "../SubAgentSelector.tsx";
+import ToolApprovalSelector from "../ToolApprovalSelector.tsx";
 import ToolSelector from "../ToolSelector.tsx";
 import { toastManager } from "../ui/toast.tsx";
 
@@ -998,7 +998,7 @@ export default function ChatFooter({
                   requestAnimationFrame(() => textareaRef.current?.focus());
                 }}
               />
-              <SubAgentSelector agentId={agentId} triggerVariant="icon" />
+              <ToolApprovalSelector agentId={agentId} triggerVariant="icon" />
             </div>
 
             {/* Wraps below the toolbar when the panel is too narrow for both on one line. */}
@@ -1107,7 +1107,11 @@ export default function ChatFooter({
           {(footerMetrics.contextLabel || footerMetrics.costLabel || footerMetrics.cwdLabel) && (
             <div className="flex flex-wrap items-center gap-x-2 min-w-0 shrink" data-testid="chat-footer-metrics" aria-live="polite" aria-atomic="true">
               {footerMetrics.contextLabel && (
-                <span className={`text-xs font-mono tabular-nums shrink-0 ${contextToneClass(footerMetrics.percentUsed)}`} title={footerMetrics.contextTitle}>
+                <span
+                  className={`text-xs font-mono tabular-nums shrink-0 ${contextToneClass(footerMetrics.percentUsed)}`}
+                  title={footerMetrics.contextTitle}
+                  aria-label={footerMetrics.contextTitle}
+                >
                   {footerMetrics.contextLabel}
                 </span>
               )}
@@ -1118,7 +1122,11 @@ export default function ChatFooter({
                       ·
                     </span>
                   )}
-                  <span className="text-xs font-mono tabular-nums text-muted shrink-0" title={footerMetrics.costTitle}>
+                  <span
+                    className="text-xs font-mono tabular-nums text-muted shrink-0"
+                    title={footerMetrics.costTitle}
+                    aria-label={footerMetrics.costTitle}
+                  >
                     {footerMetrics.costLabel}
                   </span>
                 </>
@@ -1130,7 +1138,11 @@ export default function ChatFooter({
                       ·
                     </span>
                   )}
-                  <span className="text-xs font-mono text-muted min-w-0 max-w-56 truncate" title={footerMetrics.cwdTitle}>
+                  <span
+                    className="text-xs font-mono text-muted min-w-0 max-w-56 truncate"
+                    title={footerMetrics.cwdTitle}
+                    aria-label={footerMetrics.cwdTitle}
+                  >
                     {footerMetrics.cwdLabel}
                   </span>
                 </>

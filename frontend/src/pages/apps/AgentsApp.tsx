@@ -1,5 +1,5 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { ChevronDown, ChevronRight, Cpu, GitBranch, Glasses, Loader2, Pause, Play, Search, Trash2, User, Wrench, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Cpu, Glasses, Loader2, Pause, Play, Search, Trash2, User, Wrench, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AgentTodoList from "../../components/AgentTodoList.tsx";
@@ -11,7 +11,7 @@ import ErrorState from "../../components/ui/ErrorState.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
 import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
-import { agentRPCClient, useAgentList, useAgentTypes, useWorkflows, workflowRPCClient } from "../../rpc.ts";
+import { agentRPCClient, useAgentList, useAgentTypes } from "../../rpc.ts";
 
 /** Fallback group for agent types whose config omits a category. */
 const UNCATEGORIZED = "Uncategorized";
@@ -34,12 +34,6 @@ interface RunningAgent {
   description: string;
   idle: boolean;
   currentActivity: string;
-}
-
-interface WorkflowSummary {
-  name: string;
-  displayName: string;
-  description: string;
 }
 
 /** Active (non-idle) agents first, then newest. */
@@ -455,23 +449,11 @@ function AgentsOverview({
   hasAgentTypes,
   agentTypesError,
   onRetryAgentTypes,
-  workflows,
-  workflowsLoading,
-  workflowsError,
-  onRetryWorkflows,
-  spawningWorkflow,
-  onSpawnWorkflow,
 }: {
   agents: ReturnType<typeof useAgentList>;
   hasAgentTypes: boolean;
   agentTypesError: Error | undefined;
   onRetryAgentTypes: () => void;
-  workflows: WorkflowSummary[];
-  workflowsLoading: boolean;
-  workflowsError: Error | undefined;
-  onRetryWorkflows: () => void;
-  spawningWorkflow: string | null;
-  onSpawnWorkflow: (name: string) => void;
 }) {
   return (
     <div className="h-full flex flex-col bg-primary">
@@ -512,46 +494,6 @@ function AgentsOverview({
           )}
 
           <CheckpointBrowser agents={agents} />
-
-          {workflowsError && workflows.length === 0 ? (
-            <ErrorState title="Failed to load workflows" error={workflowsError} onRetry={onRetryWorkflows} variant="inline" />
-          ) : workflowsLoading && workflows.length === 0 ? (
-            <LoadingState size="sm" message="Loading workflows…" className="py-4" />
-          ) : workflows.length > 0 ? (
-            <div className="space-y-2">
-              <div className="px-1">
-                <span className="text-2xs font-bold text-cyan-600 dark:text-cyan-500/90 uppercase tracking-widest flex items-center gap-1.5">
-                  <GitBranch className="w-3.5 h-3.5" /> Spawn Workflow
-                </span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {workflows.map(workflow => (
-                  <button
-                    type="button"
-                    key={workflow.name}
-                    onClick={() => onSpawnWorkflow(workflow.name)}
-                    disabled={spawningWorkflow === workflow.name}
-                    className="flex items-center gap-3 bg-secondary border border-primary px-3 py-2.5 rounded-lg text-left hover:bg-hover hover:border-cyan-500/50 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-ring shadow-sm"
-                    aria-label={`Spawn workflow: ${workflow.displayName}`}
-                  >
-                    <div className="shrink-0 text-cyan-500">
-                      {spawningWorkflow === workflow.name ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <div className="w-3.5 h-3.5 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                          <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-primary truncate">{workflow.displayName}</div>
-                      <div className="text-2xs text-muted line-clamp-1 mt-0.5">{workflow.description}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
         </div>
       </div>
     </div>
@@ -567,21 +509,16 @@ export default function AgentsApp() {
   const { agentType: routeAgentType, agentId: routeAgentId } = useParams<{ agentType?: string; agentId?: string }>();
   const agents = useAgentList();
   const agentTypes = useAgentTypes();
-  const workflows = useWorkflows();
-
   const [deletingAgentId, setDeletingAgentId] = useState<string | null>(null);
   const [launchingType, setLaunchingType] = useState<string | null>(null);
-  const [spawningWorkflow, setSpawningWorkflow] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Synchronous guards so double-clicks cannot start the same action twice before re-render disables the control.
   const launchingTypesRef = useRef(new Set<string>());
-  const spawningWorkflowsRef = useRef(new Set<string>());
   const deletingAgentsRef = useRef(new Set<string>());
 
   const agentList = (agents.data ?? []) as RunningAgent[];
   const agentTypeList = (agentTypes.data ?? []) as AgentType[];
-  const workflowList = (workflows.data ?? []) as WorkflowSummary[];
 
   const selectedAgentType = useMemo(
     () => (routeAgentType ? (agentTypeList.find(t => t.type === routeAgentType) ?? null) : null),
@@ -623,25 +560,6 @@ export default function AgentsApp() {
         launchingTypesRef.current.delete(type);
         // Only clear our own spinner — a concurrent launch of another type may own the flag.
         setLaunchingType(prev => (prev === type ? null : prev));
-      }
-    },
-    [navigate, refreshAgents],
-  );
-
-  const handleSpawnWorkflow = useCallback(
-    async (name: string) => {
-      if (spawningWorkflowsRef.current.has(name)) return;
-      spawningWorkflowsRef.current.add(name);
-      setSpawningWorkflow(name);
-      try {
-        const { id } = await workflowRPCClient.spawnWorkflow({ name, headless: false });
-        refreshAgents();
-        void navigate(`/agent/${id}`);
-      } catch (error) {
-        toastManager.error(formatError(error), { duration: 5000 });
-      } finally {
-        spawningWorkflowsRef.current.delete(name);
-        setSpawningWorkflow(prev => (prev === name ? null : prev));
       }
     },
     [navigate, refreshAgents],
@@ -716,12 +634,6 @@ export default function AgentsApp() {
         hasAgentTypes={agentTypeList.length > 0}
         agentTypesError={agentTypes.error}
         onRetryAgentTypes={() => void agentTypes.mutate()}
-        workflows={workflowList}
-        workflowsLoading={workflows.isLoading}
-        workflowsError={workflows.error}
-        onRetryWorkflows={() => void workflows.mutate()}
-        spawningWorkflow={spawningWorkflow}
-        onSpawnWorkflow={name => void handleSpawnWorkflow(name)}
       />
     );
   })();

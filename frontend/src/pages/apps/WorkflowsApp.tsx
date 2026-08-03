@@ -555,6 +555,7 @@ function ActiveRunPanel({ run, onOpenAgent }: { run: WorkflowRun; onOpenAgent: (
 
   return (
     <div
+      aria-label="Workflow run progress"
       className={`border rounded-xl overflow-hidden ${
         active
           ? "border-amber-500/40 bg-amber-500/5"
@@ -655,7 +656,10 @@ function WorkflowRunHistory({
   }
 
   return (
-    <div className="border border-primary rounded-xl bg-secondary/40 overflow-hidden divide-y divide-primary/60">
+    <div
+      aria-label="Workflow run history"
+      className="border border-primary rounded-xl bg-secondary/40 overflow-hidden divide-y divide-primary/60"
+    >
       {runs.map(run => {
         const when = run.finishedAt ?? run.startedAt;
         const duration = runDurationLabel(run);

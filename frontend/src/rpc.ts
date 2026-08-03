@@ -203,6 +203,14 @@ export function useEnabledTools(agentId: string | undefined) {
   return useAgentStatusStream(agentId ? `enabled-tools:${agentId}` : null, signal => chatRPCClient.streamEnabledTools({ agentId: agentId! }, signal));
 }
 
+export function useToolApprovalLevels() {
+  return useTypedSWR(`/chat/getToolApprovalLevels`, () => chatRPCClient.getToolApprovalLevels({}));
+}
+
+export function useToolApproval(agentId: string | undefined) {
+  return useAgentStatusStream(agentId ? `tool-approval:${agentId}` : null, signal => chatRPCClient.streamToolApproval({ agentId: agentId! }, signal));
+}
+
 export function useChatUsage(agentId: string) {
   return useAgentStatusStream(agentId ? `chat-usage:${agentId}` : null, signal => chatRPCClient.streamChatUsage({ agentId }, signal));
 }
@@ -235,26 +243,6 @@ export function useSkills(agentId?: string) {
 
 export function useEnabledSkills(agentId: string) {
   return useAgentStatusStream(agentId ? `enabled-skills:${agentId}` : null, signal => skillsRPCClient.streamEnabledSkills({ agentId }, signal));
-}
-
-export function useAvailableSubAgents(agentId: string) {
-  return useTypedSWR(agentId ? `/tasks/getAvailableSubAgents/${agentId}` : null, async () => {
-    const result = await tasksRPCClient.getAvailableSubAgents({ agentId });
-    switch (result.status) {
-      case "success":
-        return { agents: result.agents };
-      case "agentNotFound":
-        throw new Error(`Agent not found: ${agentId}`);
-      default: {
-        const exhaustive: any = result satisfies never;
-        throw new Error(`Unexpected result status: ${exhaustive.status}`);
-      }
-    }
-  });
-}
-
-export function useEnabledSubAgents(agentId: string) {
-  return useAgentStatusStream(agentId ? `enabled-sub-agents:${agentId}` : null, signal => tasksRPCClient.streamEnabledSubAgents({ agentId }, signal));
 }
 
 export function useStockQuote(symbols: string[]) {
