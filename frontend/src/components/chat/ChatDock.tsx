@@ -61,6 +61,14 @@ const isMode = (value: unknown): value is ChatDockMode => value === "bottom" || 
 const isRect = (value: unknown): value is FloatRect =>
   typeof value === "object" && value !== null && ["x", "y", "width", "height"].every(key => typeof (value as Record<string, unknown>)[key] === "number");
 
+function isMobileViewport(): boolean {
+  return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 767px)").matches;
+}
+
+function isCompactViewport(): boolean {
+  return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 1023px)").matches;
+}
+
 /**
  * Wraps an app's content with a chat panel that can be docked to the bottom or
  * right edge, floated above the content, or closed. The placement is chosen
@@ -71,10 +79,29 @@ export default function ChatDock({ agentId, storageKey, defaultMode = "bottom", 
   const rectKey = `${storageId(storageKey)}:float`;
 
   const [mode, setModeState] = useState<ChatDockMode>(() => readStored(modeKey, isMode) ?? defaultMode);
+  const [mobileViewport, setMobileViewport] = useState(isMobileViewport);
+  const [compactViewport, setCompactViewport] = useState(isCompactViewport);
   const [floatRect, setFloatRect] = useState<FloatRect | null>(() => readStored(rectKey, isRect));
   const containerRef = useRef<HTMLDivElement>(null);
   // Placement to restore when the panel is reopened after being closed.
   const lastOpenModeRef = useRef<Exclude<ChatDockMode, "closed">>(mode === "closed" ? (defaultMode === "closed" ? "bottom" : defaultMode) : mode);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mobileQuery = window.matchMedia("(max-width: 767px)");
+    const compactQuery = window.matchMedia("(max-width: 1023px)");
+    const update = () => {
+      setMobileViewport(mobileQuery.matches);
+      setCompactViewport(compactQuery.matches);
+    };
+    update();
+    mobileQuery.addEventListener("change", update);
+    compactQuery.addEventListener("change", update);
+    return () => {
+      mobileQuery.removeEventListener("change", update);
+      compactQuery.removeEventListener("change", update);
+    };
+  }, []);
 
   const setMode = useCallback(
     (next: ChatDockMode) => {
@@ -155,10 +182,12 @@ export default function ChatDock({ agentId, storageKey, defaultMode = "bottom", 
 
   if (!agentId) return <>{children}</>;
 
+  const effectiveMode: ChatDockMode = compactViewport && (mode === "right" || mode === "float") ? "bottom" : mode;
+
   const panel = (onHeaderPointerDown?: (event: React.PointerEvent) => void) => (
     <ChatPanel
       agentId={agentId}
-      dockMode={mode}
+      dockMode={effectiveMode}
       onDockModeChange={setMode}
       onClose={handleClose}
       {...(onHeaderPointerDown && { onHeaderPointerDown })}
@@ -166,7 +195,7 @@ export default function ChatDock({ agentId, storageKey, defaultMode = "bottom", 
     />
   );
 
-  if (mode === "closed") {
+  if (effectiveMode === "closed") {
     return (
       <div ref={containerRef} className="relative h-full w-full min-h-0">
         {children}
@@ -183,7 +212,18 @@ export default function ChatDock({ agentId, storageKey, defaultMode = "bottom", 
     );
   }
 
-  if (mode === "float") {
+  // A phone shows one region at a time. Chat replaces the app workspace until
+  // its close control returns the user to the content; desktop dock choices do
+  // not leak into this viewport class.
+  if (mobileViewport) {
+    return (
+      <div ref={containerRef} className="h-full w-full min-h-0 overflow-hidden bg-primary">
+        {panel()}
+      </div>
+    );
+  }
+
+  if (effectiveMode === "float") {
     return (
       <div ref={containerRef} className="relative h-full w-full min-h-0 overflow-hidden">
         {children}
@@ -209,11 +249,11 @@ export default function ChatDock({ agentId, storageKey, defaultMode = "bottom", 
   return (
     <div ref={containerRef} className="h-full w-full min-h-0">
       <ResizableSplit
-        key={mode}
-        direction={mode === "bottom" ? "vertical" : "horizontal"}
+        key={effectiveMode}
+        direction={effectiveMode === "bottom" ? "vertical" : "horizontal"}
         initialRatio={initialRatio}
         minFirst={160}
-        minSecond={mode === "bottom" ? 140 : 260}
+        minSecond={effectiveMode === "bottom" ? 140 : 260}
         className="h-full"
       >
         <div className="h-full overflow-hidden">{children}</div>

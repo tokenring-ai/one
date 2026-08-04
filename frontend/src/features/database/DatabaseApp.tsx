@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
-import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
+import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import { databaseRPCClient, useDatabaseTables, useDatasources, useTableRows, useTableSchema } from "../../rpc.ts";
 import DatasourceFormModal from "./components/DatasourceFormModal.tsx";
 import DatasourceSidebar from "./components/DatasourceSidebar.tsx";
@@ -239,9 +239,13 @@ export default function DatabaseApp() {
   })();
 
   const body = (
-    <div className="flex h-full min-h-0">
-      <ResizableSplit direction="horizontal" initialRatio={0.22} minFirst={180} minSecond={320} className="h-full w-full">
-        <div className="h-full flex flex-col min-h-0 bg-secondary border-r border-primary">
+    <WorkspaceShell
+      appId="database"
+      title="Database"
+      navigationLabel="Datasources and tables"
+      hasSelection={activeTable !== null}
+      navigation={
+        <div className="h-full flex flex-col min-h-0 bg-secondary">
           <DatasourceSidebar
             datasources={datasources}
             datasourcesLoading={datasourcesQuery.isLoading}
@@ -258,96 +262,99 @@ export default function DatabaseApp() {
             onRefresh={handleRefresh}
           />
         </div>
-
-        <div className="h-full flex flex-col min-h-0 bg-primary">
-          {!activeDatasource ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-6">
-              <Database className="w-10 h-10 text-muted opacity-30" />
-              <div>
-                <h2 className="text-sm font-semibold text-primary mb-1">Select a datasource</h2>
-                <p className="text-xs text-muted max-w-sm">Pick a database on the left, or add one if none are configured yet.</p>
-              </div>
+      }
+    >
+      <div className="h-full flex flex-col min-h-0 bg-primary">
+        {!activeDatasource ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-6">
+            <Database className="w-10 h-10 text-muted opacity-30" />
+            <div>
+              <h2 className="text-sm font-semibold text-primary mb-1">Select a datasource</h2>
+              <p className="text-xs text-muted max-w-sm">Pick a database on the left, or add one if none are configured yet.</p>
             </div>
-          ) : !activeTable ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-6">
-              <Table2 className="w-10 h-10 text-muted opacity-30" />
-              <div>
-                <h2 className="text-sm font-semibold text-primary mb-1">Select a table</h2>
-                <p className="text-xs text-muted max-w-sm">
-                  Browse tables under <span className="font-mono text-secondary">{activeDatasource}</span> to inspect rows.
-                </p>
-              </div>
+          </div>
+        ) : !activeTable ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-6">
+            <Table2 className="w-10 h-10 text-muted opacity-30" />
+            <div>
+              <h2 className="text-sm font-semibold text-primary mb-1">Select a table</h2>
+              <p className="text-xs text-muted max-w-sm">
+                Browse tables under <span className="font-mono text-secondary">{activeDatasource}</span> to inspect rows.
+              </p>
             </div>
-          ) : (
-            <>
-              <div className="shrink-0 h-11 border-b border-primary bg-secondary flex items-center gap-2 px-3">
-                <span className="text-sm font-semibold text-primary truncate font-mono">{activeTable}</span>
-                {activeDatasourceMeta && !activeDatasourceMeta.allowWrites && (
-                  <span className="inline-flex items-center gap-1 text-2xs text-muted border border-primary rounded px-1.5 py-0.5">
-                    <Lock className="w-3 h-3" /> Read-only
-                  </span>
-                )}
-                <span className="text-2xs text-muted truncate">{activeDatasource}</span>
-                <div className="flex-1" />
-                {selectedKeys.size > 0 && <span className="text-2xs text-muted">{selectedKeys.size} selected</span>}
-                {rangeLabel && <span className="text-2xs text-muted tabular-nums">{rangeLabel}</span>}
-                <button
-                  type="button"
-                  onClick={() => void rowsQuery.mutate()}
-                  className="p-1.5 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring"
-                  title="Refresh rows"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  disabled={!canPrev || rowsQuery.isLoading}
-                  onClick={() => setOffset(prev => Math.max(0, prev - PAGE_SIZE))}
-                  className="p-1.5 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring disabled:opacity-40"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  disabled={!canNext || rowsQuery.isLoading}
-                  onClick={() => setOffset(prev => prev + PAGE_SIZE)}
-                  className="p-1.5 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring disabled:opacity-40"
-                  aria-label="Next page"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
+          </div>
+        ) : (
+          <>
+            <div className="shrink-0 h-11 border-b border-primary bg-secondary flex items-center gap-2 px-3">
+              <span className="text-sm font-semibold text-primary truncate font-mono">{activeTable}</span>
+              {activeDatasourceMeta && !activeDatasourceMeta.allowWrites && (
+                <span className="inline-flex items-center gap-1 text-2xs text-muted border border-primary rounded px-1.5 py-0.5">
+                  <Lock className="w-3 h-3" /> Read-only
+                </span>
+              )}
+              <span className="text-2xs text-muted truncate">{activeDatasource}</span>
+              <div className="flex-1" />
+              {selectedKeys.size > 0 && <span className="text-2xs text-muted">{selectedKeys.size} selected</span>}
+              {rangeLabel && <span className="text-2xs text-muted tabular-nums">{rangeLabel}</span>}
+              <button
+                type="button"
+                onClick={() => void rowsQuery.mutate()}
+                className="p-1.5 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring"
+                title="Refresh rows"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                disabled={!canPrev || rowsQuery.isLoading}
+                onClick={() => setOffset(prev => Math.max(0, prev - PAGE_SIZE))}
+                className="p-1.5 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring disabled:opacity-40"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                disabled={!canNext || rowsQuery.isLoading}
+                onClick={() => setOffset(prev => prev + PAGE_SIZE)}
+                className="p-1.5 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring disabled:opacity-40"
+                aria-label="Next page"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
-              <FilterBar columns={columns} filters={draftFilters} onChange={handleFiltersChange} />
+            <FilterBar columns={columns} filters={draftFilters} onChange={handleFiltersChange} />
 
-              <div className="flex-1 flex min-h-0">
-                <RowGrid
-                  rows={rows}
-                  columns={columns}
-                  fields={fields.length > 0 ? fields : columns.map(column => column.name)}
-                  orderBy={orderBy}
-                  selectedKeys={selectedKeys}
-                  rowKeyOf={keyOf}
-                  loading={rowsQuery.isLoading || schemaQuery.isLoading}
-                  error={rowsQuery.error ?? schemaQuery.error}
-                  onToggleRow={handleToggleRow}
-                  onToggleAll={handleToggleAll}
-                  onSort={handleSort}
-                  onRetry={() => {
-                    void schemaQuery.mutate();
-                    void rowsQuery.mutate();
-                  }}
-                  onOpenRow={setDetailRow}
-                  hasActiveFilters={queryFilters.length > 0}
-                />
-                {detailRow && <RowDetailPane row={detailRow} columns={columns} onClose={() => setDetailRow(null)} />}
-              </div>
-            </>
-          )}
-        </div>
-      </ResizableSplit>
-    </div>
+            <div className="relative flex-1 flex min-h-0">
+              <RowGrid
+                rows={rows}
+                columns={columns}
+                fields={fields.length > 0 ? fields : columns.map(column => column.name)}
+                orderBy={orderBy}
+                selectedKeys={selectedKeys}
+                rowKeyOf={keyOf}
+                loading={rowsQuery.isLoading || schemaQuery.isLoading}
+                error={rowsQuery.error ?? schemaQuery.error}
+                onToggleRow={handleToggleRow}
+                onToggleAll={handleToggleAll}
+                onSort={handleSort}
+                onRetry={() => {
+                  void schemaQuery.mutate();
+                  void rowsQuery.mutate();
+                }}
+                onOpenRow={row => {
+                  setAgentId(null);
+                  setDetailRow(row);
+                }}
+                hasActiveFilters={queryFilters.length > 0}
+              />
+              {detailRow && <RowDetailPane row={detailRow} columns={columns} onClose={() => setDetailRow(null)} />}
+            </div>
+          </>
+        )}
+      </div>
+    </WorkspaceShell>
   );
 
   return (
@@ -363,7 +370,10 @@ export default function DatabaseApp() {
           defaultAgentType={DATABASE_AGENT_TYPE}
           buttonLabel="Open Agent"
           buttonClassName="bg-accent hover:bg-accent-hover text-white shadow-button-primary"
-          onLaunch={id => setAgentId(id)}
+          onLaunch={id => {
+            setDetailRow(null);
+            setAgentId(id);
+          }}
         />
       </div>
 

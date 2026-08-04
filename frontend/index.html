@@ -2,20 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta id="viewport" name="viewport" content="width=450, maximum-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover">
-  <script>
-    function adjustViewport() {
-      const viewPortMeta = document.getElementById('viewport');
-      const minWidth = 450;
-      if (window.screen.width > minWidth) {
-        viewPortMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover');
-      } else {
-        viewPortMeta.setAttribute('content', 'width=' + minWidth + ', maximum-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover');
-      }
-    }
-    adjustViewport();
-    window.addEventListener('orientationchange', adjustViewport);
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -28,9 +15,6 @@
       width: 100%;
       height: 100dvh;
       overflow: hidden;
-      position: fixed; /* Prevents scroll bouncing */
-      top: 0;
-      left: 0;
       background-color: #1e1e1e; /* Default dark background to prevent flash */
       -webkit-tap-highlight-color: transparent;
     }
@@ -42,7 +26,6 @@
       height: 100%;
       overflow: hidden;
       position: relative;
-     min-width: 450px;
     }
     
     #root {

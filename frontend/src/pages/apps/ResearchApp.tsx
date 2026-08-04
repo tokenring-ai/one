@@ -8,8 +8,8 @@ import remarkGfm from "remark-gfm";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
 import { markdownLinkComponents } from "../../components/chat/MarkdownLink.tsx";
+import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
-import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { useOwnedAgent } from "../../hooks/useOwnedAgent.ts";
 import { useTheme } from "../../hooks/useTheme.ts";
@@ -1258,29 +1258,36 @@ export default function ResearchApp() {
         )}
       </AppPageHeader>
 
-      <ResizableSplit direction="horizontal" initialRatio={0.18} minFirst={180} minSecond={320} className="flex-1 min-h-0">
-        <TopicsSidebar
-          topics={topics}
-          topicsLoading={topicsLoading}
-          topicsError={topicsError}
-          onRetryTopics={() => void refreshTopics()}
-          expandedTopics={expandedTopics}
-          onToggleTopic={handleToggleTopic}
-          selected={selected}
-          refreshSignal={itemsRefreshSignal}
-          onSelectItem={handleSelectItem}
-          onNewItem={topicName => handleNew(topicName)}
-          onDeleteItem={(topicName, name) => setDeleteItemTarget({ topicName, name })}
-          onDeleteTopic={name => setDeleteTopicTarget(name)}
-          onNewTopic={() => setNewTopicModalOpen(true)}
-          onNewItemGlobal={() => handleNew()}
-          onItemsChange={handleItemsChange}
-        />
-
+      <WorkspaceShell
+        appId="research"
+        title="Research"
+        navigationLabel="Research topics"
+        hasSelection={selected !== null}
+        className="flex-1"
+        navigation={
+          <TopicsSidebar
+            topics={topics}
+            topicsLoading={topicsLoading}
+            topicsError={topicsError}
+            onRetryTopics={() => void refreshTopics()}
+            expandedTopics={expandedTopics}
+            onToggleTopic={handleToggleTopic}
+            selected={selected}
+            refreshSignal={itemsRefreshSignal}
+            onSelectItem={handleSelectItem}
+            onNewItem={topicName => handleNew(topicName)}
+            onDeleteItem={(topicName, name) => setDeleteItemTarget({ topicName, name })}
+            onDeleteTopic={name => setDeleteTopicTarget(name)}
+            onNewTopic={() => setNewTopicModalOpen(true)}
+            onNewItemGlobal={() => handleNew()}
+            onItemsChange={handleItemsChange}
+          />
+        }
+      >
         <ChatDock agentId={agentId} storageKey="research" initialRatio={0.65} headerTitle="Research Agent">
           {mainPane}
         </ChatDock>
-      </ResizableSplit>
+      </WorkspaceShell>
     </div>
   );
 }

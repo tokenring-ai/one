@@ -471,7 +471,7 @@ export default function DocumentsApp() {
             <button
               type="button"
               onClick={() => setMobilePanelOpen(true)}
-              className="lg:hidden shrink-0 flex items-center gap-1 text-muted hover:text-primary focus-ring rounded px-1 cursor-pointer"
+              className="min-[1440px]:hidden shrink-0 flex items-center gap-1 text-muted hover:text-primary focus-ring rounded px-1 cursor-pointer"
               title="Show side panel"
             >
               <PanelRight className="w-3.5 h-3.5" />
@@ -480,11 +480,11 @@ export default function DocumentsApp() {
         </div>
 
         {/* ── Right panel (desktop side-by-side) ── */}
-        <div className="w-80 xl:w-96 shrink-0 flex-col min-h-0 hidden lg:flex">{rightPanelContent}</div>
+        <div className="w-80 min-[1600px]:w-96 shrink-0 flex-col min-h-0 hidden min-[1440px]:flex">{rightPanelContent}</div>
 
         {/* ── Right panel (mobile/tablet full-screen sheet) ── */}
         {mobilePanelOpen && (
-          <div className="lg:hidden absolute inset-0 z-30 flex flex-col bg-primary">
+          <div className="min-[1440px]:hidden absolute inset-0 z-30 flex flex-col bg-primary">
             <div className="shrink-0 h-10 border-b border-primary bg-secondary flex items-center px-3 gap-2">
               <button
                 type="button"

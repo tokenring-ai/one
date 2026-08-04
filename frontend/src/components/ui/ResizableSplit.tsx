@@ -1,5 +1,5 @@
 import type React from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const HANDLE_PX = 8;
 
@@ -14,6 +14,7 @@ interface ResizableSplitProps {
   minSecond?: number;
   children: [React.ReactNode, React.ReactNode];
   className?: string;
+  ariaLabel?: string;
 }
 
 /**
@@ -29,19 +30,42 @@ export default function ResizableSplit({
   minSecond = 80,
   children,
   className = "",
+  ariaLabel = "Resize panels",
 }: ResizableSplitProps) {
-  const [ratio, setRatio] = useState(Math.max(0.05, Math.min(0.95, initialRatio)));
+  const initialClampedRatio = Math.max(0.05, Math.min(0.95, initialRatio));
+  const [ratio, setRatio] = useState(initialClampedRatio);
   const [dragging, setDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const isVertical = direction === "vertical";
 
+  const clampRatio = useCallback(
+    (next: number) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      const totalSize = rect ? (isVertical ? rect.height : rect.width) : 0;
+      if (totalSize <= 0) return Math.max(0.05, Math.min(0.95, next));
+      const usableSize = Math.max(1, totalSize - HANDLE_PX);
+      if (minFirst + minSecond >= usableSize) return minFirst / Math.max(1, minFirst + minSecond);
+      return Math.max(minFirst / usableSize, Math.min(1 - minSecond / usableSize, next));
+    },
+    [isVertical, minFirst, minSecond],
+  );
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => setRatio(current => clampRatio(current)));
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [clampRatio]);
+
   const startDrag = useCallback(
-    (startEvent: React.MouseEvent) => {
+    (startEvent: React.PointerEvent) => {
+      if (startEvent.button !== 0) return;
       startEvent.preventDefault();
       setDragging(true);
 
-      const onMove = (e: MouseEvent) => {
+      const onMove = (e: PointerEvent) => {
         const container = containerRef.current;
         if (!container) return;
 
@@ -49,28 +73,23 @@ export default function ResizableSplit({
         const totalSize = isVertical ? rect.height : rect.width;
         const offset = isVertical ? e.clientY - rect.top : e.clientX - rect.left;
 
-        // Clamp so neither pane goes below its minimum
-        const minFirstRatio = minFirst / totalSize;
-        const minSecondRatio = minSecond / totalSize;
-        const clamped = Math.max(minFirstRatio, Math.min(1 - minSecondRatio - HANDLE_PX / totalSize, offset / totalSize));
-
-        setRatio(clamped);
+        setRatio(clampRatio(offset / totalSize));
       };
 
       const onUp = () => {
         setDragging(false);
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
       };
 
       document.body.style.cursor = isVertical ? "row-resize" : "col-resize";
       document.body.style.userSelect = "none";
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", onUp);
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
     },
-    [isVertical, minFirst, minSecond],
+    [clampRatio, isVertical],
   );
 
   // ── Styles ──────────────────────────────────────────────────────────────────
@@ -78,15 +97,15 @@ export default function ResizableSplit({
   const containerClass = `flex ${isVertical ? "flex-col" : "flex-row"} ${className}`;
 
   const firstStyle: React.CSSProperties = isVertical
-    ? { flexBasis: `${ratio * 100}%`, flexShrink: 0, minHeight: 0, overflow: "hidden" }
-    : { flexBasis: `${ratio * 100}%`, flexShrink: 0, minWidth: 0, overflow: "hidden" };
+    ? { flexBasis: `${ratio * 100}%`, flexShrink: 0, minHeight: minFirst, overflow: "hidden" }
+    : { flexBasis: `${ratio * 100}%`, flexShrink: 0, minWidth: minFirst, overflow: "hidden" };
 
   const secondStyle: React.CSSProperties = isVertical
-    ? { flex: "1 1 0", minHeight: 0, overflow: "hidden" }
-    : { flex: "1 1 0", minWidth: 0, overflow: "hidden" };
+    ? { flex: "1 1 0", minHeight: minSecond, overflow: "hidden" }
+    : { flex: "1 1 0", minWidth: minSecond, overflow: "hidden" };
 
   const handleClass = [
-    "group shrink-0 relative flex items-center justify-center select-none transition-colors",
+    "group shrink-0 relative flex items-center justify-center select-none touch-none transition-colors focus:outline-none focus:bg-accent-muted",
     isVertical ? "w-full cursor-row-resize" : "h-full cursor-col-resize",
     dragging ? "bg-accent-muted-hover" : "bg-secondary hover:bg-accent-muted",
   ].join(" ");
@@ -102,18 +121,34 @@ export default function ResizableSplit({
 
       {/* Drag handle */}
       <div
-        onMouseDown={startDrag}
+        role="separator"
+        aria-label={ariaLabel}
+        aria-orientation={isVertical ? "horizontal" : "vertical"}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(ratio * 100)}
+        tabIndex={0}
+        onPointerDown={startDrag}
+        onDoubleClick={() => setRatio(clampRatio(initialClampedRatio))}
         className={handleClass}
         style={handleSizeStyle}
         onKeyDown={e => {
           // Allow keyboard resizing with arrow keys
-          const step = 0.02;
+          const rect = containerRef.current?.getBoundingClientRect();
+          const total = rect ? (isVertical ? rect.height : rect.width) : 400;
+          const step = (e.shiftKey ? 32 : 8) / Math.max(1, total);
           if ((isVertical && e.key === "ArrowDown") || (!isVertical && e.key === "ArrowRight")) {
             e.preventDefault();
-            setRatio(r => Math.min(0.95, r + step));
+            setRatio(r => clampRatio(r + step));
           } else if ((isVertical && e.key === "ArrowUp") || (!isVertical && e.key === "ArrowLeft")) {
             e.preventDefault();
-            setRatio(r => Math.max(0.05, r - step));
+            setRatio(r => clampRatio(r - step));
+          } else if (e.key === "Home") {
+            e.preventDefault();
+            setRatio(clampRatio(0));
+          } else if (e.key === "End") {
+            e.preventDefault();
+            setRatio(clampRatio(1));
           }
         }}
       >

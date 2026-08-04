@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
+import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import FilterTabs from "../../components/ui/FilterTabs.tsx";
@@ -900,26 +901,33 @@ export default function BlogApp() {
   const blogStateError = blogState.error ?? (blogState.data?.status === "agentNotFound" ? new Error("Blog agent not found") : null);
 
   const body = (
-    <div className="flex h-full min-h-0">
-      <div className="w-72 shrink-0 border-r border-primary flex flex-col min-h-0 bg-secondary">
-        <PostListSidebar
-          filteredPosts={filteredPosts}
-          postsLoading={!!provider && posts.isLoading && !posts.data}
-          postsError={posts.error}
-          totalCount={posts.data?.count ?? allPosts.length}
-          statusFilter={statusFilter}
-          postCounts={postCounts}
-          selectedPostId={selectedPostId}
-          search={search}
-          provider={provider}
-          isValidating={posts.isValidating}
-          onStatusFilter={setStatusFilter}
-          onSearch={setSearch}
-          onSelectPost={openPost}
-          onNewPost={openCreate}
-          onRefresh={refreshPosts}
-        />
-      </div>
+    <WorkspaceShell
+      appId="blog"
+      title="Blog"
+      navigationLabel="Blog posts"
+      hasSelection={selectedPostId !== null}
+      navigation={
+        <div className="h-full flex flex-col min-h-0 bg-secondary">
+          <PostListSidebar
+            filteredPosts={filteredPosts}
+            postsLoading={!!provider && posts.isLoading && !posts.data}
+            postsError={posts.error}
+            totalCount={posts.data?.count ?? allPosts.length}
+            statusFilter={statusFilter}
+            postCounts={postCounts}
+            selectedPostId={selectedPostId}
+            search={search}
+            provider={provider}
+            isValidating={posts.isValidating}
+            onStatusFilter={setStatusFilter}
+            onSearch={setSearch}
+            onSelectPost={openPost}
+            onNewPost={openCreate}
+            onRefresh={refreshPosts}
+          />
+        </div>
+      }
+    >
       <div className="flex-1 min-w-0 overflow-hidden">
         {blogStateError && !blogStateData ? (
           <ErrorState title="Failed to load blog state" error={blogStateError} onRetry={() => void blogState.mutate()} variant="page" />
@@ -939,7 +947,7 @@ export default function BlogApp() {
           />
         )}
       </div>
-    </div>
+    </WorkspaceShell>
   );
 
   return (

@@ -37,9 +37,23 @@ function renderDock(agentId: string | null = "agent-1", storageKey = "test-app")
   );
 }
 
+function mockViewport({ mobile = false, compact = false }: { mobile?: boolean; compact?: boolean } = {}) {
+  window.matchMedia = mock((query: string) => ({
+    matches: query.includes("767px") ? mobile : compact,
+    media: query,
+    onchange: null,
+    addListener: mock(),
+    removeListener: mock(),
+    addEventListener: mock(),
+    removeEventListener: mock(),
+    dispatchEvent: mock(() => true),
+  })) as unknown as typeof window.matchMedia;
+}
+
 describe("ChatDock", () => {
   beforeEach(() => {
     localStorage.clear();
+    mockViewport();
   });
 
   it("renders only the content when there is no agent", () => {
@@ -85,5 +99,24 @@ describe("ChatDock", () => {
 
     renderDock();
     expect(screen.getByTestId("chat-panel").getAttribute("data-mode")).toBe("right");
+  });
+
+  it("normalizes right and floating placement to a bottom panel on tablets", async () => {
+    mockViewport({ compact: true });
+    const user = userEvent.setup();
+    renderDock();
+
+    await user.click(screen.getByRole("button", { name: "Dock to the right" }));
+    expect(screen.getByTestId("chat-panel")).toHaveAttribute("data-mode", "bottom");
+    await user.click(screen.getByRole("button", { name: "Float above content" }));
+    expect(screen.getByTestId("chat-panel")).toHaveAttribute("data-mode", "bottom");
+  });
+
+  it("shows only the assistant region on phones", () => {
+    mockViewport({ mobile: true, compact: true });
+    renderDock();
+
+    expect(screen.getByTestId("chat-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("app-body")).not.toBeInTheDocument();
   });
 });

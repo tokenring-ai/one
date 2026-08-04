@@ -19,6 +19,7 @@ import {
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
@@ -192,23 +193,199 @@ export default function QueueDashboard() {
         </button>
       </AppPageHeader>
 
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-        <div className="max-w-5xl mx-auto space-y-6">
-          {isLoading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="w-7 h-7 text-muted animate-spin" />
+      <WorkspaceShell
+        appId="queue"
+        title="Queue"
+        navigationLabel="Queues"
+        hasSelection={selectedQueueName !== null || showCreateForm}
+        className="flex-1"
+        navigation={
+          <div className="h-full flex flex-col min-h-0 bg-secondary">
+            <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-primary">
+              <span className="flex-1 text-2xs font-bold uppercase tracking-widest text-muted">Queues</span>
+              <span className="text-2xs text-muted">{queueNames.length}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCreateForm(true);
+                  setShowAddForm(false);
+                }}
+                className="p-1.5 rounded-md text-muted hover:text-primary hover:bg-hover focus-ring"
+                aria-label="Create queue"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
             </div>
-          ) : queues.error && !queues.data ? (
-            <ErrorState title="Unable to load queues" error={queues.error} onRetry={refresh} variant="page" />
-          ) : queueNames.length === 0 ? (
-            <div className="px-6 py-14 text-center bg-secondary border border-primary border-dashed rounded-xl">
-              <Layers className="w-10 h-10 text-muted mx-auto mb-3 opacity-50" />
-              <p className="text-sm font-medium text-primary mb-1">No queues available</p>
-              <p className="text-2xs text-muted max-w-sm mx-auto mb-5">
-                The queue service is running but no queues are configured. Create a queue to start dispatching work.
-              </p>
-              {showCreateForm ? (
-                <div className="max-w-lg mx-auto text-left">
+            <nav className="flex-1 overflow-y-auto p-2 space-y-1" aria-label="Queues">
+              {queueNames.map(name => {
+                const queue = allQueues[name];
+                const pendingCount = queue?.items.filter(item => item.status === "pending").length ?? 0;
+                const runningCount = queue?.items.filter(item => item.status === "running").length ?? 0;
+                const active = name === selectedQueueName;
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => {
+                      setSelectedQueue(name);
+                      setPendingSelect(null);
+                      setShowAddForm(false);
+                      setShowCreateForm(false);
+                      setTab("pending");
+                      setResultFilter("all");
+                    }}
+                    aria-current={active ? "page" : undefined}
+                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left focus-ring ${active ? "bg-active text-primary" : "text-secondary hover:text-primary hover:bg-hover"}`}
+                  >
+                    <span className="w-7 h-7 rounded-lg bg-sky-500/15 text-sky-500 grid place-items-center shrink-0">
+                      <ListOrdered className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-medium truncate">{name}</span>
+                      <span className="block text-2xs text-muted truncate">{queue?.config.agentType ?? "Queue"}</span>
+                    </span>
+                    {(pendingCount > 0 || runningCount > 0) && (
+                      <span className="text-2xs text-muted tabular-nums">
+                        {pendingCount}/{runningCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+              {!isLoading && queueNames.length === 0 && <p className="px-2 py-6 text-center text-2xs text-muted">No queues configured</p>}
+            </nav>
+          </div>
+        }
+      >
+        <div className="h-full overflow-y-auto px-4 sm:px-6 py-6">
+          <div className="max-w-5xl mx-auto space-y-6">
+            {isLoading ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="w-7 h-7 text-muted animate-spin" />
+              </div>
+            ) : queues.error && !queues.data ? (
+              <ErrorState title="Unable to load queues" error={queues.error} onRetry={refresh} variant="page" />
+            ) : queueNames.length === 0 ? (
+              <div className="px-6 py-14 text-center bg-secondary border border-primary border-dashed rounded-xl">
+                <Layers className="w-10 h-10 text-muted mx-auto mb-3 opacity-50" />
+                <p className="text-sm font-medium text-primary mb-1">No queues available</p>
+                <p className="text-2xs text-muted max-w-sm mx-auto mb-5">
+                  The queue service is running but no queues are configured. Create a queue to start dispatching work.
+                </p>
+                {showCreateForm ? (
+                  <div className="max-w-lg mx-auto text-left">
+                    <CreateQueueForm
+                      existingNames={queueNames}
+                      onCancel={() => setShowCreateForm(false)}
+                      onCreated={name => {
+                        setShowCreateForm(false);
+                        setPendingSelect(name);
+                        setSelectedQueue(name);
+                        setTab("pending");
+                        setShowAddForm(false);
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateForm(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium rounded-lg transition-colors focus-ring cursor-pointer shadow-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create queue
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                {queues.error ? (
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-2xs text-amber-800 dark:text-amber-200">
+                    <span>Live queue updates interrupted. Showing the last snapshot.</span>
+                    <button
+                      type="button"
+                      onClick={refresh}
+                      className="inline-flex items-center gap-1 font-medium text-amber-900 dark:text-amber-100 hover:underline focus-ring rounded cursor-pointer"
+                    >
+                      <RefreshCw className={cn("w-3 h-3", queues.isValidating && "animate-spin")} />
+                      Reconnect
+                    </button>
+                  </div>
+                ) : null}
+
+                {/* Summary */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <SummaryStat label="Queues" value={String(queueNames.length)} icon={<Layers className="w-4 h-4" />} accentClass="text-sky-500" />
+                  <SummaryStat label="Pending" value={String(totalPending)} icon={<Clock className="w-4 h-4" />} accentClass="text-indigo-500" />
+                  <SummaryStat label="Running" value={String(totalRunning)} icon={<Activity className="w-4 h-4" />} accentClass="text-amber-500" />
+                  <SummaryStat label="Results" value={String(totalResults)} icon={<History className="w-4 h-4" />} accentClass="text-violet-500" />
+                </div>
+
+                {/* Queue picker + controls */}
+                <div className="bg-secondary border border-primary rounded-xl p-4 shadow-sm space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <label className="flex-1 min-w-0 space-y-1">
+                      <span className="text-2xs font-bold text-muted uppercase tracking-widest">Queue</span>
+                      <select
+                        value={selectedQueueName ?? ""}
+                        onChange={e => {
+                          setSelectedQueue(e.target.value || null);
+                          setPendingSelect(null);
+                          setShowAddForm(false);
+                          setShowCreateForm(false);
+                          setTab("pending");
+                          setResultFilter("all");
+                        }}
+                        className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary focus-accent"
+                      >
+                        {queueNames.map(name => (
+                          <option key={name} value={name}>
+                            {name} — {allQueues[name]?.config.agentType}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <div className="flex flex-wrap items-center gap-2 sm:pt-5">
+                      {queueData ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-2xs font-medium bg-tertiary text-muted border border-primary">
+                          <Activity className="w-3 h-3" />
+                          {running.length} / {concurrency} active
+                        </span>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCreateForm(v => !v);
+                          setShowAddForm(false);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-tertiary border border-primary text-primary hover:bg-hover rounded-lg focus-ring cursor-pointer transition-colors"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        New queue
+                      </button>
+                    </div>
+                  </div>
+
+                  {queueData ? (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
+                      <span>
+                        Agent type: <span className="text-primary font-medium">{queueData.config.agentType}</span>
+                      </span>
+                      <span>
+                        Concurrency: <span className="text-primary font-medium">{queueData.config.concurrency}</span>
+                      </span>
+                      <span>
+                        Max pending: <span className="text-primary font-medium">{queueData.config.maxSize ?? "unlimited"}</span>
+                      </span>
+                      <span>
+                        Results kept: <span className="text-primary font-medium">{queueData.config.maxResults}</span>
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+
+                {showCreateForm ? (
                   <CreateQueueForm
                     existingNames={queueNames}
                     onCancel={() => setShowCreateForm(false)}
@@ -220,313 +397,71 @@ export default function QueueDashboard() {
                       setShowAddForm(false);
                     }}
                   />
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowCreateForm(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium rounded-lg transition-colors focus-ring cursor-pointer shadow-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create queue
-                </button>
-              )}
-            </div>
-          ) : (
-            <>
-              {queues.error ? (
-                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-2xs text-amber-800 dark:text-amber-200">
-                  <span>Live queue updates interrupted. Showing the last snapshot.</span>
-                  <button
-                    type="button"
-                    onClick={refresh}
-                    className="inline-flex items-center gap-1 font-medium text-amber-900 dark:text-amber-100 hover:underline focus-ring rounded cursor-pointer"
-                  >
-                    <RefreshCw className={cn("w-3 h-3", queues.isValidating && "animate-spin")} />
-                    Reconnect
-                  </button>
-                </div>
-              ) : null}
-
-              {/* Summary */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <SummaryStat label="Queues" value={String(queueNames.length)} icon={<Layers className="w-4 h-4" />} accentClass="text-sky-500" />
-                <SummaryStat label="Pending" value={String(totalPending)} icon={<Clock className="w-4 h-4" />} accentClass="text-indigo-500" />
-                <SummaryStat label="Running" value={String(totalRunning)} icon={<Activity className="w-4 h-4" />} accentClass="text-amber-500" />
-                <SummaryStat label="Results" value={String(totalResults)} icon={<History className="w-4 h-4" />} accentClass="text-violet-500" />
-              </div>
-
-              {/* Queue picker + controls */}
-              <div className="bg-secondary border border-primary rounded-xl p-4 shadow-sm space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <label className="flex-1 min-w-0 space-y-1">
-                    <span className="text-2xs font-bold text-muted uppercase tracking-widest">Queue</span>
-                    <select
-                      value={selectedQueueName ?? ""}
-                      onChange={e => {
-                        setSelectedQueue(e.target.value || null);
-                        setPendingSelect(null);
-                        setShowAddForm(false);
-                        setShowCreateForm(false);
-                        setTab("pending");
-                        setResultFilter("all");
-                      }}
-                      className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary focus-accent"
-                    >
-                      {queueNames.map(name => (
-                        <option key={name} value={name}>
-                          {name} — {allQueues[name]?.config.agentType}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <div className="flex flex-wrap items-center gap-2 sm:pt-5">
-                    {queueData ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-2xs font-medium bg-tertiary text-muted border border-primary">
-                        <Activity className="w-3 h-3" />
-                        {running.length} / {concurrency} active
-                      </span>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCreateForm(v => !v);
-                        setShowAddForm(false);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-tertiary border border-primary text-primary hover:bg-hover rounded-lg focus-ring cursor-pointer transition-colors"
-                    >
-                      <Layers className="w-3.5 h-3.5" />
-                      New queue
-                    </button>
-                  </div>
-                </div>
-
-                {queueData ? (
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
-                    <span>
-                      Agent type: <span className="text-primary font-medium">{queueData.config.agentType}</span>
-                    </span>
-                    <span>
-                      Concurrency: <span className="text-primary font-medium">{queueData.config.concurrency}</span>
-                    </span>
-                    <span>
-                      Max pending: <span className="text-primary font-medium">{queueData.config.maxSize ?? "unlimited"}</span>
-                    </span>
-                    <span>
-                      Results kept: <span className="text-primary font-medium">{queueData.config.maxResults}</span>
-                    </span>
-                  </div>
                 ) : null}
-              </div>
 
-              {showCreateForm ? (
-                <CreateQueueForm
-                  existingNames={queueNames}
-                  onCancel={() => setShowCreateForm(false)}
-                  onCreated={name => {
-                    setShowCreateForm(false);
-                    setPendingSelect(name);
-                    setSelectedQueue(name);
-                    setTab("pending");
-                    setShowAddForm(false);
-                  }}
-                />
-              ) : null}
-
-              {selectedQueueName && queueData ? (
-                <>
-                  <div className="flex items-center justify-between gap-3">
-                    <FilterTabs
-                      tabs={tabs}
-                      value={tab}
-                      onChange={next => {
-                        setTab(next);
-                        setShowAddForm(false);
-                      }}
-                      className="flex-1"
-                      tabClassName="flex-none px-4"
-                    />
-                    {tab === "pending" ? (
-                      <div className="flex items-center gap-2 shrink-0">
-                        {pending.length > 0 ? (
+                {selectedQueueName && queueData ? (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <FilterTabs
+                        tabs={tabs}
+                        value={tab}
+                        onChange={next => {
+                          setTab(next);
+                          setShowAddForm(false);
+                        }}
+                        className="flex-1"
+                        tabClassName="flex-none px-4"
+                      />
+                      {tab === "pending" ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                          {pending.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmClear(true)}
+                              disabled={busyAction === "clear"}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-error border border-primary hover:bg-error/5 rounded-lg focus-ring cursor-pointer transition-colors"
+                            >
+                              {busyAction === "clear" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Eraser className="w-3.5 h-3.5" />}
+                              Clear
+                            </button>
+                          ) : null}
                           <button
                             type="button"
-                            onClick={() => setConfirmClear(true)}
-                            disabled={busyAction === "clear"}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-error border border-primary hover:bg-error/5 rounded-lg focus-ring cursor-pointer transition-colors"
+                            onClick={() => {
+                              setShowAddForm(v => !v);
+                              setShowCreateForm(false);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-sky-600 hover:bg-sky-500 text-white rounded-lg focus-ring cursor-pointer shadow-sm shrink-0"
                           >
-                            {busyAction === "clear" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Eraser className="w-3.5 h-3.5" />}
-                            Clear
+                            <Plus className="w-3.5 h-3.5" />
+                            Add task
                           </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowAddForm(v => !v);
-                            setShowCreateForm(false);
-                          }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-sky-600 hover:bg-sky-500 text-white rounded-lg focus-ring cursor-pointer shadow-sm shrink-0"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          Add task
-                        </button>
-                      </div>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {tab === "pending" && showAddForm ? (
+                      <AddItemForm
+                        queueName={selectedQueueName}
+                        onCancel={() => setShowAddForm(false)}
+                        onCreated={() => {
+                          setShowAddForm(false);
+                        }}
+                      />
                     ) : null}
-                  </div>
 
-                  {tab === "pending" && showAddForm ? (
-                    <AddItemForm
-                      queueName={selectedQueueName}
-                      onCancel={() => setShowAddForm(false)}
-                      onCreated={() => {
-                        setShowAddForm(false);
-                      }}
-                    />
-                  ) : null}
-
-                  {tab === "pending" ? (
-                    pending.length === 0 && !showAddForm ? (
-                      <EmptyState
-                        icon={<Clock className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
-                        title="No pending items"
-                        hint="Add a task to this queue and a fresh agent will pick it up."
-                        ctaLabel="Add your first task"
-                        onCta={() => setShowAddForm(true)}
-                      />
-                    ) : pending.length === 0 ? null : (
-                      <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
-                        {pending.map((item, index) => {
-                          const expanded = expandedIds.has(item.id);
-                          return (
-                            <div key={item.id} className="px-4 py-3 hover:bg-hover/30 transition-colors">
-                              <div className="flex items-start gap-3">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleExpanded(item.id)}
-                                  className="mt-0.5 p-0.5 text-muted hover:text-primary rounded focus-ring cursor-pointer shrink-0"
-                                  aria-expanded={expanded}
-                                  aria-label={expanded ? "Collapse details" : "Expand details"}
-                                >
-                                  {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                                </button>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                    <span className="text-2xs text-muted tabular-nums">#{index + 1}</span>
-                                    <span className="text-sm font-medium text-primary truncate">{item.name}</span>
-                                    <span className="inline-flex items-center gap-1 text-2xs text-indigo-600 dark:text-indigo-400 shrink-0">
-                                      <Clock className="w-3 h-3" /> Pending
-                                    </span>
-                                  </div>
-                                  <p className="text-2xs text-muted mb-1.5" title={item.input.message}>
-                                    {expanded ? null : truncateText(item.input.message)}
-                                  </p>
-                                  {expanded ? (
-                                    <div className="mt-1 mb-2 space-y-2">
-                                      <DetailBlock label="Task / prompt" value={item.input.message} />
-                                      {item.input.attachments?.length ? (
-                                        <DetailBlock label="Attachments" value={item.input.attachments.map(a => a.name).join(", ")} />
-                                      ) : null}
-                                      <p className="text-2xs text-muted">
-                                        Id: <span className="font-mono text-secondary">{item.id}</span>
-                                      </p>
-                                    </div>
-                                  ) : null}
-                                  <p className="text-2xs text-muted/90">
-                                    Queued {formatRelativeTime(item.createdAt)} · from {item.input.from}
-                                  </p>
-                                </div>
-                                <CancelButton itemId={item.id} busy={busyAction === `cancel:${item.id}`} onClick={() => setConfirmCancel(item.id)} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )
-                  ) : tab === "running" ? (
-                    running.length === 0 ? (
-                      <EmptyState
-                        icon={<Activity className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
-                        title="Nothing running"
-                        hint="Items currently being processed by worker agents will appear here."
-                      />
-                    ) : (
-                      <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
-                        {running.map(item => {
-                          const expanded = expandedIds.has(item.id);
-                          return (
-                            <div key={item.id} className="px-4 py-3 hover:bg-hover/30 transition-colors">
-                              <div className="flex items-start gap-3">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleExpanded(item.id)}
-                                  className="mt-0.5 p-0.5 text-muted hover:text-primary rounded focus-ring cursor-pointer shrink-0"
-                                  aria-expanded={expanded}
-                                  aria-label={expanded ? "Collapse details" : "Expand details"}
-                                >
-                                  {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                                </button>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                    <span className="text-sm font-medium text-primary truncate">{item.name}</span>
-                                    <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 shrink-0">
-                                      <Loader2 className="w-3 h-3 animate-spin" /> Running
-                                    </span>
-                                  </div>
-                                  {!expanded ? (
-                                    <p className="text-2xs text-muted mb-1.5" title={item.input.message}>
-                                      {truncateText(item.input.message)}
-                                    </p>
-                                  ) : (
-                                    <div className="mt-1 mb-2 space-y-2">
-                                      <DetailBlock label="Task / prompt" value={item.input.message} />
-                                      {item.input.attachments?.length ? (
-                                        <DetailBlock label="Attachments" value={item.input.attachments.map(a => a.name).join(", ")} />
-                                      ) : null}
-                                    </div>
-                                  )}
-                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
-                                    <span>Started {item.startedAt ? formatRelativeTime(item.startedAt) : "—"}</span>
-                                    <span>
-                                      Elapsed <span className="text-primary font-medium tabular-nums">{formatDurationBetween(item.startedAt, Date.now())}</span>
-                                    </span>
-                                    {item.agentId ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => openAgent(item.agentId)}
-                                        className="inline-flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:underline focus-ring rounded cursor-pointer"
-                                      >
-                                        <ExternalLink className="w-3 h-3" />
-                                        Open agent
-                                      </button>
-                                    ) : null}
-                                  </div>
-                                </div>
-                                <CancelButton itemId={item.id} busy={busyAction === `cancel:${item.id}`} onClick={() => setConfirmCancel(item.id)} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )
-                  ) : results.length === 0 ? (
-                    <EmptyState
-                      icon={<History className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
-                      title="No results yet"
-                      hint="Completed, failed, and cancelled items will appear here."
-                    />
-                  ) : (
-                    <div className="space-y-3">
-                      <FilterTabs tabs={resultFilterTabs} value={resultFilter} onChange={setResultFilter} tabClassName="flex-none px-3" />
-                      {filteredResults.length === 0 ? (
+                    {tab === "pending" ? (
+                      pending.length === 0 && !showAddForm ? (
                         <EmptyState
-                          icon={<History className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
-                          title={`No ${resultFilter} results`}
-                          hint="Try another status filter to see more history."
+                          icon={<Clock className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                          title="No pending items"
+                          hint="Add a task to this queue and a fresh agent will pick it up."
+                          ctaLabel="Add your first task"
+                          onCta={() => setShowAddForm(true)}
                         />
-                      ) : (
+                      ) : pending.length === 0 ? null : (
                         <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
-                          {filteredResults.map(item => {
+                          {pending.map((item, index) => {
                             const expanded = expandedIds.has(item.id);
                             return (
                               <div key={item.id} className="px-4 py-3 hover:bg-hover/30 transition-colors">
@@ -540,61 +475,193 @@ export default function QueueDashboard() {
                                   >
                                     {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                                   </button>
-                                  <div className="mt-0.5 shrink-0">
-                                    {item.status === "completed" ? (
-                                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    ) : item.status === "failed" ? (
-                                      <XCircle className="w-4 h-4 text-red-500" />
-                                    ) : (
-                                      <Ban className="w-4 h-4 text-muted" />
-                                    )}
-                                  </div>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                                      <span className="text-sm font-medium text-primary">{item.name}</span>
-                                      <ResultStatusBadge status={item.status} />
-                                      <span className="text-2xs text-muted tabular-nums">{formatDurationMs(item.durationMs)}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                      <span className="text-2xs text-muted tabular-nums">#{index + 1}</span>
+                                      <span className="text-sm font-medium text-primary truncate">{item.name}</span>
+                                      <span className="inline-flex items-center gap-1 text-2xs text-indigo-600 dark:text-indigo-400 shrink-0">
+                                        <Clock className="w-3 h-3" /> Pending
+                                      </span>
                                     </div>
-                                    <p className="text-2xs text-muted mb-1">{formatQueueTime(item.completedAt, { withSeconds: true })}</p>
-                                    {!expanded && item.resultMessage ? (
-                                      <p className="text-2xs text-secondary line-clamp-3 whitespace-pre-wrap" title={item.resultMessage}>
-                                        {item.resultMessage}
-                                      </p>
-                                    ) : null}
+                                    <p className="text-2xs text-muted mb-1.5" title={item.input.message}>
+                                      {expanded ? null : truncateText(item.input.message)}
+                                    </p>
                                     {expanded ? (
-                                      <div className="mt-2 space-y-2">
+                                      <div className="mt-1 mb-2 space-y-2">
                                         <DetailBlock label="Task / prompt" value={item.input.message} />
                                         {item.input.attachments?.length ? (
                                           <DetailBlock label="Attachments" value={item.input.attachments.map(a => a.name).join(", ")} />
                                         ) : null}
-                                        {item.resultMessage ? <DetailBlock label="Result" value={item.resultMessage} /> : null}
-                                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
-                                          <span>
-                                            From <span className="text-secondary">{item.input.from}</span>
-                                          </span>
-                                          <span>Queued {formatQueueTime(item.createdAt)}</span>
-                                          {item.startedAt ? <span>Started {formatQueueTime(item.startedAt)}</span> : null}
-                                          <span className="font-mono">id {item.id}</span>
-                                          {/* Worker agents are deleted when the item finishes; keep id as metadata only. */}
-                                          {item.agentId ? <span className="font-mono">agent {item.agentId}</span> : null}
-                                        </div>
+                                        <p className="text-2xs text-muted">
+                                          Id: <span className="font-mono text-secondary">{item.id}</span>
+                                        </p>
                                       </div>
                                     ) : null}
+                                    <p className="text-2xs text-muted/90">
+                                      Queued {formatRelativeTime(item.createdAt)} · from {item.input.from}
+                                    </p>
                                   </div>
+                                  <CancelButton itemId={item.id} busy={busyAction === `cancel:${item.id}`} onClick={() => setConfirmCancel(item.id)} />
                                 </div>
                               </div>
                             );
                           })}
                         </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              ) : null}
-            </>
-          )}
+                      )
+                    ) : tab === "running" ? (
+                      running.length === 0 ? (
+                        <EmptyState
+                          icon={<Activity className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                          title="Nothing running"
+                          hint="Items currently being processed by worker agents will appear here."
+                        />
+                      ) : (
+                        <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
+                          {running.map(item => {
+                            const expanded = expandedIds.has(item.id);
+                            return (
+                              <div key={item.id} className="px-4 py-3 hover:bg-hover/30 transition-colors">
+                                <div className="flex items-start gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleExpanded(item.id)}
+                                    className="mt-0.5 p-0.5 text-muted hover:text-primary rounded focus-ring cursor-pointer shrink-0"
+                                    aria-expanded={expanded}
+                                    aria-label={expanded ? "Collapse details" : "Expand details"}
+                                  >
+                                    {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                  </button>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                      <span className="text-sm font-medium text-primary truncate">{item.name}</span>
+                                      <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 shrink-0">
+                                        <Loader2 className="w-3 h-3 animate-spin" /> Running
+                                      </span>
+                                    </div>
+                                    {!expanded ? (
+                                      <p className="text-2xs text-muted mb-1.5" title={item.input.message}>
+                                        {truncateText(item.input.message)}
+                                      </p>
+                                    ) : (
+                                      <div className="mt-1 mb-2 space-y-2">
+                                        <DetailBlock label="Task / prompt" value={item.input.message} />
+                                        {item.input.attachments?.length ? (
+                                          <DetailBlock label="Attachments" value={item.input.attachments.map(a => a.name).join(", ")} />
+                                        ) : null}
+                                      </div>
+                                    )}
+                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
+                                      <span>Started {item.startedAt ? formatRelativeTime(item.startedAt) : "—"}</span>
+                                      <span>
+                                        Elapsed{" "}
+                                        <span className="text-primary font-medium tabular-nums">{formatDurationBetween(item.startedAt, Date.now())}</span>
+                                      </span>
+                                      {item.agentId ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => openAgent(item.agentId)}
+                                          className="inline-flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:underline focus-ring rounded cursor-pointer"
+                                        >
+                                          <ExternalLink className="w-3 h-3" />
+                                          Open agent
+                                        </button>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                  <CancelButton itemId={item.id} busy={busyAction === `cancel:${item.id}`} onClick={() => setConfirmCancel(item.id)} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )
+                    ) : results.length === 0 ? (
+                      <EmptyState
+                        icon={<History className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                        title="No results yet"
+                        hint="Completed, failed, and cancelled items will appear here."
+                      />
+                    ) : (
+                      <div className="space-y-3">
+                        <FilterTabs tabs={resultFilterTabs} value={resultFilter} onChange={setResultFilter} tabClassName="flex-none px-3" />
+                        {filteredResults.length === 0 ? (
+                          <EmptyState
+                            icon={<History className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                            title={`No ${resultFilter} results`}
+                            hint="Try another status filter to see more history."
+                          />
+                        ) : (
+                          <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
+                            {filteredResults.map(item => {
+                              const expanded = expandedIds.has(item.id);
+                              return (
+                                <div key={item.id} className="px-4 py-3 hover:bg-hover/30 transition-colors">
+                                  <div className="flex items-start gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleExpanded(item.id)}
+                                      className="mt-0.5 p-0.5 text-muted hover:text-primary rounded focus-ring cursor-pointer shrink-0"
+                                      aria-expanded={expanded}
+                                      aria-label={expanded ? "Collapse details" : "Expand details"}
+                                    >
+                                      {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                    </button>
+                                    <div className="mt-0.5 shrink-0">
+                                      {item.status === "completed" ? (
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                      ) : item.status === "failed" ? (
+                                        <XCircle className="w-4 h-4 text-red-500" />
+                                      ) : (
+                                        <Ban className="w-4 h-4 text-muted" />
+                                      )}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                        <span className="text-sm font-medium text-primary">{item.name}</span>
+                                        <ResultStatusBadge status={item.status} />
+                                        <span className="text-2xs text-muted tabular-nums">{formatDurationMs(item.durationMs)}</span>
+                                      </div>
+                                      <p className="text-2xs text-muted mb-1">{formatQueueTime(item.completedAt, { withSeconds: true })}</p>
+                                      {!expanded && item.resultMessage ? (
+                                        <p className="text-2xs text-secondary line-clamp-3 whitespace-pre-wrap" title={item.resultMessage}>
+                                          {item.resultMessage}
+                                        </p>
+                                      ) : null}
+                                      {expanded ? (
+                                        <div className="mt-2 space-y-2">
+                                          <DetailBlock label="Task / prompt" value={item.input.message} />
+                                          {item.input.attachments?.length ? (
+                                            <DetailBlock label="Attachments" value={item.input.attachments.map(a => a.name).join(", ")} />
+                                          ) : null}
+                                          {item.resultMessage ? <DetailBlock label="Result" value={item.resultMessage} /> : null}
+                                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
+                                            <span>
+                                              From <span className="text-secondary">{item.input.from}</span>
+                                            </span>
+                                            <span>Queued {formatQueueTime(item.createdAt)}</span>
+                                            {item.startedAt ? <span>Started {formatQueueTime(item.startedAt)}</span> : null}
+                                            <span className="font-mono">id {item.id}</span>
+                                            {/* Worker agents are deleted when the item finishes; keep id as metadata only. */}
+                                            {item.agentId ? <span className="font-mono">agent {item.agentId}</span> : null}
+                                          </div>
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : null}
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      </WorkspaceShell>
 
       {confirmCancel ? (
         <ConfirmDialog

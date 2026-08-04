@@ -1,10 +1,11 @@
-import { ChevronDown, Loader2, Menu, Pause, Settings, WifiOff, Zap } from "lucide-react";
+import { ChevronDown, Grid2X2, Loader2, Pause, Settings, WifiOff, Zap } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useConnectionStatus } from "../hooks/useConnectionStatus.ts";
 import type { useAgentList } from "../rpc.ts";
-import { useSidebar } from "./SidebarContext.tsx";
+import { getActiveApp } from "./layout/AppRegistry.ts";
+import { useAppShell } from "./layout/AppShellContext.tsx";
 import { LightDarkSelector } from "./ui/light-dark-selector.tsx";
 import NotificationMenu from "./ui/notification-menu.tsx";
 
@@ -20,7 +21,8 @@ export default function TopBar({ currentAgentId, agents, agentControls }: TopBar
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { isOnline } = useConnectionStatus();
-  const { toggleMobileSidebar } = useSidebar();
+  const { toggleAppSwitcher, isAppSwitcherOpen } = useAppShell();
+  const activeApp = getActiveApp(location.pathname);
 
   const agentList = agents.data || [];
   const currentAgent = agentList.find(a => a.id === currentAgentId);
@@ -34,7 +36,7 @@ export default function TopBar({ currentAgentId, agents, agentControls }: TopBar
   }, []);
 
   return (
-    <header className="h-12 border-b border-primary bg-secondary flex items-center px-4 gap-3 shrink-0 z-50">
+    <header className="h-14 border-b border-primary bg-secondary flex items-center px-2 sm:px-4 gap-2 sm:gap-3 shrink-0 z-50">
       {/* Logo */}
       <button
         type="button"
@@ -45,18 +47,21 @@ export default function TopBar({ currentAgentId, agents, agentControls }: TopBar
         <div className="w-7 h-7 rounded-md bg-linear-to-br from-cyan-500 to-accent-hover flex items-center justify-center shadow-accent">
           <Zap className="w-4 h-4 text-white" />
         </div>
-        <span className="text-primary font-bold tracking-tight text-sm hidden md:block">TokenRing</span>
+        <span className="text-primary font-bold tracking-tight text-sm hidden lg:block">TokenRing</span>
       </button>
 
-      {/* Mobile Menu Button - Hidden on desktop */}
+      {/* App catalog moves into a full-height sheet on mobile. */}
       <button
         type="button"
-        onClick={toggleMobileSidebar}
-        className="md:hidden p-2 rounded-md hover:bg-hover transition-colors text-muted focus-ring cursor-pointer"
-        aria-label="Open menu"
+        onClick={toggleAppSwitcher}
+        className={`lg:hidden grid h-11 w-11 place-items-center rounded-md hover:bg-hover transition-colors focus-ring cursor-pointer ${isAppSwitcherOpen ? "text-primary bg-active" : "text-muted"}`}
+        aria-label="Open app switcher"
+        aria-expanded={isAppSwitcherOpen}
       >
-        <Menu className="w-5 h-5" />
+        <Grid2X2 className="w-5 h-5" />
       </button>
+
+      {activeApp && <span className="lg:hidden min-w-0 truncate text-xs font-semibold text-primary">{activeApp.label}</span>}
 
       <div className="w-px h-5 bg-primary shrink-0" />
 
@@ -72,14 +77,14 @@ export default function TopBar({ currentAgentId, agents, agentControls }: TopBar
           {currentAgent ? (
             <>
               <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${currentAgent.idle ? "bg-accent" : "bg-amber-500"}`} />
-              <span className="text-primary font-medium max-w-48 truncate" title={currentAgent.displayName}>
+              <span className="hidden sm:block text-primary font-medium max-w-48 truncate" title={currentAgent.displayName}>
                 {currentAgent.displayName}
               </span>
             </>
           ) : (
-            <span className="text-muted">Select agent</span>
+            <span className="hidden sm:block text-muted">Select agent</span>
           )}
-          <ChevronDown className="w-3.5 h-3.5 text-muted shrink-0" />
+          <ChevronDown className="hidden sm:block w-3.5 h-3.5 text-muted shrink-0" />
         </button>
 
         {open && (
@@ -175,7 +180,7 @@ export default function TopBar({ currentAgentId, agents, agentControls }: TopBar
         <button
           type="button"
           onClick={() => navigate("/settings")}
-          className={`p-2 rounded-md hover:bg-hover transition-colors focus-ring cursor-pointer ${location.pathname === "/settings" ? "text-primary" : "text-muted"}`}
+          className={`hidden md:grid p-2 rounded-md hover:bg-hover transition-colors focus-ring cursor-pointer ${location.pathname === "/settings" ? "text-primary" : "text-muted"}`}
           aria-label="Settings"
           title="Settings"
         >

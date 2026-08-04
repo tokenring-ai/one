@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
-import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
+import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import { useLazyAgent } from "../../hooks/useLazyAgent.ts";
 import { agentRPCClient, emailRPCClient, useEmailBoxes, useEmailProviders } from "../../rpc.ts";
 import EmailPreview from "./components/EmailPreview.tsx";
@@ -221,9 +221,14 @@ function EmailBrowserPane({
         />
       </div>
 
-      {/* ── Main content: message list (left) | preview + agent (right) ── */}
-      <div className="flex-1 min-h-0">
-        <ResizableSplit direction="horizontal" initialRatio={0.3} minFirst={200} minSecond={300} className="h-full">
+      {/* Shared collection navigation becomes master/detail on mobile. */}
+      <WorkspaceShell
+        appId="email"
+        title="Email"
+        navigationLabel="Messages"
+        hasSelection={selectedMessageId !== null || composeDraft !== null}
+        className="flex-1"
+        navigation={
           <div className="h-full flex flex-col min-h-0 bg-primary">
             <MessageListPane
               provider={provider}
@@ -242,26 +247,26 @@ function EmailBrowserPane({
               refreshKey={listRefreshKey}
             />
           </div>
-
-          <ChatDock agentId={agentId} storageKey="email" initialRatio={0.6} headerTitle="Email Agent">
-            <div className="h-full overflow-hidden bg-primary">
-              <EmailPreview
-                provider={provider}
-                selectedMessageId={selectedMessageId}
-                composeDraft={composeDraft}
-                onComposeChange={setComposeDraft}
-                onSendToAgent={onSendToAgent}
-                ensureAgent={ensureAgent}
-                onSent={() => setListRefreshKey(k => k + 1)}
-                onClose={() => {
-                  setComposeDraft(null);
-                  onSelectMessage(null);
-                }}
-              />
-            </div>
-          </ChatDock>
-        </ResizableSplit>
-      </div>
+        }
+      >
+        <ChatDock agentId={agentId} storageKey="email" initialRatio={0.6} headerTitle="Email Agent">
+          <div className="h-full overflow-hidden bg-primary">
+            <EmailPreview
+              provider={provider}
+              selectedMessageId={selectedMessageId}
+              composeDraft={composeDraft}
+              onComposeChange={setComposeDraft}
+              onSendToAgent={onSendToAgent}
+              ensureAgent={ensureAgent}
+              onSent={() => setListRefreshKey(k => k + 1)}
+              onClose={() => {
+                setComposeDraft(null);
+                onSelectMessage(null);
+              }}
+            />
+          </div>
+        </ChatDock>
+      </WorkspaceShell>
     </div>
   );
 }

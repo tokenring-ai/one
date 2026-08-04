@@ -4,10 +4,11 @@ import "./index.css";
 import { ChatInputProvider } from "./components/ChatInputContext.tsx";
 import { StorageErrorBanner } from "./components/chat/StorageErrorBanner.tsx";
 import ErrorBoundary from "./components/ErrorBoundary.tsx";
+import AppRail from "./components/layout/AppRail.tsx";
+import { getActiveApp } from "./components/layout/AppRegistry.ts";
+import { AppShellProvider } from "./components/layout/AppShellContext.tsx";
 import ModelSelector from "./components/ModelSelector.tsx";
 import LoginOverlay from "./components/overlay/login-overlay.tsx";
-import Sidebar from "./components/Sidebar.tsx";
-import { SidebarProvider } from "./components/SidebarContext.tsx";
 import ToolSelector from "./components/ToolSelector.tsx";
 import TopBar from "./components/TopBar.tsx";
 import { notificationManager, ToastContainer, type ToastItem } from "./components/ui/toast.tsx";
@@ -71,10 +72,15 @@ export default function App() {
     };
   }, [location.key]);
 
+  useEffect(() => {
+    const activeApp = getActiveApp(location.pathname);
+    document.title = activeApp ? `${activeApp.label} · TokenRing One` : "TokenRing One";
+  }, [location.pathname]);
+
   const currentAgentId = location.pathname.startsWith("/agent/") ? location.pathname.split("/")[2]! : null;
 
   return (
-    <SidebarProvider>
+    <AppShellProvider>
       <ChatInputProvider>
         <ErrorBoundary>
           <LoginOverlay />
@@ -112,7 +118,7 @@ export default function App() {
             {/* Storage error banner - shows when localStorage is unavailable */}
             <StorageErrorBanner />
             <div className="flex flex-1 min-h-0">
-              <Sidebar />
+              <AppRail />
               <main id="main-content" className="flex-1 min-w-0 relative">
                 <ErrorBoundary>
                   <Routes>
@@ -168,6 +174,6 @@ export default function App() {
           </div>
         </ErrorBoundary>
       </ChatInputProvider>
-    </SidebarProvider>
+    </AppShellProvider>
   );
 }

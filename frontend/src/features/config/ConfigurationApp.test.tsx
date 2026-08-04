@@ -295,7 +295,7 @@ describe("ConfigurationApp", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: /Widget Plugin/ })).toBeInTheDocument());
     expect(screen.getByRole("button", { name: /Alpha Plugin/ })).toBeInTheDocument();
 
-    await user.type(screen.getByRole("textbox", { name: "Search plugins" }), "alpha");
+    await user.type(screen.getByRole("searchbox", { name: "Search plugins" }), "alpha");
     expect(screen.getByRole("button", { name: /Alpha Plugin/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Widget Plugin/ })).not.toBeInTheDocument();
   });

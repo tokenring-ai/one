@@ -4,6 +4,7 @@ import { ImageIcon, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
+import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import FilterTabs, { type FilterTabOption } from "../../components/ui/FilterTabs.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { useHeadlessAgent } from "../../hooks/useHeadlessAgent.ts";
@@ -202,25 +203,33 @@ export default function MediaApp() {
   const body = (
     <div className="flex flex-col h-full min-h-0">
       <FilterTabs tabs={tabs} value={kind} onChange={handleKindChange} showZeroCounts />
-      <div className="flex flex-1 min-h-0">
-        <div className="w-64 shrink-0 border-r border-primary flex flex-col min-h-0 bg-secondary">
-          <GallerySidebar
-            kind={kind}
-            search={search}
-            loading={loading}
-            error={streamError}
-            selectedFilename={selected?.filename ?? null}
-            images={images}
-            videos={videos}
-            audios={audios}
-            onSearch={setSearch}
-            onSelect={entry => {
-              setPendingSelect(null);
-              setSelected(entry);
-            }}
-            onRefresh={handleRefresh}
-          />
-        </div>
+      <WorkspaceShell
+        appId="media"
+        title="Media library"
+        navigationLabel="Media gallery"
+        hasSelection
+        className="flex-1"
+        navigation={
+          <div className="h-full flex flex-col min-h-0 bg-secondary">
+            <GallerySidebar
+              kind={kind}
+              search={search}
+              loading={loading}
+              error={streamError}
+              selectedFilename={selected?.filename ?? null}
+              images={images}
+              videos={videos}
+              audios={audios}
+              onSearch={setSearch}
+              onSelect={entry => {
+                setPendingSelect(null);
+                setSelected(entry);
+              }}
+              onRefresh={handleRefresh}
+            />
+          </div>
+        }
+      >
         <div className="flex-1 min-w-0 overflow-hidden">
           <RightPanel
             kind={kind}
@@ -235,7 +244,7 @@ export default function MediaApp() {
             onGenerated={handleGenerated}
           />
         </div>
-      </div>
+      </WorkspaceShell>
     </div>
   );
 

@@ -5,11 +5,11 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import AgentTodoList from "../../components/AgentTodoList.tsx";
 import CheckpointBrowser from "../../components/CheckpointBrowser.tsx";
 import ChatPanel from "../../components/chat/ChatPanel.tsx";
+import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
-import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { agentRPCClient, useAgentList, useAgentTypes } from "../../rpc.ts";
 
@@ -640,28 +640,36 @@ export default function AgentsApp() {
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">
-      <ResizableSplit direction="horizontal" initialRatio={0.22} minFirst={200} minSecond={360} className="flex-1 min-h-0">
-        <AgentSidebar
-          agents={agentList}
-          agentsLoading={agents.isLoading}
-          agentsError={agents.error}
-          onRetryAgents={() => void agents.mutate()}
-          agentTypes={agentTypeList}
-          agentTypesLoading={agentTypes.isLoading}
-          agentTypesError={agentTypes.error}
-          onRetryAgentTypes={() => void agentTypes.mutate()}
-          selectedAgentId={routeAgentId ?? null}
-          selectedType={selectedAgentType?.type ?? null}
-          launchingType={launchingType}
-          deletingAgentId={deletingAgentId}
-          onSelectType={handleSelectType}
-          onLaunchType={type => void handleLaunch(type)}
-          onOpenAgent={id => void navigate(`/agent/${id}`)}
-          onDeleteAgent={setConfirmDeleteId}
-          onGoOverview={handleGoOverview}
-        />
+      <WorkspaceShell
+        appId="agents"
+        title="Agents"
+        navigationLabel="Agents and agent types"
+        hasSelection={routeAgentId !== undefined || selectedAgentType !== undefined}
+        className="flex-1"
+        navigation={
+          <AgentSidebar
+            agents={agentList}
+            agentsLoading={agents.isLoading}
+            agentsError={agents.error}
+            onRetryAgents={() => void agents.mutate()}
+            agentTypes={agentTypeList}
+            agentTypesLoading={agentTypes.isLoading}
+            agentTypesError={agentTypes.error}
+            onRetryAgentTypes={() => void agentTypes.mutate()}
+            selectedAgentId={routeAgentId ?? null}
+            selectedType={selectedAgentType?.type ?? null}
+            launchingType={launchingType}
+            deletingAgentId={deletingAgentId}
+            onSelectType={handleSelectType}
+            onLaunchType={type => void handleLaunch(type)}
+            onOpenAgent={id => void navigate(`/agent/${id}`)}
+            onDeleteAgent={setConfirmDeleteId}
+            onGoOverview={handleGoOverview}
+          />
+        }
+      >
         {detailPane}
-      </ResizableSplit>
+      </WorkspaceShell>
 
       {confirmDeleteId && (
         <ConfirmDialog

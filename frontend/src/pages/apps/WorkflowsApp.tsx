@@ -20,10 +20,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
-import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import type { AvailableAgentCommand, WorkflowStep } from "../../features/workflows/commandStep.ts";
 import { formatStepLabel, isStepFilled, normalizeSteps } from "../../features/workflows/commandStep.ts";
@@ -555,6 +555,7 @@ function ActiveRunPanel({ run, onOpenAgent }: { run: WorkflowRun; onOpenAgent: (
 
   return (
     <div
+      role="region"
       aria-label="Workflow run progress"
       className={`border rounded-xl overflow-hidden ${
         active
@@ -657,6 +658,7 @@ function WorkflowRunHistory({
 
   return (
     <div
+      role="region"
       aria-label="Workflow run history"
       className="border border-primary rounded-xl bg-secondary/40 overflow-hidden divide-y divide-primary/60"
     >
@@ -1174,24 +1176,32 @@ export default function WorkflowsApp() {
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">
-      <ResizableSplit direction="horizontal" initialRatio={0.22} minFirst={200} minSecond={360} className="flex-1 min-h-0">
-        <WorkflowSidebar
-          workflows={workflowList}
-          isLoading={workflows.isLoading}
-          loadError={workflows.error}
-          onRetryLoad={() => void workflows.mutate()}
-          selectedName={selectedWorkflow?.name ?? null}
-          creating={creating}
-          dirtyNames={dirtyNames}
-          activeRuns={activeRuns}
-          recentFinishedRuns={recentFinishedRuns}
-          launchingName={launching}
-          onSelect={handleSelect}
-          onNew={handleNew}
-          onRun={name => void handleLaunch(name)}
-          onOpenAgent={openAgent}
-          onSelectRunWorkflow={handleSelect}
-        />
+      <WorkspaceShell
+        appId="workflows"
+        title="Workflows"
+        navigationLabel="Workflows and runs"
+        hasSelection={creating || selectedWorkflow !== null}
+        className="flex-1"
+        navigation={
+          <WorkflowSidebar
+            workflows={workflowList}
+            isLoading={workflows.isLoading}
+            loadError={workflows.error}
+            onRetryLoad={() => void workflows.mutate()}
+            selectedName={selectedWorkflow?.name ?? null}
+            creating={creating}
+            dirtyNames={dirtyNames}
+            activeRuns={activeRuns}
+            recentFinishedRuns={recentFinishedRuns}
+            launchingName={launching}
+            onSelect={handleSelect}
+            onNew={handleNew}
+            onRun={name => void handleLaunch(name)}
+            onOpenAgent={openAgent}
+            onSelectRunWorkflow={handleSelect}
+          />
+        }
+      >
         {draft && (creating || selectedWorkflow) ? (
           <WorkflowEditor
             workflowName={creating ? null : (selectedWorkflow?.name ?? null)}
@@ -1225,7 +1235,7 @@ export default function WorkflowsApp() {
         ) : (
           <EmptyState hasWorkflows={workflowList.length > 0} directory={workflowDirectory.data?.directory} onNew={handleNew} />
         )}
-      </ResizableSplit>
+      </WorkspaceShell>
 
       {deleteTarget && (
         <ConfirmModal

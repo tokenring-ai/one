@@ -5,23 +5,22 @@ import type React from "react";
 import { MemoryRouter } from "react-router-dom";
 
 const setTheme = mock((_next: string) => undefined);
-const toggleSidebar = mock(() => undefined);
+const toggleAppSwitcher = mock(() => undefined);
 const resetToDefaults = mock(() => undefined);
 const successToast = mock((_msg: string) => "toast-id");
 
 let preference = "light";
 let resolved = "light";
-let isSidebarExpanded = true;
 let localStorageAvailable = true;
 
 void mock.module("../../hooks/useTheme.ts", () => ({
   useTheme: () => [resolved, setTheme, preference] as const,
 }));
 
-void mock.module("../../components/SidebarContext.tsx", () => ({
-  useSidebar: () => ({
-    isSidebarExpanded,
-    toggleSidebar,
+void mock.module("../../components/layout/AppShellContext.tsx", () => ({
+  useAppShell: () => ({
+    pinnedAppIds: ["agents", "workflows", "research", "files", "terminal"],
+    toggleAppSwitcher,
     resetToDefaults,
     localStorageAvailable,
     setSidebarExpanded: mock(),
@@ -57,12 +56,11 @@ function renderSettings() {
 describe("SettingsApp", () => {
   beforeEach(() => {
     setTheme.mockClear();
-    toggleSidebar.mockClear();
+    toggleAppSwitcher.mockClear();
     resetToDefaults.mockClear();
     successToast.mockClear();
     preference = "light";
     resolved = "light";
-    isSidebarExpanded = true;
     localStorageAvailable = true;
     localStorage.clear();
   });
@@ -95,12 +93,12 @@ describe("SettingsApp", () => {
     expect(setTheme).toHaveBeenCalledWith("system");
   });
 
-  it("toggles the sidebar", async () => {
+  it("opens pinned app management", async () => {
     const user = userEvent.setup();
     renderSettings();
 
-    await user.click(screen.getByRole("switch", { name: /Toggle expanded sidebar/i }));
-    expect(toggleSidebar).toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: /Manage/i }));
+    expect(toggleAppSwitcher).toHaveBeenCalled();
   });
 
   it("resets layout after confirmation", async () => {
@@ -145,6 +143,9 @@ describe("SettingsApp", () => {
     localStorage.setItem("theme", "dark");
     localStorage.setItem("tokenring-sidebar-expanded", "false");
     localStorage.setItem("tokenring-mobile-open", "true");
+    localStorage.setItem("tokenring-pinned-apps", '["agents"]');
+    localStorage.setItem("tokenring-recent-apps", '["email"]');
+    localStorage.setItem("tokenring-workspace-navigation-open:research", "false");
     localStorage.setItem("tokenring-chat-inputs", JSON.stringify({ a: "draft" }));
     localStorage.setItem("tokenring:calendar:events", "[]");
 
@@ -177,6 +178,9 @@ describe("SettingsApp", () => {
       expect(localStorage.getItem("theme")).toBeNull();
       expect(localStorage.getItem("tokenring-sidebar-expanded")).toBeNull();
       expect(localStorage.getItem("tokenring-mobile-open")).toBeNull();
+      expect(localStorage.getItem("tokenring-pinned-apps")).toBeNull();
+      expect(localStorage.getItem("tokenring-recent-apps")).toBeNull();
+      expect(localStorage.getItem("tokenring-workspace-navigation-open:research")).toBeNull();
       expect(localStorage.getItem("tokenring-chat-inputs")).toBeNull();
       // User content keys are intentionally preserved
       expect(localStorage.getItem("tokenring:calendar:events")).toBe("[]");

@@ -546,3 +546,14 @@
  animation: route-loading-bar 300ms ease-out forwards;
  will-change: transform;
 }
+
+/* One navigator node serves both desktop pane and mobile master screen. */
+.workspace-navigation-pane {
+ width: 100%;
+}
+
+@media (min-width: 1024px) {
+ .workspace-navigation-pane {
+  width: var(--workspace-navigation-width, 280px);
+ }
+}

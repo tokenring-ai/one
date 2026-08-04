@@ -1,14 +1,14 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { FolderOpen, Search, X } from "lucide-react";
+import { FileText, FolderOpen, Info, Search, X } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSWRConfig } from "swr";
+import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
-import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { useHeadlessAgent } from "../../hooks/useHeadlessAgent.ts";
 import { filesystemRPCClient, useFileContents, useFilesystemProviders } from "../../rpc.ts";
@@ -62,12 +62,14 @@ export default function FilesApp() {
   const [namePrompt, setNamePrompt] = useState<NamePrompt | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [fileView, setFileView] = useState<"editor" | "details">("editor");
 
   // When deep-linking to a file, open its parent directory in the list.
   useEffect(() => {
     if (!selectedFile) return;
     const parent = getParentPath(selectedFile);
     setPath(parent);
+    setFileView(isLikelyTextFile(selectedFile) ? "editor" : "details");
   }, [selectedFile]);
 
   // Debounce search for workspace-wide search
@@ -398,8 +400,13 @@ export default function FilesApp() {
       />
       <input ref={fileInputRef} type="file" multiple onChange={e => void handleUpload(e)} className="hidden" />
 
-      <ResizableSplit direction="vertical" initialRatio={0.5} minFirst={180} minSecond={150} className="flex-1 min-h-0">
-        <ResizableSplit direction="horizontal" initialRatio={0.66} minFirst={220} minSecond={180} className="h-full">
+      <WorkspaceShell
+        appId="files"
+        title="Files"
+        navigationLabel="Workspace files"
+        hasSelection={selectedFile !== null}
+        className="flex-1"
+        navigation={
           <FileListPane
             provider={provider}
             path={path}
@@ -416,32 +423,69 @@ export default function FilesApp() {
             onRename={openRename}
             onDelete={setDeleteTarget}
           />
-          <PreviewMetadataPane
-            agentId={agentId}
-            file={selectedFile}
-            provider={provider}
-            selectedPaths={selectedPaths}
-            onToggleSelected={toggleSelected}
-            onClose={() => selectFile(null)}
-            isDirty={isDirty}
-            saving={saving}
-            onSave={handleSave}
-            onRename={openRename}
-            onDelete={setDeleteTarget}
-          />
-        </ResizableSplit>
-        <FileEditorPane
-          file={selectedFile}
-          content={editorContent}
-          onContentChange={setUpdatedContent}
-          isLoading={!!selectedFile && isLikelyTextFile(selectedFile) && fileContent.isLoading}
-          hasData={!!fileContent.data}
-          isDirty={isDirty}
-          saving={saving}
-          onSave={() => void handleSave()}
-          loadError={fileContent.error ? formatError(fileContent.error) : null}
-        />
-      </ResizableSplit>
+        }
+      >
+        <div className="h-full min-h-0 flex flex-col">
+          {selectedFile && (
+            <div
+              className="min-[1440px]:hidden h-10 shrink-0 flex items-center gap-1 p-1 border-b border-primary bg-secondary"
+              role="tablist"
+              aria-label="File view"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={fileView === "editor"}
+                onClick={() => setFileView("editor")}
+                className={`flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-md text-xs font-medium focus-ring ${fileView === "editor" ? "bg-active text-primary" : "text-muted hover:text-primary hover:bg-hover"}`}
+              >
+                <FileText className="w-3.5 h-3.5" /> Editor
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={fileView === "details"}
+                onClick={() => setFileView("details")}
+                className={`flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-md text-xs font-medium focus-ring ${fileView === "details" ? "bg-active text-primary" : "text-muted hover:text-primary hover:bg-hover"}`}
+              >
+                <Info className="w-3.5 h-3.5" /> Preview & details
+              </button>
+            </div>
+          )}
+          <div className="flex-1 min-h-0 flex">
+            <div className={`${fileView === "editor" ? "flex" : "hidden"} min-[1440px]:flex flex-1 min-w-0 min-h-0 flex-col`}>
+              <FileEditorPane
+                file={selectedFile}
+                content={editorContent}
+                onContentChange={setUpdatedContent}
+                isLoading={!!selectedFile && isLikelyTextFile(selectedFile) && fileContent.isLoading}
+                hasData={!!fileContent.data}
+                isDirty={isDirty}
+                saving={saving}
+                onSave={() => void handleSave()}
+                loadError={fileContent.error ? formatError(fileContent.error) : null}
+              />
+            </div>
+            <div
+              className={`${fileView === "details" ? "flex" : "hidden"} min-[1440px]:flex min-[1440px]:w-80 min-[1600px]:w-96 shrink-0 min-w-0 min-h-0 flex-col border-l border-primary bg-secondary`}
+            >
+              <PreviewMetadataPane
+                agentId={agentId}
+                file={selectedFile}
+                provider={provider}
+                selectedPaths={selectedPaths}
+                onToggleSelected={toggleSelected}
+                onClose={() => selectFile(null)}
+                isDirty={isDirty}
+                saving={saving}
+                onSave={handleSave}
+                onRename={openRename}
+                onDelete={setDeleteTarget}
+              />
+            </div>
+          </div>
+        </div>
+      </WorkspaceShell>
 
       {selectedPaths.size > 0 && <AgentLaunchPanel selectedPaths={selectedPaths} onClear={() => setSelectedPaths(new Set())} />}
 

@@ -1,275 +1,33 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import {
-  BookOpen,
-  Bot,
-  Bug,
-  CalendarDays,
-  Cpu,
-  Database,
-  DollarSign,
-  FileText,
-  FolderOpen,
-  Frame,
-  GitBranch,
-  Image,
-  ListOrdered,
-  Loader2,
-  Lock,
-  Mail,
-  MessageSquare,
-  Package,
-  Plug,
-  Search,
-  Settings,
-  Share2,
-  SlidersHorizontal,
-  Sparkles,
-  Terminal,
-  Timer,
-  TrendingUp,
-  User,
-} from "lucide-react";
+import { Loader2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import CheckpointBrowser from "../components/CheckpointBrowser.tsx";
 import AppCard, { type AppCardDef } from "../components/dashboard/AppCard.tsx";
+import { APP_GROUPS, APP_REGISTRY } from "../components/layout/AppRegistry.ts";
 import { useAgentList } from "../rpc.ts";
 
-const APPS: AppCardDef[] = [
-  {
-    id: "agents",
-    path: "/agents",
-    label: "Agents",
-    description: "Create and manage AI agents",
-    icon: <Cpu />,
-    gradient: "from-amber-500 to-orange-600",
-  },
-  {
-    id: "workflows",
-    path: "/workflows",
-    label: "Workflows",
-    description: "Launch and monitor automated workflows",
-    icon: <GitBranch />,
-    gradient: "from-cyan-500 to-teal-600",
-  },
-  {
-    id: "bots",
-    path: "/bots",
-    label: "Bots",
-    description: "Run bots in Slack and Telegram channels",
-    icon: <Bot />,
-    gradient: "from-teal-500 to-emerald-600",
-  },
-  {
-    id: "scheduler",
-    path: "/scheduler",
-    label: "Scheduler",
-    description: "Schedule recurring agent tasks and monitor runs",
-    icon: <Timer />,
-    gradient: "from-indigo-500 to-violet-600",
-  },
-  {
-    id: "queue",
-    path: "/queue",
-    label: "Queue",
-    description: "Dispatch work to typed agents and track results",
-    icon: <ListOrdered />,
-    gradient: "from-sky-500 to-blue-600",
-  },
-  {
-    id: "skills",
-    path: "/skills",
-    label: "Skills",
-    description: "Install, enable, and try agent skills",
-    icon: <Sparkles />,
-    gradient: "from-violet-500 to-fuchsia-600",
-  },
-  {
-    id: "web-design",
-    path: "/web-design",
-    label: "Web Design",
-    description: "Build UI mockups and design flows with agents",
-    icon: <Frame />,
-    gradient: "from-purple-500 to-violet-600",
-  },
-  {
-    id: "documents",
-    path: "/documents",
-    label: "Documents",
-    description: "Write and edit documents with AI assistance",
-    icon: <FileText />,
-    gradient: "from-lime-500 to-green-600",
-  },
-  {
-    id: "research",
-    path: "/research",
-    label: "Research",
-    description: "Topic-based research dossiers in markdown",
-    icon: <Search />,
-    gradient: "from-indigo-500 to-violet-600",
-  },
-  {
-    id: "blog",
-    path: "/blog",
-    label: "Blog",
-    description: "Manage posts on Ghost, WordPress, and more",
-    icon: <BookOpen />,
-    gradient: "from-rose-500 to-pink-600",
-  },
-  {
-    id: "files",
-    path: "/files",
-    label: "Files",
-    description: "Browse and manage your filesystem",
-    icon: <FolderOpen />,
-    gradient: "from-accent to-blue-600",
-  },
-  {
-    id: "terminal",
-    path: "/terminal",
-    label: "Terminal",
-    description: "Interactive shell sessions powered by agents",
-    icon: <Terminal />,
-    gradient: "from-gray-600 to-slate-800",
-  },
-  {
-    id: "email",
-    path: "/email",
-    label: "Email",
-    description: "Read, compose, and manage emails",
-    icon: <Mail />,
-    gradient: "from-red-500 to-rose-600",
-  },
-  {
-    id: "database",
-    path: "/database",
-    label: "Database",
-    description: "Browse datasources and tables",
-    icon: <Database />,
-    gradient: "from-cyan-500 to-sky-600",
-  },
-  {
-    id: "calendar",
-    path: "/calendar",
-    label: "Calendar",
-    description: "Schedule events and manage your time",
-    icon: <CalendarDays />,
-    gradient: "from-sky-500 to-blue-600",
-  },
-  {
-    id: "stocks",
-    path: "/stocks",
-    label: "Stocks",
-    description: "Real-time quotes, charts, history, and news",
-    icon: <TrendingUp />,
-    gradient: "from-emerald-500 to-green-600",
-  },
-  {
-    id: "media",
-    path: "/media",
-    label: "Media",
-    description: "Generate and manage images, audio, and video",
-    icon: <Image />,
-    gradient: "from-pink-500 to-rose-600",
-  },
-  {
-    id: "social",
-    path: "/social",
-    label: "Social",
-    description: "Connect Reddit, Discord, Slack, Telegram, and X",
-    icon: <Share2 />,
-    gradient: "from-blue-500 to-accent-hover",
-  },
-  {
-    id: "messaging",
-    path: "/messaging",
-    label: "Messaging",
-    description: "Unified inbox for all your messages",
-    icon: <MessageSquare />,
-    gradient: "from-emerald-500 to-green-600",
-  },
-  {
-    id: "plugins",
-    path: "/plugins",
-    label: "Plugins",
-    description: "Manage installed plugins and extensions",
-    icon: <Package />,
-    gradient: "from-fuchsia-500 to-pink-600",
-  },
-  {
-    id: "configuration",
-    path: "/configuration",
-    label: "Configuration",
-    description: "Edit plugin and server configuration",
-    icon: <SlidersHorizontal />,
-    gradient: "from-amber-500 to-orange-600",
-  },
-  {
-    id: "services",
-    path: "/services",
-    label: "Services",
-    description: "Tools, models, hooks, and integrations",
-    icon: <Plug />,
-    gradient: "from-violet-500 to-purple-600",
-  },
-  {
-    id: "metrics",
-    path: "/metrics",
-    label: "Metrics",
-    description: "Live cost tracking across agents and models",
-    icon: <DollarSign />,
-    gradient: "from-emerald-500 to-teal-600",
-  },
-  {
-    id: "debug",
-    path: "/debug",
-    label: "Debugging",
-    description: "Capture and inspect app and agent state",
-    icon: <Bug />,
-    gradient: "from-rose-500 to-red-600",
-  },
-  {
-    id: "settings",
-    path: "/settings",
-    label: "Settings",
-    description: "Configure theme, agents, and preferences",
-    icon: <Settings />,
-    gradient: "from-stone-500 to-gray-600",
-  },
-  {
-    id: "vault",
-    path: "/vault",
-    label: "Vault",
-    description: "Manage encrypted credentials and secrets",
-    icon: <Lock />,
-    gradient: "from-yellow-500 to-amber-600",
-  },
-];
+const APPS: AppCardDef[] = APP_REGISTRY.map(app => {
+  const Icon = app.icon;
+  return { id: app.id, path: app.path, label: app.label, description: app.description, icon: <Icon />, gradient: app.gradient };
+});
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const agents = useAgentList();
   const activeCount = agents.data?.length ?? 0;
   const showAgentBadge = !agents.isLoading && !agents.error && activeCount > 0;
-
-  // Inject live badges
-  const appsWithBadges = APPS.map(app => {
-    if (app.id === "agents" && showAgentBadge) {
-      return { ...app, badge: String(activeCount) };
-    }
-    return app;
-  });
+  const appsWithBadges = APPS.map(app => (app.id === "agents" && showAgentBadge ? { ...app, badge: String(activeCount) } : app));
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">
       <div className="flex-1 overflow-y-auto py-6 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto space-y-8">
-          {/* Header */}
+        <div className="max-w-6xl mx-auto space-y-8">
           <div>
-            <h1 className="text-primary text-2xl font-bold tracking-tight mb-1">TokenRing</h1>
-            <p className="text-xs text-muted">AI-powered platform for agents, workflows, and automation</p>
+            <p className="text-2xs font-bold text-accent uppercase tracking-widest mb-2">Local workspace</p>
+            <h1 className="text-primary text-3xl font-bold tracking-tight mb-1">What do you want to work on?</h1>
+            <p className="text-xs text-muted">Agents, creative tools, and local data share one workspace.</p>
           </div>
 
-          {/* Live status bar */}
           <div className="flex items-center gap-4 px-4 py-3 bg-secondary border border-primary rounded-xl shadow-sm">
             <div className="flex items-center gap-2">
               {agents.isLoading ? (
@@ -300,35 +58,39 @@ export default function Dashboard() {
               onClick={() => navigate("/agents")}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors focus-ring shadow-button-primary"
             >
-              <User className="w-3.5 h-3.5" />
-              New Agent
+              <User className="w-3.5 h-3.5" /> New Agent
             </button>
           </div>
 
-          {/* App grid */}
-          <div>
-            <p className="text-2xs font-bold text-muted uppercase tracking-widest px-1 mb-3">Apps</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {appsWithBadges.map(app => (
-                <AppCard key={app.id} app={app} />
-              ))}
-            </div>
+          <div className="space-y-7">
+            {APP_GROUPS.map(group => {
+              const groupedApps = appsWithBadges.filter(app => APP_REGISTRY.find(definition => definition.id === app.id)?.group === group);
+              return (
+                <section key={group}>
+                  <h2 className="text-2xs font-bold text-muted uppercase tracking-widest px-1 mb-3">{group}</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                    {groupedApps.map(app => (
+                      <AppCard key={app.id} app={app} />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
 
-          {/* Checkpoints */}
           <CheckpointBrowser agents={agents} />
         </div>
       </div>
 
       <footer className="shrink-0 border-t border-primary bg-secondary px-4 sm:px-6 py-3">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <span className="text-2xs text-muted">© {new Date().getFullYear()} TokenRing AI</span>
           <div className="flex items-center gap-3">
             <a
               href="https://github.com/tokenring-ai"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-2xs text-muted hover:text-primary transition-colors focus-ring cursor-pointer"
+              className="text-2xs text-muted hover:text-primary transition-colors focus-ring"
             >
               GitHub
             </a>
@@ -336,7 +98,7 @@ export default function Dashboard() {
               href="https://tokenring.ai"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-2xs text-muted hover:text-primary transition-colors focus-ring cursor-pointer"
+              className="text-2xs text-muted hover:text-primary transition-colors focus-ring"
             >
               tokenring.ai
             </a>

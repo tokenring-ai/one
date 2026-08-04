@@ -138,7 +138,7 @@ export default function ChatPanel({ agentId, dockMode, onDockModeChange, onClose
       <div
         onPointerDown={onHeaderPointerDown}
         className={cn(
-          "shrink-0 h-9 px-2 flex items-center gap-2 border-b border-primary bg-secondary select-none",
+          "shrink-0 h-12 px-2 flex items-center gap-2 border-b border-primary bg-secondary select-none lg:h-9",
           dockMode === "float" && onHeaderPointerDown && "cursor-move",
         )}
       >

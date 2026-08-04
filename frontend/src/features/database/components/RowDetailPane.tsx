@@ -7,7 +7,10 @@ export default function RowDetailPane({ row, columns, onClose }: { row: Row; col
   const columnByName = new Map(columns.map(column => [column.name, column]));
 
   return (
-    <div className="w-80 shrink-0 border-l border-primary bg-secondary flex flex-col min-h-0">
+    <aside
+      aria-label="Row detail"
+      className="absolute inset-0 z-30 w-full bg-secondary flex flex-col min-h-0 lg:relative lg:inset-auto lg:z-auto lg:w-80 lg:shrink-0 lg:border-l lg:border-primary"
+    >
       <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-b border-primary">
         <span className="text-2xs font-semibold text-muted uppercase tracking-wider">Row detail</span>
         <button
@@ -46,6 +49,6 @@ export default function RowDetailPane({ row, columns, onClose }: { row: Row; col
           );
         })}
       </dl>
-    </div>
+    </aside>
   );
 }

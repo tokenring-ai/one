@@ -29,7 +29,13 @@ export default function AppPageHeader({
   const middleGrows = children != null || typeof title !== "string";
 
   return (
-    <div className={cn("shrink-0 border-b border-primary bg-secondary flex items-center gap-3", isCompact ? "px-4 py-2" : "px-4 sm:px-6 py-3", className)}>
+    <div
+      className={cn(
+        "shrink-0 border-b border-primary bg-secondary flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3",
+        isCompact ? "px-3 sm:px-4 py-2" : "px-3 sm:px-6 py-3",
+        className,
+      )}
+    >
       <div
         className={cn(
           "rounded-lg bg-linear-to-br flex items-center justify-center shadow-sm shrink-0",
@@ -41,11 +47,15 @@ export default function AppPageHeader({
       >
         {icon}
       </div>
-      <div className={cn("min-w-0", middleGrows && "flex-1")}>
+      <div className={cn("min-w-0 flex-1", middleGrows && "sm:flex-1")}>
         {typeof title === "string" ? <h1 className="text-sm font-semibold text-primary">{title}</h1> : title}
-        {subtitle ? typeof subtitle === "string" ? <p className="text-2xs text-muted">{subtitle}</p> : subtitle : null}
+        {subtitle ? typeof subtitle === "string" ? <p className="text-2xs text-muted truncate">{subtitle}</p> : subtitle : null}
       </div>
-      {children ? <div className="flex-1 flex items-center justify-end gap-2 min-w-0">{children}</div> : null}
+      {children ? (
+        <div className="w-full sm:w-auto sm:flex-1 order-last sm:order-none flex items-center sm:justify-end gap-2 min-w-0 overflow-x-auto custom-scrollbar pb-0.5 sm:pb-0">
+          {children}
+        </div>
+      ) : null}
     </div>
   );
 }

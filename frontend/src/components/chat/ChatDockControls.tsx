@@ -30,7 +30,7 @@ export default function ChatDockControls({ mode, onModeChange, onClose, classNam
           aria-label={label}
           aria-pressed={mode === value}
           className={cn(
-            "p-1 rounded-md transition-colors focus-ring cursor-pointer",
+            "hidden lg:block p-1 rounded-md transition-colors focus-ring cursor-pointer",
             mode === value ? "text-accent bg-accent-muted" : "text-muted hover:text-primary hover:bg-hover",
           )}
         >
@@ -43,7 +43,7 @@ export default function ChatDockControls({ mode, onModeChange, onClose, classNam
         onClick={onClose}
         title="Close chat"
         aria-label="Close chat"
-        className="p-1 rounded-md text-muted hover:text-primary hover:bg-hover transition-colors focus-ring cursor-pointer"
+        className="grid h-11 w-11 place-items-center rounded-md text-muted hover:text-primary hover:bg-hover transition-colors focus-ring cursor-pointer lg:h-auto lg:w-auto lg:p-1"
       >
         <X className="w-4 h-4" />
       </button>

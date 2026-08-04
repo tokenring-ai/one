@@ -2,36 +2,21 @@ import { Check, ChevronRight, Monitor, Moon, Package, RotateCcw, Settings, Slide
 import { type ReactNode, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import packageJSON from "../../../package.json" with { type: "json" };
+import { useAppShell } from "../../components/layout/AppShellContext.tsx";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
-import { useSidebar } from "../../components/SidebarContext.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import { notificationManager } from "../../components/ui/toast.tsx";
 import { type ThemePreference, useTheme } from "../../hooks/useTheme.ts";
 
 /** Client-side keys owned by the frontend UI (not user content like calendar events). */
-const CLIENT_PREFERENCE_KEYS = ["theme", "tokenring-sidebar-expanded", "tokenring-mobile-open", "tokenring-chat-inputs"] as const;
-
-function ToggleSwitch({ checked, onChange, label, disabled = false }: { checked: boolean; onChange: () => void; label: string; disabled?: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={onChange}
-      disabled={disabled}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-ring disabled:opacity-50 disabled:cursor-not-allowed ${
-        checked ? "bg-accent" : "bg-tertiary"
-      }`}
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-    >
-      <span
-        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-          checked ? "translate-x-4" : "translate-x-0"
-        }`}
-      />
-    </button>
-  );
-}
+const CLIENT_PREFERENCE_KEYS = [
+  "theme",
+  "tokenring-sidebar-expanded",
+  "tokenring-mobile-open",
+  "tokenring-pinned-apps",
+  "tokenring-recent-apps",
+  "tokenring-chat-inputs",
+] as const;
 
 function SegmentedControl<T extends string>({
   value,
@@ -96,7 +81,7 @@ function NavRow({ to, title, description, icon, border = true }: { to: string; t
 
 export default function SettingsApp() {
   const [resolvedTheme, setTheme, preference] = useTheme();
-  const { isSidebarExpanded, toggleSidebar, resetToDefaults, localStorageAvailable } = useSidebar();
+  const { pinnedAppIds, toggleAppSwitcher, resetToDefaults, localStorageAvailable } = useAppShell();
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmResetLayout, setConfirmResetLayout] = useState(false);
 
@@ -125,6 +110,14 @@ export default function SettingsApp() {
       } catch {
         // ignore storage errors
       }
+    }
+    try {
+      for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+        const key = localStorage.key(index);
+        if (key?.startsWith("tokenring-workspace-navigation-")) localStorage.removeItem(key);
+      }
+    } catch {
+      // ignore storage errors
     }
     setConfirmClear(false);
     notificationManager.success("Local preferences cleared");
@@ -179,8 +172,14 @@ export default function SettingsApp() {
           <section className="space-y-3">
             <h2 className="text-xs font-bold text-muted uppercase tracking-widest px-1">Layout</h2>
             <div className="bg-secondary border border-primary rounded-xl overflow-hidden">
-              <SettingsRow title="Expanded sidebar" description="Show labels and full navigation width">
-                <ToggleSwitch checked={isSidebarExpanded} onChange={toggleSidebar} label="Toggle expanded sidebar" />
+              <SettingsRow title="Pinned apps" description={`${pinnedAppIds.length} of 7 shortcuts shown in the compact app rail`}>
+                <button
+                  type="button"
+                  onClick={toggleAppSwitcher}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium bg-tertiary text-primary hover:bg-hover border border-primary transition-colors focus-ring cursor-pointer"
+                >
+                  Manage
+                </button>
               </SettingsRow>
               <SettingsRow title="Reset layout" description="Restore sidebar defaults for this device" border={false}>
                 <button

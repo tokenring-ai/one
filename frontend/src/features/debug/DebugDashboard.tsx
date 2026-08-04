@@ -2,6 +2,7 @@ import Editor from "@monaco-editor/react";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Bug, Camera, CircleDot, Cpu, FileJson, Loader2, RefreshCw, Server, Square, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
@@ -42,6 +43,7 @@ export default function DebugDashboard() {
   const [loadingSnapshot, setLoadingSnapshot] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [navigationTab, setNavigationTab] = useState<"capture" | "snapshots">("snapshots");
 
   const targetList = useMemo(() => targets.data ?? [], [targets.data]);
   const snapshotList = useMemo(() => snapshots.data ?? [], [snapshots.data]);
@@ -177,151 +179,182 @@ export default function DebugDashboard() {
         </button>
       </AppPageHeader>
 
-      <div className="flex flex-1 min-h-0">
-        {/* Capture targets and recorder controls */}
-        <div className="w-72 shrink-0 border-r border-primary bg-secondary flex flex-col min-h-0">
-          <div className="px-3 py-2 border-b border-primary">
-            <h2 className="text-2xs font-bold text-muted uppercase tracking-widest">Capture targets</h2>
-          </div>
-
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {targets.isLoading && targetList.length === 0 ? (
-              <LoadingState message="Loading targets…" size="sm" />
-            ) : targets.error ? (
-              <ErrorState title="Could not load targets" error={targets.error} onRetry={() => void targets.mutate()} />
-            ) : (
-              <ul className="p-2 space-y-1">
-                {targetList.map(target => {
-                  const key = targetKey(target);
-                  const checked = selectedKeys.includes(key);
-                  return (
-                    <li key={key}>
-                      <label
-                        className={cn(
-                          "flex items-start gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors",
-                          checked ? "bg-active" : "hover:bg-hover",
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleTarget(key)}
-                          className="mt-0.5 accent-accent cursor-pointer focus-ring"
-                        />
-                        {target.kind === "app" ? (
-                          <Server className="w-3.5 h-3.5 mt-0.5 shrink-0 text-sky-400" />
-                        ) : (
-                          <Cpu className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500" />
-                        )}
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-xs text-primary truncate">{target.label}</span>
-                          <span className="block text-2xs text-muted truncate">{target.description}</span>
-                        </span>
-                      </label>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-
-          <div className="shrink-0 border-t border-primary p-3 space-y-2">
-            <button
-              type="button"
-              onClick={() => void handleCapture()}
-              disabled={capturing || selectedTargets.length === 0}
-              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-md transition-colors active:scale-[0.98] focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {capturing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
-              Capture now
-            </button>
-
-            <div className="flex items-center gap-2">
-              <label htmlFor="debug-interval" className="text-2xs font-bold text-muted uppercase tracking-widest">
-                Every
-              </label>
-              <select
-                id="debug-interval"
-                value={intervalSeconds}
-                onChange={event => setIntervalSeconds(Number(event.target.value))}
-                disabled={isRecording}
-                className="flex-1 bg-input border border-primary rounded-md py-1 px-2 text-xs text-primary focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      <WorkspaceShell
+        appId="debug"
+        title="Debugging"
+        navigationLabel="Capture and snapshots"
+        hasSelection={selectedSnapshot !== null}
+        className="flex-1"
+        navigation={
+          <div className="h-full flex flex-col min-h-0 bg-secondary">
+            <div className="shrink-0 grid grid-cols-2 gap-1 p-1.5 border-b border-primary" role="tablist" aria-label="Debug navigation">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={navigationTab === "capture"}
+                onClick={() => setNavigationTab("capture")}
+                className={`px-2 py-1.5 rounded-md text-xs font-medium focus-ring ${navigationTab === "capture" ? "bg-active text-primary" : "text-muted hover:text-primary hover:bg-hover"}`}
               >
-                {INTERVAL_OPTIONS.map(option => (
-                  <option key={option.seconds} value={option.seconds}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                Capture
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={navigationTab === "snapshots"}
+                onClick={() => setNavigationTab("snapshots")}
+                className={`px-2 py-1.5 rounded-md text-xs font-medium focus-ring ${navigationTab === "snapshots" ? "bg-active text-primary" : "text-muted hover:text-primary hover:bg-hover"}`}
+              >
+                Snapshots <span className="ml-1 text-2xs text-muted">{snapshotList.length}</span>
+              </button>
             </div>
+            {navigationTab === "capture" && (
+              <div className="flex-1 bg-secondary flex flex-col min-h-0">
+                <div className="px-3 py-2 border-b border-primary">
+                  <h2 className="text-2xs font-bold text-muted uppercase tracking-widest">Capture targets</h2>
+                </div>
 
-            <button
-              type="button"
-              onClick={() => void handleToggleRecording()}
-              disabled={!isRecording && selectedTargets.length === 0}
-              className={cn(
-                "w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors active:scale-[0.98] focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                isRecording ? "bg-tertiary hover:bg-hover text-primary border border-primary" : "bg-red-600 hover:bg-red-500 text-white",
-              )}
-            >
-              {isRecording ? <Square className="w-4 h-4" /> : <CircleDot className="w-4 h-4" />}
-              {isRecording ? "Stop recording" : "Record"}
-            </button>
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  {targets.isLoading && targetList.length === 0 ? (
+                    <LoadingState message="Loading targets…" size="sm" />
+                  ) : targets.error ? (
+                    <ErrorState title="Could not load targets" error={targets.error} onRetry={() => void targets.mutate()} />
+                  ) : (
+                    <ul className="p-2 space-y-1">
+                      {targetList.map(target => {
+                        const key = targetKey(target);
+                        const checked = selectedKeys.includes(key);
+                        return (
+                          <li key={key}>
+                            <label
+                              className={cn(
+                                "flex items-start gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors",
+                                checked ? "bg-active" : "hover:bg-hover",
+                              )}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleTarget(key)}
+                                className="mt-0.5 accent-accent cursor-pointer focus-ring"
+                              />
+                              {target.kind === "app" ? (
+                                <Server className="w-3.5 h-3.5 mt-0.5 shrink-0 text-sky-400" />
+                              ) : (
+                                <Cpu className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500" />
+                              )}
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-xs text-primary truncate">{target.label}</span>
+                                <span className="block text-2xs text-muted truncate">{target.description}</span>
+                              </span>
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
 
-            {recording.data?.lastError && <p className="text-2xs text-warning">{recording.data.lastError}</p>}
-          </div>
-        </div>
+                <div className="shrink-0 border-t border-primary p-3 space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleCapture()}
+                    disabled={capturing || selectedTargets.length === 0}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-md transition-colors active:scale-[0.98] focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {capturing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                    Capture now
+                  </button>
 
-        {/* Snapshots on disk */}
-        <div className="w-72 shrink-0 border-r border-primary bg-secondary flex flex-col min-h-0">
-          <div className="px-3 py-2 border-b border-primary flex items-center justify-between">
-            <h2 className="text-2xs font-bold text-muted uppercase tracking-widest">Snapshots</h2>
-            <span className="text-2xs text-muted">{snapshotList.length}</span>
-          </div>
-
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {snapshots.isLoading && snapshotList.length === 0 ? (
-              <LoadingState message="Loading snapshots…" size="sm" />
-            ) : snapshots.error ? (
-              <ErrorState title="Could not load snapshots" error={snapshots.error} onRetry={() => void snapshots.mutate()} />
-            ) : snapshotList.length === 0 ? (
-              <p className="px-3 py-6 text-center text-2xs text-muted">No snapshots yet. Capture one to get started.</p>
-            ) : (
-              <ul className="p-2 space-y-1">
-                {snapshotList.map(snapshot => (
-                  <li key={snapshot.name}>
-                    <div
-                      className={cn(
-                        "group flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors",
-                        selectedSnapshot === snapshot.name ? "bg-active" : "hover:bg-hover",
-                      )}
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="debug-interval" className="text-2xs font-bold text-muted uppercase tracking-widest">
+                      Every
+                    </label>
+                    <select
+                      id="debug-interval"
+                      value={intervalSeconds}
+                      onChange={event => setIntervalSeconds(Number(event.target.value))}
+                      disabled={isRecording}
+                      className="flex-1 bg-input border border-primary rounded-md py-1 px-2 text-xs text-primary focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <button
-                        type="button"
-                        onClick={() => void openSnapshot(snapshot.name)}
-                        className="flex-1 min-w-0 text-left cursor-pointer focus-ring rounded-md"
-                      >
-                        <span className="block text-xs text-primary truncate font-mono">{snapshot.name}</span>
-                        <span className="block text-2xs text-muted">
-                          {formatCaptureTime(snapshot.capturedAt)} · {formatBytes(snapshot.sizeBytes)}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmDelete(snapshot.name)}
-                        className="shrink-0 p-1 text-muted hover:text-red-500 rounded-md transition-colors focus-ring cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100"
-                        aria-label={`Delete ${snapshot.name}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                      {INTERVAL_OPTIONS.map(option => (
+                        <option key={option.seconds} value={option.seconds}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleToggleRecording()}
+                    disabled={!isRecording && selectedTargets.length === 0}
+                    className={cn(
+                      "w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors active:scale-[0.98] focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                      isRecording ? "bg-tertiary hover:bg-hover text-primary border border-primary" : "bg-red-600 hover:bg-red-500 text-white",
+                    )}
+                  >
+                    {isRecording ? <Square className="w-4 h-4" /> : <CircleDot className="w-4 h-4" />}
+                    {isRecording ? "Stop recording" : "Record"}
+                  </button>
+
+                  {recording.data?.lastError && <p className="text-2xs text-warning">{recording.data.lastError}</p>}
+                </div>
+              </div>
+            )}
+
+            {navigationTab === "snapshots" && (
+              <div className="flex-1 bg-secondary flex flex-col min-h-0">
+                <div className="px-3 py-2 border-b border-primary flex items-center justify-between">
+                  <h2 className="text-2xs font-bold text-muted uppercase tracking-widest">Snapshots</h2>
+                  <span className="text-2xs text-muted">{snapshotList.length}</span>
+                </div>
+
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  {snapshots.isLoading && snapshotList.length === 0 ? (
+                    <LoadingState message="Loading snapshots…" size="sm" />
+                  ) : snapshots.error ? (
+                    <ErrorState title="Could not load snapshots" error={snapshots.error} onRetry={() => void snapshots.mutate()} />
+                  ) : snapshotList.length === 0 ? (
+                    <p className="px-3 py-6 text-center text-2xs text-muted">No snapshots yet. Capture one to get started.</p>
+                  ) : (
+                    <ul className="p-2 space-y-1">
+                      {snapshotList.map(snapshot => (
+                        <li key={snapshot.name}>
+                          <div
+                            className={cn(
+                              "group flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors",
+                              selectedSnapshot === snapshot.name ? "bg-active" : "hover:bg-hover",
+                            )}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => void openSnapshot(snapshot.name)}
+                              className="flex-1 min-w-0 text-left cursor-pointer focus-ring rounded-md"
+                            >
+                              <span className="block text-xs text-primary truncate font-mono">{snapshot.name}</span>
+                              <span className="block text-2xs text-muted">
+                                {formatCaptureTime(snapshot.capturedAt)} · {formatBytes(snapshot.sizeBytes)}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDelete(snapshot.name)}
+                              className="shrink-0 p-1 text-muted hover:text-red-500 rounded-md transition-colors focus-ring cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100"
+                              aria-label={`Delete ${snapshot.name}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
             )}
           </div>
-        </div>
-
+        }
+      >
         {/* Snapshot viewer */}
         <div className="flex-1 min-w-0 flex flex-col">
           {selectedSnapshot === null ? (
@@ -359,7 +392,7 @@ export default function DebugDashboard() {
             </>
           )}
         </div>
-      </div>
+      </WorkspaceShell>
 
       {confirmDelete && (
         <ConfirmDialog

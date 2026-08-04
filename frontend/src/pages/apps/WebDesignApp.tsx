@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
+import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
@@ -578,6 +579,17 @@ function WebDesignWorkspace() {
   const [autoPreview, setAutoPreview] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("split");
 
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(max-width: 767px)");
+    const avoidMobileSplit = () => {
+      if (query.matches) setViewMode(current => (current === "split" ? "code" : current));
+    };
+    avoidMobileSplit();
+    query.addEventListener("change", avoidMobileSplit);
+    return () => query.removeEventListener("change", avoidMobileSplit);
+  }, []);
+
   // The open design lives in the URL: /web-design/:flowName/:designName
   const selected: SelectedDesign | null = useMemo(
     () => (routeFlowName && routeDesignName ? { flowName: routeFlowName, name: routeDesignName } : null),
@@ -1103,7 +1115,7 @@ function WebDesignWorkspace() {
                   key={value}
                   type="button"
                   onClick={() => setViewMode(value)}
-                  className={`flex items-center gap-1 px-2 py-1 text-2xs font-medium rounded-md transition-colors cursor-pointer focus-ring ${
+                  className={`${value === "split" ? "hidden md:flex" : "flex"} items-center gap-1 px-2 py-1 text-2xs font-medium rounded-md transition-colors cursor-pointer focus-ring ${
                     viewMode === value ? "bg-accent text-white" : "text-muted hover:text-primary hover:bg-hover"
                   }`}
                   aria-pressed={viewMode === value}
@@ -1211,27 +1223,33 @@ function WebDesignWorkspace() {
         )}
       </AppPageHeader>
 
-      {/* ── Horizontal split: flow/design tree (left) | editor+preview / agent chat (right) ──── */}
-      <ResizableSplit direction="horizontal" initialRatio={0.18} minFirst={180} minSecond={320} className="flex-1 min-h-0">
-        <FlowSidebar
-          flows={flows}
-          flowsLoading={flowsLoading}
-          expandedFlows={expandedFlows}
-          onToggleFlow={handleToggleFlow}
-          selected={selected}
-          isLoadingSelected={isLoadingDesign}
-          onSelectDesign={handleSelectDesign}
-          onNewDesign={handleNewDesignInFlow}
-          onUploadFiles={handleUploadFiles}
-          onDeleteDesign={(flowName, name) => setDeleteDesignTarget({ flowName, name })}
-          onDeleteFlow={setDeleteFlowTarget}
-          onNewFlow={() => setNewFlowModalOpen(true)}
-        />
-
+      <WorkspaceShell
+        appId="web-design"
+        title="Web Design"
+        navigationLabel="Design flows and files"
+        hasSelection={selected !== null}
+        className="flex-1"
+        navigation={
+          <FlowSidebar
+            flows={flows}
+            flowsLoading={flowsLoading}
+            expandedFlows={expandedFlows}
+            onToggleFlow={handleToggleFlow}
+            selected={selected}
+            isLoadingSelected={isLoadingDesign}
+            onSelectDesign={handleSelectDesign}
+            onNewDesign={handleNewDesignInFlow}
+            onUploadFiles={handleUploadFiles}
+            onDeleteDesign={(flowName, name) => setDeleteDesignTarget({ flowName, name })}
+            onDeleteFlow={setDeleteFlowTarget}
+            onNewFlow={() => setNewFlowModalOpen(true)}
+          />
+        }
+      >
         <ChatDock agentId={agentId} storageKey="webdesign" initialRatio={0.65} headerTitle="Design Agent">
           {mainPane}
         </ChatDock>
-      </ResizableSplit>
+      </WorkspaceShell>
     </div>
   );
 }

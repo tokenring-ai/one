@@ -15,7 +15,7 @@ void mock.module("./rpc.ts", () => ({
 }));
 
 // Heavy app shells / selectors that pull more RPC — keep route-loading focused
-void mock.module("./components/Sidebar.tsx", () => ({ default: () => null }));
+void mock.module("./components/layout/AppRail.tsx", () => ({ default: () => null }));
 void mock.module("./components/TopBar.tsx", () => ({ default: () => null }));
 void mock.module("./components/ModelSelector.tsx", () => ({ default: () => null }));
 void mock.module("./components/ToolSelector.tsx", () => ({ default: () => null }));
