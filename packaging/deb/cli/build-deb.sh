@@ -100,7 +100,7 @@ Installed-Size: $INSTALLED_SIZE
 Homepage: https://github.com/tokenring-ai/one
 Description: TokenRing native terminal client
  TokenRing CLI is the native terminal interface for TokenRing. Install the
- tokenring-one meta-package to add the backend and web frontend.
+ tokenring-one meta-package to add the backend (with bundled web UI).
 EOF
 
 mkdir -p "$OUTDIR"

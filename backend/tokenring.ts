@@ -7,7 +7,6 @@ import path from "node:path";
 import TokenRingApp, { PluginManager } from "@tokenring-ai/app";
 import { buildTokenRingAppConfigLayers } from "@tokenring-ai/app/buildTokenRingAppConfig";
 import ConfigurationService from "@tokenring-ai/app/config/ConfigurationService";
-import type { BunStorageConfigSchema } from "@tokenring-ai/bun-storage";
 import type { FileSystemConfigSchema } from "@tokenring-ai/filesystem/schema";
 import type { TerminalConfigSchema } from "@tokenring-ai/terminal/schema";
 import formatError from "@tokenring-ai/utility/error/formatError";
@@ -23,9 +22,8 @@ import { configSchema, plugins } from "./plugins.ts";
 
 // Interface definitions
 interface CommandOptions {
-  projectDirectory: string;
-  frontendDirectory: string;
-  dataDirectory: string;
+  workingDirectory: string;
+  workspaceDirectory: string;
   listen: string;
   port: string;
   vaultFile: string;
@@ -40,11 +38,10 @@ program
   .name("tokenring")
   .description("TokenRing One - AI-powered personal assistant")
   .version(packageInfo.version)
-  .option("--projectDirectory <path>", "Path to the working directory to work in (default: cwd)", ".")
+  .option("--workingDirectory <path>", "Path to the directory to work in (default: cwd)", ".")
   .option(
-    "--dataDirectory <path>",
-    "Path to the data directory to use to store data (knowledge, session database, etc.) (default: <projectDirectory>/.tokenring)",
-    "",
+    "--workspaceDirectory <path>",
+    "Path to the directory to directory to use to store data (knowledge, session database, etc.) (default: <workingDirectory>/.tokenring)",
   )
   .option("--listen <host>", "Host interface the HTTP server binds to", "127.0.0.1")
   .option("--port <port>", "Port the HTTP server listens on (0 picks a random free port)", "0")
@@ -58,19 +55,33 @@ program
     `
 Examples:
   tokenring
-  tokenring --projectDirectory ./my-app --dataDirectory ./my-data
+  tokenring --workingDirectory ./my-app --workspaceDirectory ./my-data
   tokenring --listen 127.0.0.1 --port 3000
 `,
   )
   .action(runApp)
   .parse();
 
-async function runApp({ projectDirectory, dataDirectory, listen, port, vaultFile }: CommandOptions): Promise<void> {
+async function runApp({ workingDirectory, workspaceDirectory, listen, port, vaultFile }: CommandOptions): Promise<void> {
   try {
-    projectDirectory = path.resolve(projectDirectory);
-    dataDirectory = path.resolve(dataDirectory || path.join(projectDirectory, "/.tokenring"));
+    workingDirectory = path.resolve(workingDirectory);
+    process.chdir(workingDirectory);
+
+    if (!fs.existsSync(workingDirectory)) {
+      console.error(`Working directory does not exist: ${workingDirectory}`);
+      process.exit(1);
+    }
+
+    workspaceDirectory = path.resolve(workspaceDirectory || path.join(workingDirectory, "/.tokenring"));
+
+    if (!fs.existsSync(workspaceDirectory)) {
+      console.log(`Workspace directory does not exist, creating: ${workspaceDirectory}`);
+      fs.mkdirSync(workspaceDirectory, { recursive: true });
+    }
+
     const configDirectory = path.join(os.homedir(), "/.config/tokenring");
     if (!fs.existsSync(configDirectory)) {
+      console.log(`Config directory does not exist, creating: ${configDirectory}`);
       fs.mkdirSync(configDirectory, { recursive: true });
     }
 
@@ -99,64 +110,23 @@ async function runApp({ projectDirectory, dataDirectory, listen, port, vaultFile
       process.exit(1);
     }
 
-    const frontendDirectory = path.resolve(process.env.FRONTEND_DIRECTORY || path.resolve(import.meta.dirname, "./frontend"));
-
-    if (!fs.existsSync(frontendDirectory)) {
-      console.error(`Frontend directory not found: ${frontendDirectory}`);
-      process.exit(1);
-    }
-
     const defaultConfig = {
       app: {
-        configDirectories: [path.join(homeDirectory, "configs"), path.join(dataDirectory, "configs")],
-        dataDirectory,
+        configDirectories: [path.join(homeDirectory, "configs"), path.join(workspaceDirectory, "configs")],
+        workingDirectory,
+        workspaceDirectory,
         printLogs: true,
-      },
-      checkpoint: {
-        app: {
-          projectDirectory,
-        },
-      },
-      frontend: {
-        directory: frontendDirectory,
-      },
-      mediaLibrary: {
-        agentDefaults: {
-          outputDirectory: path.join(dataDirectory, "media-library"),
-        },
-      },
-      webDesign: {
-        agentDefaults: {
-          webDesignDirectory: path.join(dataDirectory, "web-design"),
-        },
-      },
-      research: {
-        agentDefaults: {
-          researchDirectory: path.join(dataDirectory, "research"),
-        },
-      },
-      imageGeneration: {
-        agentDefaults: {},
-      },
-      videoGeneration: {
-        defaultModels: ["*"],
-        agentDefaults: {},
       },
       filesystem: {
         agentDefaults: {
           provider: "posix",
-          workingDirectory: projectDirectory,
         },
       } satisfies z.input<typeof FileSystemConfigSchema>,
       terminal: {
         agentDefaults: {
           provider: "posix",
-          workingDirectory: projectDirectory,
         },
       } satisfies z.input<typeof TerminalConfigSchema>,
-      bunStorage: {
-        connectionString: `sqlite://${path.resolve(configDirectory, "./database.sqlite")}`,
-      } satisfies z.input<typeof BunStorageConfigSchema>,
       webHost: {
         host: listen,
         port: listenPort,
@@ -176,19 +146,19 @@ async function runApp({ projectDirectory, dataDirectory, listen, port, vaultFile
     const mergedConfig = deepClone(defaultConfig, config) as unknown;
     const parsedConfig = configSchema.parse(mergedConfig);
 
-    const userOverridesFile = path.join(os.homedir(), ".tokenring", "config.yaml");
-    const projectOverridesFile = path.join(projectDirectory, ".tokenring", "config.yaml");
-    const { appConfig, userConfig, projectConfig, overlayError } = await buildTokenRingAppConfigLayers(configSchema, parsedConfig, {
-      userOverridesFile,
-      projectOverridesFile,
+    const globalConfigFile = path.join(os.homedir(), ".tokenring", "config.yaml");
+    const workspaceConfigFile = path.join(workspaceDirectory, ".tokenring", "config.yaml");
+    const { appConfig, globalConfig, workspaceConfig, overlayError } = await buildTokenRingAppConfigLayers(configSchema, parsedConfig, {
+      globalConfigFile: globalConfigFile,
+      workspaceConfigFile: workspaceConfigFile,
     });
 
-    const app = new TokenRingApp(appConfig, { userConfig, projectConfig });
+    const app = new TokenRingApp(appConfig, { globalConfig, workspaceConfig });
 
     app.addService(
       new ConfigurationService(app, {
         configSchema,
-        overridesFiles: { user: userOverridesFile, project: projectOverridesFile },
+        overridesFiles: { global: globalConfigFile, workspace: workspaceConfigFile },
         overlayError,
       }),
     );

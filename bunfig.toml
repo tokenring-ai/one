@@ -12,3 +12,6 @@ linker = "hoisted"
 pathIgnorePatterns = [
     "frontend/**"
 ]
+
+[serve.static]
+plugins = ["bun-plugin-tailwind"]

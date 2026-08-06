@@ -1,6 +1,6 @@
+import type { ConfigScope } from "@tokenring-ai/app";
 import { configRPCClient } from "../rpc.ts";
 
-export type ConfigScope = "user" | "project";
 export type ConfigIssue = { path: (string | number)[]; message: string };
 export type ConfigWriteResult = { ok: true } | { ok: false; issues: ConfigIssue[] };
 

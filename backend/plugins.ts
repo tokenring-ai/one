@@ -137,7 +137,6 @@ export const configSchema = z.object({
   ...AIClientPlugin.configSchema.shape,
   ...AudioPlugin.configSchema.shape,
   ...AWSPlugin.configSchema.shape,
-  ...OneFrontendPlugin.configSchema.shape,
   ...BlogPlugin.configSchema.shape,
   ...BrowserPlugin.configSchema.shape,
   ...CalendarPlugin.configSchema.shape,

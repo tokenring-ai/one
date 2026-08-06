@@ -130,7 +130,7 @@ export function useDebugTargets() {
   return useTypedSWR("/app/listDebugTargets", async () => (await appRPCClient.listDebugTargets({})).targets, { refreshInterval: 5000 });
 }
 
-/** Snapshot files already written to `<dataDirectory>/debug`, newest first. */
+/** Snapshot files already written to `<workspaceDirectory>/debug`, newest first. */
 export function useDebugSnapshots() {
   return useTypedSWR("/app/listDebugSnapshots", async () => (await appRPCClient.listDebugSnapshots({})).snapshots);
 }

@@ -103,8 +103,8 @@ beforeEach(() => {
   schemaData = {
     plugins: [pluginFixture, otherPluginFixture],
     overridesFiles: {
-      user: "/home/user/.tokenring/config.yaml",
-      project: "/repo/.tokenring/config.yaml",
+      global: "/home/user/.tokenring/config.yaml",
+      workspace: "/repo/.tokenring/config.yaml",
     },
     overlayError: null,
   };
@@ -114,7 +114,7 @@ beforeEach(() => {
       connections: { main: { url: "sqlite://x" } },
       alpha: { label: "default" },
     },
-    overrides: { user: {}, project: {} },
+    overrides: { global: {}, workspace: {} },
   };
 });
 
@@ -320,8 +320,8 @@ describe("ConfigurationApp", () => {
       valuesData = {
         ...valuesData,
         overrides: {
-          user: { widget: { apiKey: { __sensitive: true, isSet: true } } },
-          project: {},
+          global: { widget: { apiKey: { __sensitive: true, isSet: true } } },
+          workspace: {},
         },
       };
       return Promise.resolve(valuesData);
@@ -388,8 +388,8 @@ describe("ConfigurationApp", () => {
     valuesData = {
       ...valuesData,
       overrides: {
-        user: { widget: { name: "user-name" } },
-        project: { widget: { name: "project-name" } },
+        global: { widget: { name: "user-name" } },
+        workspace: { widget: { name: "project-name" } },
       },
     };
     const user = userEvent.setup();

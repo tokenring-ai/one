@@ -1,9 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown } from "lucide-react";
-import { isValidElement } from "react";
-import type { ReactNode } from "react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { isValidElement, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { InteractionResponseMessage, QuestionInteraction } from "../../types/agent-events.ts";
@@ -145,11 +144,11 @@ export default function InlineQuestion({ request, agentId, requestId, response, 
           aria-label={isExpanded ? "Collapse question" : "Expand question"}
         >
           <div className={`transition-transform duration-150 ${isExpanded ? "rotate-0" : "-rotate-90"}`}>
-            <ChevronDown className="w-3.5 h-3.5 text-muted"/>
+            <ChevronDown className="w-3.5 h-3.5 text-muted" />
           </div>
         </button>
         <div className="flex items-start gap-2 flex-1 min-w-0">
-          {isUrgent && <span className="inline-block w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0 mt-1.5" title="Urgent - auto-submit pending"/>}
+          {isUrgent && <span className="inline-block w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0 mt-1.5" title="Urgent - auto-submit pending" />}
           {/* Message is outside the expand button so markdown links remain valid HTML */}
           <div
             id={`question-title-${request.interactionId}`}
@@ -210,7 +209,7 @@ export default function InlineQuestion({ request, agentId, requestId, response, 
           )}
           {autoSubmitted && (
             <span className="text-2xs text-emerald-600 dark:text-emerald-400 font-medium leading-none pt-1.5 shrink-0 flex items-center gap-0.5">
-              <Check className="w-3 h-3 inline"/>
+              <Check className="w-3 h-3 inline" />
               Auto-submitted
             </span>
           )}

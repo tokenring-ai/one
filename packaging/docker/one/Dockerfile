@@ -29,12 +29,10 @@ apt-get install -y --no-install-recommends git python3
 rm -rf /var/lib/apt/lists/*
 EOF
 COPY dist/tokenring-one-linux-${TARGETARCH} /usr/local/lib/tokenring-one/tokenring-one
-COPY dist/frontend /usr/local/lib/tokenring-one/frontend
 RUN chmod 755 /usr/local/lib/tokenring-one/tokenring-one
-ENV FRONTEND_DIRECTORY=/usr/local/lib/tokenring-one/frontend
 EXPOSE 80
 ENTRYPOINT ["/usr/local/lib/tokenring-one/tokenring-one"]
-CMD ["--listen", "0.0.0.0", "--port", "80", "--projectDirectory", "/repo"]
+CMD ["--listen", "0.0.0.0", "--port", "80", "--workingDirectory", "/repo"]
 
 FROM server AS full
 ARG TARGETARCH

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
-import "./index.css";
 import { ChatInputProvider } from "./components/ChatInputContext.tsx";
 import { StorageErrorBanner } from "./components/chat/StorageErrorBanner.tsx";
 import ErrorBoundary from "./components/ErrorBoundary.tsx";

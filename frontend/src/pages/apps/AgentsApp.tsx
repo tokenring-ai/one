@@ -644,7 +644,7 @@ export default function AgentsApp() {
         appId="agents"
         title="Agents"
         navigationLabel="Agents and agent types"
-        hasSelection={routeAgentId !== undefined || selectedAgentType !== undefined}
+        hasSelection={routeAgentId !== undefined || selectedAgentType !== null}
         className="flex-1"
         navigation={
           <AgentSidebar

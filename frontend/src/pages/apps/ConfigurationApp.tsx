@@ -17,8 +17,8 @@ import { configRPCClient, useConfigSchema, useConfigValues } from "../../rpc.ts"
 type Drafts = Record<ConfigScope, Record<string, unknown> | null>;
 
 const SCOPE_META: Record<ConfigScope, { label: string; icon: typeof User; blurb: string }> = {
-  user: { label: "User", icon: User, blurb: "applies everywhere you run TokenRing" },
-  project: { label: "Project", icon: FolderGit2, blurb: "applies to this project and takes precedence over user settings" },
+  global: { label: "Global", icon: User, blurb: "applies everywhere you run TokenRing" },
+  workspace: { label: "Workspace", icon: FolderGit2, blurb: "applies to this workspace and takes precedence over user settings" },
 };
 
 const isScope = (value: string | null): value is ConfigScope => configScopes.includes(value as ConfigScope);
@@ -34,7 +34,7 @@ export default function ConfigurationApp() {
   const selectedName = routePlugin ?? null;
 
   const [search, setSearch] = useState("");
-  const [drafts, setDrafts] = useState<Drafts>({ user: null, project: null });
+  const [drafts, setDrafts] = useState<Drafts>({ global: null, workspace: null });
   const [issues, setIssues] = useState<ConfigIssue[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -44,7 +44,7 @@ export default function ConfigurationApp() {
   const saveInFlightRef = useRef(false);
 
   const scopeParam = searchParams.get("scope");
-  const scope: ConfigScope = isScope(scopeParam) ? scopeParam : "user";
+  const scope: ConfigScope = isScope(scopeParam) ? scopeParam : "global";
 
   const serverOverrides = values.data?.overrides;
   const scopeOverrides = serverOverrides?.[scope];
@@ -105,7 +105,7 @@ export default function ConfigurationApp() {
   const issuesOnOtherPlugins = issues.filter(issue => issue.path.length === 0 || !selectedSliceKeys.has(String(issue.path[0])));
 
   /** Slices of the selected plugin that a higher-precedence scope also sets. */
-  const shadowedByProject = scope === "user" && selectedPlugin !== undefined && pluginHasOverrides(selectedPlugin, "project");
+  const shadowedByProject = scope === "global" && selectedPlugin !== undefined && pluginHasOverrides(selectedPlugin, "workspace");
 
   /** Clears server validation / save feedback so the user can keep editing cleanly. */
   const clearValidationFeedback = () => {
@@ -199,7 +199,7 @@ export default function ConfigurationApp() {
         {filteredPlugins.map(plugin => {
           const isSelected = plugin.pluginName === selectedPlugin?.pluginName;
           const hasScopeOverrides = pluginHasOverrides(plugin, scope);
-          const otherScope: ConfigScope = scope === "user" ? "project" : "user";
+          const otherScope: ConfigScope = scope === "global" ? "workspace" : "global";
           const hasOtherOverrides = pluginHasOverrides(plugin, otherScope);
           return (
             <button
@@ -299,7 +299,7 @@ export default function ConfigurationApp() {
           title="Configuration"
           navigationLabel="Configuration plugins"
           navigation={pluginNavigation}
-          hasSelection={selectedPlugin !== null}
+          hasSelection={selectedPlugin != null}
           className="flex-1"
         >
           {/* Detail pane */}

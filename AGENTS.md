@@ -57,12 +57,12 @@ bun src/tokenring.js --source ./path-to-codebase
 ## Docker
 
 **Dockerfile**: packaging/docker/one/Dockerfile
-**Base Image**: debian:trixie
-**Configuration**: Ships the prebuilt TokenRing One binary, frontend, and runtime deps (git, libportaudio2)
+**Base Image**: debian:trixie-slim
+**Configuration**: Ships the prebuilt TokenRing One backend binary (web UI bundled inside) and optional CLI; runtime deps include git
 **Build Command**:
 
 ```bash
-# After preparing packaging/docker/one/dist/ with the platform binary and frontend
+# After preparing packaging/docker/one/dist/ with platform binaries (tokenring-one-*, tokenring-cli-*)
 docker build -t tokenring-ai/one:latest -f packaging/docker/one/Dockerfile packaging/docker/one
 ```
 

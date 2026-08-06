@@ -31,7 +31,6 @@ mkdir -p "$PKG_ROOT/DEBIAN" "$PKG_ROOT/usr/bin" "$PKG_ROOT/usr/share/doc/$PKG_NA
 cat > "$PKG_ROOT/usr/bin/tokenring-one" <<'EOF'
 #!/bin/sh
 export TOKENRING_ONE_BINARY="${TOKENRING_ONE_BINARY:-/usr/lib/tokenring-ai/one/backend/tokenring-one}"
-export FRONTEND_DIRECTORY="${FRONTEND_DIRECTORY:-/usr/lib/tokenring-ai/one/frontend}"
 exec /usr/bin/tokenring "$@"
 EOF
 chmod 755 "$PKG_ROOT/usr/bin/tokenring-one"
@@ -54,11 +53,11 @@ Priority: optional
 Architecture: $ARCH
 Maintainer: TokenRing AI <support@tokenring.ai>
 Installed-Size: $INSTALLED_SIZE
-Depends: tokenring-one-cli (= $VERSION), tokenring-one-backend (= $VERSION), tokenring-one-frontend (= $VERSION)
+Depends: tokenring-one-cli (= $VERSION), tokenring-one-backend (= $VERSION)
 Homepage: https://github.com/tokenring-ai/one
 Description: Complete TokenRing One workspace
- Installs the TokenRing One terminal client, backend, and web frontend. The
- tokenring-one command starts the terminal client with the local server wired in.
+ Installs the TokenRing One terminal client and backend (with bundled web UI).
+ The tokenring-one command starts the terminal client with the local server wired in.
 EOF
 
 mkdir -p "$OUTDIR"

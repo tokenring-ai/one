@@ -112,7 +112,7 @@ AutoReqProv:    no
 
 %description
 TokenRing CLI is the native terminal interface for TokenRing. Install the
-tokenring-one meta-package to add the backend and web frontend.
+tokenring-one meta-package to add the backend (with bundled web UI).
 
 %install
 rm -rf %{buildroot}

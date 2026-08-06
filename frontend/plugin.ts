@@ -1,48 +1,52 @@
-import fs from "node:fs";
-import path from "node:path";
 import type { TokenRingPlugin } from "@tokenring-ai/app";
-import type { ConfigFieldMeta } from "@tokenring-ai/app/config/metadata";
-import { StaticResource, WebHostService } from "@tokenring-ai/web-host";
-import FallbackResource from "@tokenring-ai/web-host/FallbackResource";
-import { z } from "zod";
+import { WebHostService } from "@tokenring-ai/web-host";
+import index from "./index.html";
 import packageJSON from "./package.json" with { type: "json" };
 
-const packageConfigSchema = z.object({
-  frontend: z
-    .object({
-      directory: z.string().meta({ hidden: true } satisfies ConfigFieldMeta), // runtime-injected build output path
-    })
-    .meta({ label: "Chat Frontend" } satisfies ConfigFieldMeta),
-});
+const routes = [
+  "/agents",
+  "/workflows",
+  "/bots",
+  "/scheduler",
+  "/queue",
+  "/skills",
+  "/web-design",
+  "/documents",
+  "/research",
+  "/blog",
+  "/files",
+  "/terminal",
+  "/email",
+  "/database",
+  "/calendar",
+  "/media",
+  "/social",
+  "/messaging",
+  "/stocks",
+  "/plugins",
+  "/configuration",
+  "/services",
+  "/metrics",
+  "/debug",
+  "/settings",
+  "/vault",
+  "/agent",
+];
 
 export default {
   name: packageJSON.name,
   displayName: "TokenRing One Web Frontend",
   version: packageJSON.version,
   description: packageJSON.description,
-  install(_app) {
-    // Resources are registered in reconfigure once the SPA directory is known.
+  install(app) {
+    app.waitForService(WebHostService, webHost => {
+      webHost.registerResource("Frontend", {
+        routes: {
+          "/": index,
+          ...Object.fromEntries(routes.map(route => [route, index])),
+          ...Object.fromEntries(routes.map(route => [`${route}/*`, index])),
+        },
+      });
+    });
   },
-  reconfigure(app, config) {
-    const spaDirectory = path.resolve(config.frontend.directory);
-    const indexFile = path.join(spaDirectory, "index.html");
-    if (!fs.existsSync(indexFile)) {
-      throw new Error(`One frontend not found at ${indexFile}`);
-    }
-
-    const assetsDir = path.join(spaDirectory, "assets");
-    const webHostService = app.requireService(WebHostService);
-
-    webHostService.registerResource(
-      "Static Assets",
-      new StaticResource({
-        prefix: "/assets",
-        root: assetsDir,
-        indexFile: "index.html",
-      }),
-    );
-
-    webHostService.registerResource("Agent Web Interface", new FallbackResource({ file: indexFile }));
-  },
-  configSchema: packageConfigSchema,
-} satisfies TokenRingPlugin<typeof packageConfigSchema>;
+} satisfies TokenRingPlugin;

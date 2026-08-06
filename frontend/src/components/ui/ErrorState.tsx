@@ -13,8 +13,7 @@ interface ErrorStateProps {
 
 export default function ErrorState({ title = "Something went wrong", error, onRetry, retryLabel = "Retry", variant = "inline", className }: ErrorStateProps) {
   // Prefer a short, user-facing message — never dump stack traces into the UI.
-  const message =
-    error instanceof Error ? error.message || error.name : formatError(error, { includeStack: false });
+  const message = error instanceof Error ? error.message || error.name : formatError(error, { includeStack: false });
 
   if (variant === "page") {
     return (

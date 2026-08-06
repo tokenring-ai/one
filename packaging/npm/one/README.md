@@ -5,11 +5,10 @@ The complete TokenRing One local-first, multi-agent workspace.
 This meta-package installs:
 
 - `@tokenring-ai/one-cli`
-- `@tokenring-ai/one-backend`
-- `@tokenring-ai/one-frontend`
+- `@tokenring-ai/one-backend` (includes the bundled web UI)
 
 Its `tokenring-one` command starts the terminal client and configures it to
-launch the installed backend with the installed web frontend.
+launch the installed backend.
 
 ```bash
 npx @tokenring-ai/one

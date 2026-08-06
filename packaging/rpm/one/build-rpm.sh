@@ -31,7 +31,6 @@ mkdir -p "$PAYLOAD/usr/bin" "$PAYLOAD/usr/share/doc/$PKG_NAME"
 cat > "$PAYLOAD/usr/bin/tokenring-one" <<'EOF'
 #!/bin/sh
 export TOKENRING_ONE_BINARY="${TOKENRING_ONE_BINARY:-/usr/lib/tokenring-ai/one/backend/tokenring-one}"
-export FRONTEND_DIRECTORY="${FRONTEND_DIRECTORY:-/usr/lib/tokenring-ai/one/frontend}"
 exec /usr/bin/tokenring "$@"
 EOF
 chmod 755 "$PAYLOAD/usr/bin/tokenring-one"
@@ -51,10 +50,9 @@ BuildArch:      $ARCH
 AutoReqProv:    no
 Requires:       tokenring-one-cli = $RPM_VERSION-1
 Requires:       tokenring-one-backend = $RPM_VERSION-1
-Requires:       tokenring-one-frontend = $RPM_VERSION-1
 
 %description
-Installs the TokenRing One terminal client, backend, and web frontend.
+Installs the TokenRing One terminal client and backend (with bundled web UI).
 
 %install
 rm -rf %{buildroot}

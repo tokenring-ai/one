@@ -12,24 +12,6 @@
   },
   "description": "TokenRing Monorepo with all community apps and packages",
   "license": "MIT",
-  "scripts": {
-    "prepare": "husky",
-    "docs:build": "cd docs && bun run build",
-    "deps:update": "bun update --latest",
-    "package:cli": "cargo build --release --locked --manifest-path cli/Cargo.toml",
-    "package:one:frontend": "bun run --cwd frontend build",
-    "package:one:docker": "bun run --cwd packaging/docker/one build",
-    "schema:rpc": "bun util/export-rpc-schemas.ts",
-    "check:biome": "biome check --fix",
-    "check:oxlint": "oxlint -f stylish --fix",
-    "check:knip": "knip",
-    "check:tsc": "tsc",
-    "run:one": "FRONTEND_DIRECTORY=frontend/dist bun backend/tokenring.ts --port 14008 --listen 0.0.0.0",
-    "run:cli-remote": "cargo run --manifest-path cli/Cargo.toml -- ws://0.0.0.0:14008",
-    "run:cli": "FRONTEND_DIRECTORY=frontend/dist TOKENRING_ONE_BINARY=backend/tokenring.ts cargo run --manifest-path cli/Cargo.toml",
-    "frontend:watch-build": "bun run --cwd frontend/ watch:build"
-  },
-  "type": "module",
   "overrides": {
     "uuid": "14.0.0",
     "qs": "^6.14.1",
@@ -51,14 +33,31 @@
     "basic-ftp": "^5.2.2",
     "typescript": "7.0.2"
   },
+  "patchedDependencies": {
+    "@typescript/typescript6@6.0.2": "patches/@typescript%2Ftypescript6@6.0.2.patch"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "docs:build": "cd docs && bun run build",
+    "deps:update": "bun update --latest",
+    "package:cli": "cargo build --release --locked --manifest-path cli/Cargo.toml",
+    "package:one:docker": "bun run --cwd packaging/docker/one build",
+    "schema:rpc": "bun util/export-rpc-schemas.ts",
+    "check:biome": "biome check --fix",
+    "check:oxlint": "oxlint -f stylish --fix",
+    "check:knip": "knip",
+    "check:tsc": "tsc",
+    "run:one": "bun backend/tokenring.ts --port 14008 --listen 0.0.0.0",
+    "run:cli-remote": "cargo run --manifest-path cli/Cargo.toml -- ws://0.0.0.0:14008",
+    "run:cli": "TOKENRING_ONE_BINARY=backend/tokenring.ts cargo run --manifest-path cli/Cargo.toml",
+    "frontend:watch-build": "bun run --cwd frontend/ watch:build"
+  },
+  "type": "module",
   "workspaces": {
     "packages": [
       "plugin/*",
       "frontend",
       "backend"
     ]
-  },
-  "patchedDependencies": {
-    "@typescript/typescript6@6.0.2": "patches/@typescript%2Ftypescript6@6.0.2.patch"
   }
 }

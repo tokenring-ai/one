@@ -1,8 +1,9 @@
+import type { ConfigScope } from "@tokenring-ai/app";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { AlertTriangle, CheckCircle2, Database, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toastManager } from "../../../components/ui/toast.tsx";
-import { type ConfigScope, formatConfigIssues, SENSITIVE_KEEP, updateConfigLayer } from "../../../lib/configWrites.ts";
+import { formatConfigIssues, SENSITIVE_KEEP, updateConfigLayer } from "../../../lib/configWrites.ts";
 import { configRPCClient, databaseRPCClient } from "../../../rpc.ts";
 import { CONNECTION_STRING_PLACEHOLDER } from "../constants.ts";
 import type { DatasourceSummary } from "../types.ts";
@@ -31,7 +32,7 @@ export default function DatasourceFormModal({
   const [allowWrites, setAllowWrites] = useState(existing?.allowWrites ?? false);
   // Project is the usual place for shared connection strings; user can still choose.
   // When editing, we prefer the scope that already owns this name (project wins if both).
-  const [scope, setScope] = useState<ConfigScope>("project");
+  const [scope, setScope] = useState<ConfigScope>("workspace");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
@@ -45,10 +46,10 @@ export default function DatasourceFormModal({
       try {
         const values = await configRPCClient.getConfigValues({});
         if (signal.aborted) return;
-        const projectDb = values.overrides.project.database as Record<string, unknown> | undefined;
-        const userDb = values.overrides.user.database as Record<string, unknown> | undefined;
-        if (projectDb && existing.name in projectDb) setScope("project");
-        else if (userDb && existing.name in userDb) setScope("user");
+        const projectDb = values.overrides.workspace.database as Record<string, unknown> | undefined;
+        const userDb = values.overrides.global.database as Record<string, unknown> | undefined;
+        if (projectDb && existing.name in projectDb) setScope("workspace");
+        else if (userDb && existing.name in userDb) setScope("global");
       } catch {
         // Leave the default — the user can still pick a scope manually.
       }

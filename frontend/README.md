@@ -2,33 +2,23 @@
 
 React web interface for TokenRing agents with CLI-style chat, app pages, and real-time agent streaming.
 
+This is a **monorepo workspace package**, not a separately published npm/deb/rpm artifact. Production serves the UI by importing `frontend/plugin.ts` into the backend (`@tokenring-ai/one-backend`), which registers HTML routes on the web host. The compiled backend binary therefore already includes the web UI.
+
 ## Development
 
-From the monorepo root:
+From the monorepo root (full app with RPC + UI):
 
 ```bash
 bun install
+bun run run:one
+```
+
+Standalone HTML entry (UI only, no backend RPC):
+
+```bash
 cd frontend
-bun run dev
+bun ./index.html --port=5173
 ```
-
-Or from `frontend` after dependencies are installed:
-
-```bash
-bun run dev
-```
-
-The Bun frontend dev server runs on port 5173 by default. In production, built assets in `dist/` are served by the WebFrontendServer.
-
-## Build
-
-```bash
-bun run build
-bun run preview   # optional: preview production build locally
-bun run watch:build  # rebuild on changes (unminified)
-```
-
-Production builds use Bun's bundler (`Bun.build` via `build.ts`) with Tailwind processed through PostCSS, and write hashed assets under `dist/assets/`.
 
 ## Test
 

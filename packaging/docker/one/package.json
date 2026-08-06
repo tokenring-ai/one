@@ -3,11 +3,9 @@
   "private": true,
   "description": "Docker packaging for TokenRing One",
   "scripts": {
-    "build:frontend": "bun run --cwd ../../../frontend build",
-    "stage:frontend": "bun run build:frontend && rm -rf dist/frontend && mkdir -p dist/frontend/one && cp -a ../../../frontend/dist/. dist/frontend/one/",
     "build:full": "docker build --target full -t tokenring-ai/one:full -f Dockerfile .",
     "build:server": "docker build --target server -t tokenring-ai/one:server -f Dockerfile .",
     "build:cli": "docker build --target cli -t tokenring-ai/one:cli -f Dockerfile .",
-    "build": "bun run stage:frontend && bun run build:full && bun run build:server && bun run build:cli"
+    "build": "bun run build:full && bun run build:server && bun run build:cli"
   }
 }

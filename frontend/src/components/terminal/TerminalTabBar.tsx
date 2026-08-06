@@ -62,7 +62,7 @@ export default function TerminalTabBar({ terminals, activeName, onSelect, onClos
     const strip = stripRef.current;
     const tab = strip?.querySelector<HTMLElement>(`[data-terminal-tab="${CSS.escape(activeName)}"]`);
     // scrollIntoView is missing in some test environments (jsdom); skip rather than throw.
-    tab?.scrollIntoView?.({ inline: "nearest", block: "nearest", behavior: "smooth" });
+    tab?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
   }, [activeName]);
 
   const scrollBy = (delta: number) => {

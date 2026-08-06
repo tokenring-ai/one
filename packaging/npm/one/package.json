@@ -13,7 +13,6 @@
   "dependencies": {
     "@tokenring-ai/one-backend": "0.2.55",
     "@tokenring-ai/one-cli": "0.2.55",
-    "@tokenring-ai/one-frontend": "0.2.55"
   },
   "keywords": [
     "tokenring",

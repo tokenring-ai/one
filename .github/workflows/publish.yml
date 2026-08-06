@@ -22,22 +22,18 @@ jobs:
             bun_target: bun-darwin-arm64
             backend_artifact: tokenring-one-macos-arm64
             cli_artifact: tokenring-cli-macos-arm64
-            build_frontend: false
           - os: macos-15-intel
             bun_target: bun-darwin-x64
             backend_artifact: tokenring-one-macos-x64
             cli_artifact: tokenring-cli-macos-x64
-            build_frontend: false
           - os: ubuntu-latest
             bun_target: bun-linux-x64
             backend_artifact: tokenring-one-linux-x64
             cli_artifact: tokenring-cli-linux-x64
-            build_frontend: true
           - os: ubuntu-24.04-arm
             bun_target: bun-linux-arm64
             backend_artifact: tokenring-one-linux-arm64
             cli_artifact: tokenring-cli-linux-arm64
-            build_frontend: false
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -52,17 +48,9 @@ jobs:
 
       - run: bun install
 
-      - name: Build frontend
-        if: matrix.build_frontend
+      - name: Build frontend CSS
         run: bun run build
         working-directory: ./frontend
-
-      - name: Upload frontend
-        if: matrix.build_frontend
-        uses: actions/upload-artifact@v7
-        with:
-          name: one-frontend
-          path: ./frontend/dist
 
       - name: Build backend
         run: bun build --compile --target=${{ matrix.bun_target }} ./tokenring.ts --outfile ../${{ matrix.backend_artifact }}
@@ -105,11 +93,6 @@ jobs:
 
       - uses: actions/download-artifact@v7
         with:
-          name: one-frontend
-          path: ./artifacts/one-frontend
-
-      - uses: actions/download-artifact@v7
-        with:
           pattern: tokenring-one-*
           path: ./artifacts
           merge-multiple: true
@@ -122,8 +105,6 @@ jobs:
 
       - name: Stage npm component packages
         run: |
-          cp -a artifacts/one-frontend/. packaging/npm/frontend/
-
           for platform in darwin-arm64 darwin-x64 linux-x64 linux-arm64; do
             mkdir -p "packaging/npm/backend/bin/$platform" "packaging/npm/cli/bin/$platform"
           done
@@ -140,7 +121,6 @@ jobs:
       - name: Publish component packages
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          npm publish --provenance --access public --tag latest ./packaging/npm/frontend
           npm publish --provenance --access public --tag latest ./packaging/npm/backend
           npm publish --provenance --access public --tag latest ./packaging/npm/cli
           npm publish --provenance --access public --tag latest ./packaging/npm/one
@@ -157,11 +137,9 @@ jobs:
           - arch: amd64
             backend_binary: tokenring-one-linux-x64
             cli_binary: tokenring-cli-linux-x64
-            build_frontend: true
           - arch: arm64
             backend_binary: tokenring-one-linux-arm64
             cli_binary: tokenring-cli-linux-arm64
-            build_frontend: false
     steps:
       - uses: actions/checkout@v7
 
@@ -184,12 +162,6 @@ jobs:
           name: ${{ matrix.cli_binary }}
           path: ./artifacts
 
-      - uses: actions/download-artifact@v7
-        if: matrix.build_frontend
-        with:
-          name: one-frontend
-          path: ./artifacts/one-frontend
-
       - name: Build Debian packages
         run: |
           version="${{ steps.version.outputs.version }}"
@@ -197,10 +169,6 @@ jobs:
           ./packaging/deb/backend/build-deb.sh --version "$version" --arch "${{ matrix.arch }}" --binary "./artifacts/${{ matrix.backend_binary }}" --outdir "$outdir"
           ./packaging/deb/cli/build-deb.sh --version "$version" --arch "${{ matrix.arch }}" --binary "./artifacts/${{ matrix.cli_binary }}" --outdir "$outdir"
           ./packaging/deb/one/build-deb.sh --version "$version" --arch "${{ matrix.arch }}" --outdir "$outdir"
-
-      - name: Build Debian frontend package
-        if: matrix.build_frontend
-        run: ./packaging/deb/frontend/build-deb.sh --version "${{ steps.version.outputs.version }}" --frontend ./artifacts/one-frontend --outdir ./artifacts/deb
 
       - uses: actions/upload-artifact@v7
         with:
@@ -217,12 +185,10 @@ jobs:
             runner: ubuntu-latest
             backend_binary: tokenring-one-linux-x64
             cli_binary: tokenring-cli-linux-x64
-            build_frontend: true
           - arch: aarch64
             runner: ubuntu-24.04-arm
             backend_binary: tokenring-one-linux-arm64
             cli_binary: tokenring-cli-linux-arm64
-            build_frontend: false
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
@@ -249,12 +215,6 @@ jobs:
           name: ${{ matrix.cli_binary }}
           path: ./artifacts
 
-      - uses: actions/download-artifact@v7
-        if: matrix.build_frontend
-        with:
-          name: one-frontend
-          path: ./artifacts/one-frontend
-
       - name: Build RPM packages
         run: |
           version="${{ steps.version.outputs.version }}"
@@ -262,10 +222,6 @@ jobs:
           ./packaging/rpm/backend/build-rpm.sh --version "$version" --arch "${{ matrix.arch }}" --binary "./artifacts/${{ matrix.backend_binary }}" --outdir "$outdir"
           ./packaging/rpm/cli/build-rpm.sh --version "$version" --arch "${{ matrix.arch }}" --binary "./artifacts/${{ matrix.cli_binary }}" --outdir "$outdir"
           ./packaging/rpm/one/build-rpm.sh --version "$version" --arch "${{ matrix.arch }}" --outdir "$outdir"
-
-      - name: Build RPM frontend package
-        if: matrix.build_frontend
-        run: ./packaging/rpm/frontend/build-rpm.sh --version "${{ steps.version.outputs.version }}" --frontend ./artifacts/one-frontend --outdir ./artifacts/rpm
 
       - uses: actions/upload-artifact@v7
         with:
@@ -329,15 +285,9 @@ jobs:
           path: ./artifacts
           merge-multiple: true
 
-      - uses: actions/download-artifact@v7
-        with:
-          name: one-frontend
-          path: ./artifacts/one-frontend
-
       - name: Stage install assets
         run: |
           install -m 755 packaging/install.sh artifacts/install.sh
-          tar -czf artifacts/one-frontend.tar.gz -C artifacts/one-frontend .
 
       - uses: softprops/action-gh-release@v2
         with:
@@ -347,7 +297,6 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             artifacts/install.sh
-            artifacts/one-frontend.tar.gz
             artifacts/tokenring-one-macos-*
             artifacts/tokenring-one-linux-*
             artifacts/tokenring-cli-macos-*
@@ -355,11 +304,9 @@ jobs:
             artifacts/tokenring-one_*.deb
             artifacts/tokenring-one-backend_*.deb
             artifacts/tokenring-one-cli_*.deb
-            artifacts/tokenring-one-frontend_*.deb
             artifacts/tokenring-one_*.rpm
             artifacts/tokenring-one-backend_*.rpm
             artifacts/tokenring-one-cli_*.rpm
-            artifacts/tokenring-one-frontend_*.rpm
 
   publish-docker:
     needs: [build]
@@ -381,11 +328,6 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
-
-      - uses: actions/download-artifact@v7
-        with:
-          name: one-frontend
-          path: ./packaging/docker/one/dist/frontend/one
 
       - uses: actions/download-artifact@v7
         with:

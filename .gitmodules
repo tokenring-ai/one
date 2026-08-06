@@ -34,10 +34,6 @@
 	path = plugin/checkpoint
 	url = ../checkpoint.git
 	branch = main
-[submodule "plugin/chrome"]
-	path = plugin/chrome
-	url = ../chrome.git
-	branch = main
 [submodule "plugin/code-watch"]
 	path = plugin/code-watch
 	url = ../code-watch.git

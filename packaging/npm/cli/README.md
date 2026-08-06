@@ -7,7 +7,7 @@ npx @tokenring-ai/one-cli
 ```
 
 This component can connect to an existing TokenRing One server. To install the
-CLI together with the local backend and web frontend, use
+CLI together with the local backend (which includes the web UI), use
 `@tokenring-ai/one`.
 
 Supported platforms are macOS and Linux on arm64 and x64.

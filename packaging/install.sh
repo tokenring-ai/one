@@ -12,8 +12,8 @@
 #
 # Install strategy:
 #   1. If bun or npm is available, install @tokenring-ai/one@VERSION globally.
-#   2. Otherwise on macOS/Linux, download CLI, backend, and frontend assets for
-#      the same VERSION from GitHub Releases and install them under ~/.local.
+#   2. Otherwise on macOS/Linux, download CLI and backend assets for the same
+#      VERSION from GitHub Releases and install them under ~/.local.
 
 set -euo pipefail
 
@@ -29,7 +29,6 @@ NPM_SPEC="${NPM_PACKAGE}@${VERSION}"
 
 BIN_DIR="${TOKENRING_BIN_DIR:-${HOME}/.local/bin}"
 LIB_DIR="${TOKENRING_LIB_DIR:-${HOME}/.local/lib/tokenring-ai/one}"
-FRONTEND_DIR="${TOKENRING_FRONTEND_DIR:-${HOME}/.local/share/tokenring-ai/one-frontend}"
 
 RED=$'\033[0;31m'
 GREEN=$'\033[0;32m'
@@ -151,44 +150,32 @@ install_from_release() {
 
   local cli_url="${RELEASE_BASE}/tokenring-cli-${platform}"
   local backend_url="${RELEASE_BASE}/tokenring-one-${platform}"
-  local frontend_url="${RELEASE_BASE}/one-frontend.tar.gz"
 
   INSTALL_TMP="$(mktemp -d "${TMPDIR:-/tmp}/tokenring-one-install.XXXXXX")"
   trap cleanup_install_tmp EXIT
 
   info "Detected platform: ${platform}"
-  info "Downloading CLI, backend, and frontend for ${RELEASE_TAG}"
+  info "Downloading CLI and backend for ${RELEASE_TAG}"
 
   download "$cli_url" "${INSTALL_TMP}/one"
   download "$backend_url" "${INSTALL_TMP}/tokenring-one"
-  download "$frontend_url" "${INSTALL_TMP}/one-frontend.tar.gz"
 
   chmod 755 "${INSTALL_TMP}/one" "${INSTALL_TMP}/tokenring-one"
 
-  info "Installing to ${BIN_DIR}, ${LIB_DIR}, and ${FRONTEND_DIR}"
-  mkdir -p "$BIN_DIR" "$LIB_DIR" "$FRONTEND_DIR"
+  info "Installing to ${BIN_DIR} and ${LIB_DIR}"
+  mkdir -p "$BIN_DIR" "$LIB_DIR"
 
   install -m 755 "${INSTALL_TMP}/one" "${LIB_DIR}/one"
   install -m 755 "${INSTALL_TMP}/tokenring-one" "${LIB_DIR}/tokenring-one"
 
-  # Replace frontend assets atomically so a partial extract cannot leave a
-  # half-updated tree.
-  local frontend_staging
-  frontend_staging="$(mktemp -d "${FRONTEND_DIR}.XXXXXX")"
-  tar -xzf "${INSTALL_TMP}/one-frontend.tar.gz" -C "$frontend_staging"
-  rm -rf "${FRONTEND_DIR}"
-  mv "$frontend_staging" "$FRONTEND_DIR"
-
   write_wrapper "${BIN_DIR}/one" "#!/bin/sh
 # TokenRing One CLI launcher (installed by install.sh)
-export FRONTEND_DIRECTORY=\"\${FRONTEND_DIRECTORY:-${FRONTEND_DIR}}\"
-export TOKENRING_ONE_BINARY=\"\${TOKENRING_ONE_BINARY:-${BIN_DIR}/tokenring-one}\"
+export TOKENRING_ONE_BINARY=\"\${TOKENRING_ONE_BINARY:-${LIB_DIR}/tokenring-one}\"
 exec \"${LIB_DIR}/one\" \"\$@\"
 "
 
   write_wrapper "${BIN_DIR}/tokenring-one" "#!/bin/sh
 # TokenRing One backend launcher (installed by install.sh)
-export FRONTEND_DIRECTORY=\"\${FRONTEND_DIRECTORY:-${FRONTEND_DIR}}\"
 exec \"${LIB_DIR}/tokenring-one\" \"\$@\"
 "
 
@@ -199,7 +186,6 @@ exec \"${LIB_DIR}/tokenring-one\" \"\$@\"
 
   info "Installed CLI wrapper: ${BIN_DIR}/one"
   info "Installed backend wrapper: ${BIN_DIR}/tokenring-one"
-  info "Installed frontend: ${FRONTEND_DIR}"
 }
 
 print_success() {
@@ -233,7 +219,6 @@ main() {
 
   case "$(uname -s)" in
     Darwin|Linux)
-      need_cmd tar
       install_from_release
       print_success "one"
       ;;

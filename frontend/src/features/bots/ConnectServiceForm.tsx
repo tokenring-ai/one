@@ -1,9 +1,10 @@
+import type { ConfigScope } from "@tokenring-ai/app";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2, PlugZap, X } from "lucide-react";
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import { toastManager } from "../../components/ui/toast.tsx";
-import { type ConfigScope, formatConfigIssues, updateConfigLayer } from "../../lib/configWrites.ts";
+import { formatConfigIssues, updateConfigLayer } from "../../lib/configWrites.ts";
 import { cn } from "../../lib/utils.ts";
 
 export type ConnectablePlatform = "telegram" | "slack" | "x" | "reddit";
@@ -100,7 +101,7 @@ export default function ConnectServiceForm({ available, initialPlatform, existin
   const spec = PLATFORMS[platform];
 
   const [accountName, setAccountName] = useState(spec.defaultAccountName);
-  const [scope, setScope] = useState<ConfigScope>("user");
+  const [scope, setScope] = useState<ConfigScope>("global");
   const [credentials, setCredentials] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
