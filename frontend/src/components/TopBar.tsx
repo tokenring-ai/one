@@ -8,6 +8,7 @@ import { getActiveApp } from "./layout/AppRegistry.ts";
 import { useAppShell } from "./layout/AppShellContext.tsx";
 import { LightDarkSelector } from "./ui/light-dark-selector.tsx";
 import NotificationMenu from "./ui/notification-menu.tsx";
+import Logo from "../tokenring-logo-small.webp"
 
 interface TopBarProps {
   currentAgentId: string | null;
@@ -36,7 +37,7 @@ export default function TopBar({ currentAgentId, agents, agentControls }: TopBar
   }, []);
 
   return (
-    <header className="h-14 border-b border-primary bg-secondary flex items-center px-2 sm:px-4 gap-2 sm:gap-3 shrink-0 z-50">
+    <header className="h-14 border-b border-primary bg-secondary flex items-center px-2 gap-2 sm:gap-3 shrink-0 z-50">
       {/* Logo */}
       <button
         type="button"
@@ -44,10 +45,10 @@ export default function TopBar({ currentAgentId, agents, agentControls }: TopBar
         className="flex items-center gap-2 focus-ring rounded-md shrink-0 cursor-pointer"
         aria-label="TokenRing Home"
       >
-        <div className="w-7 h-7 rounded-md bg-linear-to-br from-cyan-500 to-accent-hover flex items-center justify-center shadow-accent">
-          <Zap className="w-4 h-4 text-white" />
+        <div className="w-9 h-9 flex items-center justify-center">
+          <img src={Logo} className="w-auto h-9 text-white" />
         </div>
-        <span className="text-primary font-bold tracking-tight text-sm hidden lg:block">TokenRing</span>
+        <span className="pl-2 text-primary font-bold tracking-tight text-md hidden lg:block">TokenRing One</span>
       </button>
 
       {/* App catalog moves into a full-height sheet on mobile. */}
