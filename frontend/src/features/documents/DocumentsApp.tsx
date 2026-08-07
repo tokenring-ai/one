@@ -325,7 +325,7 @@ export default function DocumentsApp() {
           <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
           <div className="min-w-0">
             <p className="text-xs font-medium text-primary">AI editing is disabled</p>
-            <p className="text-2xs text-muted">{initError}</p>
+            <p className="text-xs text-muted">{initError}</p>
           </div>
         </div>
       )}
@@ -346,7 +346,7 @@ export default function DocumentsApp() {
               aria-label="Document title"
             />
             {currentFilePath && (
-              <p className="text-2xs text-muted truncate" title={currentFilePath}>
+              <p className="text-xs text-muted truncate" title={currentFilePath}>
                 {currentProvider ? `${currentProvider}:` : ""}
                 {currentFilePath}
               </p>
@@ -457,7 +457,7 @@ export default function DocumentsApp() {
           />
 
           {/* Status bar */}
-          <div className="shrink-0 h-8 border-t border-primary bg-secondary flex items-center px-4 gap-4 text-2xs text-muted select-none overflow-hidden">
+          <div className="shrink-0 h-8 border-t border-primary bg-secondary flex items-center px-4 gap-4 text-xs text-muted select-none overflow-hidden">
             <span className="shrink-0">{stats.words} words</span>
             <span className="shrink-0">{stats.chars} chars</span>
             {selection && <span className="text-accent-soft font-semibold shrink-0">{selection.end - selection.start} chars selected</span>}
@@ -500,7 +500,7 @@ export default function DocumentsApp() {
                   type="button"
                   onClick={() => handlePanelToggle("preview")}
                   className={cn(
-                    "px-2.5 py-1 text-2xs font-medium transition-colors focus-ring cursor-pointer",
+                    "px-2.5 py-1 text-xs font-medium transition-colors focus-ring cursor-pointer",
                     rightPanel === "preview" ? "bg-accent text-on-accent" : "text-muted hover:text-primary",
                   )}
                 >
@@ -510,7 +510,7 @@ export default function DocumentsApp() {
                   type="button"
                   onClick={() => handlePanelToggle("ai")}
                   className={cn(
-                    "px-2.5 py-1 text-2xs font-medium transition-colors focus-ring cursor-pointer",
+                    "px-2.5 py-1 text-xs font-medium transition-colors focus-ring cursor-pointer",
                     rightPanel === "ai" ? "bg-accent text-on-accent" : "text-muted hover:text-primary",
                   )}
                 >

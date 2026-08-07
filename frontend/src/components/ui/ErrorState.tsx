@@ -41,9 +41,9 @@ export default function ErrorState({ title = "Something went wrong", error, onRe
   return (
     <div className={cn("px-3 py-4 text-center", className)} role="alert">
       <p className="text-sm text-warning">{title}</p>
-      <p className="text-2xs text-muted mt-1">{message}</p>
+      <p className="text-xs text-muted mt-1">{message}</p>
       {onRetry && (
-        <button type="button" onClick={onRetry} className="mt-2 text-2xs text-accent hover:text-accent-soft transition-colors focus-ring cursor-pointer">
+        <button type="button" onClick={onRetry} className="mt-2 text-xs text-accent hover:text-accent-soft transition-colors focus-ring cursor-pointer">
           {retryLabel}
         </button>
       )}

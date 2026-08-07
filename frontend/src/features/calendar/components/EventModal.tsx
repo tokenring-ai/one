@@ -138,7 +138,7 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
         <div className="px-5 py-4 space-y-4 overflow-y-auto">
           {/* Title */}
           <div>
-            <label className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">Title</label>
+            <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">Title</label>
             <input
               ref={titleRef}
               value={title}
@@ -153,7 +153,7 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
           {/* Date + All-day */}
           <div className="flex items-center gap-3">
             <div className="flex-1">
-              <label className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">Date</label>
+              <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">Date</label>
               <input
                 type="date"
                 value={date}
@@ -172,7 +172,7 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
           {!allDay && (
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">Start time</label>
+                <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">Start time</label>
                 <input
                   type="time"
                   value={startTime}
@@ -182,7 +182,7 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
                 />
               </div>
               <div className="flex-1">
-                <label className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">End time</label>
+                <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">End time</label>
                 <input
                   type="time"
                   value={endTime}
@@ -197,7 +197,7 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
           {/* Type — locked for RPC events */}
           {!typeLocked && (
             <div>
-              <label className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1.5">Event type</label>
+              <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1.5">Event type</label>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -234,7 +234,7 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
                 </button>
               </div>
               {type === "calendar" && (
-                <p className="text-2xs text-muted mt-1.5">
+                <p className="text-xs text-muted mt-1.5">
                   {provider ? `Saves to provider “${provider}”.` : "No calendar provider connected — saved locally only."}
                 </p>
               )}
@@ -245,7 +245,7 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
           {type === "calendar" && (
             <>
               <div>
-                <label className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">
+                <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">
                   <span className="inline-flex items-center gap-1">
                     <MapPin size={10} /> Location
                   </span>
@@ -259,7 +259,7 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
                 />
               </div>
               <div>
-                <label className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">Description</label>
+                <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">Description</label>
                 <textarea
                   value={description}
                   onChange={e => setDescription(e.target.value)}
@@ -275,7 +275,7 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
           {/* Workflow / Agent selector */}
           {type === "workflow" && (
             <div>
-              <label className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">Workflow</label>
+              <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">Workflow</label>
               {workflows.isLoading ? (
                 <div className="flex items-center gap-2 text-muted text-xs py-2">
                   <Loader2 size={14} className="animate-spin" /> Loading…
@@ -304,7 +304,7 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
 
           {type === "agent" && (
             <div>
-              <label className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">Agent type</label>
+              <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">Agent type</label>
               {agentTypes.isLoading ? (
                 <div className="flex items-center gap-2 text-muted text-xs py-2">
                   <Loader2 size={14} className="animate-spin" /> Loading…
@@ -332,7 +332,7 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
           {/* Color — local display color (RPC events keep accent) */}
           {!isRpc && (
             <div>
-              <label className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1.5">Color</label>
+              <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1.5">Color</label>
               <div className="flex gap-2">
                 {EVENT_COLORS.map(c => (
                   <button

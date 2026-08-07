@@ -362,7 +362,7 @@ export default function CalendarApp() {
         </h2>
 
         {(eventsLoading || eventsRefreshing) && (
-          <span className="text-2xs text-muted flex items-center gap-1 ml-1" role="status">
+          <span className="text-xs text-muted flex items-center gap-1 ml-1" role="status">
             <Loader2 className="w-3 h-3 animate-spin" />
             {eventsLoading ? "Loading events…" : "Refreshing…"}
           </span>
@@ -442,7 +442,7 @@ export default function CalendarApp() {
         </div>
       )}
       {noProviders && (
-        <div className="shrink-0 px-4 py-2 border-b border-primary bg-secondary/50 text-2xs text-muted">
+        <div className="shrink-0 px-4 py-2 border-b border-primary bg-secondary/50 text-xs text-muted">
           No calendar providers configured. You can still create local workflow/agent events. Add a calendar plugin (e.g. Google Calendar) to sync remote
           events.
         </div>

@@ -87,26 +87,26 @@ function PluginCard({ plugin, selected, onSelect }: { plugin: InstalledPlugin; s
           <div className="flex items-center gap-2 flex-wrap mb-0.5">
             <span className="text-sm font-semibold text-primary truncate">{plugin.displayName}</span>
             {plugin.hasConfig && (
-              <span className="inline-flex items-center gap-0.5 text-2xs px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full shrink-0">
+              <span className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full shrink-0">
                 <Settings2 className="w-2.5 h-2.5" />
                 configurable
               </span>
             )}
           </div>
           <div className="flex items-center gap-2 mb-0.5 min-w-0">
-            <span className="text-2xs text-muted font-mono truncate" title={plugin.name}>
+            <span className="text-xs text-muted font-mono truncate" title={plugin.name}>
               {plugin.name}
             </span>
-            <span className="text-2xs text-muted font-mono shrink-0">v{plugin.version}</span>
+            <span className="text-xs text-muted font-mono shrink-0">v{plugin.version}</span>
           </div>
-          <p className="text-2xs text-muted line-clamp-2">{plugin.description || "No description"}</p>
+          <p className="text-xs text-muted line-clamp-2">{plugin.description || "No description"}</p>
         </div>
         <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" aria-label="Installed" />
       </button>
       {plugin.hasConfig && (
         <Link
           to={configHref}
-          className="inline-flex items-center gap-1 text-2xs px-2 py-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors focus-ring shrink-0 self-start"
+          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors focus-ring shrink-0 self-start"
           title={`Configure ${plugin.displayName}`}
         >
           <Settings2 className="w-3 h-3" />
@@ -130,7 +130,7 @@ function PluginDetail({ plugin, onClose }: { plugin: InstalledPlugin; onClose: (
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <h2 className="text-sm font-semibold text-primary truncate">{plugin.displayName}</h2>
-              <p className="text-2xs text-muted font-mono truncate" title={plugin.name}>
+              <p className="text-xs text-muted font-mono truncate" title={plugin.name}>
                 {plugin.name}
               </p>
             </div>
@@ -148,7 +148,7 @@ function PluginDetail({ plugin, onClose }: { plugin: InstalledPlugin; onClose: (
 
       <p className="text-xs text-secondary whitespace-pre-wrap">{plugin.description || "No description provided."}</p>
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-2xs">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
         <dt className="text-muted">Version</dt>
         <dd className="font-mono text-primary">v{plugin.version}</dd>
         <dt className="text-muted">Package</dt>
@@ -269,12 +269,12 @@ export default function PluginsApp() {
             <div className="flex flex-wrap items-center gap-2">
               {showStats && (
                 <>
-                  <span className="text-2xs px-2 py-0.5 bg-secondary border border-primary rounded-full text-muted">{installedPlugins.length} installed</span>
-                  <span className="text-2xs px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-full">
+                  <span className="text-xs px-2 py-0.5 bg-secondary border border-primary rounded-full text-muted">{installedPlugins.length} installed</span>
+                  <span className="text-xs px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-full">
                     {configurableCount} configurable
                   </span>
                   {hasActiveFilters && (
-                    <span className="text-2xs px-2 py-0.5 bg-secondary border border-primary rounded-full text-muted">Showing {filteredPlugins.length}</span>
+                    <span className="text-xs px-2 py-0.5 bg-secondary border border-primary rounded-full text-muted">Showing {filteredPlugins.length}</span>
                   )}
                 </>
               )}
@@ -302,7 +302,7 @@ export default function PluginsApp() {
                   </button>
                 )}
               </div>
-              <label className="flex items-center gap-1.5 shrink-0 text-2xs text-muted">
+              <label className="flex items-center gap-1.5 shrink-0 text-xs text-muted">
                 <span className="sr-only sm:not-sr-only">Sort</span>
                 <select
                   value={sort}
@@ -323,8 +323,8 @@ export default function PluginsApp() {
           {/* Installed plugins */}
           <section>
             <div className="flex items-center justify-between mb-3 px-1">
-              <p className="text-2xs font-bold text-muted uppercase tracking-widest">Installed</p>
-              <Link to="/configuration" className="text-2xs text-muted hover:text-primary underline-offset-2 hover:underline focus-ring rounded">
+              <p className="text-xs font-bold text-muted uppercase tracking-widest">Installed</p>
+              <Link to="/configuration" className="text-xs text-muted hover:text-primary underline-offset-2 hover:underline focus-ring rounded">
                 Open configuration
               </Link>
             </div>
@@ -348,7 +348,7 @@ export default function PluginsApp() {
                   <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
                     <Package className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
                     <p className="text-sm font-medium text-secondary mb-1">No plugins installed</p>
-                    <p className="text-2xs text-muted max-w-sm mx-auto">
+                    <p className="text-xs text-muted max-w-sm mx-auto">
                       Plugins are bundled with your TokenRing instance at startup. Once loaded, they appear here for inspection and configuration.
                     </p>
                   </div>
@@ -356,7 +356,7 @@ export default function PluginsApp() {
                   <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
                     <Search className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
                     <p className="text-sm font-medium text-secondary mb-1">No matching plugins</p>
-                    <p className="text-2xs text-muted max-w-sm mx-auto mb-3">
+                    <p className="text-xs text-muted max-w-sm mx-auto mb-3">
                       Nothing matches{search.trim() ? ` “${search.trim()}”` : ""}
                       {filter === "configurable" ? " in configurable plugins" : ""}.
                     </p>
@@ -366,7 +366,7 @@ export default function PluginsApp() {
                         setSearch("");
                         setFilter("all");
                       }}
-                      className="text-2xs text-accent hover:text-accent-soft transition-colors focus-ring cursor-pointer"
+                      className="text-xs text-accent hover:text-accent-soft transition-colors focus-ring cursor-pointer"
                     >
                       Clear filters
                     </button>
@@ -396,11 +396,11 @@ export default function PluginsApp() {
 
           {/* Plugin store — no registry API yet */}
           <section>
-            <p className="text-2xs font-bold text-muted uppercase tracking-widest px-1 mb-3">Plugin Store</p>
+            <p className="text-xs font-bold text-muted uppercase tracking-widest px-1 mb-3">Plugin Store</p>
             <div className="px-6 py-10 bg-secondary border border-primary border-dashed rounded-xl text-center">
               <Store className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
               <p className="text-sm font-medium text-secondary mb-1">Coming soon</p>
-              <p className="text-2xs text-muted max-w-xs mx-auto">
+              <p className="text-xs text-muted max-w-xs mx-auto">
                 Browse and install community plugins from the TokenRing plugin registry. Install, enable, and disable from the store are not available via RPC
                 yet.
               </p>

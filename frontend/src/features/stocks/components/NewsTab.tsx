@@ -111,8 +111,8 @@ export default function NewsTab({ symbol, symbolId }: NewsTabProps) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-primary leading-snug mb-1">{n.headline}</p>
               <div className="flex items-center gap-3">
-                {n.provider && <span className="text-2xs text-muted">{n.provider}</span>}
-                {n.date && <span className="text-2xs text-muted font-mono">{n.date}</span>}
+                {n.provider && <span className="text-xs text-muted">{n.provider}</span>}
+                {n.date && <span className="text-xs text-muted font-mono">{n.date}</span>}
               </div>
             </div>
             {n.link && (

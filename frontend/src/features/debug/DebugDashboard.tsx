@@ -2,6 +2,7 @@ import Editor from "@monaco-editor/react";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Bug, Camera, CircleDot, Cpu, FileJson, Loader2, RefreshCw, Server, Square, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
@@ -164,7 +165,7 @@ export default function DebugDashboard() {
     <div className="flex flex-col h-full bg-primary">
       <AppPageHeader title="Debugging" subtitle="Capture and inspect app and agent state" icon={<Bug />} iconGradient="from-rose-500 to-red-600" size="compact">
         {isRecording && (
-          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/10 text-red-500 text-2xs font-medium">
+          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/10 text-red-500 text-xs font-medium">
             <CircleDot className="w-3 h-3 animate-pulse" />
             Recording · {captureCount} captured
           </span>
@@ -187,6 +188,7 @@ export default function DebugDashboard() {
         className="flex-1"
         navigation={
           <div className="h-full flex flex-col min-h-0 bg-secondary">
+            <NavigationSidebarHeader title="Debug" meta={navigationTab === "snapshots" ? snapshotList.length : undefined} />
             <div className="shrink-0 grid grid-cols-2 gap-1 p-1.5 border-b border-primary" role="tablist" aria-label="Debug navigation">
               <button
                 type="button"
@@ -204,13 +206,13 @@ export default function DebugDashboard() {
                 onClick={() => setNavigationTab("snapshots")}
                 className={`px-2 py-1.5 rounded-md text-xs font-medium focus-ring ${navigationTab === "snapshots" ? "bg-active text-primary" : "text-muted hover:text-primary hover:bg-hover"}`}
               >
-                Snapshots <span className="ml-1 text-2xs text-muted">{snapshotList.length}</span>
+                Snapshots <span className="ml-1 text-xs text-muted">{snapshotList.length}</span>
               </button>
             </div>
             {navigationTab === "capture" && (
               <div className="flex-1 bg-secondary flex flex-col min-h-0">
                 <div className="px-3 py-2 border-b border-primary">
-                  <h2 className="text-2xs font-bold text-muted uppercase tracking-widest">Capture targets</h2>
+                  <h2 className="text-xs font-bold text-muted uppercase tracking-widest">Capture targets</h2>
                 </div>
 
                 <div className="flex-1 overflow-y-auto min-h-0">
@@ -244,7 +246,7 @@ export default function DebugDashboard() {
                               )}
                               <span className="min-w-0 flex-1">
                                 <span className="block text-xs text-primary truncate">{target.label}</span>
-                                <span className="block text-2xs text-muted truncate">{target.description}</span>
+                                <span className="block text-xs text-muted truncate">{target.description}</span>
                               </span>
                             </label>
                           </li>
@@ -266,7 +268,7 @@ export default function DebugDashboard() {
                   </button>
 
                   <div className="flex items-center gap-2">
-                    <label htmlFor="debug-interval" className="text-2xs font-bold text-muted uppercase tracking-widest">
+                    <label htmlFor="debug-interval" className="text-xs font-bold text-muted uppercase tracking-widest">
                       Every
                     </label>
                     <select
@@ -297,7 +299,7 @@ export default function DebugDashboard() {
                     {isRecording ? "Stop recording" : "Record"}
                   </button>
 
-                  {recording.data?.lastError && <p className="text-2xs text-warning">{recording.data.lastError}</p>}
+                  {recording.data?.lastError && <p className="text-xs text-warning">{recording.data.lastError}</p>}
                 </div>
               </div>
             )}
@@ -305,8 +307,8 @@ export default function DebugDashboard() {
             {navigationTab === "snapshots" && (
               <div className="flex-1 bg-secondary flex flex-col min-h-0">
                 <div className="px-3 py-2 border-b border-primary flex items-center justify-between">
-                  <h2 className="text-2xs font-bold text-muted uppercase tracking-widest">Snapshots</h2>
-                  <span className="text-2xs text-muted">{snapshotList.length}</span>
+                  <h2 className="text-xs font-bold text-muted uppercase tracking-widest">Snapshots</h2>
+                  <span className="text-xs text-muted">{snapshotList.length}</span>
                 </div>
 
                 <div className="flex-1 overflow-y-auto min-h-0">
@@ -315,7 +317,7 @@ export default function DebugDashboard() {
                   ) : snapshots.error ? (
                     <ErrorState title="Could not load snapshots" error={snapshots.error} onRetry={() => void snapshots.mutate()} />
                   ) : snapshotList.length === 0 ? (
-                    <p className="px-3 py-6 text-center text-2xs text-muted">No snapshots yet. Capture one to get started.</p>
+                    <p className="px-3 py-6 text-center text-xs text-muted">No snapshots yet. Capture one to get started.</p>
                   ) : (
                     <ul className="p-2 space-y-1">
                       {snapshotList.map(snapshot => (
@@ -332,7 +334,7 @@ export default function DebugDashboard() {
                               className="flex-1 min-w-0 text-left cursor-pointer focus-ring rounded-md"
                             >
                               <span className="block text-xs text-primary truncate font-mono">{snapshot.name}</span>
-                              <span className="block text-2xs text-muted">
+                              <span className="block text-xs text-muted">
                                 {formatCaptureTime(snapshot.capturedAt)} · {formatBytes(snapshot.sizeBytes)}
                               </span>
                             </button>

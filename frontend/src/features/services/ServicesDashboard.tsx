@@ -110,21 +110,21 @@ function AgentContextBar({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between mb-4">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="inline-flex items-center gap-1.5 text-2xs font-bold text-muted uppercase tracking-widest">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted uppercase tracking-widest">
           <User className="w-3 h-3" />
           Agent context
         </span>
         {agents.isLoading && agentCount === 0 ? (
           <Loader2 className="w-3.5 h-3.5 text-muted animate-spin" />
         ) : agents.error && agentCount === 0 ? (
-          <span className="text-2xs text-warning flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-warning flex items-center gap-2 flex-wrap">
             Failed to load agents
             <button type="button" onClick={() => void agents.mutate()} className="underline-offset-2 hover:underline focus-ring rounded text-accent">
               Retry
             </button>
           </span>
         ) : agentCount === 0 ? (
-          <span className="text-2xs text-muted flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs text-muted flex items-center gap-1.5 flex-wrap">
             No agents — browse only.
             <button
               type="button"
@@ -153,14 +153,14 @@ function AgentContextBar({
           <button
             type="button"
             onClick={() => void navigate(`/agent/${selectedAgent.id}`)}
-            className="text-2xs text-muted hover:text-primary underline-offset-2 hover:underline focus-ring rounded"
+            className="text-xs text-muted hover:text-primary underline-offset-2 hover:underline focus-ring rounded"
           >
             Open chat
           </button>
         ) : null}
       </div>
       {enabledLabel ? (
-        <span className="text-2xs px-2 py-0.5 bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/30 rounded-full">
+        <span className="text-xs px-2 py-0.5 bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/30 rounded-full">
           {enabledLabel}
         </span>
       ) : null}
@@ -531,7 +531,7 @@ function ToolsTab({
       <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
         <Wrench className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
         <p className="text-sm font-medium text-secondary mb-1">No tools available</p>
-        <p className="text-2xs text-muted max-w-sm mx-auto">Install plugins that register chat tools to see them here.</p>
+        <p className="text-xs text-muted max-w-sm mx-auto">Install plugins that register chat tools to see them here.</p>
       </div>
     );
   }
@@ -555,7 +555,7 @@ function ToolsTab({
       />
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-2xs text-muted px-1">
+        <p className="text-xs text-muted px-1">
           {total} tools across {totalPackages} {totalPackages === 1 ? "package" : "packages"}
           {searchQuery.trim() ? ` · ${filteredEntries.length} ${filteredEntries.length === 1 ? "match" : "matches"}` : ""}
         </p>
@@ -584,7 +584,7 @@ function ToolsTab({
                   >
                     {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-muted shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-muted shrink-0" />}
                     <span className="text-xs font-semibold text-primary font-mono truncate">{category}</span>
-                    <span className="text-2xs text-muted shrink-0">
+                    <span className="text-xs text-muted shrink-0">
                       {items.length} tools
                       {selectedAgentId ? ` · ${catEnabled} on` : ""}
                     </span>
@@ -594,7 +594,7 @@ function ToolsTab({
                       type="button"
                       onClick={() => onToggleCategory(items.map(i => i.toolName))}
                       disabled={busyAction !== null}
-                      className="text-2xs px-2 py-1 rounded-md border border-primary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring disabled:opacity-50"
+                      className="text-xs px-2 py-1 rounded-md border border-primary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring disabled:opacity-50"
                       title={allCatEnabled ? "Disable all in package" : "Enable all in package"}
                     >
                       {allCatEnabled ? "Disable all" : "Enable all"}
@@ -613,7 +613,7 @@ function ToolsTab({
                             <div className="text-xs font-mono text-primary truncate" title={toolName}>
                               {shortName}
                             </div>
-                            <div className="text-2xs text-muted font-mono truncate" title={toolName}>
+                            <div className="text-xs text-muted font-mono truncate" title={toolName}>
                               {toolName}
                             </div>
                           </div>
@@ -623,7 +623,7 @@ function ToolsTab({
                               onClick={() => onToggleTool(toolName)}
                               disabled={isBusy || busyAction !== null}
                               className={cn(
-                                "inline-flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium border transition-colors focus-ring disabled:opacity-50",
+                                "inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors focus-ring disabled:opacity-50",
                                 isEnabled
                                   ? "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/30 hover:bg-violet-500/20"
                                   : "bg-tertiary text-muted border-primary hover:text-primary hover:bg-hover",
@@ -718,7 +718,7 @@ function ModelsTab({
       <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
         <Cpu className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
         <p className="text-sm font-medium text-secondary mb-1">No models available</p>
-        <p className="text-2xs text-muted max-w-sm mx-auto">Configure AI providers in Configuration to register chat models.</p>
+        <p className="text-xs text-muted max-w-sm mx-auto">Configure AI providers in Configuration to register chat models.</p>
       </div>
     );
   }
@@ -740,7 +740,7 @@ function ModelsTab({
               key={opt.id}
               onClick={() => onFilterChange(opt.id)}
               className={cn(
-                "px-2.5 py-1 rounded-full text-2xs font-medium border transition-colors focus-ring",
+                "px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus-ring",
                 filter === opt.id
                   ? "bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/40"
                   : "bg-secondary text-muted border-primary hover:text-primary",
@@ -764,7 +764,7 @@ function ModelsTab({
             <div key={provider} className="bg-secondary border border-primary rounded-xl overflow-hidden">
               <div className="px-4 py-2.5 bg-tertiary/50 border-b border-primary flex items-center justify-between">
                 <span className="text-xs font-semibold text-primary capitalize">{provider}</span>
-                <span className="text-2xs text-muted">{modelList.length} models</span>
+                <span className="text-xs text-muted">{modelList.length} models</span>
               </div>
               <div className="p-2 space-y-0.5">
                 {modelList.map(([modelId, modelInfo]) => (
@@ -774,12 +774,12 @@ function ModelsTab({
                       {modelId.split("/").pop()}
                     </span>
                     {modelInfo.hot ? (
-                      <span className="inline-flex items-center gap-0.5 text-2xs text-amber-600 dark:text-amber-400 shrink-0" title="Hot model">
+                      <span className="inline-flex items-center gap-0.5 text-xs text-amber-600 dark:text-amber-400 shrink-0" title="Hot model">
                         <Flame className="w-3 h-3" />
                         hot
                       </span>
                     ) : null}
-                    <span className="text-2xs text-muted ml-auto shrink-0">{modelInfo.status}</span>
+                    <span className="text-xs text-muted ml-auto shrink-0">{modelInfo.status}</span>
                   </div>
                 ))}
               </div>
@@ -843,7 +843,7 @@ function HooksTab({
       <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
         <Zap className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
         <p className="text-sm font-medium text-secondary mb-1">No lifecycle hooks available</p>
-        <p className="text-2xs text-muted max-w-sm mx-auto">Plugins register hooks that run around agent lifecycle events.</p>
+        <p className="text-xs text-muted max-w-sm mx-auto">Plugins register hooks that run around agent lifecycle events.</p>
       </div>
     );
   }
@@ -859,7 +859,7 @@ function HooksTab({
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <p className="text-2xs text-muted px-1">
+          <p className="text-xs text-muted px-1">
             {total} lifecycle hooks
             {searchQuery.trim() ? ` · ${filtered.length} match` : ""}
           </p>
@@ -868,7 +868,7 @@ function HooksTab({
               type="button"
               onClick={onToggleAll}
               disabled={busyAction !== null}
-              className="text-2xs px-2 py-1 rounded-md border border-primary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring disabled:opacity-50"
+              className="text-xs px-2 py-1 rounded-md border border-primary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring disabled:opacity-50"
             >
               {busyAction === "hooks:all" ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}
               {allEnabled ? "Disable all" : "Enable all"}
@@ -895,8 +895,8 @@ function HooksTab({
                 <div className={cn("w-2 h-2 rounded-full shrink-0 mt-1.5", isEnabled && selectedAgentId ? "bg-violet-500" : "bg-muted/50")} />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-mono font-medium text-primary">{hookInfo.displayName || hookName}</div>
-                  {hookInfo.description ? <div className="text-2xs text-muted mt-0.5">{hookInfo.description}</div> : null}
-                  <div className="text-2xs text-dim font-mono mt-0.5 truncate" title={hookName}>
+                  {hookInfo.description ? <div className="text-xs text-muted mt-0.5">{hookInfo.description}</div> : null}
+                  <div className="text-xs text-dim font-mono mt-0.5 truncate" title={hookName}>
                     {hookName}
                   </div>
                 </div>
@@ -906,7 +906,7 @@ function HooksTab({
                     onClick={() => onToggleHook(hookName)}
                     disabled={isBusy || busyAction !== null}
                     className={cn(
-                      "inline-flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium border transition-colors focus-ring disabled:opacity-50 shrink-0 mt-0.5",
+                      "inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors focus-ring disabled:opacity-50 shrink-0 mt-0.5",
                       isEnabled
                         ? "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/30 hover:bg-violet-500/20"
                         : "bg-tertiary text-muted border-primary hover:text-primary hover:bg-hover",
@@ -990,7 +990,7 @@ function LogsTab({
               key={opt.id}
               onClick={() => onLevelFilterChange(opt.id)}
               className={cn(
-                "px-2.5 py-1 rounded-full text-2xs font-medium border transition-colors focus-ring",
+                "px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus-ring",
                 levelFilter === opt.id
                   ? opt.id === "error"
                     ? "bg-red-500/15 text-red-500 border-red-500/40"
@@ -1006,7 +1006,7 @@ function LogsTab({
             type="button"
             onClick={() => onAutoScrollChange(!autoScroll)}
             className={cn(
-              "px-2.5 py-1 rounded-full text-2xs font-medium border transition-colors focus-ring ml-1",
+              "px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus-ring ml-1",
               autoScroll ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" : "bg-secondary text-muted border-primary",
             )}
             aria-pressed={autoScroll}
@@ -1017,14 +1017,14 @@ function LogsTab({
         <SearchField value={searchQuery} onChange={onSearchChange} placeholder="Filter log messages…" aria-label="Filter logs" />
       </div>
 
-      <p className="text-2xs text-muted px-1">
+      <p className="text-xs text-muted px-1">
         {entries.length} log {entries.length === 1 ? "entry" : "entries"}
         {filtered.length !== entries.length ? ` · showing ${filtered.length}` : ""}
         {logs.isLoading || logs.isValidating ? " · streaming…" : ""}
       </p>
 
       <div className="bg-secondary border border-primary rounded-xl overflow-hidden">
-        <div ref={listRef} className="font-mono text-2xs divide-y divide-primary max-h-[min(70vh,720px)] overflow-y-auto">
+        <div ref={listRef} className="font-mono text-xs divide-y divide-primary max-h-[min(70vh,720px)] overflow-y-auto">
           {filtered.length === 0 ? (
             <p className="text-muted text-center py-8">{entries.length === 0 ? "No log entries yet" : "No logs match the current filters"}</p>
           ) : (

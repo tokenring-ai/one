@@ -335,18 +335,18 @@ export default function TerminalApp() {
             {/* Status bar */}
             <div className="shrink-0 border-t border-primary bg-secondary/50 px-4 py-1.5 flex items-center gap-3">
               <div className={`w-2 h-2 rounded-full shrink-0 ${activeTerminal.running ? "bg-emerald-500" : "bg-muted/50"}`} />
-              <span className="text-2xs font-mono text-secondary truncate" title={activeTerminal.workingDirectory}>
+              <span className="text-xs font-mono text-secondary truncate" title={activeTerminal.workingDirectory}>
                 {activeTerminal.workingDirectory}
               </span>
-              <span className="text-2xs font-mono text-muted shrink-0" title={`Provider: ${activeTerminal.providerName}`}>
+              <span className="text-xs font-mono text-muted shrink-0" title={`Provider: ${activeTerminal.providerName}`}>
                 {activeTerminal.providerName}
               </span>
               {activeTerminal.connectedAgentIds.length > 0 && (
-                <span className="text-2xs font-mono text-muted shrink-0" title={activeTerminal.connectedAgentIds.join(", ")}>
+                <span className="text-xs font-mono text-muted shrink-0" title={activeTerminal.connectedAgentIds.join(", ")}>
                   {activeTerminal.connectedAgentIds.length} agent{activeTerminal.connectedAgentIds.length === 1 ? "" : "s"}
                 </span>
               )}
-              <span className="ml-auto shrink-0 text-2xs font-mono text-muted">
+              <span className="ml-auto shrink-0 text-xs font-mono text-muted">
                 {activeTerminal.running ? (
                   "running"
                 ) : activeTerminal.exitCode !== null ? (
@@ -366,7 +366,7 @@ export default function TerminalApp() {
             <div className="text-center">
               <Terminal className="w-12 h-12 text-muted mx-auto mb-4 opacity-30" />
               <p className="text-sm font-medium text-primary mb-1">{missingTerminal ? "Terminal not found" : "No terminals"}</p>
-              <p className="text-2xs text-muted max-w-xs mx-auto mb-4">
+              <p className="text-xs text-muted max-w-xs mx-auto mb-4">
                 {missingTerminal ? `'${activeTerminalName}' is no longer available. Open another tab or start a new one.` : "Create a terminal to get started"}
               </p>
               <button

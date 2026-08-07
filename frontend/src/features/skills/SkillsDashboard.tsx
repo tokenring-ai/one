@@ -81,7 +81,7 @@ function TrySkillDialog({
           <div className="px-4 py-4 space-y-3">
             <p className="text-sm text-secondary">Runs the skill on the selected agent and opens chat. Disabled skills are enabled automatically first.</p>
             <div>
-              <label htmlFor="try-skill-args" className="block text-2xs font-bold text-muted uppercase tracking-widest mb-1.5">
+              <label htmlFor="try-skill-args" className="block text-xs font-bold text-muted uppercase tracking-widest mb-1.5">
                 Arguments {skill.argumentHint ? <span className="font-mono normal-case tracking-normal">({skill.argumentHint})</span> : "(optional)"}
               </label>
               <input
@@ -421,7 +421,7 @@ export default function SkillsDashboard() {
           {/* Agent context + stats */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 text-2xs font-bold text-muted uppercase tracking-widest">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted uppercase tracking-widest">
                 <User className="w-3 h-3" />
                 Agent context
               </span>
@@ -462,16 +462,16 @@ export default function SkillsDashboard() {
                 <button
                   type="button"
                   onClick={() => void navigate(`/agent/${selectedAgent.id}`)}
-                  className="text-2xs text-muted hover:text-primary underline-offset-2 hover:underline focus-ring rounded"
+                  className="text-xs text-muted hover:text-primary underline-offset-2 hover:underline focus-ring rounded"
                 >
                   Open chat
                 </button>
               )}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-2xs px-2 py-0.5 bg-secondary border border-primary rounded-full text-muted">{skills.length} installed</span>
+              <span className="text-xs px-2 py-0.5 bg-secondary border border-primary rounded-full text-muted">{skills.length} installed</span>
               {effectiveAgentId && (
-                <span className="text-2xs px-2 py-0.5 bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/30 rounded-full">
+                <span className="text-xs px-2 py-0.5 bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/30 rounded-full">
                   {enabledCount} enabled
                 </span>
               )}
@@ -480,7 +480,7 @@ export default function SkillsDashboard() {
 
           {/* Install skill */}
           <section>
-            <p className="text-2xs font-bold text-muted uppercase tracking-widest px-1 mb-3">Install skill</p>
+            <p className="text-xs font-bold text-muted uppercase tracking-widest px-1 mb-3">Install skill</p>
             <div className="flex flex-col sm:flex-row gap-2 p-4 bg-secondary border border-primary rounded-xl">
               <div className="relative flex-1">
                 <Download className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
@@ -507,7 +507,7 @@ export default function SkillsDashboard() {
                 Download
               </button>
             </div>
-            <p className="text-2xs text-muted mt-2 px-1">
+            <p className="text-xs text-muted mt-2 px-1">
               Skills are zip archives containing a <code className="font-mono text-secondary">SKILL.md</code> file. Installed skills register as{" "}
               <code className="font-mono text-secondary">/skill-name</code> commands when invocable.
             </p>
@@ -516,7 +516,7 @@ export default function SkillsDashboard() {
           {/* Installed list */}
           <section>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 px-1">
-              <p className="text-2xs font-bold text-muted uppercase tracking-widest">Installed</p>
+              <p className="text-xs font-bold text-muted uppercase tracking-widest">Installed</p>
               <div className="relative w-full max-w-xs">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
                 <input
@@ -574,7 +574,7 @@ export default function SkillsDashboard() {
               <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
                 <Sparkles className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
                 <p className="text-sm font-medium text-secondary mb-1">{emptyBecauseFilter ? "No matching skills" : "No skills installed"}</p>
-                <p className="text-2xs text-muted max-w-sm mx-auto">
+                <p className="text-xs text-muted max-w-sm mx-auto">
                   {searchQuery
                     ? `Nothing matches “${searchQuery}”.`
                     : statusFilter !== "all"
@@ -619,19 +619,19 @@ export default function SkillsDashboard() {
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
                           <span className="text-sm font-semibold text-primary font-mono truncate">/{skill.name}</span>
                           {skill.enabled ? (
-                            <span className="text-2xs px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400">enabled</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400">enabled</span>
                           ) : (
-                            <span className="text-2xs px-1.5 py-0.5 rounded-full bg-tertiary text-muted">disabled</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-tertiary text-muted">disabled</span>
                           )}
                           {skill.context === "fork" && (
-                            <span className="text-2xs px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">fork</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">fork</span>
                           )}
-                          {skill.userInvocable === false && <span className="text-2xs px-1.5 py-0.5 rounded-full bg-tertiary text-muted">internal</span>}
+                          {skill.userInvocable === false && <span className="text-xs px-1.5 py-0.5 rounded-full bg-tertiary text-muted">internal</span>}
                         </div>
-                        <p className="text-2xs text-muted line-clamp-2 mb-1">{skill.description}</p>
-                        {skill.argumentHint && <p className="text-2xs text-dim font-mono">args: {skill.argumentHint}</p>}
+                        <p className="text-xs text-muted line-clamp-2 mb-1">{skill.description}</p>
+                        {skill.argumentHint && <p className="text-xs text-dim font-mono">args: {skill.argumentHint}</p>}
                         {skill.sourceUrl && (
-                          <p className="text-2xs text-dim font-mono truncate mt-0.5" title={skill.sourceUrl}>
+                          <p className="text-xs text-dim font-mono truncate mt-0.5" title={skill.sourceUrl}>
                             {skill.sourceUrl}
                           </p>
                         )}

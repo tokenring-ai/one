@@ -20,7 +20,7 @@ export default function ProviderSelector({
 
   if (loading && availableProviders.length === 0) {
     return (
-      <span className="text-2xs text-muted flex items-center gap-1">
+      <span className="text-xs text-muted flex items-center gap-1">
         <Loader2 className="w-3 h-3 animate-spin" /> Loading providers
       </span>
     );
@@ -28,7 +28,7 @@ export default function ProviderSelector({
 
   if (error && availableProviders.length === 0) {
     return (
-      <span className="text-2xs text-warning flex items-center gap-1.5">
+      <span className="text-xs text-warning flex items-center gap-1.5">
         <WifiOff className="w-3 h-3" /> Providers unavailable
         {onRetry && (
           <button type="button" onClick={onRetry} className="text-accent hover:underline cursor-pointer">
@@ -41,7 +41,7 @@ export default function ProviderSelector({
 
   if (availableProviders.length === 0) {
     return (
-      <span className="text-2xs text-muted flex items-center gap-1" title="Configure a calendar plugin (e.g. Google Calendar) to sync remote events">
+      <span className="text-xs text-muted flex items-center gap-1" title="Configure a calendar plugin (e.g. Google Calendar) to sync remote events">
         <WifiOff className="w-3 h-3" /> No providers
       </span>
     );
@@ -63,7 +63,7 @@ export default function ProviderSelector({
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
           <div className="absolute top-full right-0 mt-1 w-48 bg-secondary border border-primary rounded-xl shadow-card z-50 overflow-hidden">
             <div className="px-3 py-2 border-b border-primary">
-              <p className="text-2xs font-semibold text-muted uppercase tracking-wider">Switch Provider</p>
+              <p className="text-xs font-semibold text-muted uppercase tracking-wider">Switch Provider</p>
             </div>
             {availableProviders.map(p => (
               <button

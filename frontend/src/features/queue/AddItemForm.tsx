@@ -58,7 +58,7 @@ export default function AddItemForm({ queueName, onCreated, onCancel }: AddItemF
       <div className="flex items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-primary">Add to queue "{queueName}"</h3>
-          <p className="text-2xs text-muted mt-0.5">A fresh agent will be spawned to run this task</p>
+          <p className="text-xs text-muted mt-0.5">A fresh agent will be spawned to run this task</p>
         </div>
         <button type="button" onClick={onCancel} className="p-1.5 text-muted hover:text-primary rounded-md focus-ring cursor-pointer" aria-label="Cancel">
           <X className="w-4 h-4" />
@@ -66,7 +66,7 @@ export default function AddItemForm({ queueName, onCreated, onCancel }: AddItemF
       </div>
 
       <label className="block space-y-1">
-        <span className="text-2xs font-medium text-muted">Description</span>
+        <span className="text-xs font-medium text-muted">Description</span>
         <input
           type="text"
           value={name}
@@ -79,7 +79,7 @@ export default function AddItemForm({ queueName, onCreated, onCancel }: AddItemF
       </label>
 
       <label className="block space-y-1">
-        <span className="text-2xs font-medium text-muted">Task / prompt</span>
+        <span className="text-xs font-medium text-muted">Task / prompt</span>
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}

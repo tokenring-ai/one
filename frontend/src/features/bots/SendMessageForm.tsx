@@ -88,7 +88,7 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
       <div className="flex items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-primary">Send a message</h3>
-          <p className="text-2xs text-muted mt-0.5">Delivered by the messaging service, without involving an agent</p>
+          <p className="text-xs text-muted mt-0.5">Delivered by the messaging service, without involving an agent</p>
         </div>
         <button type="button" onClick={onCancel} className="p-1.5 text-muted hover:text-primary rounded-md focus-ring cursor-pointer" aria-label="Cancel">
           <X className="w-4 h-4" />
@@ -96,7 +96,7 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
       </div>
 
       <label className="block space-y-1">
-        <span className="text-2xs font-medium text-muted">Target</span>
+        <span className="text-xs font-medium text-muted">Target</span>
         <select value={selected} onChange={e => setSelected(e.target.value)} className={inputClass}>
           {groups.map(group => (
             <optgroup key={group} label={group}>
@@ -111,12 +111,12 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
           ))}
           <option value={CUSTOM_TARGET}>Another target…</option>
         </select>
-        {selected !== CUSTOM_TARGET && selectedOption ? <span className="block text-2xs text-muted font-mono">{selectedOption.target}</span> : null}
+        {selected !== CUSTOM_TARGET && selectedOption ? <span className="block text-xs text-muted font-mono">{selectedOption.target}</span> : null}
       </label>
 
       {selected === CUSTOM_TARGET ? (
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">service:userId or group:name</span>
+          <span className="text-xs font-medium text-muted">service:userId or group:name</span>
           <input
             type="text"
             value={customTarget}
@@ -127,12 +127,12 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
             spellCheck={false}
             autoComplete="off"
           />
-          <span className="block text-2xs text-muted">Examples: slack:C0123ABCD, telegram:123456789, group:dev-team</span>
+          <span className="block text-xs text-muted">Examples: slack:C0123ABCD, telegram:123456789, group:dev-team</span>
         </label>
       ) : null}
 
       <label className="block space-y-1">
-        <span className="text-2xs font-medium text-muted">Message</span>
+        <span className="text-xs font-medium text-muted">Message</span>
         <textarea
           value={message}
           onChange={e => setMessage(e.target.value)}
@@ -141,7 +141,7 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
           className={cn(inputClass, "resize-y min-h-[5rem]")}
           required
         />
-        <span className="flex items-center justify-between text-2xs text-muted">
+        <span className="flex items-center justify-between text-xs text-muted">
           <span>{serviceHint ? `Via ${serviceHint}` : "Pick a target to send"}</span>
           <span className="tabular-nums">{message.length.toLocaleString()} chars</span>
         </span>

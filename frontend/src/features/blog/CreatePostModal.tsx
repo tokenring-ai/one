@@ -90,12 +90,12 @@ export default function CreatePostModal({ provider, onClose, onCreated }: Create
         </div>
 
         <div className="px-5 py-4 space-y-4">
-          <p className="text-2xs text-muted">
+          <p className="text-xs text-muted">
             Creating on <span className="font-medium text-primary">{provider}</span>
           </p>
 
           <div>
-            <label htmlFor="create-post-title-input" className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">
+            <label htmlFor="create-post-title-input" className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">
               Title
             </label>
             <input
@@ -116,7 +116,7 @@ export default function CreatePostModal({ provider, onClose, onCreated }: Create
           </div>
 
           <div>
-            <label htmlFor="create-post-content" className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">
+            <label htmlFor="create-post-content" className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">
               Content <span className="font-normal normal-case tracking-normal">(Markdown)</span>
             </label>
             <textarea
@@ -131,7 +131,7 @@ export default function CreatePostModal({ provider, onClose, onCreated }: Create
           </div>
 
           <div>
-            <label htmlFor="create-post-tags" className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">
+            <label htmlFor="create-post-tags" className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">
               Tags <span className="font-normal normal-case tracking-normal">(comma-separated)</span>
             </label>
             <input

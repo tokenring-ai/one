@@ -58,7 +58,7 @@ export default function RpcEventDetail({
               {event.allDay ? " · All day" : event.startTime ? ` · ${event.startTime}${event.endTime ? ` – ${event.endTime}` : ""}` : ""}
             </span>
           </div>
-          {event.provider && <p className="text-2xs text-muted">Provider: {event.provider}</p>}
+          {event.provider && <p className="text-xs text-muted">Provider: {event.provider}</p>}
           {event.location && (
             <div className="flex items-start gap-2 text-sm text-muted">
               <MapPin size={14} className="shrink-0 mt-0.5" />
@@ -66,7 +66,7 @@ export default function RpcEventDetail({
             </div>
           )}
           {event.description && <p className="text-xs text-primary/80 pt-1 whitespace-pre-wrap">{event.description}</p>}
-          {!event.location && !event.description && <p className="text-2xs text-muted italic">No additional details</p>}
+          {!event.location && !event.description && <p className="text-xs text-muted italic">No additional details</p>}
         </div>
         <div className="px-5 pb-5 flex items-center gap-2">
           <button

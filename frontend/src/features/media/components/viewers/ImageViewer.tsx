@@ -99,7 +99,7 @@ export default function ImageViewer({
           <div className="flex flex-col items-center gap-2 text-center px-4">
             <ImageIcon className="w-10 h-10 text-muted opacity-40" />
             <p className="text-sm text-muted">Failed to load image</p>
-            <p className="text-2xs text-muted opacity-70 font-mono break-all">{image.filename}</p>
+            <p className="text-xs text-muted opacity-70 font-mono break-all">{image.filename}</p>
           </div>
         ) : (
           <img

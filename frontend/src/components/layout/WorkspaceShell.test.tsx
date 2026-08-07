@@ -2,12 +2,22 @@ import { beforeEach, describe, expect, it } from "bun:test";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import NavigationSidebarHeader from "./NavigationSidebarHeader.tsx";
 import WorkspaceShell from "./WorkspaceShell.tsx";
+
+function TestNavigation() {
+  return (
+    <div>
+      <NavigationSidebarHeader title="Test resources" />
+      <div>Only navigation copy</div>
+    </div>
+  );
+}
 
 function renderShell(hasSelection = true) {
   return render(
     <MemoryRouter>
-      <WorkspaceShell appId="test" title="Test app" navigationLabel="Test resources" hasSelection={hasSelection} navigation={<div>Only navigation copy</div>}>
+      <WorkspaceShell appId="test" title="Test app" navigationLabel="Test resources" hasSelection={hasSelection} navigation={<TestNavigation />}>
         <div>Main workspace</div>
       </WorkspaceShell>
     </MemoryRouter>,
@@ -47,7 +57,7 @@ describe("WorkspaceShell", () => {
 
     rerender(
       <MemoryRouter>
-        <WorkspaceShell appId="test" title="Test app" navigationLabel="Test resources" hasSelection navigation={<div>Only navigation copy</div>}>
+        <WorkspaceShell appId="test" title="Test app" navigationLabel="Test resources" hasSelection navigation={<TestNavigation />}>
           <div>Main workspace</div>
         </WorkspaceShell>
       </MemoryRouter>,

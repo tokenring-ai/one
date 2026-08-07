@@ -245,7 +245,7 @@ export default function ModelSelector({ agentId, triggerVariant = "default" }: M
                       <span className={providerColor}>{providerIcon}</span>
                       {provider}
                     </div>
-                    <span className="text-2xs font-mono text-muted px-1.5">{models.length}</span>
+                    <span className="text-xs font-mono text-muted px-1.5">{models.length}</span>
                   </div>
 
                   {/* Model List */}

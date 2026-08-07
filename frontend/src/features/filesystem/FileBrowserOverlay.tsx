@@ -377,7 +377,7 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
                   <button
                     type="button"
                     onClick={() => setShowHiddenFiles(!showHiddenFiles)}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-hover text-muted text-2xs transition-colors focus-ring"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-hover text-muted text-xs transition-colors focus-ring"
                     aria-label={showHiddenFiles ? "Hide hidden files" : "Show hidden files"}
                   >
                     {showHiddenFiles ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -387,7 +387,7 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-hover text-muted text-2xs transition-colors focus-ring"
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-hover text-muted text-xs transition-colors focus-ring"
                   aria-label="Upload files"
                 >
                   <Plus size={14} />
@@ -399,7 +399,7 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
               <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
                 <table ref={fileTableRef} className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="text-2xs text-muted font-semibold border-b border-primary">
+                    <tr className="text-xs text-muted font-semibold border-b border-primary">
                       <th className="pl-2 pr-4 py-2 font-medium w-8">
                         <div className="w-3 h-3 border border-primary rounded-sm bg-tertiary"></div>
                       </th>
@@ -525,7 +525,7 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
               </div>
 
               <div className="h-9 border-t border-primary bg-tertiary flex items-center justify-between px-4 shrink-0">
-                <span className="text-2xs text-muted">{fsStateData?.selectedFiles.length ?? 0} items in chat</span>
+                <span className="text-xs text-muted">{fsStateData?.selectedFiles.length ?? 0} items in chat</span>
               </div>
 
               {uploadingFiles.length > 0 && (
@@ -551,7 +551,7 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
                       <h3 className="text-sm font-medium text-primary truncate" title={selectedFile}>
                         {getBasename(selectedFile)}
                       </h3>
-                      <p className="text-2xs text-muted mt-0.5">{selectedFile.split(".").pop()?.toUpperCase()} File</p>
+                      <p className="text-xs text-muted mt-0.5">{selectedFile.split(".").pop()?.toUpperCase()} File</p>
                     </div>
                   </div>
 
@@ -598,7 +598,7 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
                     </button>
                   </div>
 
-                  <div className="p-3 text-2xs text-muted space-y-1 bg-tertiary">
+                  <div className="p-3 text-xs text-muted space-y-1 bg-tertiary">
                     <div className="flex justify-between">
                       <span>Path</span>
                       <span className="text-primary truncate ml-4" title={selectedFile}>
@@ -625,7 +625,7 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
               <div onMouseDown={handleMouseDown} className="absolute top-0 left-0 right-0 h-1 cursor-ns-resize hover:bg-accent/50 transition-colors z-10" />
               <div className="px-4 py-2 flex items-center justify-between border-b border-primary bg-secondary">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xs font-semibold text-muted uppercase tracking-widest">Preview</span>
+                  <span className="text-xs font-semibold text-muted uppercase tracking-widest">Preview</span>
                   <span className="text-xs text-muted">•</span>
                   <span className="text-xs text-primary font-medium">{getBasename(selectedFile)}</span>
                 </div>

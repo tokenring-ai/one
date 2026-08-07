@@ -43,7 +43,7 @@ export default function AgentLaunchPanel({ selectedPaths, onClear }: AgentLaunch
     <div className="shrink-0 border-t border-primary bg-secondary px-4 py-3 flex items-center gap-3">
       <div className="flex items-center gap-2 shrink-0">
         <div className="w-5 h-5 bg-accent rounded-full flex items-center justify-center">
-          <span className="text-white text-2xs font-bold">{count}</span>
+          <span className="text-white text-xs font-bold">{count}</span>
         </div>
         <span className="text-sm font-medium text-primary">{count === 1 ? "1 file selected" : `${count} files selected`}</span>
       </div>

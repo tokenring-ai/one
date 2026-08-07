@@ -56,7 +56,7 @@ export default function VideoViewer({
         </div>
         {video.prompt && (
           <div className="w-full max-w-2xl shrink-0">
-            <p className="text-2xs font-medium text-muted uppercase tracking-wide mb-1">Prompt</p>
+            <p className="text-xs font-medium text-muted uppercase tracking-wide mb-1">Prompt</p>
             <p className="text-sm text-secondary italic line-clamp-4">{video.prompt}</p>
           </div>
         )}

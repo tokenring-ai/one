@@ -98,14 +98,14 @@ export default function SymbolSearchBox({ value, onChange, onSelect }: SymbolSea
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-accent-soft">{sym}</span>
-                    {r.ExchangeShortName && <span className="text-2xs text-muted">{r.ExchangeShortName}</span>}
+                    {r.ExchangeShortName && <span className="text-xs text-muted">{r.ExchangeShortName}</span>}
                   </div>
                   <div className="text-xs text-muted truncate">{r.Name ?? r.ShortName ?? ""}</div>
                 </div>
                 {r.Price != null && (
                   <div className="text-right shrink-0">
                     <div className="text-sm font-medium text-primary">${fmtPrice(r.Price)}</div>
-                    <div className={`text-2xs font-medium ${isUp ? "text-emerald-500" : isDown ? "text-red-500" : "text-muted"}`}>
+                    <div className={`text-xs font-medium ${isUp ? "text-emerald-500" : isDown ? "text-red-500" : "text-muted"}`}>
                       {changeSign(r.ChangePercent)}
                       {fmt(r.ChangePercent)}%
                     </div>

@@ -1,5 +1,6 @@
 import { ChevronRight, Database, Eye, Lock, Pencil, Plus, RefreshCw, Table2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import NavigationSidebarHeader from "../../../components/layout/NavigationSidebarHeader.tsx";
 import ErrorState from "../../../components/ui/ErrorState.tsx";
 import LoadingState from "../../../components/ui/LoadingState.tsx";
 import { cn } from "../../../lib/utils.ts";
@@ -50,27 +51,23 @@ export default function DatasourceSidebar({
 
   return (
     <>
-      <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-b border-primary">
-        <span className="text-2xs font-semibold text-muted uppercase tracking-wider">Datasources</span>
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            onClick={onRefresh}
-            className="p-1 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring"
-            title="Refresh"
-          >
-            <RefreshCw className="w-3 h-3" />
-          </button>
-          <button
-            type="button"
-            onClick={onAddDatasource}
-            className="p-1 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring"
-            title="Add datasource"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
+      <NavigationSidebarHeader
+        title="Datasources"
+        actions={[
+          {
+            icon: <RefreshCw className="w-3 h-3" />,
+            label: "Refresh",
+            title: "Refresh",
+            onClick: onRefresh,
+          },
+          {
+            icon: <Plus className="w-3.5 h-3.5" />,
+            label: "Add datasource",
+            title: "Add datasource",
+            onClick: onAddDatasource,
+          },
+        ]}
+      />
 
       <div className="flex-1 overflow-y-auto">
         {datasourcesLoading && datasources.length === 0 ? (
@@ -127,7 +124,7 @@ export default function DatasourceSidebar({
                           onChange={e => setTableFilter(e.target.value)}
                           placeholder="Filter tables…"
                           aria-label="Filter tables"
-                          className="w-full bg-input border border-primary rounded py-1 px-2 text-2xs text-primary placeholder-muted focus-accent"
+                          className="w-full bg-input border border-primary rounded py-1 px-2 text-xs text-primary placeholder-muted focus-accent"
                         />
                       </div>
                     )}
@@ -137,7 +134,7 @@ export default function DatasourceSidebar({
                     ) : tablesError ? (
                       <ErrorState title="Failed to load tables" error={tablesError} onRetry={onRefresh} variant="inline" className="py-4" />
                     ) : filteredTables.length === 0 ? (
-                      <p className="text-2xs text-muted px-3 py-4 text-center">{tableFilter ? `No tables matching "${tableFilter}"` : "No tables"}</p>
+                      <p className="text-xs text-muted px-3 py-4 text-center">{tableFilter ? `No tables matching "${tableFilter}"` : "No tables"}</p>
                     ) : (
                       filteredTables.map(table => (
                         <button

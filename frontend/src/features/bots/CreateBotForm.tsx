@@ -91,7 +91,7 @@ export default function CreateBotForm({ existingNames, services, onCreated, onCa
       <div className="flex items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-primary">New bot</h3>
-          <p className="text-2xs text-muted mt-0.5">Starts answering as soon as it is created — no restart</p>
+          <p className="text-xs text-muted mt-0.5">Starts answering as soon as it is created — no restart</p>
         </div>
         <button type="button" onClick={onCancel} className="p-1.5 text-muted hover:text-primary rounded-md focus-ring cursor-pointer" aria-label="Cancel">
           <X className="w-4 h-4" />
@@ -100,7 +100,7 @@ export default function CreateBotForm({ existingNames, services, onCreated, onCa
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Name</span>
+          <span className="text-xs font-medium text-muted">Name</span>
           <input
             type="text"
             value={name}
@@ -111,20 +111,20 @@ export default function CreateBotForm({ existingNames, services, onCreated, onCa
             autoComplete="off"
             autoFocus
           />
-          <span className={cn("block text-2xs", nameError ? "text-rose-500" : "text-muted")}>{nameError ?? "How you refer to the bot in commands"}</span>
+          <span className={cn("block text-xs", nameError ? "text-rose-500" : "text-muted")}>{nameError ?? "How you refer to the bot in commands"}</span>
         </label>
 
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Display name (optional)</span>
+          <span className="text-xs font-medium text-muted">Display name (optional)</span>
           <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder={trimmedName || "Helper"} className={inputClass} />
-          <span className="block text-2xs text-muted">Shown in this dashboard</span>
+          <span className="block text-xs text-muted">Shown in this dashboard</span>
         </label>
       </div>
 
       <label className="block space-y-1">
-        <span className="text-2xs font-medium text-muted">Agent type</span>
+        <span className="text-xs font-medium text-muted">Agent type</span>
         {agentTypes.isLoading && types.length === 0 ? (
-          <div className="flex items-center gap-2 text-2xs text-muted px-3 py-2 border border-primary rounded-lg">
+          <div className="flex items-center gap-2 text-xs text-muted px-3 py-2 border border-primary rounded-lg">
             <Loader2 className="w-3 h-3 animate-spin" /> Loading agent types…
           </div>
         ) : types.length === 0 ? (
@@ -138,12 +138,12 @@ export default function CreateBotForm({ existingNames, services, onCreated, onCa
             ))}
           </select>
         )}
-        <span className="block text-2xs text-muted">Gives the bot its personality and decides what it is allowed to do</span>
+        <span className="block text-xs text-muted">Gives the bot its personality and decides what it is allowed to do</span>
       </label>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Who may DM it</span>
+          <span className="text-xs font-medium text-muted">Who may DM it</span>
           <select value={directMessages} onChange={e => setDirectMessages(e.target.value as typeof directMessages)} className={inputClass}>
             <option value="listed">Only listed people</option>
             <option value="anyone">Anyone</option>
@@ -152,7 +152,7 @@ export default function CreateBotForm({ existingNames, services, onCreated, onCa
         </label>
 
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">When invited to a group</span>
+          <span className="text-xs font-medium text-muted">When invited to a group</span>
           <select value={joinPolicy} onChange={e => setJoinPolicy(e.target.value as typeof joinPolicy)} className={inputClass}>
             <option value="manual">Wait — join it from here</option>
             <option value="whenInvitedByAdmin">Join if one of its admins invited it</option>
@@ -162,7 +162,7 @@ export default function CreateBotForm({ existingNames, services, onCreated, onCa
       </div>
 
       <label className="block space-y-1">
-        <span className="text-2xs font-medium text-muted">First admin (optional)</span>
+        <span className="text-xs font-medium text-muted">First admin (optional)</span>
         <input
           type="text"
           value={adminTarget}
@@ -172,7 +172,7 @@ export default function CreateBotForm({ existingNames, services, onCreated, onCa
           spellCheck={false}
           autoComplete="off"
         />
-        <span className={cn("block text-2xs", adminError ? "text-rose-500" : "text-muted")}>
+        <span className={cn("block text-xs", adminError ? "text-rose-500" : "text-muted")}>
           {adminError ??
             (directMessages === "listed"
               ? "Without someone listed here, nobody can DM this bot. Admins may also run slash commands."
@@ -181,14 +181,14 @@ export default function CreateBotForm({ existingNames, services, onCreated, onCa
       </label>
 
       <label className="block space-y-1">
-        <span className="text-2xs font-medium text-muted">Join message (optional)</span>
+        <span className="text-xs font-medium text-muted">Join message (optional)</span>
         <input type="text" value={joinMessage} onChange={e => setJoinMessage(e.target.value)} placeholder="Helper reporting for duty." className={inputClass} />
-        <span className="block text-2xs text-muted">Announced once in each channel the bot joins</span>
+        <span className="block text-xs text-muted">Announced once in each channel the bot joins</span>
       </label>
 
       <label className="flex items-start gap-2 cursor-pointer">
         <input type="checkbox" checked={requireMention} onChange={e => setRequireMention(e.target.checked)} className="mt-0.5 cursor-pointer" />
-        <span className="text-2xs text-muted">
+        <span className="text-xs text-muted">
           <span className="text-primary font-medium">Only answer when mentioned</span> in a channel. Turn this off and it replies to everything said in every
           channel it has joined.
         </span>

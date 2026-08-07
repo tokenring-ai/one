@@ -36,8 +36,8 @@ export default function OverviewTab({ quote, quoteLoading, quoteError, history, 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="px-4 py-3 bg-secondary rounded-xl border border-primary">
           <div className="flex justify-between items-baseline mb-2">
-            <span className="text-2xs uppercase tracking-wide text-muted">Day Range</span>
-            <span className="text-2xs text-muted font-mono">
+            <span className="text-xs uppercase tracking-wide text-muted">Day Range</span>
+            <span className="text-xs text-muted font-mono">
               {money(quote.Low)} – {money(quote.High)}
             </span>
           </div>
@@ -51,8 +51,8 @@ export default function OverviewTab({ quote, quoteLoading, quoteError, history, 
         </div>
         <div className="px-4 py-3 bg-secondary rounded-xl border border-primary">
           <div className="flex justify-between items-baseline mb-2">
-            <span className="text-2xs uppercase tracking-wide text-muted">52-Week Range</span>
-            <span className="text-2xs text-muted font-mono">
+            <span className="text-xs uppercase tracking-wide text-muted">52-Week Range</span>
+            <span className="text-xs text-muted font-mono">
               {money(quote.Low52)} – {money(quote.High52)}
             </span>
           </div>
@@ -69,8 +69,8 @@ export default function OverviewTab({ quote, quoteLoading, quoteError, history, 
       {history && history.length > 1 ? (
         <div className="bg-secondary rounded-xl border border-primary p-3">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-2xs uppercase tracking-wide text-muted">Recent Price</span>
-            <span className="text-2xs text-muted">{history.length} sessions</span>
+            <span className="text-xs uppercase tracking-wide text-muted">Recent Price</span>
+            <span className="text-xs text-muted">{history.length} sessions</span>
           </div>
           <PriceLineChart rows={history} />
         </div>
@@ -83,7 +83,7 @@ export default function OverviewTab({ quote, quoteLoading, quoteError, history, 
       ) : null}
 
       <div>
-        <div className="text-2xs uppercase tracking-wide text-muted font-bold mb-2 px-1">Key Stats</div>
+        <div className="text-xs uppercase tracking-wide text-muted font-bold mb-2 px-1">Key Stats</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           <StatCard label="Open" value={money(quote.Open)} />
           <StatCard label="Prev Close" value={money(quote.PrevClose)} />
@@ -123,7 +123,7 @@ export default function OverviewTab({ quote, quoteLoading, quoteError, history, 
         quote.StartingPrice52 ||
         quote.StartingPriceYTD) && (
         <div>
-          <div className="text-2xs uppercase tracking-wide text-muted font-bold mb-2 px-1">Performance</div>
+          <div className="text-xs uppercase tracking-wide text-muted font-bold mb-2 px-1">Performance</div>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {(
               [

@@ -75,7 +75,7 @@ export default function AppSwitcher() {
                 className="w-full h-11 pl-10 pr-4 bg-input border border-primary rounded-xl text-sm text-primary placeholder:text-muted focus-accent"
               />
             </div>
-            <span className="hidden sm:inline-flex px-1.5 py-1 border border-primary rounded-md text-2xs text-muted">Esc</span>
+            <span className="hidden sm:inline-flex px-1.5 py-1 border border-primary rounded-md text-xs text-muted">Esc</span>
             <button
               type="button"
               onClick={close}
@@ -92,9 +92,9 @@ export default function AppSwitcher() {
                 <h2 id="app-switcher-title" className="text-base font-semibold text-primary">
                   All apps
                 </h2>
-                <p className="mt-1 text-2xs text-muted">Pin up to seven apps for one-click access. The active app always appears in the rail.</p>
+                <p className="mt-1 text-xs text-muted">Pin up to seven apps for one-click access. The active app always appears in the rail.</p>
               </div>
-              <span className="shrink-0 text-2xs text-muted tabular-nums">{pinnedAppIds.length}/7 pinned</span>
+              <span className="shrink-0 text-xs text-muted tabular-nums">{pinnedAppIds.length}/7 pinned</span>
             </div>
 
             {filteredApps.length === 0 ? (
@@ -110,7 +110,7 @@ export default function AppSwitcher() {
                   if (apps.length === 0) return null;
                   return (
                     <section key={group} aria-labelledby={`app-group-${group.replaceAll(" ", "-")}`}>
-                      <h3 id={`app-group-${group.replaceAll(" ", "-")}`} className="px-1 mb-2 text-2xs font-bold uppercase tracking-widest text-muted">
+                      <h3 id={`app-group-${group.replaceAll(" ", "-")}`} className="px-1 mb-2 text-xs font-bold uppercase tracking-widest text-muted">
                         {group}
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
@@ -138,7 +138,7 @@ export default function AppSwitcher() {
                                 </span>
                                 <span className="min-w-0">
                                   <span className="block text-xs font-semibold text-primary truncate">{app.label}</span>
-                                  <span className="block mt-0.5 text-2xs text-muted truncate">{app.description}</span>
+                                  <span className="block mt-0.5 text-xs text-muted truncate">{app.description}</span>
                                 </span>
                               </button>
                               {app.id !== "settings" && (

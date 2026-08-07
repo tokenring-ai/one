@@ -68,7 +68,7 @@ export default function NamePromptModal({
         </div>
         <div className="space-y-3">
           <div className="space-y-1">
-            <label className="text-2xs font-semibold text-muted uppercase tracking-wide">{label}</label>
+            <label className="text-xs font-semibold text-muted uppercase tracking-wide">{label}</label>
             <input
               ref={inputRef}
               type="text"
@@ -85,7 +85,7 @@ export default function NamePromptModal({
               className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary placeholder-muted focus-accent"
             />
           </div>
-          {(validationError || error) && <p className="text-2xs text-red-500">{validationError || error}</p>}
+          {(validationError || error) && <p className="text-xs text-red-500">{validationError || error}</p>}
           <div className="flex gap-2 pt-1">
             <button
               type="button"

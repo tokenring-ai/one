@@ -2,6 +2,7 @@ import type { EmailMessage } from "@tokenring-ai/email";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Inbox, Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import NavigationSidebarHeader from "../../../components/layout/NavigationSidebarHeader.tsx";
 import ErrorState from "../../../components/ui/ErrorState.tsx";
 import FilterTabs from "../../../components/ui/FilterTabs.tsx";
 import { toastManager } from "../../../components/ui/toast.tsx";
@@ -132,6 +133,23 @@ export default function MessageListPane({
 
   return (
     <div className="flex flex-col h-full min-h-0">
+      <NavigationSidebarHeader
+        title="Messages"
+        meta={countLabel || undefined}
+        actions={[
+          {
+            icon: <RefreshCw className={result.isValidating ? "w-3 h-3 animate-spin" : "w-3 h-3"} />,
+            label: "Refresh messages",
+            title: "Refresh",
+            onClick: () => {
+              setExtraMessages([]);
+              setNextPageToken(undefined);
+              void result.mutate();
+            },
+          },
+        ]}
+      />
+
       <FilterTabs
         tabs={MESSAGE_FILTERS}
         value={messageFilter}
@@ -139,22 +157,6 @@ export default function MessageListPane({
         className="bg-secondary"
         activeTabClassName="border-red-500 text-primary"
       />
-
-      <div className="shrink-0 h-9 border-b border-primary bg-secondary flex items-center justify-between px-3">
-        <span className="text-2xs text-muted">{countLabel}</span>
-        <button
-          type="button"
-          onClick={() => {
-            setExtraMessages([]);
-            setNextPageToken(undefined);
-            void result.mutate();
-          }}
-          className="p-1 text-muted hover:text-primary transition-colors focus-ring rounded cursor-pointer"
-          title="Refresh"
-        >
-          <RefreshCw className="w-3 h-3" />
-        </button>
-      </div>
 
       <div className="flex-1 overflow-y-auto relative">
         {result.isLoading ? (
@@ -179,7 +181,7 @@ export default function MessageListPane({
                   type="button"
                   onClick={() => void handleLoadMore()}
                   disabled={loadingMore}
-                  className="px-3 py-1.5 text-2xs font-medium text-muted hover:text-primary border border-primary rounded-lg focus-ring cursor-pointer disabled:opacity-50 transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium text-muted hover:text-primary border border-primary rounded-lg focus-ring cursor-pointer disabled:opacity-50 transition-colors"
                 >
                   {loadingMore ? (
                     <span className="inline-flex items-center gap-1.5">

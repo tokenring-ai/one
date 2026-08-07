@@ -76,13 +76,13 @@ export default function SaveAsModal({ providers, initialPath, initialProvider, o
         </div>
         <div className="space-y-3">
           {providers.length === 0 && (
-            <p className="text-2xs text-amber-400" role="alert">
+            <p className="text-xs text-amber-400" role="alert">
               No filesystem providers available. Configure a filesystem provider to save documents.
             </p>
           )}
           {providers.length > 1 && (
             <div className="space-y-1">
-              <label className="text-2xs font-semibold text-muted uppercase tracking-wide">Location</label>
+              <label className="text-xs font-semibold text-muted uppercase tracking-wide">Location</label>
               <select
                 value={provider}
                 onChange={e => setProvider(e.target.value)}
@@ -97,7 +97,7 @@ export default function SaveAsModal({ providers, initialPath, initialProvider, o
             </div>
           )}
           <div className="space-y-1">
-            <label className="text-2xs font-semibold text-muted uppercase tracking-wide">File path</label>
+            <label className="text-xs font-semibold text-muted uppercase tracking-wide">File path</label>
             <input
               ref={inputRef}
               type="text"
@@ -113,10 +113,10 @@ export default function SaveAsModal({ providers, initialPath, initialProvider, o
               placeholder="documents/my-file.md"
               className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary placeholder-muted focus-accent"
             />
-            <p className="text-2xs text-dim">.md is added automatically if omitted</p>
+            <p className="text-xs text-dim">.md is added automatically if omitted</p>
           </div>
           {error && (
-            <p className="text-2xs text-red-400" role="alert">
+            <p className="text-xs text-red-400" role="alert">
               {error}
             </p>
           )}

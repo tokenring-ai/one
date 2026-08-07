@@ -25,7 +25,7 @@ export default function MailboxDropdown({ boxes, selected, onSelect }: { boxes: 
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute top-full left-0 mt-1 w-52 bg-secondary border border-primary rounded-xl shadow-card z-50 overflow-hidden">
             <div className="px-3 py-2 border-b border-primary">
-              <p className="text-2xs font-semibold text-muted uppercase tracking-wider">Mailboxes</p>
+              <p className="text-xs font-semibold text-muted uppercase tracking-wider">Mailboxes</p>
             </div>
             <nav className="py-1">
               {boxes.map(box => {

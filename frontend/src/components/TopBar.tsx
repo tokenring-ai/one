@@ -1,14 +1,14 @@
-import { ChevronDown, Grid2X2, Loader2, Pause, Settings, WifiOff, Zap } from "lucide-react";
+import { ChevronDown, Grid2X2, Loader2, Pause, Settings, WifiOff } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useConnectionStatus } from "../hooks/useConnectionStatus.ts";
 import type { useAgentList } from "../rpc.ts";
+import Logo from "../tokenring-logo-small.webp";
 import { getActiveApp } from "./layout/AppRegistry.ts";
 import { useAppShell } from "./layout/AppShellContext.tsx";
 import { LightDarkSelector } from "./ui/light-dark-selector.tsx";
 import NotificationMenu from "./ui/notification-menu.tsx";
-import Logo from "../tokenring-logo-small.webp"
 
 interface TopBarProps {
   currentAgentId: string | null;
@@ -46,7 +46,7 @@ export default function TopBar({ currentAgentId, agents, agentControls }: TopBar
         aria-label="TokenRing Home"
       >
         <div className="w-9 h-9 flex items-center justify-center">
-          <img src={Logo} className="w-auto h-9 text-white" />
+          <img src={Logo} className="w-auto h-9 text-white" aria-label="TokenRing Logo" />
         </div>
         <span className="pl-2 text-primary font-bold tracking-tight text-md hidden lg:block">TokenRing One</span>
       </button>
@@ -135,7 +135,7 @@ export default function TopBar({ currentAgentId, agents, agentControls }: TopBar
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-primary truncate">{agent.displayName}</div>
-                      <div className="text-2xs text-muted truncate">{agent.currentActivity}</div>
+                      <div className="text-xs text-muted truncate">{agent.currentActivity}</div>
                     </div>
                   </button>
                 ))}

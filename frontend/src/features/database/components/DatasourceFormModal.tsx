@@ -144,7 +144,7 @@ export default function DatasourceFormModal({
 
         <div className="px-5 py-4 space-y-4">
           <div>
-            <label htmlFor="datasource-name" className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">
+            <label htmlFor="datasource-name" className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">
               Name
             </label>
             <input
@@ -155,11 +155,11 @@ export default function DatasourceFormModal({
               autoComplete="off"
               className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-sm text-primary placeholder-muted focus-accent"
             />
-            <p className="text-2xs text-muted mt-1">How you and the agent refer to this database.</p>
+            <p className="text-xs text-muted mt-1">How you and the agent refer to this database.</p>
           </div>
 
           <div>
-            <label htmlFor="datasource-url" className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">
+            <label htmlFor="datasource-url" className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">
               Connection String
             </label>
             <input
@@ -172,7 +172,7 @@ export default function DatasourceFormModal({
               spellCheck={false}
               className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-sm text-primary placeholder-muted font-mono focus-accent"
             />
-            <p className="text-2xs text-muted mt-1">
+            <p className="text-xs text-muted mt-1">
               {isEdit
                 ? "Stored securely on the server and never sent back to the browser. Leave blank to keep the current one."
                 : "Stored securely on the server. Only MySQL and MariaDB are supported today."}
@@ -188,14 +188,14 @@ export default function DatasourceFormModal({
             />
             <span className="min-w-0">
               <span className="text-sm text-primary block">Allow writes</span>
-              <span className="text-2xs text-muted block">
+              <span className="text-xs text-muted block">
                 When off, agents can only read from this datasource — write statements are refused outright rather than prompted for.
               </span>
             </span>
           </label>
 
           <div>
-            <label htmlFor="datasource-scope" className="text-2xs font-semibold text-muted uppercase tracking-wider block mb-1">
+            <label htmlFor="datasource-scope" className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">
               Save to
             </label>
             <select

@@ -28,6 +28,7 @@ import {
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
@@ -74,7 +75,7 @@ function SummaryStat({ label, value, icon, accentClass }: { label: string; value
     <div className="bg-secondary border border-primary rounded-xl px-4 py-3 shadow-sm">
       <div className="flex items-center gap-2 mb-1">
         <span className={accentClass}>{icon}</span>
-        <span className="text-2xs font-bold text-muted uppercase tracking-widest">{label}</span>
+        <span className="text-xs font-bold text-muted uppercase tracking-widest">{label}</span>
       </div>
       <p className="text-lg font-semibold text-primary tabular-nums">{value}</p>
     </div>
@@ -85,7 +86,7 @@ function ServicePill({ service, connected }: { service: string; connected: boole
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium border",
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border",
         connected ? "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30" : "bg-tertiary text-muted border-primary line-through decoration-1",
       )}
       title={connected ? `${service} is connected` : `${service} is not connected`}
@@ -98,11 +99,11 @@ function ServicePill({ service, connected }: { service: string; connected: boole
 
 function RolePill({ role }: { role: BotUser["role"] }) {
   return role === "admin" ? (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
       <Shield className="w-3 h-3" /> Admin
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium bg-tertiary text-muted border border-primary">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-tertiary text-muted border border-primary">
       <User className="w-3 h-3" /> User
     </span>
   );
@@ -113,13 +114,13 @@ function SetupStep({ step, title, done, action }: { step: number; title: string;
     <li className="flex items-center gap-3">
       <span
         className={cn(
-          "shrink-0 w-5 h-5 rounded-full grid place-items-center text-2xs font-semibold tabular-nums",
+          "shrink-0 w-5 h-5 rounded-full grid place-items-center text-xs font-semibold tabular-nums",
           done ? "bg-teal-500/15 text-teal-600 dark:text-teal-400" : "bg-tertiary text-muted border border-primary",
         )}
       >
         {done ? "✓" : step}
       </span>
-      <span className={cn("flex-1 text-2xs", done ? "text-muted line-through decoration-1" : "text-primary")}>{title}</span>
+      <span className={cn("flex-1 text-xs", done ? "text-muted line-through decoration-1" : "text-primary")}>{title}</span>
       {done ? null : action}
     </li>
   );
@@ -130,7 +131,7 @@ function EmptyPanel({ icon, title, hint }: { icon: ReactNode; title: string; hin
     <div className="px-6 py-10 text-center">
       {icon}
       <p className="text-sm font-medium text-primary mb-1">{title}</p>
-      <p className="text-2xs text-muted max-w-sm mx-auto">{hint}</p>
+      <p className="text-xs text-muted max-w-sm mx-auto">{hint}</p>
     </div>
   );
 }
@@ -526,22 +527,21 @@ export default function BotsDashboard() {
         className="flex-1"
         navigation={
           <div className="h-full flex flex-col min-h-0 bg-secondary">
-            <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-primary">
-              <span className="flex-1 text-2xs font-bold uppercase tracking-widest text-muted">Bots</span>
-              <span className="text-2xs text-muted">{botList.length}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCreateBot(true);
-                  setConnectPlatform(null);
-                  setShowSendForm(false);
-                }}
-                className="p-1.5 rounded-md text-muted hover:text-primary hover:bg-hover focus-ring"
-                aria-label="Add bot"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <NavigationSidebarHeader
+              title="Bots"
+              meta={botList.length}
+              actions={[
+                {
+                  icon: <Plus className="w-3.5 h-3.5" />,
+                  label: "Add bot",
+                  onClick: () => {
+                    setShowCreateBot(true);
+                    setConnectPlatform(null);
+                    setShowSendForm(false);
+                  },
+                },
+              ]}
+            />
             <nav className="flex-1 overflow-y-auto p-2 space-y-1" aria-label="Bots">
               {botList.map(bot => {
                 const active = bot.name === selectedBotName;
@@ -564,15 +564,15 @@ export default function BotsDashboard() {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-xs font-medium truncate">{bot.displayName}</span>
-                      <span className="block text-2xs text-muted truncate">
+                      <span className="block text-xs text-muted truncate">
                         {bot.channels.length} channels · {bot.conversations.length} conversations
                       </span>
                     </span>
-                    {busy > 0 && <span className="text-2xs text-amber-500 tabular-nums">{busy}</span>}
+                    {busy > 0 && <span className="text-xs text-amber-500 tabular-nums">{busy}</span>}
                   </button>
                 );
               })}
-              {!isLoading && botList.length === 0 && <p className="px-2 py-6 text-center text-2xs text-muted">No bots configured</p>}
+              {!isLoading && botList.length === 0 && <p className="px-2 py-6 text-center text-xs text-muted">No bots configured</p>}
             </nav>
           </div>
         }
@@ -613,7 +613,7 @@ export default function BotsDashboard() {
                           ? `Messaging service "${disconnectedServices[0]}" is not connected`
                           : `${disconnectedServices.length} messaging services are not connected`}
                       </p>
-                      <p className="text-2xs text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+                      <p className="text-xs text-amber-700/80 dark:text-amber-300/80 mt-0.5">
                         Bots that target {disconnectedServices.map(name => `"${name}"`).join(", ")} cannot send or receive until those accounts are configured
                         (Slack, Telegram, …).
                       </p>
@@ -667,7 +667,7 @@ export default function BotsDashboard() {
                   <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
                     <Bot className="w-10 h-10 text-muted mx-auto mb-3 opacity-50" />
                     <p className="text-sm font-medium text-primary mb-1">No bots yet</p>
-                    <p className="text-2xs text-muted max-w-md mx-auto mb-5">
+                    <p className="text-xs text-muted max-w-md mx-auto mb-5">
                       A bot pairs an agent type with the people and channels it may talk to. Three steps: connect a Slack or Telegram account, create a bot,
                       then invite it to a channel and join it from here.
                     </p>
@@ -686,12 +686,12 @@ export default function BotsDashboard() {
                                 setShowCreateBot(false);
                                 setShowSendForm(false);
                               }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-2xs font-medium bg-teal-600 hover:bg-teal-500 text-white rounded-md focus-ring cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-teal-600 hover:bg-teal-500 text-white rounded-md focus-ring cursor-pointer"
                             >
                               <PlugZap className="w-3 h-3" /> Connect
                             </button>
                           ) : (
-                            <Link to={BOT_CONFIG_HREF} className="text-2xs text-muted hover:text-primary focus-ring rounded-md">
+                            <Link to={BOT_CONFIG_HREF} className="text-xs text-muted hover:text-primary focus-ring rounded-md">
                               Install a plugin
                             </Link>
                           )
@@ -709,7 +709,7 @@ export default function BotsDashboard() {
                               setConnectPlatform(null);
                               setShowSendForm(false);
                             }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-2xs font-medium bg-teal-600 hover:bg-teal-500 text-white rounded-md focus-ring cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-teal-600 hover:bg-teal-500 text-white rounded-md focus-ring cursor-pointer"
                           >
                             <Plus className="w-3 h-3" /> New bot
                           </button>
@@ -719,9 +719,9 @@ export default function BotsDashboard() {
                     </ol>
 
                     <details className="max-w-md mx-auto text-left">
-                      <summary className="text-2xs text-muted cursor-pointer hover:text-primary">Or configure it by hand</summary>
-                      <pre className="text-2xs text-muted bg-tertiary border border-primary rounded-lg p-3 mt-2 overflow-x-auto">{CONFIG_EXAMPLE}</pre>
-                      <Link to={BOT_CONFIG_HREF} className="inline-flex items-center gap-1.5 mt-2 text-2xs text-muted hover:text-primary focus-ring rounded-md">
+                      <summary className="text-xs text-muted cursor-pointer hover:text-primary">Or configure it by hand</summary>
+                      <pre className="text-xs text-muted bg-tertiary border border-primary rounded-lg p-3 mt-2 overflow-x-auto">{CONFIG_EXAMPLE}</pre>
+                      <Link to={BOT_CONFIG_HREF} className="inline-flex items-center gap-1.5 mt-2 text-xs text-muted hover:text-primary focus-ring rounded-md">
                         <Settings2 className="w-3 h-3" />
                         Open bot configuration
                       </Link>
@@ -752,33 +752,33 @@ export default function BotsDashboard() {
                             <div className="flex items-start justify-between gap-2 mb-2">
                               <div className="min-w-0">
                                 <p className="text-sm font-semibold text-primary truncate">{bot.displayName}</p>
-                                <p className="text-2xs text-muted truncate">{bot.name}</p>
+                                <p className="text-xs text-muted truncate">{bot.name}</p>
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {offlineChannels > 0 ? (
                                   <span
-                                    className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400"
+                                    className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400"
                                     title="Channels on offline services"
                                   >
                                     <AlertTriangle className="w-3 h-3" /> {offlineChannels}
                                   </span>
                                 ) : null}
                                 {busy > 0 ? (
-                                  <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
+                                  <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                                     <Activity className="w-3 h-3 animate-pulse" /> {busy}
                                   </span>
                                 ) : null}
                               </div>
                             </div>
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium bg-tertiary text-muted border border-primary">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-tertiary text-muted border border-primary">
                                 <Cpu className="w-3 h-3" /> {bot.agentType}
                               </span>
                               {[...new Set(bot.channels.map(channel => channel.service))].map(service => (
                                 <ServicePill key={service} service={service} connected={connectedServices.has(service)} />
                               ))}
                             </div>
-                            <div className="flex items-center gap-3 mt-3 text-2xs text-muted">
+                            <div className="flex items-center gap-3 mt-3 text-xs text-muted">
                               <span className="inline-flex items-center gap-1">
                                 <Hash className="w-3 h-3" /> {bot.channels.length}
                               </span>
@@ -799,7 +799,7 @@ export default function BotsDashboard() {
                         <div className="px-4 py-3 border-b border-primary flex flex-wrap items-center gap-2">
                           <div className="flex-1 min-w-0">
                             <h2 className="text-sm font-semibold text-primary truncate">{selectedBot.displayName}</h2>
-                            <p className="text-2xs text-muted truncate">
+                            <p className="text-xs text-muted truncate">
                               Agent type <span className="text-primary font-medium">{selectedBot.agentType}</span> · DMs:{" "}
                               <span className="text-primary font-medium">{formatDirectMessagePolicy(selectedBot.directMessages)}</span>
                               {selectedBot.joinMessage ? (
@@ -811,17 +811,17 @@ export default function BotsDashboard() {
                             </p>
                           </div>
                           {selectedBot.requireMention ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium bg-tertiary text-muted border border-primary">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-tertiary text-muted border border-primary">
                               <AtSign className="w-3 h-3" /> Mention required
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
                               <MessageSquare className="w-3 h-3" /> Answers everything
                             </span>
                           )}
                           <Link
                             to={BOT_CONFIG_HREF}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring transition-colors"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring transition-colors"
                             title="Edit this bot's channels, people, and policy"
                           >
                             <Settings2 className="w-3 h-3" /> Edit config
@@ -830,7 +830,7 @@ export default function BotsDashboard() {
                             type="button"
                             onClick={() => setConfirmDeleteBot(selectedBot.name)}
                             disabled={busyAction === `deleteBot:${selectedBot.name}`}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-rose-500 border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-rose-500 border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Delete this bot"
                           >
                             {busyAction === `deleteBot:${selectedBot.name}` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
@@ -861,7 +861,7 @@ export default function BotsDashboard() {
                                     type="button"
                                     onClick={() => setConversationFilter(option.id)}
                                     className={cn(
-                                      "inline-flex items-center gap-1 px-2 py-1 text-2xs rounded-md border transition-colors focus-ring cursor-pointer",
+                                      "inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md border transition-colors focus-ring cursor-pointer",
                                       conversationFilter === option.id
                                         ? "border-accent text-primary bg-accent/10"
                                         : "border-primary text-muted hover:text-primary",
@@ -880,7 +880,7 @@ export default function BotsDashboard() {
                                 value={listQuery}
                                 onChange={e => setListQuery(e.target.value)}
                                 placeholder={tab === "conversations" ? "Filter conversations…" : tab === "channels" ? "Filter channels…" : "Filter people…"}
-                                className="w-full bg-input border border-primary rounded-md pl-8 pr-3 py-1.5 text-2xs text-primary placeholder-muted focus-accent"
+                                className="w-full bg-input border border-primary rounded-md pl-8 pr-3 py-1.5 text-xs text-primary placeholder-muted focus-accent"
                               />
                             </label>
                           </div>
@@ -998,7 +998,7 @@ export default function BotsDashboard() {
                       <h3 className="text-xs font-semibold text-primary">Messaging services</h3>
                       <div className="flex items-center gap-2">
                         {referencedServices.length > 0 ? (
-                          <span className="text-2xs text-muted tabular-nums">
+                          <span className="text-xs text-muted tabular-nums">
                             {services.length} connected
                             {disconnectedServices.length > 0 ? ` · ${disconnectedServices.length} offline` : ""}
                           </span>
@@ -1011,7 +1011,7 @@ export default function BotsDashboard() {
                               setShowCreateBot(false);
                               setShowSendForm(false);
                             }}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
                             title="Connect a Slack or Telegram account"
                           >
                             <PlugZap className="w-3 h-3" /> Connect
@@ -1021,7 +1021,7 @@ export default function BotsDashboard() {
                     </div>
                     {referencedServices.length === 0 ? (
                       <div className="px-4 py-6 text-center">
-                        <p className="text-2xs text-muted mb-3">No messaging service is connected. Your bots have nowhere to talk yet.</p>
+                        <p className="text-xs text-muted mb-3">No messaging service is connected. Your bots have nowhere to talk yet.</p>
                         <div className="flex items-center justify-center gap-2">
                           {availablePlatforms.map(platform => (
                             <button
@@ -1032,7 +1032,7 @@ export default function BotsDashboard() {
                                 setShowCreateBot(false);
                                 setShowSendForm(false);
                               }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-2xs font-medium text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
                             >
                               <PlugZap className="w-3 h-3" /> Connect {PLATFORMS[platform].label}
                             </button>
@@ -1047,7 +1047,7 @@ export default function BotsDashboard() {
                           return (
                             <div key={name} className="px-4 py-2.5 flex items-center justify-between gap-3">
                               <ServicePill service={name} connected={connected} />
-                              <span className="text-2xs text-muted tabular-nums">
+                              <span className="text-xs text-muted tabular-nums">
                                 {connected && limit != null ? `${limit.toLocaleString()} char limit` : connected ? "Connected" : "Not connected"}
                               </span>
                             </div>
@@ -1062,14 +1062,14 @@ export default function BotsDashboard() {
                       <h3 className="text-xs font-semibold text-primary">Broadcast groups</h3>
                       <Link
                         to={BOT_CONFIG_HREF}
-                        className="inline-flex items-center gap-1 text-2xs text-muted hover:text-primary focus-ring rounded-md"
+                        className="inline-flex items-center gap-1 text-xs text-muted hover:text-primary focus-ring rounded-md"
                         title="Edit groups in configuration"
                       >
                         <Settings2 className="w-3 h-3" /> Edit
                       </Link>
                     </div>
                     {groups.length === 0 ? (
-                      <p className="px-4 py-6 text-2xs text-muted text-center">
+                      <p className="px-4 py-6 text-xs text-muted text-center">
                         No groups configured. Groups let one message reach several people across platforms at once.
                       </p>
                     ) : (
@@ -1078,13 +1078,13 @@ export default function BotsDashboard() {
                           <div key={group.name} className="px-4 py-2.5 flex items-center justify-between gap-3">
                             <div className="min-w-0">
                               <p className="text-xs font-medium text-primary truncate">group:{group.name}</p>
-                              <p className="text-2xs text-muted truncate">{group.members.join(", ")}</p>
+                              <p className="text-xs text-muted truncate">{group.members.join(", ")}</p>
                             </div>
                             <button
                               type="button"
                               onClick={() => openSendForm(`group:${group.name}`)}
                               disabled={!canSend}
-                              className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Send className="w-3 h-3" /> Message
                             </button>
@@ -1099,9 +1099,9 @@ export default function BotsDashboard() {
                   <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden">
                     <div className="px-4 py-2.5 border-b border-primary flex items-center justify-between gap-2">
                       <h3 className="text-xs font-semibold text-primary">Discovered channels</h3>
-                      <span className="text-2xs text-muted tabular-nums">{discoveredChannels.length} waiting</span>
+                      <span className="text-xs text-muted tabular-nums">{discoveredChannels.length} waiting</span>
                     </div>
-                    <p className="px-4 pt-3 text-2xs text-muted">
+                    <p className="px-4 pt-3 text-xs text-muted">
                       {selectedBot
                         ? `Rooms this app has been added to that no bot answers in yet. Joining adds the channel to "${selectedBot.displayName}".`
                         : "Rooms this app has been added to that no bot answers in yet. Select a bot above to join one."}
@@ -1185,21 +1185,21 @@ function ConversationRow({
           <div className="flex items-center gap-2 flex-wrap mb-0.5">
             <span className="text-sm font-medium text-primary truncate">{conversation.channelName ?? conversation.conversationId}</span>
             {conversation.channelName ? (
-              <span className="inline-flex items-center gap-1 text-2xs text-muted">
+              <span className="inline-flex items-center gap-1 text-xs text-muted">
                 <Hash className="w-3 h-3" /> {conversation.conversationId}
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-2xs text-muted">
+              <span className="inline-flex items-center gap-1 text-xs text-muted">
                 <User className="w-3 h-3" /> Direct
               </span>
             )}
             {conversation.busy ? (
-              <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
+              <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                 <Activity className="w-3 h-3 animate-pulse" /> Working
               </span>
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-muted">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
             <ServicePill service={conversation.service} connected={connected} />
             <span className="inline-flex items-center gap-1">
               <Cpu className="w-3 h-3" /> {conversation.agentType}
@@ -1213,7 +1213,7 @@ function ConversationRow({
           <button
             type="button"
             onClick={onOpenAgent}
-            className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
             title="Open the agent handling this conversation"
           >
             <Cpu className="w-3 h-3" /> Agent
@@ -1222,7 +1222,7 @@ function ConversationRow({
             type="button"
             onClick={onMessage}
             disabled={!connected}
-            className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={connected ? "Send a message here" : "Service is offline"}
           >
             <Send className="w-3 h-3" /> Message
@@ -1231,7 +1231,7 @@ function ConversationRow({
             type="button"
             onClick={onReset}
             disabled={resetting}
-            className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-error border border-primary hover:bg-error/5 rounded-md focus-ring cursor-pointer transition-colors"
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-error border border-primary hover:bg-error/5 rounded-md focus-ring cursor-pointer transition-colors"
             title="Delete this conversation's agent"
           >
             {resetting ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />} Reset
@@ -1262,7 +1262,7 @@ function ChannelRow({
           <span className="text-sm font-medium text-primary truncate">{channel.name}</span>
           <ServicePill service={channel.service} connected={channel.connected} />
         </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-muted">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
           <span className="font-mono">{channel.target}</span>
           <span className="inline-flex items-center gap-1">
             <Cpu className="w-3 h-3" /> {channel.agentType}
@@ -1276,7 +1276,7 @@ function ChannelRow({
         type="button"
         onClick={onMessage}
         disabled={!channel.connected}
-        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         title={channel.connected ? "Send a message to this channel" : "Service is offline"}
       >
         <Send className="w-3 h-3" /> Message
@@ -1285,7 +1285,7 @@ function ChannelRow({
         type="button"
         onClick={onLeave}
         disabled={leaving}
-        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-rose-500 border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-rose-500 border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         title="Stop this bot listening in this channel"
       >
         {leaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogOut className="w-3 h-3" />} Leave
@@ -1314,7 +1314,7 @@ function DiscoveredChannelRow({
           <span className="text-xs font-medium text-primary truncate">{channel.title ?? channel.channelId}</span>
           <ServicePill service={channel.service} connected />
         </div>
-        <p className="text-2xs text-muted truncate">
+        <p className="text-xs text-muted truncate">
           <span className="font-mono">{channel.target}</span>
           {channel.invitedBy ? ` · invited by ${channel.invitedBy}` : ""} · seen {formatRelativeTime(channel.discoveredAt)}
         </p>
@@ -1323,7 +1323,7 @@ function DiscoveredChannelRow({
         type="button"
         onClick={onJoin}
         disabled={!botName || joining}
-        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         title={botName ? `Have "${botName}" answer here` : "Select a bot first"}
       >
         {joining ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogIn className="w-3 h-3" />} Join
@@ -1357,13 +1357,13 @@ function UserRow({
           <RolePill role={user.role} />
           <ServicePill service={user.service} connected={connected} />
         </div>
-        <p className="text-2xs text-muted font-mono mt-0.5 truncate">{user.target}</p>
+        <p className="text-xs text-muted font-mono mt-0.5 truncate">{user.target}</p>
       </div>
       <button
         type="button"
         onClick={() => onChangeRole(user.role === "admin" ? "user" : "admin")}
         disabled={busy}
-        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         title={user.role === "admin" ? "Take away command access" : "Let them run slash commands"}
       >
         {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shield className="w-3 h-3" />}
@@ -1373,7 +1373,7 @@ function UserRow({
         type="button"
         onClick={onMessage}
         disabled={!connected}
-        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         title={connected ? "Send a direct message" : "Service is offline"}
       >
         <Send className="w-3 h-3" /> Message
@@ -1382,7 +1382,7 @@ function UserRow({
         type="button"
         onClick={onRemove}
         disabled={busy}
-        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-rose-500 border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-rose-500 border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         title="Remove this person from the bot"
         aria-label={`Remove ${user.target}`}
       >
@@ -1435,7 +1435,7 @@ function AddPersonForm({
           placeholder={services.length > 0 ? `${services[0]}:U123ABC` : "slack:U123ABC"}
           aria-label="Person to add, as service:userId"
           className={cn(
-            "w-full bg-input border rounded-md px-2.5 py-1.5 text-2xs text-primary placeholder-muted font-mono focus-accent",
+            "w-full bg-input border rounded-md px-2.5 py-1.5 text-xs text-primary placeholder-muted font-mono focus-accent",
             error ? "border-rose-500/60" : "border-primary",
           )}
           spellCheck={false}
@@ -1446,7 +1446,7 @@ function AddPersonForm({
         value={role}
         onChange={e => setRole(e.target.value as BotUser["role"])}
         aria-label="Role"
-        className="bg-input border border-primary rounded-md px-2 py-1.5 text-2xs text-primary focus-accent"
+        className="bg-input border border-primary rounded-md px-2 py-1.5 text-xs text-primary focus-accent"
       >
         <option value="user">User — may chat</option>
         <option value="admin">Admin — may run commands</option>
@@ -1455,11 +1455,11 @@ function AddPersonForm({
         type="button"
         onClick={submit}
         disabled={busy || !trimmed || !!error}
-        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-2xs font-medium text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />} Add
       </button>
-      {error ? <span className="w-full text-2xs text-rose-500">{error}</span> : null}
+      {error ? <span className="w-full text-xs text-rose-500">{error}</span> : null}
     </div>
   );
 }

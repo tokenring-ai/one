@@ -33,7 +33,7 @@ export default function ImageThumbnail({ image, selected, onClick }: { image: Im
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2">
           <ImageIcon className="w-5 h-5 text-muted opacity-40" />
-          <span className="text-2xs text-muted truncate max-w-full px-1">{image.filename}</span>
+          <span className="text-xs text-muted truncate max-w-full px-1">{image.filename}</span>
         </div>
       )}
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />

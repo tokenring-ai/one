@@ -140,10 +140,10 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between px-1">
-        <span className="text-2xs font-bold text-emerald-600 dark:text-emerald-500/90 uppercase tracking-widest flex items-center gap-1.5">
+        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-500/90 uppercase tracking-widest flex items-center gap-1.5">
           <History className="w-3.5 h-3.5" /> Resume from Checkpoint
         </span>
-        <span className="text-2xs text-muted">{checkpoints.data.length} saved</span>
+        <span className="text-xs text-muted">{checkpoints.data.length} saved</span>
       </div>
 
       <div className="bg-secondary border border-primary rounded-lg shadow-md overflow-hidden">
@@ -167,7 +167,7 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
             {selected ? (
               <>
                 <div className="text-sm font-medium text-primary truncate">{selected.name}</div>
-                <div className="text-2xs text-muted mt-0.5">{formatTimeAgo(selected.createdAt)}</div>
+                <div className="text-xs text-muted mt-0.5">{formatTimeAgo(selected.createdAt)}</div>
               </>
             ) : (
               <span className="text-sm text-muted">Select a checkpoint...</span>
@@ -206,12 +206,12 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
                   </div>
                   {/* Keyboard hint */}
                   <div className="flex items-center gap-2 px-1 pt-1.5">
-                    <span className="text-2xs text-muted">Use</span>
-                    <kbd className="px-1.5 py-0.5 bg-tertiary border border-primary rounded-md text-2xs text-muted font-mono">↑</kbd>
-                    <kbd className="px-1.5 py-0.5 bg-tertiary border border-primary rounded-md text-2xs text-muted font-mono">↓</kbd>
-                    <span className="text-2xs text-muted">to navigate, </span>
-                    <kbd className="px-1.5 py-0.5 bg-tertiary border border-primary rounded-md text-2xs text-muted font-mono">↵</kbd>
-                    <span className="text-2xs text-muted">to select</span>
+                    <span className="text-xs text-muted">Use</span>
+                    <kbd className="px-1.5 py-0.5 bg-tertiary border border-primary rounded-md text-xs text-muted font-mono">↑</kbd>
+                    <kbd className="px-1.5 py-0.5 bg-tertiary border border-primary rounded-md text-xs text-muted font-mono">↓</kbd>
+                    <span className="text-xs text-muted">to navigate, </span>
+                    <kbd className="px-1.5 py-0.5 bg-tertiary border border-primary rounded-md text-xs text-muted font-mono">↵</kbd>
+                    <span className="text-xs text-muted">to select</span>
                   </div>
                 </div>
 
@@ -228,12 +228,12 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
                           <button
                             type="button"
                             onClick={() => toggleGroup(date)}
-                            className="w-full flex items-center gap-1.5 px-3 py-2 text-2xs font-semibold text-muted uppercase tracking-wider hover:bg-hover transition-colors cursor-pointer"
+                            className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-muted uppercase tracking-wider hover:bg-hover transition-colors cursor-pointer"
                             aria-expanded={!isCollapsed}
                           >
                             {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                             <span>{date}</span>
-                            <span className="text-2xs font-mono text-muted ml-auto">{items.length}</span>
+                            <span className="text-xs font-mono text-muted ml-auto">{items.length}</span>
                           </button>
 
                           <AnimatePresence>
@@ -276,7 +276,7 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
                                       <span className={`flex-1 text-sm truncate ${cp.id === selectedId ? "text-accent font-medium" : "text-primary"}`}>
                                         {cp.name}
                                       </span>
-                                      <span className="text-2xs text-muted font-mono shrink-0">{formatTime(cp.createdAt)}</span>
+                                      <span className="text-xs text-muted font-mono shrink-0">{formatTime(cp.createdAt)}</span>
                                     </button>
                                   );
                                 })}
@@ -296,7 +296,7 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
         {/* Launch bar — visible when a checkpoint is selected */}
         {selected && !isOpen && (
           <div className="border-t border-primary px-3 py-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-2xs min-w-0">
+            <div className="flex items-center gap-2 text-xs min-w-0">
               <span className="truncate font-medium text-primary">{selected.name}</span>
               <span className="text-muted">•</span>
               <span className="truncate text-muted">

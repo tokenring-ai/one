@@ -65,9 +65,7 @@ export default function WeekView({
           const isToday = key === todayKey;
           return (
             <div key={key} className="flex-1 py-2 text-center border-l border-primary">
-              <div className={cn("text-2xs font-medium uppercase tracking-wider", isToday ? "text-sky-500" : "text-muted")}>
-                {WEEKDAYS_LETTER[day.getDay()]}
-              </div>
+              <div className={cn("text-xs font-medium uppercase tracking-wider", isToday ? "text-sky-500" : "text-muted")}>{WEEKDAYS_LETTER[day.getDay()]}</div>
               <div
                 className={cn(
                   "text-sm font-bold mx-auto mt-0.5 w-7 h-7 flex items-center justify-center rounded-full",
@@ -94,7 +92,7 @@ export default function WeekView({
             {HOURS.map(h => (
               <div
                 key={h}
-                className="absolute left-0 right-0 flex items-start justify-end pr-2 text-2xs text-muted"
+                className="absolute left-0 right-0 flex items-start justify-end pr-2 text-xs text-muted"
                 style={{ top: `${h * HOUR_H}px`, height: `${HOUR_H}px` }}
               >
                 {h === 0 ? "" : `${h % 12 || 12}${h < 12 ? "am" : "pm"}`}
@@ -131,7 +129,7 @@ export default function WeekView({
                           onEventClick(ev);
                         }}
                         className={cn(
-                          "absolute left-1 right-1 rounded px-1.5 py-0.5 text-white text-2xs font-medium cursor-pointer hover:opacity-90 transition-opacity text-left overflow-hidden",
+                          "absolute left-1 right-1 rounded px-1.5 py-0.5 text-white text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity text-left overflow-hidden",
                           ev.color,
                         )}
                         style={{ top: `${top}px`, height: `${height}px` }}

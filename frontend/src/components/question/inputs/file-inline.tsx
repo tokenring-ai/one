@@ -260,11 +260,11 @@ export default function FileInlineQuestion({
       )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className={`text-2xs font-medium ${isSelectionValid() ? "text-primary" : "text-amber-600 dark:text-amber-400"}`} aria-live="polite">
+          <span className={`text-xs font-medium ${isSelectionValid() ? "text-primary" : "text-amber-600 dark:text-amber-400"}`} aria-live="polite">
             {selected.size} selected
           </span>
           {(minimumSelections !== undefined || maximumSelections !== undefined) && (
-            <span className="text-2xs text-muted">
+            <span className="text-xs text-muted">
               {minimumSelections !== undefined && `min ${minimumSelections}`}
               {minimumSelections !== undefined && maximumSelections !== undefined && " · "}
               {maximumSelections !== undefined && `max ${maximumSelections}`}
@@ -274,7 +274,7 @@ export default function FileInlineQuestion({
             <button
               type="button"
               onClick={() => setSelected(new Set())}
-              className="text-2xs text-muted hover:text-primary transition-colors focus-ring"
+              className="text-xs text-muted hover:text-primary transition-colors focus-ring"
               aria-label="Clear all selections"
             >
               Clear

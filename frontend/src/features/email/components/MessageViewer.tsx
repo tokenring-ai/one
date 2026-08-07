@@ -32,7 +32,7 @@ export default function MessageViewer({
         <AlertCircle className="w-8 h-8 opacity-30" />
         <p className="text-sm">Could not load message.</p>
         {error && (
-          <button type="button" onClick={() => void mutate()} className="text-2xs text-accent hover:text-accent-soft cursor-pointer focus-ring">
+          <button type="button" onClick={() => void mutate()} className="text-xs text-accent hover:text-accent-soft cursor-pointer focus-ring">
             Retry
           </button>
         )}
@@ -74,7 +74,7 @@ export default function MessageViewer({
         {msg.labels && msg.labels.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {msg.labels.map(l => (
-              <span key={l} className="px-2 py-0.5 bg-tertiary border border-primary rounded-full text-2xs text-muted">
+              <span key={l} className="px-2 py-0.5 bg-tertiary border border-primary rounded-full text-xs text-muted">
                 {l}
               </span>
             ))}

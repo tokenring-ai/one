@@ -288,14 +288,14 @@ export default function DatabaseApp() {
             <div className="shrink-0 h-11 border-b border-primary bg-secondary flex items-center gap-2 px-3">
               <span className="text-sm font-semibold text-primary truncate font-mono">{activeTable}</span>
               {activeDatasourceMeta && !activeDatasourceMeta.allowWrites && (
-                <span className="inline-flex items-center gap-1 text-2xs text-muted border border-primary rounded px-1.5 py-0.5">
+                <span className="inline-flex items-center gap-1 text-xs text-muted border border-primary rounded px-1.5 py-0.5">
                   <Lock className="w-3 h-3" /> Read-only
                 </span>
               )}
-              <span className="text-2xs text-muted truncate">{activeDatasource}</span>
+              <span className="text-xs text-muted truncate">{activeDatasource}</span>
               <div className="flex-1" />
-              {selectedKeys.size > 0 && <span className="text-2xs text-muted">{selectedKeys.size} selected</span>}
-              {rangeLabel && <span className="text-2xs text-muted tabular-nums">{rangeLabel}</span>}
+              {selectedKeys.size > 0 && <span className="text-xs text-muted">{selectedKeys.size} selected</span>}
+              {rangeLabel && <span className="text-xs text-muted tabular-nums">{rangeLabel}</span>}
               <button
                 type="button"
                 onClick={() => void rowsQuery.mutate()}

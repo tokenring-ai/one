@@ -23,7 +23,7 @@ export default function Dashboard() {
       <div className="flex-1 overflow-y-auto py-6 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto space-y-8">
           <div>
-            <p className="text-2xs font-bold text-accent uppercase tracking-widest mb-2">Local workspace</p>
+            <p className="text-xs font-bold text-accent uppercase tracking-widest mb-2">Local workspace</p>
             <h1 className="text-primary text-3xl font-bold tracking-tight mb-1">What do you want to work on?</h1>
             <p className="text-xs text-muted">Agents, creative tools, and local data share one workspace.</p>
           </div>
@@ -67,7 +67,7 @@ export default function Dashboard() {
               const groupedApps = appsWithBadges.filter(app => APP_REGISTRY.find(definition => definition.id === app.id)?.group === group);
               return (
                 <section key={group}>
-                  <h2 className="text-2xs font-bold text-muted uppercase tracking-widest px-1 mb-3">{group}</h2>
+                  <h2 className="text-xs font-bold text-muted uppercase tracking-widest px-1 mb-3">{group}</h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                     {groupedApps.map(app => (
                       <AppCard key={app.id} app={app} />
@@ -84,13 +84,13 @@ export default function Dashboard() {
 
       <footer className="shrink-0 border-t border-primary bg-secondary px-4 sm:px-6 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <span className="text-2xs text-muted">© {new Date().getFullYear()} TokenRing AI</span>
+          <span className="text-xs text-muted">© {new Date().getFullYear()} TokenRing AI</span>
           <div className="flex items-center gap-3">
             <a
               href="https://github.com/tokenring-ai"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-2xs text-muted hover:text-primary transition-colors focus-ring"
+              className="text-xs text-muted hover:text-primary transition-colors focus-ring"
             >
               GitHub
             </a>
@@ -98,7 +98,7 @@ export default function Dashboard() {
               href="https://tokenring.ai"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-2xs text-muted hover:text-primary transition-colors focus-ring"
+              className="text-xs text-muted hover:text-primary transition-colors focus-ring"
             >
               tokenring.ai
             </a>

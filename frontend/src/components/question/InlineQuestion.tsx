@@ -60,9 +60,9 @@ function QuestionMessageMarkdown({ message, className }: { message: string; clas
           code: ({ children, className: codeClassName }) => {
             const text = getNodeText(children).replace(/\n$/, "");
             if (codeClassName || text.includes("\n")) {
-              return <code className={`${codeClassName ?? ""} block whitespace-pre-wrap text-2xs font-mono`.trim()}>{text}</code>;
+              return <code className={`${codeClassName ?? ""} block whitespace-pre-wrap text-xs font-mono`.trim()}>{text}</code>;
             }
-            return <code className="rounded bg-tertiary px-1 py-0.5 text-2xs font-mono">{text}</code>;
+            return <code className="rounded bg-tertiary px-1 py-0.5 text-xs font-mono">{text}</code>;
           },
         }}
       >
@@ -172,13 +172,13 @@ export default function InlineQuestion({ request, agentId, requestId, response, 
               className="text-sm font-medium text-primary prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
             />
           </div>
-          <span className="text-2xs font-mono text-muted opacity-0 group-hover/header:opacity-100 transition-opacity leading-none pt-1.5 shrink-0">
+          <span className="text-xs font-mono text-muted opacity-0 group-hover/header:opacity-100 transition-opacity leading-none pt-1.5 shrink-0">
             {question.type}
           </span>
           {countdown !== null && countdown > 0 && (
             <>
               <span
-                className={`text-2xs font-medium leading-none pt-1.5 shrink-0 ${
+                className={`text-xs font-medium leading-none pt-1.5 shrink-0 ${
                   countdown <= 5
                     ? "text-red-500 dark:text-red-400 font-bold animate-pulse"
                     : countdown <= 15
@@ -205,10 +205,10 @@ export default function InlineQuestion({ request, agentId, requestId, response, 
             </>
           )}
           {countdown !== null && countdown === 0 && !autoSubmitted && (
-            <span className="text-2xs text-amber-600 dark:text-amber-400 font-medium leading-none pt-1.5 animate-pulse shrink-0">Submitting...</span>
+            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium leading-none pt-1.5 animate-pulse shrink-0">Submitting...</span>
           )}
           {autoSubmitted && (
-            <span className="text-2xs text-emerald-600 dark:text-emerald-400 font-medium leading-none pt-1.5 shrink-0 flex items-center gap-0.5">
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium leading-none pt-1.5 shrink-0 flex items-center gap-0.5">
               <Check className="w-3 h-3 inline" />
               Auto-submitted
             </span>

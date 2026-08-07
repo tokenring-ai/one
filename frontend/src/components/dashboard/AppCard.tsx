@@ -33,7 +33,7 @@ export default function AppCard({ app }: AppCardProps) {
       >
         <div className="text-white [&>svg]:w-7 [&>svg]:h-7">{app.icon}</div>
         {app.badge && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-amber-500 text-white text-2xs font-bold rounded-full flex items-center justify-center shadow-sm">
+          <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-amber-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-sm">
             {app.badge}
           </span>
         )}
@@ -42,7 +42,7 @@ export default function AppCard({ app }: AppCardProps) {
       {/* Label */}
       <div>
         <div className="text-sm font-semibold text-primary group-hover:text-accent transition-colors">{app.label}</div>
-        <div className="text-2xs text-muted mt-0.5 line-clamp-2 leading-relaxed">{app.description}</div>
+        <div className="text-xs text-muted mt-0.5 line-clamp-2 leading-relaxed">{app.description}</div>
       </div>
     </motion.button>
   );

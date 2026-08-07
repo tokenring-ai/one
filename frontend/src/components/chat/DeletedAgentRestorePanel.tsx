@@ -102,7 +102,7 @@ export default function DeletedAgentRestorePanel({ agentId }: DeletedAgentRestor
 
         <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 pl-0 sm:pl-11">
           <label className="flex-1 min-w-0 space-y-1">
-            <span className="text-2xs font-bold text-muted uppercase tracking-widest">Checkpoint</span>
+            <span className="text-xs font-bold text-muted uppercase tracking-widest">Checkpoint</span>
             <select
               value={selectedId ?? ""}
               onChange={e => setSelectedId(e.target.value ? Number(e.target.value) : null)}
@@ -130,7 +130,7 @@ export default function DeletedAgentRestorePanel({ agentId }: DeletedAgentRestor
         </div>
 
         {selected ? (
-          <p className="text-2xs text-muted pl-0 sm:pl-11">
+          <p className="text-xs text-muted pl-0 sm:pl-11">
             Selected: <span className="text-primary font-medium">{selected.name}</span>
             <span className="mx-1.5 opacity-40">·</span>
             {formatDate(selected.createdAt)} at {formatTime(selected.createdAt)}

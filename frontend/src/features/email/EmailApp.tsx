@@ -193,7 +193,7 @@ function EmailBrowserPane({
                 setActiveSearch(null);
                 setSearchInput("");
               }}
-              className="px-2 text-2xs text-muted hover:text-primary transition-colors cursor-pointer shrink-0"
+              className="px-2 text-xs text-muted hover:text-primary transition-colors cursor-pointer shrink-0"
             >
               Clear
             </button>

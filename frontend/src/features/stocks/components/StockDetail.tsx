@@ -60,7 +60,7 @@ export default function StockDetail({ symbol, onClear }: StockDetailProps) {
               <span className="text-lg font-bold text-accent-soft">{symbol}</span>
               {companyName !== symbol && <span className="text-sm text-secondary truncate">{companyName}</span>}
               {quoteRow?.ExchangeShortName && (
-                <span className="text-2xs px-1.5 py-0.5 bg-primary border border-primary rounded text-muted">{quoteRow.ExchangeShortName}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-primary border border-primary rounded text-muted">{quoteRow.ExchangeShortName}</span>
               )}
             </div>
             <div className="flex items-baseline gap-2 flex-wrap">
@@ -79,7 +79,7 @@ export default function StockDetail({ symbol, onClear }: StockDetailProps) {
                       {fmt(changePct)}%)
                     </span>
                   )}
-                  {quoteRow?.LastTradeTime && <span className="text-2xs text-muted">· {fmtTs(quoteRow.LastTradeTime, "datetime")}</span>}
+                  {quoteRow?.LastTradeTime && <span className="text-xs text-muted">· {fmtTs(quoteRow.LastTradeTime, "datetime")}</span>}
                 </>
               ) : (
                 <span className="text-sm text-muted">Price unavailable</span>

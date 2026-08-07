@@ -41,7 +41,7 @@ export default function MonthView({
       {/* Day-of-week header */}
       <div className="grid grid-cols-7 border-b border-primary">
         {WEEKDAYS_SHORT.map(d => (
-          <div key={d} className="py-2 text-center text-2xs font-semibold text-muted uppercase tracking-wider">
+          <div key={d} className="py-2 text-center text-xs font-semibold text-muted uppercase tracking-wider">
             {d}
           </div>
         ))}
@@ -88,7 +88,7 @@ export default function MonthView({
                       e.stopPropagation();
                       onDayClick(cell);
                     }}
-                    className="text-2xs text-muted hover:text-primary transition-colors w-full text-left px-1"
+                    className="text-xs text-muted hover:text-primary transition-colors w-full text-left px-1"
                   >
                     +{overflow} more
                   </button>

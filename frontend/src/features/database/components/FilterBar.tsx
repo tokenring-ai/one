@@ -33,7 +33,7 @@ export default function FilterBar({
     <div className="shrink-0 border-b border-primary px-3 py-2 flex flex-wrap items-center gap-2">
       <Filter className="w-3.5 h-3.5 text-muted shrink-0" />
 
-      {filters.length === 0 && <span className="text-2xs text-muted">No filters</span>}
+      {filters.length === 0 && <span className="text-xs text-muted">No filters</span>}
 
       {filters.map(filter => {
         const operator = FILTER_OPERATORS_BY_VALUE.get(filter.op);
@@ -43,7 +43,7 @@ export default function FilterBar({
               value={filter.column}
               onChange={e => updateFilter(filter.id, { column: e.target.value })}
               aria-label="Filter column"
-              className="bg-transparent text-2xs text-primary focus-accent rounded cursor-pointer max-w-32"
+              className="bg-transparent text-xs text-primary focus-accent rounded cursor-pointer max-w-32"
             >
               {columns.map(column => (
                 <option key={column.name} value={column.name}>
@@ -56,7 +56,7 @@ export default function FilterBar({
               value={filter.op}
               onChange={e => updateFilter(filter.id, { op: e.target.value as FilterOperator })}
               aria-label="Filter operator"
-              className="bg-transparent text-2xs text-muted focus-accent rounded cursor-pointer"
+              className="bg-transparent text-xs text-muted focus-accent rounded cursor-pointer"
             >
               {FILTER_OPERATORS.map(op => (
                 <option key={op.value} value={op.value}>
@@ -71,7 +71,7 @@ export default function FilterBar({
                 onChange={e => updateFilter(filter.id, { value: e.target.value })}
                 placeholder={operator.takesList ? "a, b, c" : "value"}
                 aria-label="Filter value"
-                className="bg-input border border-primary rounded px-1.5 py-0.5 text-2xs text-primary placeholder-muted focus-accent w-28"
+                className="bg-input border border-primary rounded px-1.5 py-0.5 text-xs text-primary placeholder-muted focus-accent w-28"
               />
             )}
 
@@ -91,7 +91,7 @@ export default function FilterBar({
         type="button"
         onClick={addFilter}
         disabled={columns.length === 0}
-        className="flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary border-dashed rounded-lg hover:bg-hover transition-colors cursor-pointer disabled:opacity-50 focus-ring"
+        className="flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary border-dashed rounded-lg hover:bg-hover transition-colors cursor-pointer disabled:opacity-50 focus-ring"
       >
         <Plus className="w-3 h-3" /> Filter
       </button>

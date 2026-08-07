@@ -136,7 +136,7 @@ export default function AudioViewer({
           />
           {audio.prompt && (
             <div className="w-full">
-              <p className="text-2xs font-medium text-muted uppercase tracking-wide mb-1">Prompt</p>
+              <p className="text-xs font-medium text-muted uppercase tracking-wide mb-1">Prompt</p>
               <p className="text-sm text-secondary italic">{audio.prompt}</p>
             </div>
           )}
@@ -145,7 +145,7 @@ export default function AudioViewer({
         {transcript !== null && (
           <div className="w-full max-w-xl bg-tertiary rounded-2xl p-5 shadow-lg">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-2xs font-medium text-muted uppercase tracking-wide">Transcript</p>
+              <p className="text-xs font-medium text-muted uppercase tracking-wide">Transcript</p>
               <button
                 type="button"
                 onClick={() => setTranscript(null)}

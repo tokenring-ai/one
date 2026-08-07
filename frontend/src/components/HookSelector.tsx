@@ -208,7 +208,7 @@ export default function HookSelector({ agentId, triggerVariant = "default" }: Ho
                   >
                     {hook.displayName}
                   </div>
-                  {hook.description && <div className="text-2xs text-dim font-mono leading-tight truncate mt-0.5">{hook.description}</div>}
+                  {hook.description && <div className="text-xs text-dim font-mono leading-tight truncate mt-0.5">{hook.description}</div>}
                 </div>
                 {isEnabled ? (
                   <Check className="w-3 h-3 text-amber-500 dark:text-amber-400 ml-2 shrink-0" aria-label="Enabled" />

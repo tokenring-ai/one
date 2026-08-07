@@ -148,7 +148,7 @@ export default function ComposeForm({
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
         <label className="flex items-center gap-2">
-          <span className="text-2xs font-medium text-muted w-10 shrink-0">To</span>
+          <span className="text-xs font-medium text-muted w-10 shrink-0">To</span>
           <input
             ref={toRef}
             type="text"
@@ -162,24 +162,24 @@ export default function ComposeForm({
         </label>
 
         {!showCcBcc ? (
-          <button type="button" onClick={() => setShowCcBcc(true)} className="text-2xs text-muted hover:text-primary transition-colors cursor-pointer ml-12">
+          <button type="button" onClick={() => setShowCcBcc(true)} className="text-xs text-muted hover:text-primary transition-colors cursor-pointer ml-12">
             Add Cc / Bcc
           </button>
         ) : (
           <>
             <label className="flex items-center gap-2">
-              <span className="text-2xs font-medium text-muted w-10 shrink-0">Cc</span>
+              <span className="text-xs font-medium text-muted w-10 shrink-0">Cc</span>
               <input type="text" value={cc} onChange={e => setCc(e.target.value)} placeholder="optional" className={inputClass} autoComplete="off" />
             </label>
             <label className="flex items-center gap-2">
-              <span className="text-2xs font-medium text-muted w-10 shrink-0">Bcc</span>
+              <span className="text-xs font-medium text-muted w-10 shrink-0">Bcc</span>
               <input type="text" value={bcc} onChange={e => setBcc(e.target.value)} placeholder="optional" className={inputClass} autoComplete="off" />
             </label>
           </>
         )}
 
         <label className="flex items-center gap-2">
-          <span className="text-2xs font-medium text-muted w-10 shrink-0">Subject</span>
+          <span className="text-xs font-medium text-muted w-10 shrink-0">Subject</span>
           <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Subject" className={inputClass} autoComplete="off" />
         </label>
 

@@ -50,7 +50,7 @@ export default function FilterTabs<T extends string>({
           >
             {tab.label}
             {shouldShowCount && (
-              <span className={cn("text-2xs px-1.5 py-0.5 rounded-full font-mono", isActive ? activeCountClassName : inactiveCountClassName)}>{tab.count}</span>
+              <span className={cn("text-xs px-1.5 py-0.5 rounded-full font-mono", isActive ? activeCountClassName : inactiveCountClassName)}>{tab.count}</span>
             )}
           </button>
         );

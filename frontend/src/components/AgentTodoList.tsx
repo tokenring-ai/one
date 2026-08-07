@@ -98,11 +98,11 @@ export default function AgentTodoList({ agentId, agentName, className }: AgentTo
 
   return (
     <ul className={cn("space-y-1", className)} aria-label={`Todos for ${agentName}`}>
-      {capped.moreAbove > 0 && <li className="text-2xs text-muted font-mono leading-snug">{capped.moreAbove} more</li>}
+      {capped.moreAbove > 0 && <li className="text-xs text-muted font-mono leading-snug">{capped.moreAbove} more</li>}
       {capped.items.map(todo => {
         const marker = statusMarkers[todo.status];
         return (
-          <li key={todo.id} className={`relative min-w-0 text-2xs font-mono leading-snug ${contentClasses[todo.status]}`} title={todo.content}>
+          <li key={todo.id} className={`relative min-w-0 text-xs font-mono leading-snug ${contentClasses[todo.status]}`} title={todo.content}>
             {/* Marker hangs left of the text column so rows align with "N more". */}
             {marker ? (
               <span className={`absolute top-0 right-full mr-2 select-none ${statusClasses[todo.status]}`} aria-hidden="true">
@@ -113,7 +113,7 @@ export default function AgentTodoList({ agentId, agentName, className }: AgentTo
           </li>
         );
       })}
-      {capped.moreBelow > 0 && <li className="text-2xs text-muted font-mono leading-snug">{capped.moreBelow} more</li>}
+      {capped.moreBelow > 0 && <li className="text-xs text-muted font-mono leading-snug">{capped.moreBelow} more</li>}
     </ul>
   );
 }

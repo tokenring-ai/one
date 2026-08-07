@@ -521,7 +521,7 @@ function BulkImportModal({
             <p id="bulk-import-title" className="text-sm font-semibold text-primary">
               Bulk Import
             </p>
-            <p className="text-2xs text-muted">Into: {label}</p>
+            <p className="text-xs text-muted">Into: {label}</p>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring" aria-label="Close">
             <X className="w-3.5 h-3.5" />
@@ -529,7 +529,7 @@ function BulkImportModal({
         </div>
 
         <div className="px-4 py-3 space-y-2">
-          <p className="text-2xs text-muted">
+          <p className="text-xs text-muted">
             Paste <span className="font-mono">KEY=value</span> pairs, one per line. Lines starting with <span className="font-mono">#</span> are ignored.
             Optional quotes around values are stripped.
           </p>
@@ -545,7 +545,7 @@ function BulkImportModal({
 
         {preview.length > 0 && (
           <div className="mx-4 mb-3 bg-input border border-primary rounded-lg overflow-hidden">
-            <p className="px-3 py-1.5 text-2xs text-muted border-b border-primary">
+            <p className="px-3 py-1.5 text-xs text-muted border-b border-primary">
               {preview.length} key{preview.length !== 1 ? "s" : ""} detected
             </p>
             <div className="max-h-32 overflow-y-auto">
@@ -615,7 +615,7 @@ function CategorySection({
           <button
             type="button"
             onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md hover:bg-hover transition-colors cursor-pointer focus-ring"
+            className="flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md hover:bg-hover transition-colors cursor-pointer focus-ring"
             title="Bulk import KEY=value pairs"
           >
             <Upload className="w-3 h-3" /> Import
@@ -634,7 +634,7 @@ function CategorySection({
           <AddKeyForm category={category} onAdded={onMutate} />
         </div>
 
-        <p className="text-2xs text-muted text-right">
+        <p className="text-xs text-muted text-right">
           {keys.length} key{keys.length !== 1 ? "s" : ""}
           {search.trim() && filtered.length !== keys.length ? ` · ${filtered.length} shown` : ""}
         </p>
@@ -696,7 +696,7 @@ export default function VaultApp() {
             }`}
           >
             {categoryLabel(id)}
-            {(entries[id]?.length ?? 0) > 0 && <span className="ml-1.5 text-2xs text-muted tabular-nums">{entries[id]!.length}</span>}
+            {(entries[id]?.length ?? 0) > 0 && <span className="ml-1.5 text-xs text-muted tabular-nums">{entries[id]!.length}</span>}
           </button>
         ))}
       </div>

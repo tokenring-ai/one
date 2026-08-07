@@ -93,7 +93,7 @@ function GroupRenderer(props: NodeRendererProps & { node: ConfigGroupNode }) {
       {normalChildren.map(renderChild)}
       {advancedChildren.length > 0 && (
         <details className="group/adv">
-          <summary className="flex items-center gap-1 text-2xs font-semibold text-muted uppercase tracking-widest cursor-pointer select-none py-1">
+          <summary className="flex items-center gap-1 text-xs font-semibold text-muted uppercase tracking-widest cursor-pointer select-none py-1">
             <ChevronRight className="w-3 h-3 transition-transform group-open/adv:rotate-90" />
             Advanced
           </summary>
@@ -108,7 +108,7 @@ function GroupRenderer(props: NodeRendererProps & { node: ConfigGroupNode }) {
     <section className="space-y-2">
       <div className="px-1">
         <h3 className="text-xs font-bold text-secondary uppercase tracking-widest">{node.label}</h3>
-        {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
+        {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
       </div>
       <div className="bg-secondary border border-primary rounded-xl px-4 py-3">{body}</div>
     </section>
@@ -129,28 +129,28 @@ function FieldRenderer(props: NodeRendererProps & { node: ConfigFieldNode }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-medium text-primary">{node.label}</span>
-            {node.required && <span className="text-2xs text-red-400">*</span>}
+            {node.required && <span className="text-xs text-red-400">*</span>}
             {overridden && (
-              <span className="inline-flex items-center gap-0.5 text-2xs px-1.5 py-px bg-accent/10 text-accent rounded-full" title="This value is overridden">
+              <span className="inline-flex items-center gap-0.5 text-xs px-1.5 py-px bg-accent/10 text-accent rounded-full" title="This value is overridden">
                 modified
               </span>
             )}
             {node.restartRequired && (
-              <span className="text-2xs px-1.5 py-px bg-amber-500/10 text-amber-500 rounded-full" title="Changing this requires a restart">
+              <span className="text-xs px-1.5 py-px bg-amber-500/10 text-amber-500 rounded-full" title="Changing this requires a restart">
                 restart
               </span>
             )}
           </div>
-          {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
+          {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
           {fieldIssues.map(issue => (
-            <p key={issue.message} className="text-2xs text-red-400 mt-0.5" role="alert">
+            <p key={issue.message} className="text-xs text-red-400 mt-0.5" role="alert">
               {issue.message}
             </p>
           ))}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <FieldControl node={node} value={displayed} overridden={overridden} onChange={props.onChange} />
-          {node.unit && <span className="text-2xs text-muted">{node.unit}</span>}
+          {node.unit && <span className="text-xs text-muted">{node.unit}</span>}
           {overridden && (
             <button
               type="button"
@@ -401,7 +401,7 @@ function RegexControl({
         </span>
       </div>
       {syntaxError && (
-        <p className="text-2xs text-red-400 max-w-full text-right" role="alert">
+        <p className="text-xs text-red-400 max-w-full text-right" role="alert">
           {syntaxError}
         </p>
       )}
@@ -459,7 +459,7 @@ function StringListControl({
             <span
               // eslint-disable-next-line react/no-array-index-key -- items may repeat; position is identity
               key={`${String(item)}-${index}`}
-              className="inline-flex items-center gap-1 text-2xs px-2 py-0.5 bg-tertiary border border-primary rounded-full text-secondary font-mono"
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-tertiary border border-primary rounded-full text-secondary font-mono"
             >
               {String(item)}
               <button
@@ -544,7 +544,7 @@ function JsonControl({ node, value, onChange }: { node: ConfigFieldNode; value: 
         spellCheck={false}
       />
       {parseError && (
-        <p className="text-2xs text-red-400" role="alert">
+        <p className="text-xs text-red-400" role="alert">
           {parseError}
         </p>
       )}
@@ -569,7 +569,7 @@ function ListRenderer(props: NodeRendererProps & { node: ConfigListNode }) {
       <div className="flex items-center justify-between px-1">
         <div>
           <h3 className="text-xs font-bold text-secondary uppercase tracking-widest">{node.label}</h3>
-          {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
+          {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
         </div>
         <div className="flex items-center gap-1.5">
           {overridden && (
@@ -585,7 +585,7 @@ function ListRenderer(props: NodeRendererProps & { node: ConfigListNode }) {
           <button
             type="button"
             onClick={() => update([...items, {}])}
-            className="inline-flex items-center gap-1 text-2xs px-2 py-1 bg-tertiary border border-primary rounded-lg text-secondary hover:text-primary cursor-pointer"
+            className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-tertiary border border-primary rounded-lg text-secondary hover:text-primary cursor-pointer"
           >
             <Plus className="w-3 h-3" /> Add
           </button>
@@ -632,7 +632,7 @@ function ListRenderer(props: NodeRendererProps & { node: ConfigListNode }) {
           />
         </div>
       ))}
-      {items.length === 0 && <p className="text-2xs text-muted px-1">No items</p>}
+      {items.length === 0 && <p className="text-xs text-muted px-1">No items</p>}
     </section>
   );
 }
@@ -668,7 +668,7 @@ function MapRenderer(props: NodeRendererProps & { node: ConfigMapNode }) {
       <div className="flex items-center justify-between px-1 gap-2">
         <div>
           <h3 className="text-xs font-bold text-secondary uppercase tracking-widest">{node.label}</h3>
-          {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
+          {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
         </div>
         <div className="flex items-center gap-1">
           <input
@@ -719,7 +719,7 @@ function MapRenderer(props: NodeRendererProps & { node: ConfigMapNode }) {
           </div>
         );
       })}
-      {entryKeys.length === 0 && <p className="text-2xs text-muted px-1">No entries</p>}
+      {entryKeys.length === 0 && <p className="text-xs text-muted px-1">No entries</p>}
     </section>
   );
 }
@@ -748,7 +748,7 @@ function VariantRenderer(props: NodeRendererProps & { node: ConfigVariantNode })
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="min-w-0">
           <h3 className="text-xs font-bold text-secondary uppercase tracking-widest">{node.label}</h3>
-          {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
+          {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <select
@@ -914,18 +914,18 @@ function SecretRenderer(props: NodeRendererProps & { node: ConfigSecretNode }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-medium text-primary">{node.label}</span>
-            {node.required && <span className="text-2xs text-red-400">*</span>}
-            {overridden && <span className="text-2xs px-1.5 py-px bg-accent/10 text-accent rounded-full">modified</span>}
+            {node.required && <span className="text-xs text-red-400">*</span>}
+            {overridden && <span className="text-xs px-1.5 py-px bg-accent/10 text-accent rounded-full">modified</span>}
             {node.restartRequired && (
-              <span className="text-2xs px-1.5 py-px bg-amber-500/10 text-amber-500 rounded-full" title="Changing this requires a restart">
+              <span className="text-xs px-1.5 py-px bg-amber-500/10 text-amber-500 rounded-full" title="Changing this requires a restart">
                 restart
               </span>
             )}
           </div>
-          {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
-          {!overridden && defaultDescription && <p className="text-2xs text-muted mt-0.5">Defaults to {defaultDescription}</p>}
+          {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
+          {!overridden && defaultDescription && <p className="text-xs text-muted mt-0.5">Defaults to {defaultDescription}</p>}
           {nodeIssues.map(issue => (
-            <p key={issue.message} className="text-2xs text-red-400 mt-0.5" role="alert">
+            <p key={issue.message} className="text-xs text-red-400 mt-0.5" role="alert">
               {issue.message}
             </p>
           ))}
@@ -1023,12 +1023,12 @@ function OpaqueRenderer(props: NodeRendererProps & { node: ConfigOpaqueNode }) {
     <div className="py-1.5">
       <div className="flex items-center gap-1.5">
         <span className="text-sm font-medium text-primary">{node.label}</span>
-        {overridden && <span className="text-2xs px-1.5 py-px bg-accent/10 text-accent rounded-full">modified</span>}
+        {overridden && <span className="text-xs px-1.5 py-px bg-accent/10 text-accent rounded-full">modified</span>}
       </div>
-      {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
-      <p className="text-2xs text-muted mt-0.5 italic">{node.reason} — edited as JSON</p>
+      {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
+      <p className="text-xs text-muted mt-0.5 italic">{node.reason} — edited as JSON</p>
       {nodeIssues.map(issue => (
-        <p key={issue.message} className="text-2xs text-red-400 mt-0.5" role="alert">
+        <p key={issue.message} className="text-xs text-red-400 mt-0.5" role="alert">
           {issue.message}
         </p>
       ))}

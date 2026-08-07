@@ -15,7 +15,7 @@ import {
 } from "./commandStep.ts";
 
 const fieldClass = "w-full bg-input border border-primary rounded-lg px-2.5 py-1.5 text-xs text-primary placeholder-muted focus-accent";
-const labelClass = "text-2xs font-medium text-muted";
+const labelClass = "text-xs font-medium text-muted";
 
 function RequiredMark() {
   return (
@@ -46,7 +46,7 @@ function CommandFields({
   };
 
   if (!hasFields) {
-    return <p className="text-2xs text-muted italic">This command takes no arguments.</p>;
+    return <p className="text-xs text-muted italic">This command takes no arguments.</p>;
   }
 
   return (
@@ -67,7 +67,7 @@ function CommandFields({
               />
               <span className="min-w-0">
                 <span className="text-xs text-primary font-mono">--{name}</span>
-                <span className="block text-2xs text-muted">{argSchema.description}</span>
+                <span className="block text-xs text-muted">{argSchema.description}</span>
               </span>
             </label>
           );
@@ -164,7 +164,7 @@ function StepKindToggle({ kind, onKindChange }: { kind: "chat" | "command"; onKi
       <button
         type="button"
         onClick={() => onKindChange("chat")}
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-2xs font-medium transition-colors cursor-pointer focus-ring ${
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer focus-ring ${
           kind === "chat" ? "bg-accent-muted text-accent" : "text-muted hover:text-primary"
         }`}
       >
@@ -173,7 +173,7 @@ function StepKindToggle({ kind, onKindChange }: { kind: "chat" | "command"; onKi
       <button
         type="button"
         onClick={() => onKindChange("command")}
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-2xs font-medium transition-colors cursor-pointer focus-ring ${
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer focus-ring ${
           kind === "command" ? "bg-accent-muted text-accent" : "text-muted hover:text-primary"
         }`}
       >
@@ -231,11 +231,11 @@ function StepRow({
   return (
     <div className="border border-primary rounded-xl bg-secondary/30 overflow-hidden">
       <div className="flex items-start gap-2 px-2.5 pt-2.5 pb-2">
-        <span className="mt-1.5 w-5 shrink-0 text-2xs font-mono text-muted text-right">{index + 1}</span>
+        <span className="mt-1.5 w-5 shrink-0 text-xs font-mono text-muted text-right">{index + 1}</span>
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <StepKindToggle kind={kind} onKindChange={setKind} />
-            <span className="text-2xs text-muted">{kind === "chat" ? "Sent as a plain chat message" : "Runs a registered agent command"}</span>
+            <span className="text-xs text-muted">{kind === "chat" ? "Sent as a plain chat message" : "Runs a registered agent command"}</span>
           </div>
 
           {isChatStep(step) ? (
@@ -267,16 +267,16 @@ function StepRow({
                     </option>
                   ))}
                 </select>
-                {selectedCommand && <p className="text-2xs text-muted">{selectedCommand.description}</p>}
+                {selectedCommand && <p className="text-xs text-muted">{selectedCommand.description}</p>}
               </div>
 
               {selectedCommand && <CommandFields command={selectedCommand} step={step} onChange={onChange} />}
 
               {step.command !== "" && (
                 <div className="rounded-lg bg-primary/40 border border-primary/60 px-2.5 py-1.5">
-                  <span className="block text-2xs font-semibold text-muted uppercase tracking-wide mb-0.5">Preview</span>
-                  <code className="block text-2xs font-mono text-primary break-all whitespace-pre-wrap">{preview}</code>
-                  {missing.length > 0 && <p className="mt-1 text-2xs text-amber-600 dark:text-amber-500">Required: {missing.join(", ")}</p>}
+                  <span className="block text-xs font-semibold text-muted uppercase tracking-wide mb-0.5">Preview</span>
+                  <code className="block text-xs font-mono text-primary break-all whitespace-pre-wrap">{preview}</code>
+                  {missing.length > 0 && <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">Required: {missing.join(", ")}</p>}
                 </div>
               )}
             </>
@@ -360,14 +360,14 @@ export default function StepEditor({
         <button
           type="button"
           onClick={() => onChange([...steps, emptyChatStep()])}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 border border-dashed border-primary text-muted hover:text-primary hover:bg-hover text-2xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 border border-dashed border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
         >
           <Plus className="w-3 h-3" /> Add chat step
         </button>
         <button
           type="button"
           onClick={() => onChange([...steps, emptyCommandStep()])}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 border border-dashed border-primary text-muted hover:text-primary hover:bg-hover text-2xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 border border-dashed border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
         >
           <Plus className="w-3 h-3" /> Add command step
         </button>

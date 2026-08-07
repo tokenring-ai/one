@@ -325,7 +325,7 @@ export default function ToolSelector({ agentId, triggerVariant = "default" }: To
                       }}
                       title={allEnabled ? "Disable all tools" : allDisabled ? "Enable all tools" : "Toggle all tools"}
                     >
-                      <span className="text-2xs font-mono text-muted">
+                      <span className="text-xs font-mono text-muted">
                         {enabledToolCount}/{toolCount}
                       </span>
                       <div className="flex items-center gap-1">

@@ -46,7 +46,7 @@ export default function DayView({
         </div>
         <div>
           <div className={cn("text-sm font-semibold", isToday ? "text-sky-500" : "text-primary")}>{WEEKDAYS_SHORT[date.getDay()]}</div>
-          <div className="text-2xs text-muted">
+          <div className="text-xs text-muted">
             {MONTHS[date.getMonth()]} {date.getFullYear()}
           </div>
         </div>
@@ -57,7 +57,7 @@ export default function DayView({
             ))}
           </div>
         ) : dayEvents.length === 0 ? (
-          <p className="ml-4 text-2xs text-muted">No events — click a time slot to add one</p>
+          <p className="ml-4 text-xs text-muted">No events — click a time slot to add one</p>
         ) : null}
       </div>
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
@@ -66,7 +66,7 @@ export default function DayView({
             {HOURS.map(h => (
               <div
                 key={h}
-                className="absolute left-0 right-0 flex items-start justify-end pr-2 text-2xs text-muted"
+                className="absolute left-0 right-0 flex items-start justify-end pr-2 text-xs text-muted"
                 style={{ top: `${h * HOUR_H}px`, height: `${HOUR_H}px` }}
               >
                 {h === 0 ? "" : `${h % 12 || 12}${h < 12 ? "am" : "pm"}`}
@@ -105,7 +105,7 @@ export default function DayView({
                     {ev.title}
                   </div>
                   {ev.startTime && (
-                    <div className="text-white/80 text-2xs">
+                    <div className="text-white/80 text-xs">
                       {ev.startTime}
                       {ev.endTime ? ` – ${ev.endTime}` : ""}
                     </div>

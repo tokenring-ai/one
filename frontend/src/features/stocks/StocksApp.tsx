@@ -57,12 +57,12 @@ export default function StocksApp() {
           ) : (
             <div className="px-4 py-8 bg-secondary/50 border border-dashed border-primary rounded-2xl text-center">
               <p className="text-sm text-secondary mb-1">Search a symbol or pick a quick ticker above</p>
-              <p className="text-2xs text-muted">Overview · Chart · History · News · Ask AI</p>
+              <p className="text-xs text-muted">Overview · Chart · History · News · Ask AI</p>
             </div>
           )}
 
           <div>
-            <p className="text-2xs font-bold text-muted uppercase tracking-widest px-1 mb-3">Market Leaders</p>
+            <p className="text-xs font-bold text-muted uppercase tracking-widest px-1 mb-3">Market Leaders</p>
             <LeadersSection onSymbolSelect={handleSymbolSelect} />
           </div>
         </div>

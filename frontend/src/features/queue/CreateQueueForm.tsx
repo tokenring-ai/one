@@ -100,7 +100,7 @@ export default function CreateQueueForm({ existingNames, onCreated, onCancel }: 
       <div className="flex items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-primary">Create a queue</h3>
-          <p className="text-2xs text-muted mt-0.5">Each queue dispatches work to a specific agent type</p>
+          <p className="text-xs text-muted mt-0.5">Each queue dispatches work to a specific agent type</p>
         </div>
         <button type="button" onClick={onCancel} className="p-1.5 text-muted hover:text-primary rounded-md focus-ring cursor-pointer" aria-label="Cancel">
           <X className="w-4 h-4" />
@@ -109,14 +109,14 @@ export default function CreateQueueForm({ existingNames, onCreated, onCancel }: 
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Queue name</span>
+          <span className="text-xs font-medium text-muted">Queue name</span>
           <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="research" className={inputClass} autoFocus required />
         </label>
 
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Agent type</span>
+          <span className="text-xs font-medium text-muted">Agent type</span>
           {typesLoading ? (
-            <div className="flex items-center gap-2 text-2xs text-muted px-3 py-2 border border-primary rounded-lg">
+            <div className="flex items-center gap-2 text-xs text-muted px-3 py-2 border border-primary rounded-lg">
               <Loader2 className="w-3 h-3 animate-spin" /> Loading agent types…
             </div>
           ) : typeList.length === 0 ? (
@@ -131,7 +131,7 @@ export default function CreateQueueForm({ existingNames, onCreated, onCancel }: 
                 spellCheck={false}
                 autoComplete="off"
               />
-              <span className="block text-2xs text-muted">
+              <span className="block text-xs text-muted">
                 {agentTypes.error ? (
                   <>
                     Could not load agent types.{" "}
@@ -161,17 +161,17 @@ export default function CreateQueueForm({ existingNames, onCreated, onCancel }: 
         </label>
 
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Concurrency</span>
+          <span className="text-xs font-medium text-muted">Concurrency</span>
           <input type="number" min={1} value={concurrency} onChange={e => setConcurrency(e.target.value)} className={inputClass} required />
         </label>
 
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Max pending (optional)</span>
+          <span className="text-xs font-medium text-muted">Max pending (optional)</span>
           <input type="number" min={1} value={maxSize} onChange={e => setMaxSize(e.target.value)} placeholder="unlimited" className={inputClass} />
         </label>
 
         <label className="block space-y-1 sm:col-span-2">
-          <span className="text-2xs font-medium text-muted">Results kept (optional)</span>
+          <span className="text-xs font-medium text-muted">Results kept (optional)</span>
           <input type="number" min={1} value={maxResults} onChange={e => setMaxResults(e.target.value)} placeholder="service default" className={inputClass} />
         </label>
       </div>

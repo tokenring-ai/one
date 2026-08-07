@@ -1,6 +1,7 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Check, Download, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useMemo } from "react";
+import NavigationSidebarHeader from "../../../components/layout/NavigationSidebarHeader.tsx";
 import { toastManager } from "../../../components/ui/toast.tsx";
 import { cn } from "../../../lib/utils.ts";
 import { filesystemRPCClient, useDirectoryListing, useWorkspaceFileSearch } from "../../../rpc.ts";
@@ -94,32 +95,42 @@ export default function FileListPane({
   // provider can briefly be null while parents load; avoid a false "empty directory" flash
   if (!provider) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-5 h-5 text-muted animate-spin" />
+      <div className="h-full flex flex-col min-h-0">
+        <NavigationSidebarHeader title="Files" />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-5 h-5 text-muted animate-spin" />
+        </div>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-5 h-5 text-muted animate-spin" />
+      <div className="h-full flex flex-col min-h-0">
+        <NavigationSidebarHeader title="Files" />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-5 h-5 text-muted animate-spin" />
+        </div>
       </div>
     );
   }
 
   if (loadError) {
     return (
-      <div className="h-full flex items-center justify-center p-6 text-center">
-        <p className="text-sm text-red-400">{formatError(loadError)}</p>
+      <div className="h-full flex flex-col min-h-0">
+        <NavigationSidebarHeader title="Files" />
+        <div className="flex-1 flex items-center justify-center p-6 text-center">
+          <p className="text-sm text-red-400">{formatError(loadError)}</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="h-full overflow-y-auto flex flex-col">
+      <NavigationSidebarHeader title="Files" meta={sortedFiles.length} />
       {isSearching && (
-        <div className="px-3 py-1.5 border-b border-primary bg-tertiary text-2xs text-muted shrink-0">
+        <div className="px-3 py-1.5 border-b border-primary bg-tertiary text-xs text-muted shrink-0">
           {workspaceSearch.data
             ? `${workspaceSearch.data.totalMatches} match${workspaceSearch.data.totalMatches === 1 ? "" : "es"} for “${trimmedSearch}”${
                 workspaceSearch.data.totalMatches > sortedFiles.length ? ` · showing ${sortedFiles.length}` : ""
@@ -129,7 +140,7 @@ export default function FileListPane({
       )}
       <table className="w-full text-left border-collapse">
         <thead className="sticky top-0 bg-secondary z-10">
-          <tr className="text-2xs text-muted font-semibold border-b border-primary">
+          <tr className="text-xs text-muted font-semibold border-b border-primary">
             <th className="pl-3 pr-2 py-2 w-8">
               <button
                 type="button"
@@ -197,7 +208,7 @@ export default function FileListPane({
                       >
                         {name}
                       </span>
-                      {showPathHint && <span className="text-2xs text-dim truncate block">{file}</span>}
+                      {showPathHint && <span className="text-xs text-dim truncate block">{file}</span>}
                     </div>
                     {isUploading && <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin shrink-0" />}
                   </div>

@@ -18,7 +18,7 @@ export default function ImageShapeField({ value, onChange }: { value: ImageShape
             type="button"
             key={opt.value}
             onClick={() => onChange(opt.value)}
-            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border text-2xs font-medium transition-all cursor-pointer focus-ring ${
+            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border text-xs font-medium transition-all cursor-pointer focus-ring ${
               value === opt.value ? "border-accent bg-accent-subtle text-accent-soft" : "border-primary text-muted hover:text-primary hover:bg-hover"
             }`}
           >

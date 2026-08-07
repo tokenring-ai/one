@@ -54,7 +54,7 @@ function SettingsRow({ title, description, children, border = true }: { title: s
     <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 px-4 py-3.5 ${border ? "border-b border-primary" : ""}`}>
       <div className="min-w-0">
         <p className="text-sm font-medium text-primary">{title}</p>
-        {description ? <p className="text-2xs text-muted mt-0.5">{description}</p> : null}
+        {description ? <p className="text-xs text-muted mt-0.5">{description}</p> : null}
       </div>
       <div className="shrink-0 self-stretch sm:self-auto flex sm:block items-center justify-end">{children}</div>
     </div>
@@ -71,7 +71,7 @@ function NavRow({ to, title, description, icon, border = true }: { to: string; t
         <span className="mt-0.5 text-muted shrink-0">{icon}</span>
         <div className="min-w-0">
           <p className="text-sm font-medium text-primary">{title}</p>
-          <p className="text-2xs text-muted mt-0.5">{description}</p>
+          <p className="text-xs text-muted mt-0.5">{description}</p>
         </div>
       </div>
       <ChevronRight className="w-4 h-4 text-muted shrink-0" aria-hidden="true" />
@@ -149,7 +149,7 @@ export default function SettingsApp() {
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
         <div className="max-w-2xl mx-auto space-y-6">
           {!localStorageAvailable && (
-            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-2xs text-amber-700 dark:text-amber-300" role="status">
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-700 dark:text-amber-300" role="status">
               Browser storage is unavailable. Theme and layout choices will not persist across sessions.
             </div>
           )}
@@ -225,7 +225,7 @@ export default function SettingsApp() {
                 }
               >
                 <span
-                  className={`inline-flex items-center gap-1 text-2xs font-medium px-2 py-1 rounded-full ${
+                  className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
                     localStorageAvailable ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                   }`}
                 >
@@ -259,15 +259,15 @@ export default function SettingsApp() {
             <div className="bg-secondary border border-primary rounded-xl overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3.5 border-b border-primary">
                 <p className="text-sm font-medium text-primary">TokenRing One</p>
-                <span className="text-2xs text-muted font-mono">v{packageJSON.version}</span>
+                <span className="text-xs text-muted font-mono">v{packageJSON.version}</span>
               </div>
               <div className="flex items-center justify-between px-4 py-3.5 border-b border-primary">
                 <p className="text-sm font-medium text-primary">Platform</p>
-                <span className="text-2xs text-muted">Multi-agent orchestration</span>
+                <span className="text-xs text-muted">Multi-agent orchestration</span>
               </div>
               <div className="flex items-center justify-between px-4 py-3.5">
                 <p className="text-sm font-medium text-primary">Client</p>
-                <span className="text-2xs text-muted">{runtimeLabel}</span>
+                <span className="text-xs text-muted">{runtimeLabel}</span>
               </div>
             </div>
           </section>

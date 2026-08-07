@@ -43,13 +43,13 @@ export default function ConnectionStatusBanner({ isConnecting, connectionError, 
             <span className={`text-xs font-medium ${isCritical ? "text-error" : "text-warning"}`}>
               {isConnecting ? (reconnectAttempts > 0 ? `Reconnecting... (attempt ${reconnectAttempts})` : "Connecting to agent...") : "Connection lost"}
             </span>
-            {connectionError && reconnectAttempts > 0 && <span className="text-2xs text-muted font-mono truncate">{connectionError}</span>}
+            {connectionError && reconnectAttempts > 0 && <span className="text-xs text-muted font-mono truncate">{connectionError}</span>}
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           {reconnectAttempts > 0 && (
-            <span className="text-2xs text-muted font-mono hidden sm:inline">{Math.min(Math.round((1.5 ** reconnectAttempts * 1000) / 1000), 30)}s delay</span>
+            <span className="text-xs text-muted font-mono hidden sm:inline">{Math.min(Math.round((1.5 ** reconnectAttempts * 1000) / 1000), 30)}s delay</span>
           )}
 
           {onReconnect && (

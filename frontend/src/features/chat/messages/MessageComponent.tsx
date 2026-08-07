@@ -121,7 +121,7 @@ export default function MessageComponent({ msg, question, response }: MessageCom
                 role="group"
                 aria-label="Attachments"
               >
-                <div className="mb-1.5 text-2xs font-semibold uppercase tracking-widest text-muted">Attachments</div>
+                <div className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">Attachments</div>
                 <div className="flex flex-row flex-wrap items-start gap-x-4 gap-y-1" role="list">
                   {attachments.map((attachment, index) => (
                     <AttachmentChip key={`${attachment.name}-${index}`} attachment={attachment} />

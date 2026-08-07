@@ -5,6 +5,7 @@ import deepEqual from "@tokenring-ai/utility/object/deepEqual";
 import { AlertTriangle, FolderGit2, KeyRound, Search, SlidersHorizontal, User } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
@@ -182,6 +183,7 @@ export default function ConfigurationApp() {
   const overridesFile = schema.data?.overridesFiles[scope];
   const pluginNavigation = (
     <div className="h-full flex flex-col min-h-0 bg-sidebar">
+      <NavigationSidebarHeader title="Plugins" />
       <div className="p-2 border-b border-primary">
         <div className="relative">
           <Search className="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -229,7 +231,7 @@ export default function ConfigurationApp() {
             </button>
           );
         })}
-        {filteredPlugins.length === 0 && <p className="text-2xs text-muted px-2.5 py-4">No plugins match "{search}"</p>}
+        {filteredPlugins.length === 0 && <p className="text-xs text-muted px-2.5 py-4">No plugins match "{search}"</p>}
       </nav>
     </div>
   );
@@ -268,7 +270,7 @@ export default function ConfigurationApp() {
       </AppPageHeader>
 
       {overridesFile && (
-        <div className="shrink-0 px-4 sm:px-6 py-1.5 border-b border-primary bg-secondary/50 text-2xs text-muted">
+        <div className="shrink-0 px-4 sm:px-6 py-1.5 border-b border-primary bg-secondary/50 text-xs text-muted">
           Saving to <span className="font-mono text-secondary">{overridesFile}</span>
         </div>
       )}
@@ -310,7 +312,7 @@ export default function ConfigurationApp() {
                   <div className="max-w-2xl">
                     <div className="mb-5">
                       <h2 className="text-base font-semibold text-primary">{selectedPlugin.displayName}</h2>
-                      <p className="text-2xs text-muted mt-0.5">
+                      <p className="text-xs text-muted mt-0.5">
                         {selectedPlugin.description}
                         <span className="font-mono ml-2">
                           {selectedPlugin.pluginName} v{selectedPlugin.version}
@@ -319,7 +321,7 @@ export default function ConfigurationApp() {
                     </div>
 
                     {shadowedByProject && (
-                      <div className="mb-4 flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 text-2xs">
+                      <div className="mb-4 flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 text-xs">
                         <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
                         <span>
                           This plugin is also configured at the project level, which takes precedence. Values you set here may not take effect until the project

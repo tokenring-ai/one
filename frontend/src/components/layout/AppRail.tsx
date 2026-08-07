@@ -69,7 +69,7 @@ function RailIconButton({ label, tooltip = label, current = false, highlighted =
       {tooltipPosition &&
         createPortal(
           <span
-            className="pointer-events-none fixed z-[100] -translate-y-1/2 whitespace-nowrap rounded-lg border border-primary bg-tertiary px-2 py-1.5 text-2xs font-medium text-primary shadow-lg"
+            className="pointer-events-none fixed z-[100] -translate-y-1/2 whitespace-nowrap rounded-lg border border-primary bg-tertiary px-2 py-1.5 text-xs font-medium text-primary shadow-lg"
             style={tooltipPosition}
           >
             {tooltip}

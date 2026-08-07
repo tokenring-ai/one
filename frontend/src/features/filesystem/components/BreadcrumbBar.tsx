@@ -47,7 +47,7 @@ export default function BreadcrumbBar({ path, onNavigate, showHidden, onToggleHi
       <button
         type="button"
         onClick={onToggleHidden}
-        className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-hover text-muted text-2xs transition-colors focus-ring cursor-pointer"
+        className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-hover text-muted text-xs transition-colors focus-ring cursor-pointer"
         title={showHidden ? "Hide hidden files" : "Show hidden files"}
       >
         {showHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -57,7 +57,7 @@ export default function BreadcrumbBar({ path, onNavigate, showHidden, onToggleHi
         <button
           type="button"
           onClick={onNewFile}
-          className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-hover text-muted text-2xs transition-colors focus-ring cursor-pointer"
+          className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-hover text-muted text-xs transition-colors focus-ring cursor-pointer"
           title="New file"
         >
           <FilePlus className="w-3.5 h-3.5" />
@@ -68,7 +68,7 @@ export default function BreadcrumbBar({ path, onNavigate, showHidden, onToggleHi
         <button
           type="button"
           onClick={onNewFolder}
-          className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-hover text-muted text-2xs transition-colors focus-ring cursor-pointer"
+          className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-hover text-muted text-xs transition-colors focus-ring cursor-pointer"
           title="New folder"
         >
           <FolderPlus className="w-3.5 h-3.5" />
@@ -78,7 +78,7 @@ export default function BreadcrumbBar({ path, onNavigate, showHidden, onToggleHi
       <button
         type="button"
         onClick={onUpload}
-        className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-hover text-muted text-2xs transition-colors focus-ring cursor-pointer"
+        className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-hover text-muted text-xs transition-colors focus-ring cursor-pointer"
         title="Upload files"
       >
         <Plus className="w-3.5 h-3.5" />

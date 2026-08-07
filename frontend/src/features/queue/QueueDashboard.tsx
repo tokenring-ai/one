@@ -19,6 +19,7 @@ import {
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
@@ -201,21 +202,20 @@ export default function QueueDashboard() {
         className="flex-1"
         navigation={
           <div className="h-full flex flex-col min-h-0 bg-secondary">
-            <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-primary">
-              <span className="flex-1 text-2xs font-bold uppercase tracking-widest text-muted">Queues</span>
-              <span className="text-2xs text-muted">{queueNames.length}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCreateForm(true);
-                  setShowAddForm(false);
-                }}
-                className="p-1.5 rounded-md text-muted hover:text-primary hover:bg-hover focus-ring"
-                aria-label="Create queue"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <NavigationSidebarHeader
+              title="Queues"
+              meta={queueNames.length}
+              actions={[
+                {
+                  icon: <Plus className="w-3.5 h-3.5" />,
+                  label: "Create queue",
+                  onClick: () => {
+                    setShowCreateForm(true);
+                    setShowAddForm(false);
+                  },
+                },
+              ]}
+            />
             <nav className="flex-1 overflow-y-auto p-2 space-y-1" aria-label="Queues">
               {queueNames.map(name => {
                 const queue = allQueues[name];
@@ -242,17 +242,17 @@ export default function QueueDashboard() {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-xs font-medium truncate">{name}</span>
-                      <span className="block text-2xs text-muted truncate">{queue?.config.agentType ?? "Queue"}</span>
+                      <span className="block text-xs text-muted truncate">{queue?.config.agentType ?? "Queue"}</span>
                     </span>
                     {(pendingCount > 0 || runningCount > 0) && (
-                      <span className="text-2xs text-muted tabular-nums">
+                      <span className="text-xs text-muted tabular-nums">
                         {pendingCount}/{runningCount}
                       </span>
                     )}
                   </button>
                 );
               })}
-              {!isLoading && queueNames.length === 0 && <p className="px-2 py-6 text-center text-2xs text-muted">No queues configured</p>}
+              {!isLoading && queueNames.length === 0 && <p className="px-2 py-6 text-center text-xs text-muted">No queues configured</p>}
             </nav>
           </div>
         }
@@ -269,7 +269,7 @@ export default function QueueDashboard() {
               <div className="px-6 py-14 text-center bg-secondary border border-primary border-dashed rounded-xl">
                 <Layers className="w-10 h-10 text-muted mx-auto mb-3 opacity-50" />
                 <p className="text-sm font-medium text-primary mb-1">No queues available</p>
-                <p className="text-2xs text-muted max-w-sm mx-auto mb-5">
+                <p className="text-xs text-muted max-w-sm mx-auto mb-5">
                   The queue service is running but no queues are configured. Create a queue to start dispatching work.
                 </p>
                 {showCreateForm ? (
@@ -300,7 +300,7 @@ export default function QueueDashboard() {
             ) : (
               <>
                 {queues.error ? (
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-2xs text-amber-800 dark:text-amber-200">
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs text-amber-800 dark:text-amber-200">
                     <span>Live queue updates interrupted. Showing the last snapshot.</span>
                     <button
                       type="button"
@@ -325,7 +325,7 @@ export default function QueueDashboard() {
                 <div className="bg-secondary border border-primary rounded-xl p-4 shadow-sm space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <label className="flex-1 min-w-0 space-y-1">
-                      <span className="text-2xs font-bold text-muted uppercase tracking-widest">Queue</span>
+                      <span className="text-xs font-bold text-muted uppercase tracking-widest">Queue</span>
                       <select
                         value={selectedQueueName ?? ""}
                         onChange={e => {
@@ -348,7 +348,7 @@ export default function QueueDashboard() {
 
                     <div className="flex flex-wrap items-center gap-2 sm:pt-5">
                       {queueData ? (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-2xs font-medium bg-tertiary text-muted border border-primary">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-tertiary text-muted border border-primary">
                           <Activity className="w-3 h-3" />
                           {running.length} / {concurrency} active
                         </span>
@@ -368,7 +368,7 @@ export default function QueueDashboard() {
                   </div>
 
                   {queueData ? (
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
                       <span>
                         Agent type: <span className="text-primary font-medium">{queueData.config.agentType}</span>
                       </span>
@@ -477,13 +477,13 @@ export default function QueueDashboard() {
                                   </button>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                      <span className="text-2xs text-muted tabular-nums">#{index + 1}</span>
+                                      <span className="text-xs text-muted tabular-nums">#{index + 1}</span>
                                       <span className="text-sm font-medium text-primary truncate">{item.name}</span>
-                                      <span className="inline-flex items-center gap-1 text-2xs text-indigo-600 dark:text-indigo-400 shrink-0">
+                                      <span className="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 shrink-0">
                                         <Clock className="w-3 h-3" /> Pending
                                       </span>
                                     </div>
-                                    <p className="text-2xs text-muted mb-1.5" title={item.input.message}>
+                                    <p className="text-xs text-muted mb-1.5" title={item.input.message}>
                                       {expanded ? null : truncateText(item.input.message)}
                                     </p>
                                     {expanded ? (
@@ -492,12 +492,12 @@ export default function QueueDashboard() {
                                         {item.input.attachments?.length ? (
                                           <DetailBlock label="Attachments" value={item.input.attachments.map(a => a.name).join(", ")} />
                                         ) : null}
-                                        <p className="text-2xs text-muted">
+                                        <p className="text-xs text-muted">
                                           Id: <span className="font-mono text-secondary">{item.id}</span>
                                         </p>
                                       </div>
                                     ) : null}
-                                    <p className="text-2xs text-muted/90">
+                                    <p className="text-xs text-muted/90">
                                       Queued {formatRelativeTime(item.createdAt)} · from {item.input.from}
                                     </p>
                                   </div>
@@ -534,12 +534,12 @@ export default function QueueDashboard() {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                                       <span className="text-sm font-medium text-primary truncate">{item.name}</span>
-                                      <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 shrink-0">
+                                      <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 shrink-0">
                                         <Loader2 className="w-3 h-3 animate-spin" /> Running
                                       </span>
                                     </div>
                                     {!expanded ? (
-                                      <p className="text-2xs text-muted mb-1.5" title={item.input.message}>
+                                      <p className="text-xs text-muted mb-1.5" title={item.input.message}>
                                         {truncateText(item.input.message)}
                                       </p>
                                     ) : (
@@ -550,7 +550,7 @@ export default function QueueDashboard() {
                                         ) : null}
                                       </div>
                                     )}
-                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
+                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
                                       <span>Started {item.startedAt ? formatRelativeTime(item.startedAt) : "—"}</span>
                                       <span>
                                         Elapsed{" "}
@@ -619,11 +619,11 @@ export default function QueueDashboard() {
                                       <div className="flex items-center gap-2 flex-wrap mb-0.5">
                                         <span className="text-sm font-medium text-primary">{item.name}</span>
                                         <ResultStatusBadge status={item.status} />
-                                        <span className="text-2xs text-muted tabular-nums">{formatDurationMs(item.durationMs)}</span>
+                                        <span className="text-xs text-muted tabular-nums">{formatDurationMs(item.durationMs)}</span>
                                       </div>
-                                      <p className="text-2xs text-muted mb-1">{formatQueueTime(item.completedAt, { withSeconds: true })}</p>
+                                      <p className="text-xs text-muted mb-1">{formatQueueTime(item.completedAt, { withSeconds: true })}</p>
                                       {!expanded && item.resultMessage ? (
-                                        <p className="text-2xs text-secondary line-clamp-3 whitespace-pre-wrap" title={item.resultMessage}>
+                                        <p className="text-xs text-secondary line-clamp-3 whitespace-pre-wrap" title={item.resultMessage}>
                                           {item.resultMessage}
                                         </p>
                                       ) : null}
@@ -634,7 +634,7 @@ export default function QueueDashboard() {
                                             <DetailBlock label="Attachments" value={item.input.attachments.map(a => a.name).join(", ")} />
                                           ) : null}
                                           {item.resultMessage ? <DetailBlock label="Result" value={item.resultMessage} /> : null}
-                                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted">
+                                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
                                             <span>
                                               From <span className="text-secondary">{item.input.from}</span>
                                             </span>
@@ -694,7 +694,7 @@ function SummaryStat({ label, value, icon, accentClass }: { label: string; value
   return (
     <div className="px-4 py-3.5 bg-secondary rounded-xl border border-primary shadow-sm">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-2xs font-bold text-muted uppercase tracking-widest">{label}</span>
+        <span className="text-xs font-bold text-muted uppercase tracking-widest">{label}</span>
         <span className={cn("opacity-80", accentClass)}>{icon}</span>
       </div>
       <div className={cn("text-xl font-semibold tabular-nums tracking-tight", accentClass ?? "text-primary")}>{value}</div>
@@ -705,13 +705,13 @@ function SummaryStat({ label, value, icon, accentClass }: { label: string; value
 function ResultStatusBadge({ status }: { status: "completed" | "failed" | "cancelled" }) {
   if (status === "completed") {
     return (
-      <span className="text-2xs px-1.5 py-0.5 rounded-md border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">completed</span>
+      <span className="text-xs px-1.5 py-0.5 rounded-md border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">completed</span>
     );
   }
   if (status === "failed") {
-    return <span className="text-2xs px-1.5 py-0.5 rounded-md border bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30">failed</span>;
+    return <span className="text-xs px-1.5 py-0.5 rounded-md border bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30">failed</span>;
   }
-  return <span className="text-2xs px-1.5 py-0.5 rounded-md border bg-tertiary text-muted border-primary">cancelled</span>;
+  return <span className="text-xs px-1.5 py-0.5 rounded-md border bg-tertiary text-muted border-primary">cancelled</span>;
 }
 
 function CancelButton({ itemId, busy, onClick }: { itemId: string; busy: boolean; onClick: () => void }) {
@@ -735,8 +735,8 @@ function CancelButton({ itemId, busy, onClick }: { itemId: string; busy: boolean
 function DetailBlock({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-primary bg-tertiary/40 px-3 py-2">
-      <p className="text-2xs font-bold text-muted uppercase tracking-widest mb-1">{label}</p>
-      <p className="text-2xs text-secondary whitespace-pre-wrap break-words">{value}</p>
+      <p className="text-xs font-bold text-muted uppercase tracking-widest mb-1">{label}</p>
+      <p className="text-xs text-secondary whitespace-pre-wrap break-words">{value}</p>
     </div>
   );
 }
@@ -746,7 +746,7 @@ function EmptyState({ icon, title, hint, ctaLabel, onCta }: { icon: ReactNode; t
     <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
       {icon}
       <p className="text-sm font-medium text-secondary mb-1">{title}</p>
-      <p className="text-2xs text-muted max-w-xs mx-auto mb-4">{hint}</p>
+      <p className="text-xs text-muted max-w-xs mx-auto mb-4">{hint}</p>
       {ctaLabel && onCta ? (
         <button
           type="button"

@@ -21,7 +21,7 @@ function StatusBadge({ status }: { status: PlatformStatusId }) {
     not_installed: <WifiOff className="w-3 h-3" />,
   };
   return (
-    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium border shrink-0", styles[status])}>
+    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border shrink-0", styles[status])}>
       {icons[status]}
       {statusLabel(status)}
     </span>
@@ -48,8 +48,8 @@ function PlatformCard({ info }: { info: PlatformStatus }) {
             <p className="text-sm font-medium text-primary">{platform.name}</p>
             <StatusBadge status={status} />
           </div>
-          <p className="text-2xs text-muted mt-0.5">{platform.description}</p>
-          <p className="text-2xs text-secondary mt-1.5 leading-relaxed">{statusDetail(info)}</p>
+          <p className="text-xs text-muted mt-0.5">{platform.description}</p>
+          <p className="text-xs text-secondary mt-1.5 leading-relaxed">{statusDetail(info)}</p>
         </div>
       </div>
 
@@ -57,7 +57,7 @@ function PlatformCard({ info }: { info: PlatformStatus }) {
         {canConfigure ? (
           <Link
             to={configHref}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-2xs font-medium rounded-lg border border-primary bg-tertiary text-primary hover:bg-hover hover:border-accent-muted transition-colors focus-ring"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-primary bg-tertiary text-primary hover:bg-hover hover:border-accent-muted transition-colors focus-ring"
           >
             <Settings2 className="w-3 h-3" />
             {status === "needs_config" ? "Configure" : "Edit config"}
@@ -66,7 +66,7 @@ function PlatformCard({ info }: { info: PlatformStatus }) {
         {status === "not_installed" ? (
           <Link
             to="/plugins"
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-2xs font-medium rounded-lg border border-primary bg-tertiary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-primary bg-tertiary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring"
           >
             <Package className="w-3 h-3" />
             View plugins
@@ -75,7 +75,7 @@ function PlatformCard({ info }: { info: PlatformStatus }) {
         {status === "connected" || (status === "configured" && platform.kind === "messaging") ? (
           <Link
             to="/bots"
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-2xs font-medium rounded-lg border border-primary bg-tertiary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-primary bg-tertiary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring"
           >
             <Bot className="w-3 h-3" />
             Manage bots
@@ -84,7 +84,7 @@ function PlatformCard({ info }: { info: PlatformStatus }) {
         {canConfigure ? (
           <Link
             to="/vault"
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-2xs font-medium rounded-lg border border-primary bg-tertiary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-primary bg-tertiary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring"
             title="Store bot tokens and secrets"
           >
             <KeyRound className="w-3 h-3" />
@@ -101,7 +101,7 @@ function SummaryStat({ label, value, icon, accentClass }: { label: string; value
     <div className="bg-secondary border border-primary rounded-xl px-3 py-2.5 shadow-sm">
       <div className="flex items-center gap-1.5 mb-0.5">
         <span className={accentClass}>{icon}</span>
-        <span className="text-2xs font-bold text-muted uppercase tracking-widest">{label}</span>
+        <span className="text-xs font-bold text-muted uppercase tracking-widest">{label}</span>
       </div>
       <p className="text-base font-semibold text-primary tabular-nums">{value}</p>
     </div>
@@ -129,15 +129,15 @@ function BotsSummary({
     <div className="bg-secondary border border-primary rounded-xl p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-2xs font-bold text-muted uppercase tracking-widest">Bots & messaging</p>
+          <p className="text-xs font-bold text-muted uppercase tracking-widest">Bots & messaging</p>
           <p className="text-sm text-secondary mt-1 leading-relaxed">
             Channel bots sit on Slack, Telegram, and Discord accounts and answer with agents. Configure accounts above, then define bots under{" "}
-            <code className="text-2xs text-primary">bot.bots</code>.
+            <code className="text-xs text-primary">bot.bots</code>.
           </p>
         </div>
         <Link
           to="/bots"
-          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-2xs font-medium rounded-lg bg-teal-600 hover:bg-teal-500 text-white shrink-0 transition-colors focus-ring shadow-sm"
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-teal-600 hover:bg-teal-500 text-white shrink-0 transition-colors focus-ring shadow-sm"
         >
           Open Bots
           <ExternalLink className="w-3 h-3" />
@@ -145,7 +145,7 @@ function BotsSummary({
       </div>
 
       {!botPluginInstalled ? (
-        <p className="text-2xs text-muted flex items-center gap-1.5">
+        <p className="text-xs text-muted flex items-center gap-1.5">
           <WifiOff className="w-3.5 h-3.5" /> Bot plugin is not installed on this instance.
         </p>
       ) : botsError ? (
@@ -165,7 +165,7 @@ function BotsSummary({
       )}
 
       {botPluginInstalled && !botsError && botCount === 0 && serviceCount > 0 ? (
-        <div className="flex flex-wrap items-center gap-2 text-2xs">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="text-muted">Messaging services are live, but no bots are defined yet.</span>
           <Link
             to={`/configuration/${encodeURIComponent(BOT_PLUGIN_NAME)}`}
@@ -177,7 +177,7 @@ function BotsSummary({
       ) : null}
 
       {botPluginInstalled && !botsError && serviceCount === 0 ? (
-        <p className="text-2xs text-muted">No messaging services connected. Add a Slack, Telegram, or Discord account to go live.</p>
+        <p className="text-xs text-muted">No messaging services connected. Add a Slack, Telegram, or Discord account to go live.</p>
       ) : null}
     </div>
   );
@@ -255,13 +255,13 @@ export default function SocialPlatforms() {
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-2 px-1">
         <div>
-          <p className="text-2xs font-bold text-muted uppercase tracking-widest">Platforms</p>
-          <p className="text-2xs text-muted mt-0.5">{platformsHeadline(connectedCount, needsConfigCount, configuredCount)}</p>
+          <p className="text-xs font-bold text-muted uppercase tracking-widest">Platforms</p>
+          <p className="text-xs text-muted mt-0.5">{platformsHeadline(connectedCount, needsConfigCount, configuredCount)}</p>
         </div>
         <button
           type="button"
           onClick={refresh}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-2xs text-muted hover:text-primary border border-primary rounded-lg transition-colors focus-ring cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-primary border border-primary rounded-lg transition-colors focus-ring cursor-pointer"
           title="Refresh status"
         >
           <RefreshCw className={cn("w-3.5 h-3.5", (plugins.isValidating || config.isValidating || bots.isValidating) && "animate-spin")} />

@@ -51,7 +51,7 @@ function SummaryStat({ label, value, icon, accentClass }: { label: string; value
     <div className="bg-secondary border border-primary rounded-xl px-4 py-3 shadow-sm">
       <div className="flex items-center gap-2 mb-1">
         <span className={accentClass}>{icon}</span>
-        <span className="text-2xs font-bold text-muted uppercase tracking-widest">{label}</span>
+        <span className="text-xs font-bold text-muted uppercase tracking-widest">{label}</span>
       </div>
       <p className="text-lg font-semibold text-primary tabular-nums">{value}</p>
     </div>
@@ -62,7 +62,7 @@ function ServicePill({ service, connected }: { service: string; connected: boole
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium border",
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border",
         connected ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" : "bg-tertiary text-muted border-primary",
       )}
       title={connected ? `${formatServiceName(service)} is connected` : `${formatServiceName(service)} is not connected`}
@@ -78,7 +78,7 @@ function EmptyPanel({ icon, title, hint, action }: { icon: ReactNode; title: str
     <div className="px-6 py-10 text-center">
       {icon}
       <p className="text-sm font-medium text-primary mb-1">{title}</p>
-      <p className="text-2xs text-muted max-w-sm mx-auto">{hint}</p>
+      <p className="text-xs text-muted max-w-sm mx-auto">{hint}</p>
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </div>
   );
@@ -572,7 +572,7 @@ function OverviewPanel({
         <div className="rounded-xl border border-dashed border-primary bg-tertiary/40 px-5 py-6 text-center">
           <WifiOff className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
           <p className="text-sm font-medium text-primary mb-1">No messaging channels connected</p>
-          <p className="text-2xs text-muted max-w-md mx-auto mb-4">
+          <p className="text-xs text-muted max-w-md mx-auto mb-4">
             Connect Slack or Telegram for bot chats, and add an email provider to pull inbox messages into this hub. You can still launch a messaging agent to
             work conversationally.
           </p>
@@ -599,8 +599,8 @@ function OverviewPanel({
 
       <section className="space-y-2">
         <div className="flex items-center justify-between gap-2 px-1">
-          <p className="text-2xs font-bold text-muted uppercase tracking-widest">Connected channels</p>
-          <span className="text-2xs text-muted tabular-nums">
+          <p className="text-xs font-bold text-muted uppercase tracking-widest">Connected channels</p>
+          <span className="text-xs text-muted tabular-nums">
             {connectedCards.length} online · {channelCards.length - connectedCards.length} offline
           </span>
         </div>
@@ -622,12 +622,12 @@ function OverviewPanel({
             <h3 className="text-xs font-semibold text-primary flex items-center gap-1.5">
               <MessagesSquare className="w-3.5 h-3.5 text-violet-500" /> Recent bot threads
             </h3>
-            <button type="button" onClick={onOpenBots} className="text-2xs text-muted hover:text-primary focus-ring rounded cursor-pointer">
+            <button type="button" onClick={onOpenBots} className="text-xs text-muted hover:text-primary focus-ring rounded cursor-pointer">
               All bots →
             </button>
           </div>
           {previewConversations.length === 0 ? (
-            <p className="px-4 py-6 text-2xs text-muted text-center">
+            <p className="px-4 py-6 text-xs text-muted text-center">
               {botsCount === 0 ? "No bots configured yet." : "No live conversations. Threads start when someone messages a bot."}
             </p>
           ) : (
@@ -642,15 +642,15 @@ function OverviewPanel({
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-xs font-medium text-primary truncate">{conversation.channelName ?? conversation.conversationId}</span>
                     {conversation.busy ? (
-                      <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 shrink-0">
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 shrink-0">
                         <Activity className="w-3 h-3 animate-pulse" /> Busy
                       </span>
                     ) : null}
-                    <span className="ml-auto text-2xs text-muted shrink-0" title={formatTimestamp(conversation.lastActivityAt)}>
+                    <span className="ml-auto text-xs text-muted shrink-0" title={formatTimestamp(conversation.lastActivityAt)}>
                       {formatRelativeTime(conversation.lastActivityAt)}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5 text-2xs text-muted">
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted">
                     <ServicePill service={conversation.service} connected={connectedServices.has(conversation.service)} />
                     <span className="truncate">{conversation.botDisplayName}</span>
                   </div>
@@ -665,7 +665,7 @@ function OverviewPanel({
             <h3 className="text-xs font-semibold text-primary flex items-center gap-1.5">
               <Inbox className="w-3.5 h-3.5 text-red-500" /> Recent email
             </h3>
-            <button type="button" onClick={onOpenEmail} className="text-2xs text-muted hover:text-primary focus-ring rounded cursor-pointer">
+            <button type="button" onClick={onOpenEmail} className="text-xs text-muted hover:text-primary focus-ring rounded cursor-pointer">
               Open email →
             </button>
           </div>
@@ -680,9 +680,9 @@ function OverviewPanel({
               <Loader2 className="w-5 h-5 text-muted animate-spin" />
             </div>
           ) : !emailProvider ? (
-            <p className="px-4 py-6 text-2xs text-muted text-center">No email provider configured.</p>
+            <p className="px-4 py-6 text-xs text-muted text-center">No email provider configured.</p>
           ) : previewEmails.length === 0 ? (
-            <p className="px-4 py-6 text-2xs text-muted text-center">Inbox is empty for {emailProvider}.</p>
+            <p className="px-4 py-6 text-xs text-muted text-center">Inbox is empty for {emailProvider}.</p>
           ) : (
             <div className="divide-y divide-primary">
               {previewEmails.map(msg => (
@@ -694,9 +694,9 @@ function OverviewPanel({
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <span className={cn("text-xs truncate flex-1 min-w-0", msg.isRead ? "text-muted" : "text-primary font-semibold")}>{senderName(msg)}</span>
-                    <span className="text-2xs text-muted shrink-0">{formatDate(msg.receivedAt)}</span>
+                    <span className="text-xs text-muted shrink-0">{formatDate(msg.receivedAt)}</span>
                   </div>
-                  <p className={cn("text-2xs truncate mt-0.5", msg.isRead ? "text-muted" : "text-secondary")}>{msg.subject || "(no subject)"}</p>
+                  <p className={cn("text-xs truncate mt-0.5", msg.isRead ? "text-muted" : "text-secondary")}>{msg.subject || "(no subject)"}</p>
                 </button>
               ))}
             </div>
@@ -706,7 +706,7 @@ function OverviewPanel({
 
       {messagingAgents.length > 0 ? (
         <section className="space-y-2">
-          <p className="text-2xs font-bold text-amber-600 dark:text-amber-500/90 uppercase tracking-widest px-1">Running sessions</p>
+          <p className="text-xs font-bold text-amber-600 dark:text-amber-500/90 uppercase tracking-widest px-1">Running sessions</p>
           <div className="space-y-2">
             {messagingAgents.map(agent => (
               <button
@@ -718,11 +718,11 @@ function OverviewPanel({
                 <div className="w-3.5 h-3.5 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin shrink-0" />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-primary truncate">{agent.displayName}</div>
-                  <div className="text-2xs text-muted truncate mt-0.5">
+                  <div className="text-xs text-muted truncate mt-0.5">
                     {agent.agentType} · {agent.currentActivity}
                   </div>
                 </div>
-                <div className="text-2xs text-muted">Open →</div>
+                <div className="text-xs text-muted">Open →</div>
               </button>
             ))}
           </div>
@@ -735,7 +735,7 @@ function OverviewPanel({
         </div>
         <div className="flex-1 text-center sm:text-left min-w-0">
           <h3 className="text-sm font-semibold text-primary">Messaging agent</h3>
-          <p className="text-2xs text-muted mt-0.5 leading-relaxed">
+          <p className="text-xs text-muted mt-0.5 leading-relaxed">
             Launch an agent to read, draft, and manage messages across email and chat tools through conversation.
           </p>
         </div>
@@ -782,21 +782,21 @@ function ConversationRow({
           <div className="flex items-center gap-2 flex-wrap mb-0.5">
             <span className="text-sm font-medium text-primary truncate">{conversation.channelName ?? conversation.conversationId}</span>
             {conversation.channelName ? (
-              <span className="inline-flex items-center gap-1 text-2xs text-muted">
+              <span className="inline-flex items-center gap-1 text-xs text-muted">
                 <Hash className="w-3 h-3" /> {conversation.conversationId}
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-2xs text-muted">
+              <span className="inline-flex items-center gap-1 text-xs text-muted">
                 <User className="w-3 h-3" /> Direct
               </span>
             )}
             {conversation.busy ? (
-              <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
+              <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                 <Activity className="w-3 h-3 animate-pulse" /> Working
               </span>
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-muted">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
             <ServicePill service={conversation.service} connected={connected} />
             <span className="inline-flex items-center gap-1">
               <Bot className="w-3 h-3" /> {conversation.botDisplayName}
@@ -811,7 +811,7 @@ function ConversationRow({
           <button
             type="button"
             onClick={onOpenAgent}
-            className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
             title="Open the agent handling this conversation"
           >
             <Cpu className="w-3 h-3" /> Agent
@@ -820,7 +820,7 @@ function ConversationRow({
             type="button"
             onClick={onMessage}
             disabled={!connected}
-            className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={connected ? "Send a message here" : "Service is offline"}
           >
             <Send className="w-3 h-3" /> Message
@@ -910,14 +910,14 @@ function EmailPanel({
   return (
     <div>
       <div className="px-4 py-2 border-b border-primary flex items-center justify-between gap-2 bg-tertiary/30">
-        <span className="text-2xs text-muted">
+        <span className="text-xs text-muted">
           Showing recent messages from <span className="text-primary font-medium">{provider}</span>
           {providers.length > 1 ? ` · ${providers.length} providers` : ""}
         </span>
         <button
           type="button"
           onClick={onOpenEmail}
-          className="inline-flex items-center gap-1 text-2xs text-muted hover:text-primary focus-ring rounded cursor-pointer"
+          className="inline-flex items-center gap-1 text-xs text-muted hover:text-primary focus-ring rounded cursor-pointer"
         >
           Full inbox <ExternalLink className="w-3 h-3" />
         </button>
@@ -932,10 +932,10 @@ function EmailPanel({
           >
             <div className="flex items-center justify-between gap-2">
               <span className={cn("text-xs truncate flex-1 min-w-0", msg.isRead ? "text-muted" : "text-primary font-semibold")}>{senderName(msg)}</span>
-              <span className="text-2xs text-muted shrink-0">{formatDate(msg.receivedAt)}</span>
+              <span className="text-xs text-muted shrink-0">{formatDate(msg.receivedAt)}</span>
             </div>
             <p className={cn("text-xs truncate mt-0.5", msg.isRead ? "text-muted" : "text-secondary font-medium")}>{msg.subject || "(no subject)"}</p>
-            {msg.snippet ? <p className="text-2xs text-muted truncate mt-0.5">{msg.snippet}</p> : null}
+            {msg.snippet ? <p className="text-xs text-muted truncate mt-0.5">{msg.snippet}</p> : null}
           </button>
         ))}
       </div>
@@ -970,14 +970,14 @@ function ChannelStatusCard({
           <p className="text-sm font-medium text-primary truncate">{card.name}</p>
           <span
             className={cn(
-              "text-2xs px-1.5 py-0.5 rounded-full border shrink-0",
+              "text-xs px-1.5 py-0.5 rounded-full border shrink-0",
               card.connected ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" : "bg-tertiary text-muted border-primary",
             )}
           >
             {card.connected ? "Connected" : "Offline"}
           </span>
         </div>
-        <p className="text-2xs text-muted truncate mt-0.5">{card.detail}</p>
+        <p className="text-xs text-muted truncate mt-0.5">{card.detail}</p>
       </div>
       <ArrowRight className="w-3.5 h-3.5 text-muted shrink-0" />
     </button>
@@ -1008,7 +1008,7 @@ function QuickLink({
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-primary">{title}</p>
-        <p className="text-2xs text-muted">{description}</p>
+        <p className="text-xs text-muted">{description}</p>
       </div>
       <ArrowRight className="w-3.5 h-3.5 text-muted shrink-0" />
     </button>

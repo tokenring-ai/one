@@ -16,7 +16,7 @@ export default function VideoThumbnail({ video, selected, onClick }: { video: Vi
         <VideoIcon className="w-6 h-6 text-white/80 drop-shadow-md" />
       </div>
       {video.duration !== undefined && (
-        <span className="absolute bottom-1 right-1 px-1 py-0.5 bg-black/70 text-white text-2xs rounded font-mono">{formatDuration(video.duration)}</span>
+        <span className="absolute bottom-1 right-1 px-1 py-0.5 bg-black/70 text-white text-xs rounded font-mono">{formatDuration(video.duration)}</span>
       )}
       {selected && <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent-soft shadow-sm" />}
     </button>

@@ -139,7 +139,7 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
       <div className="flex items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-primary">Add scheduled task</h3>
-          <p className="text-2xs text-muted mt-0.5">Runs on this agent when the scheduler is active</p>
+          <p className="text-xs text-muted mt-0.5">Runs on this agent when the scheduler is active</p>
         </div>
         <button type="button" onClick={onCancel} className="p-1.5 text-muted hover:text-primary rounded-md focus-ring cursor-pointer" aria-label="Cancel">
           <X className="w-4 h-4" />
@@ -148,12 +148,12 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="block space-y-1 sm:col-span-2">
-          <span className="text-2xs font-medium text-muted">Task name</span>
+          <span className="text-xs font-medium text-muted">Task name</span>
           <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Daily standup brief" className={inputClass} autoFocus required />
         </label>
 
         <label className="block space-y-1 sm:col-span-2">
-          <span className="text-2xs font-medium text-muted">Message / prompt</span>
+          <span className="text-xs font-medium text-muted">Message / prompt</span>
           <textarea
             value={message}
             onChange={e => setMessage(e.target.value)}
@@ -165,7 +165,7 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
         </label>
 
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Repeat</span>
+          <span className="text-xs font-medium text-muted">Repeat</span>
           <select value={repeatPreset} onChange={e => setRepeatPreset(e.target.value)} className={inputClass}>
             {REPEAT_PRESETS.map(p => (
               <option key={p.value || "once"} value={p.value}>
@@ -177,7 +177,7 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
 
         {repeatPreset === "custom" ? (
           <label className="block space-y-1">
-            <span className="text-2xs font-medium text-muted">Custom interval</span>
+            <span className="text-xs font-medium text-muted">Custom interval</span>
             <input
               type="text"
               value={customRepeat}
@@ -186,13 +186,13 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
               className={inputClass}
               aria-describedby="custom-interval-hint"
             />
-            <span id="custom-interval-hint" className="text-2xs text-muted">
+            <span id="custom-interval-hint" className="text-xs text-muted">
               Format: number + unit (e.g. 15 minutes, 2 hours, 1 day)
             </span>
           </label>
         ) : (
           <label className="block space-y-1">
-            <span className="text-2xs font-medium text-muted">Timezone</span>
+            <span className="text-xs font-medium text-muted">Timezone</span>
             <select value={timezone} onChange={e => setTimezone(e.target.value)} className={inputClass}>
               {timezones.map(tz => (
                 <option key={tz} value={tz}>
@@ -205,7 +205,7 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
 
         {repeatPreset === "custom" ? (
           <label className="block space-y-1 sm:col-span-2">
-            <span className="text-2xs font-medium text-muted">Timezone</span>
+            <span className="text-xs font-medium text-muted">Timezone</span>
             <select value={timezone} onChange={e => setTimezone(e.target.value)} className={inputClass}>
               {timezones.map(tz => (
                 <option key={tz} value={tz}>
@@ -217,17 +217,17 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
         ) : null}
 
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Earliest time (HH:mm)</span>
+          <span className="text-xs font-medium text-muted">Earliest time (HH:mm)</span>
           <input type="time" value={after} onChange={e => setAfter(e.target.value)} className={inputClass} />
         </label>
 
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Latest time (HH:mm)</span>
+          <span className="text-xs font-medium text-muted">Latest time (HH:mm)</span>
           <input type="time" value={before} onChange={e => setBefore(e.target.value)} className={inputClass} />
         </label>
 
         <div className="sm:col-span-2 space-y-1.5">
-          <span className="text-2xs font-medium text-muted">Weekdays (optional)</span>
+          <span className="text-xs font-medium text-muted">Weekdays (optional)</span>
           <div className="flex flex-wrap gap-1.5">
             {WEEKDAY_OPTIONS.map(day => {
               const active = weekdays.includes(day.id);
@@ -237,7 +237,7 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
                   type="button"
                   onClick={() => toggleWeekday(day.id)}
                   className={cn(
-                    "px-2.5 py-1 text-2xs font-medium rounded-md border transition-colors focus-ring cursor-pointer",
+                    "px-2.5 py-1 text-xs font-medium rounded-md border transition-colors focus-ring cursor-pointer",
                     active
                       ? "bg-indigo-500/15 border-indigo-500/40 text-indigo-600 dark:text-indigo-300"
                       : "bg-tertiary border-primary text-muted hover:text-primary",
@@ -252,7 +252,7 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
         </div>
 
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Day of month (optional)</span>
+          <span className="text-xs font-medium text-muted">Day of month (optional)</span>
           <input type="number" min={1} max={31} value={dayOfMonth} onChange={e => setDayOfMonth(e.target.value)} placeholder="e.g. 1" className={inputClass} />
         </label>
       </div>

@@ -31,7 +31,7 @@ export default function FileEditorPane({
       <div className="h-full bg-tertiary flex flex-col items-center justify-center text-center p-8">
         <Code className="w-12 h-12 text-muted opacity-20 mb-4" />
         <p className="text-sm text-muted">No file selected for editing</p>
-        <p className="text-2xs text-dim mt-1">Open a file from the list above</p>
+        <p className="text-xs text-dim mt-1">Open a file from the list above</p>
       </div>
     );
   }
@@ -42,12 +42,12 @@ export default function FileEditorPane({
   return (
     <div className="h-full bg-secondary flex flex-col min-h-0">
       <div className="h-9 px-3 border-b border-primary bg-tertiary flex items-center gap-2 shrink-0">
-        <span className="text-2xs font-semibold text-muted uppercase tracking-widest shrink-0">Editor</span>
+        <span className="text-xs font-semibold text-muted uppercase tracking-widest shrink-0">Editor</span>
         <span className="text-xs text-dim">·</span>
         <span className="text-xs text-primary font-medium truncate" title={file}>
           {name}
         </span>
-        {isDirty && <span className="text-2xs text-amber-400 shrink-0">unsaved</span>}
+        {isDirty && <span className="text-xs text-amber-400 shrink-0">unsaved</span>}
         <div className="flex-1" />
         {onSave && textEditable && (
           <button
@@ -68,14 +68,14 @@ export default function FileEditorPane({
           <div className="h-full flex flex-col items-center justify-center text-center p-8 gap-2">
             <FileWarning className="w-10 h-10 text-muted opacity-40" />
             <p className="text-sm text-muted">Binary or media file</p>
-            <p className="text-2xs text-dim max-w-xs">This file type isn’t opened in the text editor. Use Download from the preview panel if needed.</p>
+            <p className="text-xs text-dim max-w-xs">This file type isn’t opened in the text editor. Use Download from the preview panel if needed.</p>
           </div>
         ) : isLoading ? (
           <div className="h-full flex items-center justify-center">
             <Loader2 className="w-4 h-4 text-muted animate-spin" />
           </div>
         ) : loadError ? (
-          <div className="h-full flex items-center justify-center text-2xs text-red-400 p-4 text-center">{loadError}</div>
+          <div className="h-full flex items-center justify-center text-xs text-red-400 p-4 text-center">{loadError}</div>
         ) : hasData ? (
           <div className="h-full overflow-auto">
             {file.endsWith(".md") ? (
@@ -85,7 +85,7 @@ export default function FileEditorPane({
             )}
           </div>
         ) : (
-          <div className="h-full flex items-center justify-center text-2xs text-muted">Could not load file</div>
+          <div className="h-full flex items-center justify-center text-xs text-muted">Could not load file</div>
         )}
       </div>
     </div>

@@ -168,7 +168,7 @@ export default function OpenDocumentModal({ providers, initialProvider, onOpen, 
         <div className="px-5 py-3 space-y-3 border-b border-primary shrink-0">
           {providers.length > 1 && (
             <div className="space-y-1">
-              <label className="text-2xs font-semibold text-muted uppercase tracking-wide">Location</label>
+              <label className="text-xs font-semibold text-muted uppercase tracking-wide">Location</label>
               <select
                 value={provider}
                 onChange={e => {
@@ -277,7 +277,7 @@ export default function OpenDocumentModal({ providers, initialProvider, onOpen, 
 
         {error && (
           <div className="px-5 py-2 border-t border-primary shrink-0">
-            <p className="text-2xs text-red-400" role="alert">
+            <p className="text-xs text-red-400" role="alert">
               {error}
             </p>
           </div>

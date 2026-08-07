@@ -19,7 +19,7 @@ export default function ViewerHeader({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-xs text-muted truncate font-mono">{title}</span>
-          {subtitle && <span className="text-2xs text-muted shrink-0">{subtitle}</span>}
+          {subtitle && <span className="text-xs text-muted shrink-0">{subtitle}</span>}
         </div>
         <button type="button" onClick={onClose} className="p-1 text-muted hover:text-primary transition-colors rounded focus-ring cursor-pointer shrink-0">
           <X className="w-4 h-4" />
@@ -29,7 +29,7 @@ export default function ViewerHeader({
       {keywords && keywords.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {keywords.map(k => (
-            <span key={k} className="px-2 py-0.5 bg-tertiary border border-primary rounded-full text-2xs text-muted">
+            <span key={k} className="px-2 py-0.5 bg-tertiary border border-primary rounded-full text-xs text-muted">
               {k}
             </span>
           ))}

@@ -124,7 +124,7 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
   return (
     <div ref={containerRef} className="p-4 space-y-3">
       {/* Progress indicator */}
-      <div className="flex items-center justify-between text-2xs" aria-live="polite">
+      <div className="flex items-center justify-between text-xs" aria-live="polite">
         <div className="flex items-center gap-2">
           <span className="text-muted">
             Section {currentSection + 1} of {question.sections.length}
@@ -138,7 +138,7 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
       </div>
 
       {/* Description */}
-      {section.description && <p className="text-2xs text-muted italic">{section.description}</p>}
+      {section.description && <p className="text-xs text-muted italic">{section.description}</p>}
 
       {/* Field content */}
       <div className="min-h-37.5 flex flex-col">
@@ -148,9 +148,9 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
               {field.label}
               {field.required && <span className="text-error ml-1">*</span>}
             </label>
-            {field.description && <p className="text-2xs text-muted">{field.description}</p>}
+            {field.description && <p className="text-xs text-muted">{field.description}</p>}
             {isInvalid && (
-              <p className="text-2xs text-error flex items-center gap-1" role="alert">
+              <p className="text-xs text-error flex items-center gap-1" role="alert">
                 <span>This field is required</span>
               </p>
             )}
@@ -195,7 +195,7 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
         {field.type === "fileSelect" && (
           <div className="flex-1 flex flex-col gap-2 min-h-37.5">
             <label className="block text-sm text-primary">{field.label}</label>
-            {field.description && <p className="text-2xs text-muted">{field.description}</p>}
+            {field.description && <p className="text-xs text-muted">{field.description}</p>}
             <div className="border border-primary/30 rounded-lg flex-1 flex flex-col overflow-hidden">
               <FileInlineQuestion
                 question={field}

@@ -461,11 +461,11 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
       </div>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className={`text-2xs ${isValid ? "text-primary" : "text-error"}`} aria-live="polite">
+          <span className={`text-xs ${isValid ? "text-primary" : "text-error"}`} aria-live="polite">
             {selectionCount} selected
           </span>
           {(minimumSelections !== undefined || maximumSelections !== undefined) && (
-            <span className="text-2xs text-muted">
+            <span className="text-xs text-muted">
               {minimumSelections !== undefined && `min ${minimumSelections}`}
               {minimumSelections !== undefined && maximumSelections !== undefined && " · "}
               {maximumSelections !== undefined && `max ${maximumSelections}`}

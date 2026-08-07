@@ -67,7 +67,7 @@ export default function AgentLauncherApp({
           {/* Existing agents of this type */}
           {existingAgents.length > 0 && (
             <div className="space-y-2">
-              <p className="text-2xs font-bold text-amber-600 dark:text-amber-500/90 uppercase tracking-widest px-1">Running Sessions</p>
+              <p className="text-xs font-bold text-amber-600 dark:text-amber-500/90 uppercase tracking-widest px-1">Running Sessions</p>
               <div className="space-y-2">
                 {existingAgents.map(agent => (
                   <button
@@ -80,9 +80,9 @@ export default function AgentLauncherApp({
                     <div className="w-3.5 h-3.5 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium text-primary truncate">{agent.displayName}</div>
-                      <div className="text-2xs text-muted truncate mt-0.5">{agent.currentActivity}</div>
+                      <div className="text-xs text-muted truncate mt-0.5">{agent.currentActivity}</div>
                     </div>
-                    <div className="text-2xs text-muted">Open →</div>
+                    <div className="text-xs text-muted">Open →</div>
                   </button>
                 ))}
               </div>
@@ -115,7 +115,7 @@ export default function AgentLauncherApp({
                 launchLabel
               )}
             </button>
-            <p className="text-2xs text-muted">Powered by TokenRing AI agents</p>
+            <p className="text-xs text-muted">Powered by TokenRing AI agents</p>
           </div>
         </div>
       </div>

@@ -165,7 +165,7 @@ export default function ConnectServiceForm({ available, initialPlatform, existin
       <div className="flex items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-primary">Connect a messaging service</h3>
-          <p className="text-2xs text-muted mt-0.5">Credentials are stored in your configuration and take effect immediately — no restart</p>
+          <p className="text-xs text-muted mt-0.5">Credentials are stored in your configuration and take effect immediately — no restart</p>
         </div>
         <button type="button" onClick={onCancel} className="p-1.5 text-muted hover:text-primary rounded-md focus-ring cursor-pointer" aria-label="Cancel">
           <X className="w-4 h-4" />
@@ -190,19 +190,19 @@ export default function ConnectServiceForm({ available, initialPlatform, existin
         </div>
       ) : null}
 
-      <p className="text-2xs text-muted bg-tertiary border border-primary rounded-lg px-3 py-2">{spec.setup}</p>
+      <p className="text-xs text-muted bg-tertiary border border-primary rounded-lg px-3 py-2">{spec.setup}</p>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Account name</span>
+          <span className="text-xs font-medium text-muted">Account name</span>
           <input type="text" value={accountName} onChange={e => setAccountName(e.target.value)} className={inputClass} spellCheck={false} autoComplete="off" />
-          <span className="block text-2xs text-muted">
+          <span className="block text-xs text-muted">
             {overwriting ? `Replaces the credentials of the existing "${trimmedName}" account` : `Bots address it as ${trimmedName || "name"}:userId`}
           </span>
         </label>
 
         <label className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">Save to</span>
+          <span className="text-xs font-medium text-muted">Save to</span>
           <select value={scope} onChange={e => setScope(e.target.value as ConfigScope)} className={inputClass}>
             <option value="user">User configuration — only you</option>
             <option value="project">Project configuration — everyone on this project</option>
@@ -212,7 +212,7 @@ export default function ConnectServiceForm({ available, initialPlatform, existin
 
       {spec.fields.map(field => (
         <label key={field.key} className="block space-y-1">
-          <span className="text-2xs font-medium text-muted">
+          <span className="text-xs font-medium text-muted">
             {field.label}
             {field.required ? "" : " (optional)"}
           </span>
@@ -225,7 +225,7 @@ export default function ConnectServiceForm({ available, initialPlatform, existin
             spellCheck={false}
             autoComplete="off"
           />
-          {field.hint ? <span className="block text-2xs text-muted">{field.hint}</span> : null}
+          {field.hint ? <span className="block text-xs text-muted">{field.hint}</span> : null}
         </label>
       ))}
 

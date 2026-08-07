@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
+import SidebarCategoryAccordion from "../../components/layout/SidebarCategoryAccordion.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
@@ -139,31 +141,31 @@ function RunStatusBadge({ status }: { status: WorkflowRunStatus }) {
   switch (status) {
     case "starting":
       return (
-        <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 shrink-0">
+        <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 shrink-0">
           <Loader2 className="w-3 h-3 animate-spin" /> Starting
         </span>
       );
     case "running":
       return (
-        <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 shrink-0">
+        <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 shrink-0">
           <Loader2 className="w-3 h-3 animate-spin" /> Running
         </span>
       );
     case "completed":
       return (
-        <span className="inline-flex items-center gap-1 text-2xs text-emerald-600 dark:text-emerald-400 shrink-0">
+        <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 shrink-0">
           <CheckCircle2 className="w-3 h-3" /> Completed
         </span>
       );
     case "failed":
       return (
-        <span className="inline-flex items-center gap-1 text-2xs text-red-600 dark:text-red-400 shrink-0">
+        <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 shrink-0">
           <XCircle className="w-3 h-3" /> Failed
         </span>
       );
     case "cancelled":
       return (
-        <span className="inline-flex items-center gap-1 text-2xs text-muted shrink-0">
+        <span className="inline-flex items-center gap-1 text-xs text-muted shrink-0">
           <X className="w-3 h-3" /> Cancelled
         </span>
       );
@@ -276,6 +278,18 @@ function ConfirmModal({ title, message, onConfirm, onClose }: { title: string; m
   );
 }
 
+function matchesWorkflowFilter(workflow: Workflow, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    workflow.displayName.toLowerCase().includes(q) ||
+    workflow.name.toLowerCase().includes(q) ||
+    workflow.description.toLowerCase().includes(q) ||
+    workflow.category.toLowerCase().includes(q) ||
+    workflow.agentType.toLowerCase().includes(q)
+  );
+}
+
 // ─── Sidebar ───────────────────────────────────────────────────────────────────
 
 function WorkflowSidebar({
@@ -311,42 +325,24 @@ function WorkflowSidebar({
   onOpenAgent: (id: string) => void;
   onSelectRunWorkflow: (workflowName: string) => void;
 }) {
-  const grouped = useMemo(() => {
-    const groups: Record<string, Workflow[]> = {};
-    for (const workflow of workflows) {
-      (groups[workflow.category || DEFAULT_CATEGORY] ??= []).push(workflow);
-    }
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-  }, [workflows]);
-
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const toggleCategory = (category: string) =>
-    setCollapsed(prev => {
-      const next = new Set(prev);
-      if (next.has(category)) next.delete(category);
-      else next.add(category);
-      return next;
-    });
-
   return (
     <div className="h-full flex flex-col bg-secondary border-r border-primary">
-      <div className="flex items-center gap-1 px-2 py-2 border-b border-primary">
-        <span className="flex-1 text-2xs font-bold text-muted uppercase tracking-widest px-1">Workflows</span>
-        <button
-          type="button"
-          onClick={onNew}
-          title="New workflow"
-          className="p-1 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring"
-          aria-label="New workflow"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      <NavigationSidebarHeader
+        title="Workflows"
+        actions={[
+          {
+            icon: <Plus className="w-3.5 h-3.5" />,
+            label: "New workflow",
+            title: "New workflow",
+            onClick: onNew,
+          },
+        ]}
+      />
 
       <div className="flex-1 overflow-y-auto">
         {activeRuns.length > 0 && (
           <div className="border-b border-primary/50">
-            <span className="block px-3 pt-2.5 pb-1 text-2xs font-bold text-amber-600 dark:text-amber-500/90 uppercase tracking-widest">Running</span>
+            <span className="block px-3 pt-2.5 pb-1 text-xs font-bold text-amber-600 dark:text-amber-500/90 uppercase tracking-widest">Running</span>
             {activeRuns.map(run => (
               <button
                 type="button"
@@ -359,7 +355,7 @@ function WorkflowSidebar({
                 <div className="w-3 h-3 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin shrink-0" />
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-medium text-primary truncate">{run.displayName || run.workflowName}</div>
-                  <div className="text-2xs text-muted truncate">
+                  <div className="text-xs text-muted truncate">
                     {run.status === "starting"
                       ? "Starting agent…"
                       : `Step ${run.currentStep + 1} of ${run.steps.length}: ${run.steps[run.currentStep] != null ? formatStepLabel(run.steps[run.currentStep]!) : ""}`}
@@ -372,7 +368,7 @@ function WorkflowSidebar({
 
         {recentFinishedRuns.length > 0 && (
           <div className="border-b border-primary/50">
-            <span className="flex items-center gap-1 px-3 pt-2.5 pb-1 text-2xs font-bold text-muted uppercase tracking-widest">
+            <span className="flex items-center gap-1 px-3 pt-2.5 pb-1 text-xs font-bold text-muted uppercase tracking-widest">
               <History className="w-3 h-3" /> Recent runs
             </span>
             {recentFinishedRuns.map(run => {
@@ -397,7 +393,7 @@ function WorkflowSidebar({
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-xs font-medium text-primary truncate">{run.displayName || run.workflowName}</div>
-                    <div className="text-2xs text-muted truncate">
+                    <div className="text-xs text-muted truncate">
                       {run.status} · {formatRelativeTime(when)}
                       {runDurationLabel(run) ? ` · ${runDurationLabel(run)}` : ""}
                     </div>
@@ -415,76 +411,72 @@ function WorkflowSidebar({
           </div>
         )}
 
-        {loadError && workflows.length === 0 ? (
-          <ErrorState title="Unable to load workflows" error={loadError} onRetry={onRetryLoad} />
-        ) : isLoading && workflows.length === 0 ? (
-          <div className="px-3 py-6 flex justify-center">
-            <Loader2 className="w-4 h-4 text-muted animate-spin" />
-          </div>
-        ) : workflows.length === 0 ? (
-          <div className="px-3 py-6 text-center">
-            <GitBranch className="w-6 h-6 text-muted mx-auto mb-2 opacity-60" />
-            <p className="text-2xs text-muted">No workflows yet</p>
-          </div>
-        ) : (
-          grouped.map(([category, items]) => (
-            <div key={category}>
-              <button
-                type="button"
-                onClick={() => toggleCategory(category)}
-                className="w-full flex items-center gap-1 px-2 py-1.5 text-left hover:bg-hover transition-colors cursor-pointer"
-              >
-                {collapsed.has(category) ? (
-                  <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5 shrink-0 text-muted" />
-                )}
-                <span className="flex-1 min-w-0 truncate text-2xs font-semibold text-muted uppercase tracking-wider">{category}</span>
-                <span className="text-2xs text-muted shrink-0 pr-1">{items.length}</span>
-              </button>
-              {!collapsed.has(category) &&
-                items.map(workflow => {
-                  const isSelected = selectedName === workflow.name && !creating;
-                  const isLaunching = launchingName === workflow.name;
-                  const hasActiveRun = activeRuns.some(run => run.workflowName === workflow.name);
-                  return (
-                    <div
-                      key={workflow.name}
-                      className={`group flex items-center gap-0.5 pl-5 pr-1.5 py-1 transition-colors ${
-                        isSelected ? "bg-accent-muted text-accent" : "hover:bg-hover text-primary"
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => onSelect(workflow.name)}
-                        className="min-w-0 flex-1 flex items-center gap-1.5 py-0.5 text-left cursor-pointer focus-ring rounded"
-                        title={workflow.displayName}
-                      >
-                        <GitBranch className="w-3 h-3 shrink-0 opacity-70" />
-                        <span className="flex-1 min-w-0 truncate text-xs">{workflow.displayName || workflow.name}</span>
-                        {hasActiveRun && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" title="Running" />}
-                        {dirtyNames.has(workflow.name) && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" title="Unsaved changes" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onRun(workflow.name)}
-                        disabled={isLaunching}
-                        title={`Run ${workflow.displayName || workflow.name}`}
-                        aria-label={`Run ${workflow.displayName || workflow.name}`}
-                        className={`p-1 rounded transition-colors cursor-pointer focus-ring disabled:cursor-not-allowed shrink-0 ${
-                          isSelected
-                            ? "text-accent hover:bg-accent/15 disabled:opacity-50"
-                            : "text-muted opacity-0 group-hover:opacity-100 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-500/10 focus-visible:opacity-100 disabled:opacity-50"
-                        }`}
-                      >
-                        {isLaunching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 fill-current" />}
-                      </button>
-                    </div>
-                  );
-                })}
+        <SidebarCategoryAccordion
+          className="py-2"
+          items={workflows}
+          getCategory={workflow => workflow.category || DEFAULT_CATEGORY}
+          getItemKey={workflow => workflow.name}
+          defaultCategory={DEFAULT_CATEGORY}
+          isLoading={isLoading}
+          error={loadError}
+          search={{
+            placeholder: "Filter workflows…",
+            ariaLabel: "Filter workflows",
+            clearAriaLabel: "Clear workflow filter",
+            match: matchesWorkflowFilter,
+          }}
+          loadingState={
+            <div className="px-3 py-6 flex justify-center">
+              <Loader2 className="w-4 h-4 text-muted animate-spin" />
             </div>
-          ))
-        )}
+          }
+          errorState={<ErrorState title="Unable to load workflows" error={loadError} onRetry={onRetryLoad} />}
+          emptyState={
+            <div className="px-3 py-6 text-center">
+              <GitBranch className="w-6 h-6 text-muted mx-auto mb-2 opacity-60" />
+              <p className="text-xs text-muted">No workflows yet</p>
+            </div>
+          }
+          noMatchState={query => <div className="px-3 py-4 text-center text-muted text-xs italic">No workflows match “{query}”</div>}
+          renderItem={workflow => {
+            const isSelected = selectedName === workflow.name && !creating;
+            const isLaunching = launchingName === workflow.name;
+            const hasActiveRun = activeRuns.some(run => run.workflowName === workflow.name);
+            return (
+              <div
+                className={`group flex items-center gap-0.5 pl-5 pr-1.5 py-1 transition-colors ${
+                  isSelected ? "bg-accent-muted text-accent" : "hover:bg-hover text-primary"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => onSelect(workflow.name)}
+                  className="min-w-0 flex-1 flex items-center gap-1.5 py-0.5 text-left cursor-pointer focus-ring rounded"
+                  title={workflow.displayName}
+                >
+                  <GitBranch className="w-3 h-3 shrink-0 opacity-70" />
+                  <span className="flex-1 min-w-0 truncate text-xs">{workflow.displayName || workflow.name}</span>
+                  {hasActiveRun && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" title="Running" />}
+                  {dirtyNames.has(workflow.name) && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" title="Unsaved changes" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRun(workflow.name)}
+                  disabled={isLaunching}
+                  title={`Run ${workflow.displayName || workflow.name}`}
+                  aria-label={`Run ${workflow.displayName || workflow.name}`}
+                  className={`p-1 rounded transition-colors cursor-pointer focus-ring disabled:cursor-not-allowed shrink-0 ${
+                    isSelected
+                      ? "text-accent hover:bg-accent/15 disabled:opacity-50"
+                      : "text-muted opacity-0 group-hover:opacity-100 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-500/10 focus-visible:opacity-100 disabled:opacity-50"
+                  }`}
+                >
+                  {isLaunching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 fill-current" />}
+                </button>
+              </div>
+            );
+          }}
+        />
       </div>
     </div>
   );
@@ -505,7 +497,7 @@ function SubAgentSettingsEditor({ value, onChange }: { value: SubAgentSettings; 
         {open ? <ChevronDown className="w-3.5 h-3.5 text-muted shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-muted shrink-0" />}
         <Settings2 className="w-3.5 h-3.5 text-muted shrink-0" />
         <span className="flex-1 text-xs font-medium text-primary">Sub-agent settings</span>
-        <span className="text-2xs text-muted">Used when this workflow is spawned from another agent</span>
+        <span className="text-xs text-muted">Used when this workflow is spawned from another agent</span>
       </button>
 
       {open && (
@@ -526,7 +518,7 @@ function SubAgentSettingsEditor({ value, onChange }: { value: SubAgentSettings; 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {NUMBER_SUB_AGENT_FIELDS.map(field => (
               <div key={field.key} className="space-y-1">
-                <label className="text-2xs font-semibold text-muted uppercase tracking-wide" htmlFor={`sub-agent-${field.key}`}>
+                <label className="text-xs font-semibold text-muted uppercase tracking-wide" htmlFor={`sub-agent-${field.key}`}>
                   {field.label} <span className="font-normal lowercase tracking-normal">({field.unit})</span>
                 </label>
                 <input
@@ -580,7 +572,7 @@ function ActiveRunPanel({ run, onOpenAgent }: { run: WorkflowRun; onOpenAgent: (
           <button
             type="button"
             onClick={() => onOpenAgent(run.agentId!)}
-            className="flex items-center gap-1 px-2 py-1 text-2xs font-medium text-cyan-700 dark:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors cursor-pointer focus-ring shrink-0"
+            className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-cyan-700 dark:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors cursor-pointer focus-ring shrink-0"
           >
             <ExternalLink className="w-3 h-3" /> Open agent
           </button>
@@ -614,7 +606,7 @@ function ActiveRunPanel({ run, onOpenAgent }: { run: WorkflowRun; onOpenAgent: (
                 )}
               </span>
               <span
-                className={`flex-1 min-w-0 text-2xs font-mono truncate ${
+                className={`flex-1 min-w-0 text-xs font-mono truncate ${
                   state === "current"
                     ? "text-primary font-medium"
                     : state === "done"
@@ -651,7 +643,7 @@ function WorkflowRunHistory({
     return (
       <div className="border border-dashed border-primary rounded-xl px-3 py-4 text-center">
         <History className="w-5 h-5 text-muted mx-auto mb-1.5 opacity-50" />
-        <p className="text-2xs text-muted">{emptyMessage}</p>
+        <p className="text-xs text-muted">{emptyMessage}</p>
       </div>
     );
   }
@@ -670,18 +662,18 @@ function WorkflowRunHistory({
             <div className="min-w-0 flex-1 space-y-0.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <RunStatusBadge status={run.status} />
-                <span className="text-2xs text-muted" title={new Date(when).toLocaleString()}>
+                <span className="text-xs text-muted" title={new Date(when).toLocaleString()}>
                   {formatRelativeTime(when)}
                   {duration ? ` · ${duration}` : ""}
                 </span>
               </div>
               {run.message && (
-                <p className="text-2xs text-muted truncate" title={run.message}>
+                <p className="text-xs text-muted truncate" title={run.message}>
                   {run.message}
                 </p>
               )}
               {isRunActive(run) && run.steps.length > 0 && (
-                <p className="text-2xs text-muted truncate">
+                <p className="text-xs text-muted truncate">
                   {run.status === "starting"
                     ? "Starting agent…"
                     : `Step ${run.currentStep + 1}/${run.steps.length}: ${run.steps[run.currentStep] != null ? formatStepLabel(run.steps[run.currentStep]!) : ""}`}
@@ -722,7 +714,7 @@ function EmptyState({ hasWorkflows, directory, onNew }: { hasWorkflows: boolean;
             : "Workflows are ordered lists of commands run by an agent. Create one to get started."}
         </p>
         {directory && (
-          <p className="text-2xs text-muted">
+          <p className="text-xs text-muted">
             Stored as YAML files in <code className="font-mono text-secondary">{directory}</code>
           </p>
         )}
@@ -827,7 +819,7 @@ function WorkflowEditor({
           <button
             type="button"
             onClick={onCancelCreate}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 border border-primary text-muted hover:text-primary hover:bg-hover text-2xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 border border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
           >
             <X className="w-3.5 h-3.5" /> Cancel
           </button>
@@ -838,7 +830,7 @@ function WorkflowEditor({
                 type="button"
                 onClick={() => onOpenAgent(activeRun.agentId!)}
                 title="Open the agent running this workflow"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-primary text-muted hover:text-primary hover:bg-hover text-2xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
               >
                 <ExternalLink className="w-3.5 h-3.5" /> Open agent
               </button>
@@ -848,7 +840,7 @@ function WorkflowEditor({
               onClick={onLaunch}
               disabled={launching}
               title="Run this workflow on a new agent"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-2xs font-semibold rounded-lg transition-colors cursor-pointer focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {launching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
               {launching ? "Launching…" : "Launch"}
@@ -858,7 +850,7 @@ function WorkflowEditor({
               onClick={onRevert}
               disabled={!isDirty}
               title="Discard unsaved changes"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-primary text-muted hover:text-primary hover:bg-hover text-2xs font-medium rounded-lg transition-colors cursor-pointer focus-ring disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors cursor-pointer focus-ring disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <RotateCcw className="w-3.5 h-3.5" /> Revert
             </button>
@@ -877,7 +869,7 @@ function WorkflowEditor({
           type="button"
           onClick={onSave}
           disabled={!canSave}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-accent hover:bg-accent-hover text-white text-2xs font-semibold rounded-lg transition-colors cursor-pointer focus-ring disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer focus-ring disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
           {creating ? "Create" : "Save"}
@@ -889,8 +881,8 @@ function WorkflowEditor({
           {!creating && (
             <section className="space-y-2" aria-label="Run monitoring">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-2xs font-semibold text-muted uppercase tracking-wide">Runs</span>
-                <span className="text-2xs text-muted">Live progress and recent history</span>
+                <span className="text-xs font-semibold text-muted uppercase tracking-wide">Runs</span>
+                <span className="text-xs text-muted">Live progress and recent history</span>
               </div>
               {featuredRun && <ActiveRunPanel run={featuredRun} onOpenAgent={onOpenAgent} />}
               <WorkflowRunHistory
@@ -903,7 +895,7 @@ function WorkflowEditor({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label htmlFor="workflow-name" className="text-2xs font-semibold text-muted uppercase tracking-wide">
+              <label htmlFor="workflow-name" className="text-xs font-semibold text-muted uppercase tracking-wide">
                 Name {creating ? "" : "(file name, fixed)"}
               </label>
               <input
@@ -916,10 +908,10 @@ function WorkflowEditor({
                 spellCheck={false}
                 className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs font-mono text-primary placeholder-muted focus-accent disabled:opacity-60 disabled:cursor-not-allowed"
               />
-              {nameError && <p className="text-2xs text-red-500">Use letters, numbers, hyphens, and underscores only, starting with a letter or number.</p>}
+              {nameError && <p className="text-xs text-red-500">Use letters, numbers, hyphens, and underscores only, starting with a letter or number.</p>}
             </div>
             <div className="space-y-1">
-              <label htmlFor="workflow-display-name" className="text-2xs font-semibold text-muted uppercase tracking-wide">
+              <label htmlFor="workflow-display-name" className="text-xs font-semibold text-muted uppercase tracking-wide">
                 Display name
               </label>
               <input
@@ -932,7 +924,7 @@ function WorkflowEditor({
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="workflow-category" className="text-2xs font-semibold text-muted uppercase tracking-wide">
+              <label htmlFor="workflow-category" className="text-xs font-semibold text-muted uppercase tracking-wide">
                 Category
               </label>
               <input
@@ -951,7 +943,7 @@ function WorkflowEditor({
               </datalist>
             </div>
             <div className="space-y-1">
-              <label htmlFor="workflow-agent-type" className="text-2xs font-semibold text-muted uppercase tracking-wide">
+              <label htmlFor="workflow-agent-type" className="text-xs font-semibold text-muted uppercase tracking-wide">
                 Agent type
               </label>
               <select
@@ -969,7 +961,7 @@ function WorkflowEditor({
                 ))}
               </select>
               {unknownAgentType && (
-                <p className="flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-500">
+                <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
                   <TriangleAlert className="w-3 h-3 shrink-0" /> This agent type is not currently configured.
                 </p>
               )}
@@ -977,7 +969,7 @@ function WorkflowEditor({
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="workflow-description" className="text-2xs font-semibold text-muted uppercase tracking-wide">
+            <label htmlFor="workflow-description" className="text-xs font-semibold text-muted uppercase tracking-wide">
               Description
             </label>
             <textarea
@@ -992,11 +984,11 @@ function WorkflowEditor({
 
           <div className="space-y-2">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-2xs font-semibold text-muted uppercase tracking-wide">Steps</span>
-              <span className="text-2xs text-muted">Chat messages or structured agent commands</span>
+              <span className="text-xs font-semibold text-muted uppercase tracking-wide">Steps</span>
+              <span className="text-xs text-muted">Chat messages or structured agent commands</span>
             </div>
             <StepEditor steps={draft.steps} onChange={steps => onDraftChange({ ...draft, steps })} commands={commands} />
-            {!hasSteps && <p className="text-2xs text-red-500">Add at least one step.</p>}
+            {!hasSteps && <p className="text-xs text-red-500">Add at least one step.</p>}
           </div>
 
           <SubAgentSettingsEditor value={draft.subAgent} onChange={subAgent => onDraftChange({ ...draft, subAgent })} />

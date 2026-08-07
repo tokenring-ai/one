@@ -22,7 +22,7 @@ export default function RangeBar({ low, high, current, lowLabel, highLabel }: Ra
           style={{ left: `calc(${pct}% - 4px)` }}
         />
       </div>
-      <div className="flex justify-between text-2xs text-muted font-mono">
+      <div className="flex justify-between text-xs text-muted font-mono">
         <span>{lowLabel ?? fmtPrice(low)}</span>
         <span>{highLabel ?? fmtPrice(high)}</span>
       </div>

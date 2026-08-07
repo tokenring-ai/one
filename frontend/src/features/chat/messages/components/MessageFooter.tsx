@@ -56,7 +56,7 @@ export default function MessageFooter({ msg, onDownload }: { msg: ChatMessage; o
           {copied ? (
             <>
               <Check className="w-3.5 h-3.5 text-success" />
-              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-success text-primary text-2xs px-2 py-1 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-success text-primary text-xs px-2 py-1 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 Copied!
               </span>
             </>

@@ -103,7 +103,7 @@ export default function RowGrid({
                       <ChevronsUpDown className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-40 transition-opacity" />
                     )}
                   </button>
-                  {column && <span className="block text-2xs font-normal text-muted lowercase">{column.dataType}</span>}
+                  {column && <span className="block text-xs font-normal text-muted lowercase">{column.dataType}</span>}
                 </th>
               );
             })}

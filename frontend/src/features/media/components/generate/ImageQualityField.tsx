@@ -22,7 +22,7 @@ export default function ImageQualityField({ value, onChange }: { value: ImageQua
             }`}
           >
             <span>{opt.label}</span>
-            <span className="text-2xs opacity-60">{opt.detail}</span>
+            <span className="text-xs opacity-60">{opt.detail}</span>
           </button>
         ))}
       </div>

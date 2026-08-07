@@ -49,7 +49,7 @@ export default function AppPageHeader({
       </div>
       <div className={cn("min-w-0 flex-1", middleGrows && "sm:flex-1")}>
         {typeof title === "string" ? <h1 className="text-sm font-semibold text-primary">{title}</h1> : title}
-        {subtitle ? typeof subtitle === "string" ? <p className="text-2xs text-muted truncate">{subtitle}</p> : subtitle : null}
+        {subtitle ? typeof subtitle === "string" ? <p className="text-xs text-muted truncate">{subtitle}</p> : subtitle : null}
       </div>
       {children ? (
         <div className="w-full sm:w-auto sm:flex-1 order-last sm:order-none flex items-center sm:justify-end gap-2 min-w-0 overflow-x-auto custom-scrollbar pb-0.5 sm:pb-0">

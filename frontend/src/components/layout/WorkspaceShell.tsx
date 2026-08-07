@@ -1,7 +1,8 @@
-import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { Menu, PanelLeftOpen, X } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { WorkspaceNavigationProvider } from "./WorkspaceNavigationContext.tsx";
 
 const MIN_NAVIGATION_WIDTH = 220;
 const MAX_NAVIGATION_WIDTH = 380;
@@ -88,6 +89,18 @@ export default function WorkspaceShell({
     [openKey],
   );
 
+  const collapseDesktopNavigation = useCallback(() => {
+    setDesktopNavigationOpen(false);
+  }, [setDesktopNavigationOpen]);
+
+  const navigationContextValue = useMemo(
+    () => ({
+      collapseDesktopNavigation,
+      navigationLabel,
+    }),
+    [collapseDesktopNavigation, navigationLabel],
+  );
+
   const resizeBy = useCallback(
     (delta: number) => {
       setNavigationWidth(current => {
@@ -116,98 +129,92 @@ export default function WorkspaceShell({
   };
 
   return (
-    <div className={`relative flex min-h-0 w-full overflow-hidden bg-primary ${className}`}>
-      <aside
-        aria-label={navigationLabel}
-        style={{ "--workspace-navigation-width": `${navigationWidth}px` } as React.CSSProperties}
-        className={`workspace-navigation-pane group/navigation absolute inset-0 z-40 min-h-0 flex-col bg-sidebar lg:relative lg:inset-auto lg:z-auto lg:shrink-0 lg:border-r lg:border-primary ${mobileOpen ? "flex" : "hidden"} ${desktopOpen ? "lg:flex" : "lg:hidden"}`}
-      >
-        <div className="lg:hidden h-12 shrink-0 flex items-center gap-3 px-3 border-b border-primary">
-          <span className="flex-1 text-sm font-semibold text-primary">{title}</span>
-          {hasSelection && (
+    <WorkspaceNavigationProvider value={navigationContextValue}>
+      <div className={`relative flex min-h-0 w-full overflow-hidden bg-primary ${className}`}>
+        <aside
+          aria-label={navigationLabel}
+          style={{ "--workspace-navigation-width": `${navigationWidth}px` } as React.CSSProperties}
+          className={`workspace-navigation-pane absolute inset-0 z-40 min-h-0 flex-col bg-sidebar lg:relative lg:inset-auto lg:z-auto lg:shrink-0 lg:border-r lg:border-primary ${mobileOpen ? "flex" : "hidden"} ${desktopOpen ? "lg:flex" : "lg:hidden"}`}
+        >
+          <div className="lg:hidden h-12 shrink-0 flex items-center gap-3 px-3 border-b border-primary">
+            <span className="flex-1 text-sm font-semibold text-primary">{title}</span>
+            {hasSelection && (
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                className="grid h-16 w-11 place-items-center rounded-lg text-muted hover:text-primary hover:bg-hover focus-ring"
+                aria-label={`Close ${navigationLabel}`}
+                autoFocus
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex-1 min-h-0 min-w-0">{navigation}</div>
+        </aside>
+        {desktopOpen && (
+          <div
+            role="separator"
+            aria-label={`Resize ${navigationLabel}`}
+            aria-orientation="vertical"
+            aria-valuemin={MIN_NAVIGATION_WIDTH}
+            aria-valuemax={MAX_NAVIGATION_WIDTH}
+            aria-valuenow={navigationWidth}
+            tabIndex={0}
+            onPointerDown={beginResize}
+            onDoubleClick={() => {
+              setNavigationWidth(DEFAULT_NAVIGATION_WIDTH);
+              writePreference(widthKey, String(DEFAULT_NAVIGATION_WIDTH));
+            }}
+            onKeyDown={event => {
+              if (event.key === "ArrowLeft") {
+                event.preventDefault();
+                resizeBy(event.shiftKey ? -32 : -8);
+              } else if (event.key === "ArrowRight") {
+                event.preventDefault();
+                resizeBy(event.shiftKey ? 32 : 8);
+              } else if (event.key === "Home") {
+                event.preventDefault();
+                setNavigationWidth(MIN_NAVIGATION_WIDTH);
+                writePreference(widthKey, String(MIN_NAVIGATION_WIDTH));
+              } else if (event.key === "End") {
+                event.preventDefault();
+                setNavigationWidth(MAX_NAVIGATION_WIDTH);
+                writePreference(widthKey, String(MAX_NAVIGATION_WIDTH));
+              }
+            }}
+            className="group hidden lg:flex w-1 shrink-0 cursor-col-resize touch-none items-center justify-center -ml-1 z-10 focus:outline-none"
+          >
+            <span className="h-10 w-px rounded-full bg-transparent group-hover:bg-accent group-focus:bg-accent transition-colors" />
+          </div>
+        )}
+
+        <section className="flex min-w-0 min-h-0 flex-1 flex-col" aria-label={`${title} workspace`}>
+          <div className="lg:hidden h-11 shrink-0 flex items-center gap-2 px-2 border-b border-primary bg-secondary">
             <button
               type="button"
-              onClick={() => setMobileOpen(false)}
-              className="grid h-11 w-11 place-items-center rounded-lg text-muted hover:text-primary hover:bg-hover focus-ring"
-              aria-label={`Close ${navigationLabel}`}
-              autoFocus
+              onClick={() => setMobileOpen(true)}
+              className="inline-flex h-11 items-center gap-2 px-3 rounded-lg text-xs font-medium text-primary hover:bg-hover focus-ring"
+              aria-expanded={mobileOpen}
             >
-              <X className="w-4 h-4" />
+              <Menu className="w-4 h-4" />
+              <span>Browse</span>
+            </button>
+            <span className="min-w-0 truncate text-xs text-muted">{title}</span>
+          </div>
+          {!desktopOpen && (
+            <button
+              type="button"
+              onClick={() => setDesktopNavigationOpen(true)}
+              className="hidden lg:grid absolute left-2 top-2 z-20 w-8 h-8 place-items-center rounded-lg border border-primary bg-secondary text-muted hover:text-primary hover:bg-hover focus-ring"
+              aria-label={`Show ${navigationLabel}`}
+            >
+              <PanelLeftOpen className="w-4 h-4" />
             </button>
           )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setDesktopNavigationOpen(false)}
-          className="absolute right-2 top-2 z-10 hidden lg:block p-1.5 rounded-md bg-sidebar/90 text-muted opacity-0 group-hover/navigation:opacity-100 focus:opacity-100 hover:text-primary hover:bg-hover focus-ring transition-opacity"
-          aria-label={`Hide ${navigationLabel}`}
-        >
-          <PanelLeftClose className="w-4 h-4" />
-        </button>
-        <div className="flex-1 min-h-0 min-w-0">{navigation}</div>
-      </aside>
-      {desktopOpen && (
-        <div
-          role="separator"
-          aria-label={`Resize ${navigationLabel}`}
-          aria-orientation="vertical"
-          aria-valuemin={MIN_NAVIGATION_WIDTH}
-          aria-valuemax={MAX_NAVIGATION_WIDTH}
-          aria-valuenow={navigationWidth}
-          tabIndex={0}
-          onPointerDown={beginResize}
-          onDoubleClick={() => {
-            setNavigationWidth(DEFAULT_NAVIGATION_WIDTH);
-            writePreference(widthKey, String(DEFAULT_NAVIGATION_WIDTH));
-          }}
-          onKeyDown={event => {
-            if (event.key === "ArrowLeft") {
-              event.preventDefault();
-              resizeBy(event.shiftKey ? -32 : -8);
-            } else if (event.key === "ArrowRight") {
-              event.preventDefault();
-              resizeBy(event.shiftKey ? 32 : 8);
-            } else if (event.key === "Home") {
-              event.preventDefault();
-              setNavigationWidth(MIN_NAVIGATION_WIDTH);
-              writePreference(widthKey, String(MIN_NAVIGATION_WIDTH));
-            } else if (event.key === "End") {
-              event.preventDefault();
-              setNavigationWidth(MAX_NAVIGATION_WIDTH);
-              writePreference(widthKey, String(MAX_NAVIGATION_WIDTH));
-            }
-          }}
-          className="group hidden lg:flex w-1 shrink-0 cursor-col-resize touch-none items-center justify-center -ml-1 z-10 focus:outline-none"
-        >
-          <span className="h-10 w-px rounded-full bg-transparent group-hover:bg-accent group-focus:bg-accent transition-colors" />
-        </div>
-      )}
-
-      <section className="flex min-w-0 min-h-0 flex-1 flex-col" aria-label={`${title} workspace`}>
-        <div className="lg:hidden h-11 shrink-0 flex items-center gap-2 px-2 border-b border-primary bg-secondary">
-          <button
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            className="inline-flex h-11 items-center gap-2 px-3 rounded-lg text-xs font-medium text-primary hover:bg-hover focus-ring"
-            aria-expanded={mobileOpen}
-          >
-            <Menu className="w-4 h-4" />
-            <span>Browse</span>
-          </button>
-          <span className="min-w-0 truncate text-xs text-muted">{title}</span>
-        </div>
-        {!desktopOpen && (
-          <button
-            type="button"
-            onClick={() => setDesktopNavigationOpen(true)}
-            className="hidden lg:grid absolute left-2 top-2 z-20 w-8 h-8 place-items-center rounded-lg border border-primary bg-secondary text-muted hover:text-primary hover:bg-hover focus-ring"
-            aria-label={`Show ${navigationLabel}`}
-          >
-            <PanelLeftOpen className="w-4 h-4" />
-          </button>
-        )}
-        <div className="flex flex-col flex-1 min-h-0 min-w-0">{children}</div>
-      </section>
-    </div>
+          <div className="flex flex-col flex-1 min-h-0 min-w-0">{children}</div>
+        </section>
+      </div>
+    </WorkspaceNavigationProvider>
   );
 }

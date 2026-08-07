@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
 import { markdownLinkComponents } from "../../components/chat/MarkdownLink.tsx";
+import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
@@ -97,7 +98,7 @@ function SaveModal({
         </div>
         <div className="space-y-3">
           <div className="space-y-1">
-            <label className="text-2xs font-semibold text-muted uppercase tracking-wide">Topic</label>
+            <label className="text-xs font-semibold text-muted uppercase tracking-wide">Topic</label>
             <input
               type="text"
               list="research-topic-options"
@@ -115,11 +116,11 @@ function SaveModal({
               ))}
             </datalist>
             {trimmedTopic && !NAME_PATTERN.test(trimmedTopic) && (
-              <p className="text-2xs text-red-500">Use letters, numbers, hyphens, and underscores only, starting with a letter or number.</p>
+              <p className="text-xs text-red-500">Use letters, numbers, hyphens, and underscores only, starting with a letter or number.</p>
             )}
           </div>
           <div className="space-y-1">
-            <label className="text-2xs font-semibold text-muted uppercase tracking-wide">Item name</label>
+            <label className="text-xs font-semibold text-muted uppercase tracking-wide">Item name</label>
             <input
               ref={itemInputRef}
               type="text"
@@ -133,7 +134,7 @@ function SaveModal({
               className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary placeholder-muted focus-accent"
             />
             {trimmedItem && !NAME_PATTERN.test(trimmedItem) && (
-              <p className="text-2xs text-red-500">Use letters, numbers, hyphens, and underscores only, starting with a letter or number.</p>
+              <p className="text-xs text-red-500">Use letters, numbers, hyphens, and underscores only, starting with a letter or number.</p>
             )}
           </div>
           <div className="flex gap-2 pt-1">
@@ -207,7 +208,7 @@ function NewTopicModal({ onCreate, onClose }: { onCreate: (name: string) => Prom
             className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary placeholder-muted focus-accent"
           />
           {trimmed && !isValid && (
-            <p className="text-2xs text-red-500">Use letters, numbers, hyphens, and underscores only, starting with a letter or number.</p>
+            <p className="text-xs text-red-500">Use letters, numbers, hyphens, and underscores only, starting with a letter or number.</p>
           )}
           <div className="flex gap-2 pt-1">
             <button
@@ -350,7 +351,7 @@ function TopicRow({
         <span className="flex-1 min-w-0 truncate text-xs font-medium text-primary" title={topic.name}>
           {topic.name}
         </span>
-        <span className="text-2xs text-muted shrink-0">{topic.itemCount}</span>
+        <span className="text-xs text-muted shrink-0">{topic.itemCount}</span>
         <button
           type="button"
           onClick={e => {
@@ -378,19 +379,19 @@ function TopicRow({
       {expanded && (
         <div className="pl-5">
           {loadingItems && items === null ? (
-            <div className="px-2 py-2 text-2xs text-muted flex items-center gap-1.5">
+            <div className="px-2 py-2 text-xs text-muted flex items-center gap-1.5">
               <Loader2 className="w-3 h-3 animate-spin" />
               Loading…
             </div>
           ) : itemsError && items === null ? (
             <div className="px-2 py-2 space-y-1.5">
-              <p className="text-2xs text-red-500">Failed to load items</p>
-              <button type="button" onClick={() => void refreshItems()} className="text-2xs text-accent hover:underline cursor-pointer focus-ring rounded">
+              <p className="text-xs text-red-500">Failed to load items</p>
+              <button type="button" onClick={() => void refreshItems()} className="text-xs text-accent hover:underline cursor-pointer focus-ring rounded">
                 Retry
               </button>
             </div>
           ) : items && items.length === 0 ? (
-            <p className="px-2 py-2 text-2xs text-muted">No items yet</p>
+            <p className="px-2 py-2 text-xs text-muted">No items yet</p>
           ) : (
             items?.map(item => {
               const isSelected = selected && selected.topicName === topic.name && selected.name === item.name;
@@ -406,7 +407,7 @@ function TopicRow({
                   <span className="flex-1 min-w-0 truncate text-xs" title={item.name}>
                     {item.name}
                   </span>
-                  <span className="text-2xs text-muted shrink-0 opacity-0 group-hover:opacity-100 tabular-nums">{formatBytes(item.size)}</span>
+                  <span className="text-xs text-muted shrink-0 opacity-0 group-hover:opacity-100 tabular-nums">{formatBytes(item.size)}</span>
                   <button
                     type="button"
                     onClick={e => {
@@ -494,43 +495,41 @@ function TopicsSidebar({
 }) {
   return (
     <div className="h-full flex flex-col bg-secondary border-r border-primary">
-      <div className="flex items-center gap-1 px-2 py-2 border-b border-primary">
-        <span className="flex-1 text-2xs font-bold text-muted uppercase tracking-widest px-1">Topics</span>
-        <button
-          type="button"
-          onClick={onNewItemGlobal}
-          title="New research item"
-          className="p-1 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring"
-        >
-          <FileText className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={onNewTopic}
-          title="New topic"
-          className="p-1 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      <NavigationSidebarHeader
+        title="Topics"
+        actions={[
+          {
+            icon: <FileText className="w-3.5 h-3.5" />,
+            label: "New research item",
+            title: "New research item",
+            onClick: onNewItemGlobal,
+          },
+          {
+            icon: <Plus className="w-3.5 h-3.5" />,
+            label: "New topic",
+            title: "New topic",
+            onClick: onNewTopic,
+          },
+        ]}
+      />
       <div className="flex-1 overflow-y-auto">
         {topicsLoading && topics.length === 0 ? (
-          <div className="px-3 py-6 text-center text-2xs text-muted flex flex-col items-center gap-2">
+          <div className="px-3 py-6 text-center text-xs text-muted flex flex-col items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" />
             Loading topics…
           </div>
         ) : topicsError && topics.length === 0 ? (
           <div className="px-3 py-6 text-center space-y-2">
-            <p className="text-2xs text-red-500">Failed to load topics</p>
-            <button type="button" onClick={onRetryTopics} className="text-2xs text-accent hover:underline cursor-pointer focus-ring rounded">
+            <p className="text-xs text-red-500">Failed to load topics</p>
+            <button type="button" onClick={onRetryTopics} className="text-xs text-accent hover:underline cursor-pointer focus-ring rounded">
               Retry
             </button>
           </div>
         ) : topics.length === 0 ? (
           <div className="px-3 py-6 text-center">
             <BookOpen className="w-6 h-6 text-muted mx-auto mb-2" />
-            <p className="text-2xs text-muted">No topics yet</p>
-            <p className="text-2xs text-muted mt-1">Start a research agent or create a topic</p>
+            <p className="text-xs text-muted">No topics yet</p>
+            <p className="text-xs text-muted mt-1">Start a research agent or create a topic</p>
           </div>
         ) : (
           topics.map(topic => (
@@ -610,7 +609,7 @@ function EmptyState({ hasTopics, hasAgent, onStartResearch }: { hasTopics: boole
           </div>
         ) : (
           <div className="bg-secondary border border-primary rounded-xl p-4 shadow-sm space-y-3">
-            <label htmlFor="research-landing-query" className="text-2xs font-semibold text-muted uppercase tracking-wide">
+            <label htmlFor="research-landing-query" className="text-xs font-semibold text-muted uppercase tracking-wide">
               Research prompt
             </label>
             <textarea
@@ -631,7 +630,7 @@ function EmptyState({ hasTopics, hasAgent, onStartResearch }: { hasTopics: boole
               aria-label="Research query"
             />
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-2xs text-muted">⌘/Ctrl + Enter to send</p>
+              <p className="text-xs text-muted">⌘/Ctrl + Enter to send</p>
               <button
                 type="button"
                 onClick={() => void handleSubmit()}
@@ -1175,7 +1174,7 @@ export default function ResearchApp() {
               <button
                 type="button"
                 onClick={() => setViewMode("preview")}
-                className={`flex items-center gap-1 px-2 py-1 text-2xs font-medium rounded-md transition-colors cursor-pointer focus-ring ${
+                className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer focus-ring ${
                   viewMode === "preview" ? "bg-accent text-white" : "text-muted hover:text-primary hover:bg-hover"
                 }`}
                 aria-pressed={viewMode === "preview"}
@@ -1187,7 +1186,7 @@ export default function ResearchApp() {
               <button
                 type="button"
                 onClick={() => setViewMode("edit")}
-                className={`flex items-center gap-1 px-2 py-1 text-2xs font-medium rounded-md transition-colors cursor-pointer focus-ring ${
+                className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer focus-ring ${
                   viewMode === "edit" ? "bg-accent text-white" : "text-muted hover:text-primary hover:bg-hover"
                 }`}
                 aria-pressed={viewMode === "edit"}
@@ -1205,7 +1204,7 @@ export default function ResearchApp() {
                 onClick={() => void handleSave()}
                 disabled={isSaving || (!isDirty && !!selected)}
                 title={selected ? "Save (Ctrl/⌘+S)" : "Save…"}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-accent hover:bg-accent-hover text-white text-2xs font-medium rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                 {selected ? (isDirty ? "Save" : "Saved") : "Save…"}
@@ -1215,7 +1214,7 @@ export default function ResearchApp() {
                   type="button"
                   onClick={() => setSaveModal({ mode: "saveAs", presetTopicName: selected.topicName })}
                   title="Save As…"
-                  className="px-2 py-1 text-2xs text-muted hover:text-primary hover:bg-hover rounded-lg transition-colors focus-ring cursor-pointer"
+                  className="px-2 py-1 text-xs text-muted hover:text-primary hover:bg-hover rounded-lg transition-colors focus-ring cursor-pointer"
                 >
                   Save As…
                 </button>
@@ -1240,7 +1239,7 @@ export default function ResearchApp() {
           type="button"
           onClick={() => handleNew()}
           title="New research item"
-          className="flex items-center gap-1.5 px-2.5 py-1 bg-accent-muted hover:bg-accent-muted-hover text-accent text-2xs font-medium rounded-lg transition-colors cursor-pointer focus-ring shrink-0"
+          className="flex items-center gap-1.5 px-2.5 py-1 bg-accent-muted hover:bg-accent-muted-hover text-accent text-xs font-medium rounded-lg transition-colors cursor-pointer focus-ring shrink-0"
         >
           <Plus className="w-3 h-3" />
           New

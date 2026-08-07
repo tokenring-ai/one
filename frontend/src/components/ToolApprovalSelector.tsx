@@ -81,11 +81,11 @@ export default function ToolApprovalSelector({ agentId, triggerVariant = "defaul
       >
         <div className="flex items-center gap-2 px-3 pt-2 pb-2 shrink-0 border-b border-primary">
           <span className="text-sm flex-1 font-mono text-muted">Tool Approval</span>
-          <span className="text-2xs font-mono text-dim">{settings ? summary : "loading…"}</span>
+          <span className="text-xs font-mono text-dim">{settings ? summary : "loading…"}</span>
         </div>
 
         <div className="border-b border-primary py-1">
-          <div className="px-3 pb-1 text-2xs font-mono uppercase text-dim">Mode above auto-approval level</div>
+          <div className="px-3 pb-1 text-xs font-mono uppercase text-dim">Mode above auto-approval level</div>
           {MODES.map(({ mode, label, description }) => {
             const isActive = currentMode === mode;
             return (
@@ -102,7 +102,7 @@ export default function ToolApprovalSelector({ agentId, triggerVariant = "defaul
                   <div className={`text-xs font-mono leading-tight truncate ${isActive ? "text-accent font-medium" : "text-muted group-hover:text-primary"}`}>
                     {label}
                   </div>
-                  <div className="text-2xs text-dim font-mono leading-tight truncate mt-0.5">{description}</div>
+                  <div className="text-xs text-dim font-mono leading-tight truncate mt-0.5">{description}</div>
                 </div>
                 {isActive &&
                   (pending === "mode" ? (
@@ -115,7 +115,7 @@ export default function ToolApprovalSelector({ agentId, triggerVariant = "defaul
           })}
         </div>
 
-        <div className="px-3 pt-2 pb-1 text-2xs font-mono uppercase text-dim shrink-0">Auto-approve at or below</div>
+        <div className="px-3 pt-2 pb-1 text-xs font-mono uppercase text-dim shrink-0">Auto-approve at or below</div>
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-1 space-y-0.5">
           {levels.map(({ level, description }) => {
             const isActive = currentLevel === level;
@@ -129,7 +129,7 @@ export default function ToolApprovalSelector({ agentId, triggerVariant = "defaul
                 className="flex items-center cursor-pointer py-1.5 rounded-md px-3 transition-colors group hover:bg-hover"
               >
                 <span
-                  className={`w-5 text-2xs font-mono tabular-nums text-right mr-2.5 shrink-0 ${isActive ? "text-accent font-medium" : "text-dim"}`}
+                  className={`w-5 text-xs font-mono tabular-nums text-right mr-2.5 shrink-0 ${isActive ? "text-accent font-medium" : "text-dim"}`}
                   aria-hidden="true"
                 >
                   {level}

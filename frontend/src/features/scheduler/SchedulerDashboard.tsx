@@ -40,12 +40,12 @@ const MAIN_TABS: FilterTabOption<MainTab>[] = [
 
 function StatusPill({ running }: { running: boolean }) {
   return running ? (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-2xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
       Scheduler enabled
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-2xs font-medium bg-tertiary text-muted border border-primary">
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-tertiary text-muted border border-primary">
       <Pause className="w-3 h-3" />
       Scheduler disabled
     </span>
@@ -55,20 +55,20 @@ function StatusPill({ running }: { running: boolean }) {
 function TaskStatusBadge({ status }: { status: "pending" | "running" | "idle" }) {
   if (status === "running") {
     return (
-      <span className="inline-flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 shrink-0">
+      <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 shrink-0">
         <Activity className="w-3 h-3 animate-pulse" /> Running
       </span>
     );
   }
   if (status === "pending") {
     return (
-      <span className="inline-flex items-center gap-1 text-2xs text-indigo-600 dark:text-indigo-400 shrink-0">
+      <span className="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 shrink-0">
         <Clock className="w-3 h-3" /> Pending
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-2xs text-muted shrink-0">
+    <span className="inline-flex items-center gap-1 text-xs text-muted shrink-0">
       <Pause className="w-3 h-3" /> Not scheduled
     </span>
   );
@@ -296,7 +296,7 @@ export default function SchedulerDashboard() {
             <div className="px-6 py-14 text-center bg-secondary border border-primary border-dashed rounded-xl">
               <Timer className="w-10 h-10 text-muted mx-auto mb-3 opacity-50" />
               <p className="text-sm font-medium text-primary mb-1">No agents available</p>
-              <p className="text-2xs text-muted max-w-sm mx-auto mb-5">
+              <p className="text-xs text-muted max-w-sm mx-auto mb-5">
                 Scheduled tasks run on a specific agent. Create an agent first, then add recurring prompts.
               </p>
               <button
@@ -347,7 +347,7 @@ export default function SchedulerDashboard() {
               <div className="bg-secondary border border-primary rounded-xl p-4 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <label className="flex-1 min-w-0 space-y-1">
-                    <span className="text-2xs font-bold text-muted uppercase tracking-widest">Agent</span>
+                    <span className="text-xs font-bold text-muted uppercase tracking-widest">Agent</span>
                     <select
                       value={selectedAgentId ?? ""}
                       onChange={e => {
@@ -406,7 +406,7 @@ export default function SchedulerDashboard() {
                 </div>
 
                 {!schedulerRunning && taskCount > 0 ? (
-                  <p className="text-2xs text-amber-700 dark:text-amber-400/90 flex items-start gap-1.5">
+                  <p className="text-xs text-amber-700 dark:text-amber-400/90 flex items-start gap-1.5">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                     Scheduler is disabled. Tasks will not fire until you enable it (or auto-start after adding a task).
                   </p>
@@ -451,7 +451,7 @@ export default function SchedulerDashboard() {
                     <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
                       <Clock className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
                       <p className="text-sm font-medium text-secondary mb-1">No scheduled tasks</p>
-                      <p className="text-2xs text-muted max-w-xs mx-auto mb-4">
+                      <p className="text-xs text-muted max-w-xs mx-auto mb-4">
                         Add a recurring prompt—health checks, daily briefs, cleanup, monitoring—to this agent.
                       </p>
                       <button
@@ -486,11 +486,11 @@ export default function SchedulerDashboard() {
                                   <span className="text-sm font-medium text-primary truncate">{entry.name}</span>
                                   <TaskStatusBadge status={entry.status} />
                                 </div>
-                                <p className="text-2xs text-muted mb-1.5" title={entry.task.message}>
+                                <p className="text-xs text-muted mb-1.5" title={entry.task.message}>
                                   {isExpanded ? entry.task.message : truncateMessage(entry.task.message)}
                                 </p>
-                                <p className="text-2xs text-muted/90 mb-2">{formatScheduleSummary(entry.task)}</p>
-                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs">
+                                <p className="text-xs text-muted/90 mb-2">{formatScheduleSummary(entry.task)}</p>
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
                                   {entry.status === "running" ? (
                                     <span className="text-muted">
                                       Started:{" "}
@@ -520,7 +520,7 @@ export default function SchedulerDashboard() {
                                     <button
                                       type="button"
                                       onClick={() => openHistoryForTask(entry.name)}
-                                      className="inline-flex items-center gap-1 px-2 py-1 text-2xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer"
+                                      className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer"
                                     >
                                       <History className="w-3 h-3" />
                                       View run history
@@ -562,7 +562,7 @@ export default function SchedulerDashboard() {
                     <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
                       <History className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
                       <p className="text-sm font-medium text-secondary mb-1">No runs yet</p>
-                      <p className="text-2xs text-muted max-w-xs mx-auto">
+                      <p className="text-xs text-muted max-w-xs mx-auto">
                         Execution history is kept in memory for this session. Completed and failed runs will appear here.
                       </p>
                     </div>
@@ -572,7 +572,7 @@ export default function SchedulerDashboard() {
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
                         <label className="flex-1 min-w-0 space-y-1">
-                          <span className="text-2xs font-medium text-muted">Task</span>
+                          <span className="text-xs font-medium text-muted">Task</span>
                           <select
                             value={historyTaskFilter}
                             onChange={e => setHistoryTaskFilter(e.target.value)}
@@ -588,7 +588,7 @@ export default function SchedulerDashboard() {
                           </select>
                         </label>
                         <label className="sm:w-40 space-y-1">
-                          <span className="text-2xs font-medium text-muted">Status</span>
+                          <span className="text-xs font-medium text-muted">Status</span>
                           <select
                             value={historyStatusFilter}
                             onChange={e => setHistoryStatusFilter(e.target.value as HistoryStatusFilter)}
@@ -617,7 +617,7 @@ export default function SchedulerDashboard() {
                       {filteredHistory.length === 0 ? (
                         <div className="px-6 py-10 text-center bg-secondary border border-primary border-dashed rounded-xl">
                           <p className="text-sm font-medium text-secondary mb-1">No matching runs</p>
-                          <p className="text-2xs text-muted">Try a different task or status filter.</p>
+                          <p className="text-xs text-muted">Try a different task or status filter.</p>
                         </div>
                       ) : (
                         <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
@@ -643,7 +643,7 @@ export default function SchedulerDashboard() {
                                     </button>
                                     <span
                                       className={cn(
-                                        "text-2xs px-1.5 py-0.5 rounded-md border",
+                                        "text-xs px-1.5 py-0.5 rounded-md border",
                                         run.status === "completed"
                                           ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
                                           : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
@@ -651,12 +651,12 @@ export default function SchedulerDashboard() {
                                     >
                                       {run.status}
                                     </span>
-                                    <span className="text-2xs text-muted tabular-nums">{formatDuration(run.startTime, run.endTime)}</span>
-                                    <span className="text-2xs text-muted tabular-nums">({formatRelativeTime(run.startTime)})</span>
+                                    <span className="text-xs text-muted tabular-nums">{formatDuration(run.startTime, run.endTime)}</span>
+                                    <span className="text-xs text-muted tabular-nums">({formatRelativeTime(run.startTime)})</span>
                                   </div>
-                                  <p className="text-2xs text-muted mb-1">{formatScheduleTime(run.startTime, { withSeconds: true })}</p>
+                                  <p className="text-xs text-muted mb-1">{formatScheduleTime(run.startTime, { withSeconds: true })}</p>
                                   {run.message ? (
-                                    <p className="text-2xs text-secondary line-clamp-3 whitespace-pre-wrap break-words" title={run.message}>
+                                    <p className="text-xs text-secondary line-clamp-3 whitespace-pre-wrap break-words" title={run.message}>
                                       {run.message}
                                     </p>
                                   ) : null}
@@ -694,11 +694,11 @@ function SummaryStat({ label, value, sub, icon, accentClass }: { label: string; 
   return (
     <div className="px-4 py-3.5 bg-secondary rounded-xl border border-primary shadow-sm">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-2xs font-bold text-muted uppercase tracking-widest">{label}</span>
+        <span className="text-xs font-bold text-muted uppercase tracking-widest">{label}</span>
         <span className={cn("opacity-80", accentClass)}>{icon}</span>
       </div>
       <div className={cn("text-xl font-semibold tabular-nums tracking-tight", accentClass ?? "text-primary")}>{value}</div>
-      {sub ? <p className="text-2xs text-muted mt-1 truncate">{sub}</p> : null}
+      {sub ? <p className="text-xs text-muted mt-1 truncate">{sub}</p> : null}
     </div>
   );
 }

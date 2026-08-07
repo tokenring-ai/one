@@ -114,7 +114,7 @@ export default function ChartTab({ symbol }: ChartTabProps) {
       </div>
 
       {chartStage === 2 && localRows.length > 1 && (
-        <p className="text-2xs text-muted px-1">Showing local chart from market data (external chart unavailable).</p>
+        <p className="text-xs text-muted px-1">Showing local chart from market data (external chart unavailable).</p>
       )}
     </div>
   );

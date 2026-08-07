@@ -186,7 +186,7 @@ export default function SkillSelector({ agentId, triggerVariant = "default", onT
                   >
                     /{skill.name}
                   </div>
-                  {skill.description && <div className="text-2xs text-dim font-mono leading-tight truncate mt-0.5">{skill.description}</div>}
+                  {skill.description && <div className="text-xs text-dim font-mono leading-tight truncate mt-0.5">{skill.description}</div>}
                 </div>
                 {canTry && (
                   <button
@@ -217,7 +217,7 @@ export default function SkillSelector({ agentId, triggerVariant = "default", onT
           {skillCount === 0 && !skillsQuery.isLoading && (
             <div className="px-3 py-4 text-center text-xs text-muted space-y-2">
               <p>No skills installed</p>
-              <p className="text-2xs text-dim">Download skills from the Skills app or use /skills download</p>
+              <p className="text-xs text-dim">Download skills from the Skills app or use /skills download</p>
             </div>
           )}
 

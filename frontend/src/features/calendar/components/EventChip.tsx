@@ -14,7 +14,7 @@ export default function EventChip({ event, onClick, compact = false }: { event: 
       className={cn(
         "w-full flex items-center gap-1 px-1.5 py-0.5 rounded text-white text-left cursor-pointer hover:opacity-90 transition-opacity truncate",
         event.color,
-        compact ? "text-2xs" : "text-xs",
+        compact ? "text-xs" : "text-xs",
       )}
       aria-label={`Event: ${event.title}`}
     >
