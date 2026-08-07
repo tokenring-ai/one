@@ -1,6 +1,6 @@
 [package]
 name = "tokenring-one-cli"
-version = "0.2.55"
+version = "0.2.56"
 edition = "2021"
 license = "MIT"
 description = "Ratatui-powered terminal UI for TokenRing One"

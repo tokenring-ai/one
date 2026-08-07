@@ -18,7 +18,7 @@
 set -euo pipefail
 
 # Pinned release version (managed by bumpversion)
-VERSION_PIN="0.2.55"
+VERSION_PIN="0.2.56"
 
 REPO="${TOKENRING_INSTALL_REPO:-tokenring-ai/one}"
 VERSION="${TOKENRING_INSTALL_VERSION:-$VERSION_PIN}"

@@ -1,6 +1,6 @@
 {
   "name": "@tokenring-ai/one",
-  "version": "0.2.55",
+  "version": "0.2.56",
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
     "@types/bun": "^1.3.14",
