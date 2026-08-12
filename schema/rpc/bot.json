@@ -53,6 +53,77 @@
       "additionalProperties": false
     },
     {
+      "title": "streamBots request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/bot.streamBots"
+        },
+        "params": {
+          "$ref": "#/$defs/streamBotsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamBots response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamBotsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamBots stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "sendMessage request",
       "type": "object",
       "properties": {
@@ -463,6 +534,262 @@
       "properties": {}
     },
     "listBotsResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "success"
+        },
+        "bots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "directMessages": {
+                "type": "string",
+                "enum": [
+                  "listed",
+                  "anyone",
+                  "none"
+                ]
+              },
+              "requireMention": {
+                "type": "boolean"
+              },
+              "joinMessage": {
+                "type": "string"
+              },
+              "users": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "target": {
+                      "type": "string"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "admin",
+                        "user"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "target",
+                    "service",
+                    "userId",
+                    "role"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "channels": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "channelId": {
+                      "type": "string"
+                    },
+                    "agentType": {
+                      "type": "string"
+                    },
+                    "allowedUsers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "connected": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "target",
+                    "service",
+                    "channelId",
+                    "agentType",
+                    "allowedUsers",
+                    "connected"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "conversations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "conversationId": {
+                      "type": "string"
+                    },
+                    "agentId": {
+                      "type": "string"
+                    },
+                    "agentType": {
+                      "type": "string"
+                    },
+                    "channelName": {
+                      "type": "string"
+                    },
+                    "startedAt": {
+                      "type": "number"
+                    },
+                    "lastActivityAt": {
+                      "type": "number"
+                    },
+                    "busy": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "service",
+                    "conversationId",
+                    "agentId",
+                    "agentType",
+                    "startedAt",
+                    "lastActivityAt",
+                    "busy"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "name",
+              "displayName",
+              "agentType",
+              "directMessages",
+              "requireMention",
+              "users",
+              "channels",
+              "conversations"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "maxMessageLength": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "maxMessageLength"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "members": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "name",
+              "members"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "discoveredChannels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "target": {
+                "type": "string"
+              },
+              "service": {
+                "type": "string"
+              },
+              "channelId": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "discoveredAt": {
+                "type": "number"
+              },
+              "invitedBy": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "target",
+              "service",
+              "channelId",
+              "discoveredAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "status",
+        "bots",
+        "services",
+        "groups",
+        "discoveredChannels"
+      ],
+      "additionalProperties": false
+    },
+    "streamBotsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamBotsResult": {
       "type": "object",
       "properties": {
         "status": {
@@ -1471,6 +1798,11 @@
         "type": "query",
         "params": "#/$defs/listBotsParams",
         "result": "#/$defs/listBotsResult"
+      },
+      "streamBots": {
+        "type": "stream",
+        "params": "#/$defs/streamBotsParams",
+        "result": "#/$defs/streamBotsResult"
       },
       "sendMessage": {
         "type": "mutation",

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { readLocalStorageState, writeLocalStorageState } from "./useLocalStorageState.ts";
 
 export type ThemePreference = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
@@ -10,18 +11,15 @@ function getSystemTheme(): ResolvedTheme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+function isThemePreference(value: string): value is ThemePreference {
+  return value === "light" || value === "dark" || value === "system";
+}
+
 function readStoredPreference(): ThemePreference {
-  if (typeof window === "undefined") return "system";
-  try {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system") {
-      return stored;
-    }
-  } catch {
-    // localStorage unavailable
-  }
-  // No stored preference — follow the OS (matches prior first-load behavior)
-  return "system";
+  return readLocalStorageState<ThemePreference>(THEME_STORAGE_KEY, "system", {
+    // Theme is stored as a raw string (not JSON-quoted), matching historical values.
+    deserialize: raw => (isThemePreference(raw) ? raw : "system"),
+  });
 }
 
 function resolveTheme(preference: ThemePreference, system: ResolvedTheme): ResolvedTheme {
@@ -40,7 +38,8 @@ function applyThemeClass(resolved: ResolvedTheme) {
 /**
  * Module-level store so every `useTheme()` consumer (Settings, top-bar toggle,
  * editors) stays in sync. Per-instance useState desynced as soon as one caller
- * changed the preference.
+ * changed the preference — so we use shared read/write helpers rather than the
+ * React hook itself.
  */
 let preferenceStore: ThemePreference = readStoredPreference();
 let systemThemeStore: ResolvedTheme = getSystemTheme();
@@ -57,11 +56,7 @@ function emitSystem() {
 
 function persistAndApply(preference: ThemePreference, system: ResolvedTheme) {
   applyThemeClass(resolveTheme(preference, system));
-  try {
-    localStorage.setItem(THEME_STORAGE_KEY, preference);
-  } catch {
-    // localStorage unavailable — theme still applies for this session
-  }
+  writeLocalStorageState(THEME_STORAGE_KEY, preference, { serialize: String });
 }
 
 // Apply once at module load so the first paint matches storage before React mounts.

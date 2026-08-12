@@ -2,37 +2,20 @@ import { formatTime } from "@tokenring-ai/utility/date/formatTime";
 import markdownList from "@tokenring-ai/utility/string/markdownList";
 import { Check, Copy, Download } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
+import { useCopyToClipboard } from "../../../../hooks/useCopyToClipboard.ts";
 import type { ChatMessage } from "../../../../types/agent-events.ts";
 import { getMessageDetails, getMessageText } from "../messageUtils.ts";
 
 export default function MessageFooter({ msg, onDownload }: { msg: ChatMessage; onDownload?: () => void }) {
-  const [copied, setCopied] = useState(false);
+  const { copy, copied } = useCopyToClipboard();
 
   const messageText = getMessageText(msg);
   const details = getMessageDetails(msg);
-  const copyText = messageText && details.length > 0 ? `${messageText}\n${markdownList(details)}` : messageText;
+  const textToCopy = messageText && details.length > 0 ? `${messageText}\n${markdownList(details)}` : messageText;
 
   const handleCopy = async () => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- can be undefined, TS is wrong
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(copyText!);
-      } else {
-        const ta = document.createElement("textarea");
-        ta.value = copyText!;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-      }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
+    if (!textToCopy) return;
+    await copy(textToCopy);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -44,7 +27,7 @@ export default function MessageFooter({ msg, onDownload }: { msg: ChatMessage; o
 
   return (
     <div className="flex flex-row items-center gap-3 pt-1 text-xs text-muted font-mono">
-      {copyText && (
+      {textToCopy && (
         <button
           type="button"
           onClick={handleCopy}

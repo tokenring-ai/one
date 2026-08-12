@@ -58,6 +58,7 @@
     "@tokenring-ai/metrics": "workspace:*",
     "@tokenring-ai/newsrpm": "workspace:*",
     "@tokenring-ai/queue": "workspace:*",
+    "@tokenring-ai/memory": "workspace:*",
     "@tokenring-ai/research": "workspace:*",
     "@tokenring-ai/scheduler": "workspace:*",
     "@tokenring-ai/skills": "workspace:*",

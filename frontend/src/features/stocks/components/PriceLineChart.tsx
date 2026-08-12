@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { fmt, parseHistoryDate } from "../formatters.ts";
 import type { StockHistoricalRow } from "../types.ts";
 
@@ -6,6 +7,9 @@ interface PriceLineChartProps {
 }
 
 export default function PriceLineChart({ rows }: PriceLineChartProps) {
+  // React useId is unique per instance; avoids SVG gradient collisions when multiple charts mount.
+  const gradId = useId().replace(/:/g, "");
+
   const W = 800,
     H = 200,
     PL = 56,
@@ -40,8 +44,6 @@ export default function PriceLineChart({ rows }: PriceLineChartProps) {
   const isUp = closes[closes.length - 1]! >= closes[0]!;
   const lineColor = isUp ? "#10b981" : "#ef4444";
   const fillColor = lineColor;
-  // Unique gradient id so multiple charts on the same page don't clash.
-  const gradId = `pl-grad-${isUp ? "up" : "dn"}-${closes.length}-${Math.round(minP * 100)}-${Math.round(maxP * 100)}`;
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-48 select-none" aria-label="Price chart">

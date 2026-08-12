@@ -161,6 +161,7 @@ export const configSchema = z.object({
   ...LifecyclePlugin.configSchema.shape,
   ...PosixSystemPlugin.configSchema.shape,
   ...MarkdownPlugin.configSchema.shape,
+  ...MemoryPlugin.configSchema.shape,
   ...MetricsPlugin.configSchema.shape,
   ...MCPPlugin.configSchema.shape,
   ...NewsRPMPlugin.configSchema.shape,

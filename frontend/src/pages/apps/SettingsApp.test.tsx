@@ -18,15 +18,12 @@ void mock.module("../../hooks/useTheme.ts", () => ({
 }));
 
 void mock.module("../../components/layout/AppShellContext.tsx", () => ({
+  MAX_PINNED_APPS: 7,
   useAppShell: () => ({
     pinnedAppIds: ["agents", "workflows", "research", "files", "terminal"],
     toggleAppSwitcher,
     resetToDefaults,
     localStorageAvailable,
-    setSidebarExpanded: mock(),
-    isMobileOpen: false,
-    setMobileOpen: mock(),
-    toggleMobileSidebar: mock(),
   }),
 }));
 
@@ -70,10 +67,24 @@ describe("SettingsApp", () => {
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
     expect(screen.getByText("Appearance")).toBeInTheDocument();
     expect(screen.getByText("Layout")).toBeInTheDocument();
+    expect(screen.getByText("Confirmations")).toBeInTheDocument();
     expect(screen.getByText("Configuration")).toBeInTheDocument();
     expect(screen.getByText("Data")).toBeInTheDocument();
     expect(screen.getByText("About")).toBeInTheDocument();
     expect(screen.getByText("Resources")).toBeInTheDocument();
+  });
+
+  it("toggles agent deletion confirmation preference", async () => {
+    const user = userEvent.setup();
+    renderSettings();
+
+    const toggle = screen.getByRole("button", { name: /Disable agent deletion confirmation/i });
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(toggle);
+    expect(localStorage.getItem("tokenring-confirm-agent-delete")).toBe("false");
+    expect(screen.getByRole("button", { name: /Enable agent deletion confirmation/i })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText(/Agents delete immediately/i)).toBeInTheDocument();
   });
 
   it("shows package version in About", async () => {
@@ -138,15 +149,28 @@ describe("SettingsApp", () => {
     expect(screen.getByText(/currently dark/i)).toBeInTheDocument();
   });
 
+  it("shows accurate reset-layout and pinned-apps copy", () => {
+    renderSettings();
+    expect(screen.getByText("5 of 7 shortcuts shown in the compact app rail")).toBeInTheDocument();
+    expect(screen.getByText("Restore pinned apps and recent apps to defaults")).toBeInTheDocument();
+  });
+
+  it("describes reset layout accurately in the confirmation dialog", async () => {
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(screen.getByRole("button", { name: /^Reset$/i }));
+    expect(screen.getByText("Pinned apps and recent apps will return to defaults on this device.")).toBeInTheDocument();
+  });
+
   it("clears local preference keys after confirmation without resetting in-memory first", async () => {
     const user = userEvent.setup();
     localStorage.setItem("theme", "dark");
-    localStorage.setItem("tokenring-sidebar-expanded", "false");
-    localStorage.setItem("tokenring-mobile-open", "true");
     localStorage.setItem("tokenring-pinned-apps", '["agents"]');
     localStorage.setItem("tokenring-recent-apps", '["email"]');
     localStorage.setItem("tokenring-workspace-navigation-open:research", "false");
     localStorage.setItem("tokenring-chat-inputs", JSON.stringify({ a: "draft" }));
+    localStorage.setItem("tokenring-confirm-agent-delete", "false");
     localStorage.setItem("tokenring:calendar:events", "[]");
 
     const reload = mock(() => undefined);
@@ -173,15 +197,15 @@ describe("SettingsApp", () => {
 
       await user.click(screen.getByRole("button", { name: /^Clear$/i }));
       expect(screen.getByText("Clear local preferences?")).toBeInTheDocument();
+      expect(screen.getByText(/This removes theme, layout, confirmation prompts, and chat draft data stored in this browser/)).toBeInTheDocument();
       await user.click(screen.getByRole("button", { name: /Clear preferences/i }));
 
       expect(localStorage.getItem("theme")).toBeNull();
-      expect(localStorage.getItem("tokenring-sidebar-expanded")).toBeNull();
-      expect(localStorage.getItem("tokenring-mobile-open")).toBeNull();
       expect(localStorage.getItem("tokenring-pinned-apps")).toBeNull();
       expect(localStorage.getItem("tokenring-recent-apps")).toBeNull();
       expect(localStorage.getItem("tokenring-workspace-navigation-open:research")).toBeNull();
       expect(localStorage.getItem("tokenring-chat-inputs")).toBeNull();
+      expect(localStorage.getItem("tokenring-confirm-agent-delete")).toBeNull();
       // User content keys are intentionally preserved
       expect(localStorage.getItem("tokenring:calendar:events")).toBe("[]");
       // Avoid re-writing defaults before reload

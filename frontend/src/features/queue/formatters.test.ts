@@ -80,10 +80,23 @@ describe("truncateText", () => {
     expect(truncateText("a   b\nc")).toBe("a b c");
   });
 
-  test("long messages truncated", () => {
+  test("long messages truncated with ellipsis", () => {
     const long = "a".repeat(200);
     const result = truncateText(long, 20);
-    expect(result.length).toBe(20);
     expect(result.endsWith("…")).toBe(true);
+    expect(result.length).toBeLessThanOrEqual(20);
+  });
+
+  test("breaks at word boundary when possible", () => {
+    const text = "Please refactor the authentication module to use OAuth2";
+    const result = truncateText(text, 40);
+    // Hard cut at 39 would leave "…modul…"; word break drops the partial word.
+    expect(result).toBe("Please refactor the authentication…");
+  });
+
+  test("falls back to hard cut when no good word break exists", () => {
+    const long = "supercalifragilisticexpialidocious-word";
+    const result = truncateText(long, 20);
+    expect(result).toBe(`${long.slice(0, 19)}…`);
   });
 });

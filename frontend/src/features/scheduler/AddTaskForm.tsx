@@ -1,7 +1,8 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { Loader2, Plus, X } from "lucide-react";
-import type { FormEvent } from "react";
+import { Plus, X } from "lucide-react";
+import type { SubmitEvent } from "react";
 import { useMemo, useState } from "react";
+import FormActionBar from "../../components/ui/FormActionBar.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { cn } from "../../lib/utils.ts";
 import { schedulerRPCClient } from "../../rpc.ts";
@@ -44,7 +45,7 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
     setWeekdays(prev => (prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
     const trimmedMessage = message.trim();
@@ -257,23 +258,7 @@ export default function AddTaskForm({ agentId, existingNames, onCreated, onCance
         </label>
       </div>
 
-      <div className="flex items-center justify-end gap-2 pt-1">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-3 py-1.5 text-xs text-muted hover:text-primary border border-primary rounded-lg focus-ring cursor-pointer"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg focus-ring cursor-pointer disabled:opacity-50 shadow-sm"
-        >
-          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-          Add task
-        </button>
-      </div>
+      <FormActionBar onCancel={onCancel} submitLabel="Add task" submitIcon={Plus} loading={saving} variant="indigo" />
     </form>
   );
 }

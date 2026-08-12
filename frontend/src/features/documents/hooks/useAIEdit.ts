@@ -86,6 +86,7 @@ Respond with ONLY the rewritten text. No explanation, no preamble, no code fence
   const cancel = useCallback(() => {
     abortRef.current?.abort();
     setLoading(false);
+    setResponse(null);
   }, []);
 
   const clear = useCallback(() => setResponse(null), []);

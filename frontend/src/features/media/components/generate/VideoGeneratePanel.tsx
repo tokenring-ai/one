@@ -2,10 +2,10 @@ import formatError from "@tokenring-ai/utility/error/formatError";
 import { Video as VideoIcon } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { useMemo, useState } from "react";
+import GenerateButton from "../../../../components/ui/GenerateButton.tsx";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { useVideoGenerationModels, videoGenerationRPCClient } from "../../../../rpc.ts";
 import { keywordsFromPrompt } from "../../utils.ts";
-import GenerateButton from "./GenerateButton.tsx";
 import GeneratePanelShell from "./GeneratePanelShell.tsx";
 import ImageShapeField, { type ImageShape } from "./ImageShapeField.tsx";
 import ModelSelectField from "./ModelSelectField.tsx";
@@ -98,12 +98,23 @@ export default function VideoGeneratePanel({ agentId, onGenerated }: { agentId: 
           min={1}
           max={60}
           value={duration}
-          onChange={e => setDuration(Number(e.target.value) || 0)}
+          onChange={e => {
+            const raw = Number(e.target.value);
+            if (!Number.isFinite(raw) || raw <= 0) {
+              setDuration(5);
+              return;
+            }
+            setDuration(Math.min(60, Math.max(1, Math.floor(raw))));
+          }}
           className="w-full bg-input border border-primary rounded-lg py-2 px-3 text-sm text-primary focus-accent transition-all"
         />
       </div>
       <ModelSelectField label="Model" value={selectedModel} onChange={setModel} options={availableModels} />
-      <GenerateButton onClick={() => void handleGenerate()} disabled={generating || !agentId || !prompt.trim()} loading={generating}>
+      <GenerateButton
+        onClick={() => void handleGenerate()}
+        disabled={generating || !agentId || !prompt.trim() || (modelsData != null && availableModels.length === 0)}
+        loading={generating}
+      >
         Generate Video
       </GenerateButton>
     </GeneratePanelShell>

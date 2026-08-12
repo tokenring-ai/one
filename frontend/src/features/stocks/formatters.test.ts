@@ -53,6 +53,18 @@ describe("fmtVol", () => {
     expect(fmtVol(2_500_000)).toBe("2.50M");
     expect(fmtVol(3_200)).toBe("3.2K");
   });
+
+  it("shows 0 for zero volume instead of missing", () => {
+    expect(fmtVol(0)).toBe("0");
+    expect(fmtVol("0")).toBe("0");
+  });
+
+  it("returns em dash for nullish or invalid", () => {
+    expect(fmtVol(null)).toBe("—");
+    expect(fmtVol(undefined)).toBe("—");
+    expect(fmtVol("")).toBe("—");
+    expect(fmtVol("n/a")).toBe("—");
+  });
 });
 
 describe("fmtMarketCap", () => {
@@ -67,9 +79,18 @@ describe("fmtMarketCap", () => {
 });
 
 describe("changeSign", () => {
-  it("prefixes positive values with plus", () => {
+  it("prefixes only strictly positive values with plus", () => {
     expect(changeSign(5)).toBe("+");
     expect(changeSign(-3)).toBe("");
+    expect(changeSign(0)).toBe("");
+    expect(changeSign("0")).toBe("");
+  });
+
+  it("returns empty for nullish or non-numeric", () => {
+    expect(changeSign(null)).toBe("");
+    expect(changeSign(undefined)).toBe("");
+    expect(changeSign("")).toBe("");
+    expect(changeSign("n/a")).toBe("");
   });
 });
 

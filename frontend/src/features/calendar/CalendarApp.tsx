@@ -3,7 +3,10 @@ import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw } fro
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ErrorState from "../../components/ui/ErrorState.tsx";
+import PanelToolbar from "../../components/ui/PanelToolbar.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useBusyAction } from "../../hooks/useBusyAction.ts";
+import { useLocalStorageState } from "../../hooks/useLocalStorageState.ts";
 import { cn } from "../../lib/utils.ts";
 import { agentRPCClient, calendarRPCClient, useCalendarProviders, useTypedSWR, workflowRPCClient } from "../../rpc.ts";
 import DayView from "./components/DayView.tsx";
@@ -15,7 +18,7 @@ import WeekView from "./components/WeekView.tsx";
 import { MONTHS } from "./constants.ts";
 import { addDays, eventRangeToIso, startOfWeek, toDateKey } from "./dateUtils.ts";
 import { rpcToLocalEvent } from "./rpcToLocalEvent.ts";
-import { loadEvents, saveEvents } from "./storage.ts";
+import { deserializeCalendarEvents, STORAGE_KEY } from "./storage.ts";
 import type { CalendarEvent, ViewMode } from "./types.ts";
 
 /** Google Calendar maxResults defaults to 10 when omitted — request enough for a dense month. */
@@ -27,23 +30,48 @@ export default function CalendarApp() {
   // URL is the source of truth for which provider is open (params are already decoded).
   const provider = routeProvider ?? null;
 
-  // Recompute each render so "Today" and highlighting stay correct across midnight
-  const today = new Date();
+  // Stable "today" at local midnight; refresh after midnight so highlighting stays correct
+  const [today, setToday] = useState(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
+  useEffect(() => {
+    const schedule = () => {
+      const now = new Date();
+      const msUntilMidnight =
+        24 * 60 * 60 * 1000 - (now.getHours() * 60 * 60 * 1000 + now.getMinutes() * 60 * 1000 + now.getSeconds() * 1000 + now.getMilliseconds());
+      return setTimeout(() => {
+        const next = new Date();
+        next.setHours(0, 0, 0, 0);
+        setToday(next);
+        // Re-arm for the following midnight
+        timerId = schedule();
+      }, msUntilMidnight + 50);
+    };
+    let timerId = schedule();
+    return () => clearTimeout(timerId);
+  }, []);
 
   const [view, setView] = useState<ViewMode>("month");
   const [cursor, setCursor] = useState<Date>(() => {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), 1);
   });
-  const [events, setEvents] = useState<CalendarEvent[]>(() => loadEvents());
+  const [events, setEvents] = useLocalStorageState<CalendarEvent[]>(STORAGE_KEY, [], {
+    // Only persist local events, not RPC events
+    serialize: all => JSON.stringify(all.filter(e => e.source !== "rpc")),
+    deserialize: deserializeCalendarEvents,
+  });
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [defaultDate, setDefaultDate] = useState<string>("");
   const [defaultHour, setDefaultHour] = useState<number | null>(null);
-  const [running, setRunning] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const { busy: running, execute: executeRun } = useBusyAction();
+  const { busy: saving, execute: executeSave } = useBusyAction();
 
   // Calendar provider state
   const providers = useCalendarProviders();
@@ -101,16 +129,13 @@ export default function CalendarApp() {
   );
 
   const allEvents = useMemo(() => {
-    const rpc = (rpcEventsResult.data?.events ?? []).map(ev => rpcToLocalEvent(ev, provider!));
+    // Only map RPC events when a provider is selected — avoids attributing
+    // stale cached data to a null/wrong provider after navigation.
+    const rpc = provider && rpcEventsResult.data?.events ? rpcEventsResult.data.events.map(ev => rpcToLocalEvent(ev, provider)) : [];
     // Local events only (RPC events come from the provider fetch)
     const local = events.filter(e => e.source !== "rpc");
     return [...local, ...rpc];
   }, [events, rpcEventsResult.data, provider]);
-
-  // Persist local events
-  useEffect(() => {
-    saveEvents(events.filter(e => e.source !== "rpc"));
-  }, [events]);
 
   // Navigation
   const goNext = useCallback(() => {
@@ -135,8 +160,13 @@ export default function CalendarApp() {
 
   const goToday = useCallback(() => {
     const t = new Date();
-    if (view === "month") setCursor(new Date(t.getFullYear(), t.getMonth(), 1));
-    else setCursor(new Date(t));
+    if (view === "month") {
+      setCursor(new Date(t.getFullYear(), t.getMonth(), 1));
+    } else {
+      // Normalize to local midnight so day/week navigation stays date-stable
+      const normalized = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+      setCursor(normalized);
+    }
   }, [view]);
 
   const titleLabel = useMemo(() => {
@@ -200,51 +230,55 @@ export default function CalendarApp() {
   const handleSaveEvent = useCallback(
     async (ev: CalendarEvent) => {
       // Provider-backed calendar event (create or update)
-      if (ev.type === "calendar" && ev.source === "rpc" && (ev.provider || provider)) {
-        const p = ev.provider ?? provider!;
-        setSaving(true);
-        try {
-          const { startAt, endAt } = eventRangeToIso({
-            date: ev.date,
-            ...(ev.allDay !== undefined && { allDay: ev.allDay }),
-            ...(ev.startTime && { startTime: ev.startTime }),
-            ...(ev.endTime && { endTime: ev.endTime }),
-          });
-          const isUpdate = Boolean(editingEvent?.source === "rpc" && editingEvent.id);
-          if (isUpdate) {
-            await calendarRPCClient.updateEvent({
-              id: editingEvent!.id,
-              provider: p,
-              updatedData: {
+      if (ev.type === "calendar" && ev.source === "rpc") {
+        const p = ev.provider || provider;
+        if (!p) {
+          toastManager.error("No calendar provider selected");
+          return;
+        }
+        await executeSave(async () => {
+          try {
+            const { startAt, endAt } = eventRangeToIso({
+              date: ev.date,
+              ...(ev.allDay !== undefined && { allDay: ev.allDay }),
+              ...(ev.startTime && { startTime: ev.startTime }),
+              ...(ev.endTime && { endTime: ev.endTime }),
+            });
+            const isUpdate = Boolean(editingEvent?.source === "rpc" && editingEvent.id);
+            if (isUpdate) {
+              await calendarRPCClient.updateEvent({
+                // Prefer the ID from the event being saved
+                id: ev.id,
+                provider: p,
+                updatedData: {
+                  title: ev.title,
+                  startAt,
+                  endAt,
+                  allDay: ev.allDay ?? false,
+                  description: ev.description ?? "",
+                  location: ev.location ?? "",
+                },
+              });
+              toastManager.success("Event updated");
+            } else {
+              await calendarRPCClient.createEvent({
+                provider: p,
                 title: ev.title,
                 startAt,
                 endAt,
                 allDay: ev.allDay ?? false,
-                description: ev.description ?? "",
-                location: ev.location ?? "",
-              },
-            });
-            toastManager.success("Event updated");
-          } else {
-            await calendarRPCClient.createEvent({
-              provider: p,
-              title: ev.title,
-              startAt,
-              endAt,
-              allDay: ev.allDay ?? false,
-              ...(ev.description ? { description: ev.description } : {}),
-              ...(ev.location ? { location: ev.location } : {}),
-            });
-            toastManager.success("Event created");
+                ...(ev.description ? { description: ev.description } : {}),
+                ...(ev.location ? { location: ev.location } : {}),
+              });
+              toastManager.success("Event created");
+            }
+            await rpcEventsResult.mutate();
+            setModalOpen(false);
+            setEditingEvent(null);
+          } catch (error) {
+            toastManager.error(formatError(error));
           }
-          await rpcEventsResult.mutate();
-          setModalOpen(false);
-          setEditingEvent(null);
-        } catch (error) {
-          toastManager.error(formatError(error));
-        } finally {
-          setSaving(false);
-        }
+        });
         return;
       }
 
@@ -261,7 +295,7 @@ export default function CalendarApp() {
       setModalOpen(false);
       setEditingEvent(null);
     },
-    [editingEvent, provider, rpcEventsResult],
+    [editingEvent, provider, rpcEventsResult, executeSave],
   );
 
   const handleDeleteEvent = useCallback(
@@ -272,19 +306,18 @@ export default function CalendarApp() {
           toastManager.error("No calendar provider selected");
           return;
         }
-        setSaving(true);
-        try {
-          await calendarRPCClient.deleteEvent({ id: ev.id, provider: p });
-          toastManager.success("Event deleted");
-          await rpcEventsResult.mutate();
-          setModalOpen(false);
-          setEditingEvent(null);
-          setRpcDetailEvent(null);
-        } catch (error) {
-          toastManager.error(formatError(error));
-        } finally {
-          setSaving(false);
-        }
+        await executeSave(async () => {
+          try {
+            await calendarRPCClient.deleteEvent({ id: ev.id, provider: p });
+            toastManager.success("Event deleted");
+            await rpcEventsResult.mutate();
+            setModalOpen(false);
+            setEditingEvent(null);
+            setRpcDetailEvent(null);
+          } catch (error) {
+            toastManager.error(formatError(error));
+          }
+        });
         return;
       }
 
@@ -292,29 +325,28 @@ export default function CalendarApp() {
       setModalOpen(false);
       setEditingEvent(null);
     },
-    [provider, rpcEventsResult],
+    [provider, rpcEventsResult, executeSave],
   );
 
   const handleRunEvent = useCallback(
     async (ev: CalendarEvent) => {
-      setRunning(true);
-      try {
-        if (ev.type === "workflow" && ev.workflowKey) {
-          const { id } = await workflowRPCClient.spawnWorkflow({ name: ev.workflowKey, headless: false });
-          setModalOpen(false);
-          void navigate(`/agent/${id}`);
-        } else if (ev.type === "agent" && ev.agentType) {
-          const { id } = await agentRPCClient.createAgent({ agentType: ev.agentType, headless: false });
-          setModalOpen(false);
-          void navigate(`/agent/${id}`);
+      await executeRun(async () => {
+        try {
+          if (ev.type === "workflow" && ev.workflowKey) {
+            const { id } = await workflowRPCClient.spawnWorkflow({ name: ev.workflowKey, headless: false });
+            setModalOpen(false);
+            void navigate(`/agent/${id}`);
+          } else if (ev.type === "agent" && ev.agentType) {
+            const { id } = await agentRPCClient.createAgent({ agentType: ev.agentType, headless: false });
+            setModalOpen(false);
+            void navigate(`/agent/${id}`);
+          }
+        } catch (error) {
+          toastManager.error(formatError(error));
         }
-      } catch (error) {
-        toastManager.error(formatError(error));
-      } finally {
-        setRunning(false);
-      }
+      });
     },
-    [navigate],
+    [navigate, executeRun],
   );
 
   const weekStart = useMemo(() => startOfWeek(cursor), [cursor]);
@@ -328,95 +360,97 @@ export default function CalendarApp() {
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-primary shrink-0 bg-primary flex-wrap">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={goPrev}
-            className="p-1.5 rounded-lg hover:bg-hover text-muted hover:text-primary transition-colors cursor-pointer"
-            aria-label="Previous"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={goNext}
-            className="p-1.5 rounded-lg hover:bg-hover text-muted hover:text-primary transition-colors cursor-pointer"
-            aria-label="Next"
-          >
-            <ChevronRight size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={goToday}
-            className="px-3 py-1.5 text-xs font-semibold border border-primary rounded-lg hover:bg-hover text-primary transition-colors cursor-pointer ml-1"
-          >
-            Today
-          </button>
-        </div>
+      <PanelToolbar
+        icon={CalendarDays}
+        iconGradient="from-sky-500 to-blue-600"
+        middle={
+          <>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={goPrev}
+                className="p-1.5 rounded-lg hover:bg-hover text-muted hover:text-primary transition-colors cursor-pointer"
+                aria-label="Previous"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={goNext}
+                className="p-1.5 rounded-lg hover:bg-hover text-muted hover:text-primary transition-colors cursor-pointer"
+                aria-label="Next"
+              >
+                <ChevronRight size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={goToday}
+                className="px-3 py-1.5 text-xs font-semibold border border-primary rounded-lg hover:bg-hover text-primary transition-colors cursor-pointer ml-1"
+              >
+                Today
+              </button>
+            </div>
 
-        <h2 className="text-sm font-bold text-primary ml-1 flex items-center gap-2">
-          <CalendarDays size={16} className="text-sky-500" />
-          {titleLabel}
-        </h2>
+            <span className="text-sm font-semibold text-primary shrink-0 truncate">{titleLabel}</span>
 
-        {(eventsLoading || eventsRefreshing) && (
-          <span className="text-xs text-muted flex items-center gap-1 ml-1" role="status">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            {eventsLoading ? "Loading events…" : "Refreshing…"}
-          </span>
-        )}
+            {(eventsLoading || eventsRefreshing) && (
+              <span className="text-xs text-muted flex items-center gap-1 shrink-0" role="status">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                {eventsLoading ? "Loading events…" : "Refreshing…"}
+              </span>
+            )}
+          </>
+        }
+        actions={
+          <>
+            <ProviderSelector
+              provider={provider}
+              availableProviders={availableProviders}
+              loading={providersLoading}
+              error={providersError}
+              onProviderChange={name => openProvider(name)}
+              onRetry={() => void providers.mutate()}
+            />
 
-        <div className="flex-1" />
+            {provider && (
+              <button
+                type="button"
+                onClick={refreshRpc}
+                disabled={rpcEventsResult.isValidating}
+                className="p-1.5 rounded-lg hover:bg-hover text-muted hover:text-primary transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                title="Refresh events"
+                aria-label="Refresh events"
+              >
+                <RefreshCw size={14} className={cn(rpcEventsResult.isValidating && "animate-spin")} />
+              </button>
+            )}
 
-        <ProviderSelector
-          provider={provider}
-          availableProviders={availableProviders}
-          loading={providersLoading}
-          error={providersError}
-          onProviderChange={name => openProvider(name)}
-          onRetry={() => void providers.mutate()}
-        />
+            <div className="flex items-center bg-primary border border-primary rounded-lg p-0.5 text-xs font-medium shrink-0">
+              {(["month", "week", "day"] as ViewMode[]).map(v => (
+                <button
+                  type="button"
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={cn(
+                    "px-3 py-1 rounded-md capitalize transition-all cursor-pointer",
+                    view === v ? "bg-sky-500 text-white shadow-sm" : "text-muted hover:text-primary",
+                  )}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
 
-        {provider && (
-          <button
-            type="button"
-            onClick={refreshRpc}
-            disabled={rpcEventsResult.isValidating}
-            className="p-1.5 rounded-lg hover:bg-hover text-muted hover:text-primary transition-colors cursor-pointer disabled:opacity-50"
-            title="Refresh events"
-            aria-label="Refresh events"
-          >
-            <RefreshCw size={14} className={cn(rpcEventsResult.isValidating && "animate-spin")} />
-          </button>
-        )}
-
-        {/* View switcher */}
-        <div className="flex items-center bg-secondary border border-primary rounded-lg p-0.5 text-xs font-medium">
-          {(["month", "week", "day"] as ViewMode[]).map(v => (
             <button
               type="button"
-              key={v}
-              onClick={() => setView(v)}
-              className={cn(
-                "px-3 py-1 rounded-md capitalize transition-all cursor-pointer",
-                view === v ? "bg-sky-500 text-white shadow-sm" : "text-muted hover:text-primary",
-              )}
+              onClick={() => openNew()}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer shadow-sm shrink-0"
             >
-              {v}
+              <Plus size={14} /> New event
             </button>
-          ))}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => openNew()}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer shadow-sm"
-        >
-          <Plus size={14} /> New event
-        </button>
-      </div>
+          </>
+        }
+      />
 
       {/* Provider / events status banners */}
       {providersError && (

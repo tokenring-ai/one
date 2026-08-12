@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, MessageSquare, Plus, Terminal, X } from "lucide-react";
 import { useMemo } from "react";
+import AutoResizeTextarea from "./AutoResizeTextarea.tsx";
 import type { AvailableAgentCommand, WorkflowCommandStep, WorkflowStep } from "./commandStep.ts";
 import {
   defaultsForCommand,
@@ -144,13 +145,14 @@ function CommandFields({
             {isRemainderRequired(remainder) && <RequiredMark />}
             <span className="font-normal ml-1.5 text-muted/80">{remainder.description}</span>
           </label>
-          <textarea
+          <AutoResizeTextarea
             id={`rem-${command.name}`}
             value={step.remainder}
             onChange={e => onChange({ ...step, remainder: e.target.value })}
-            rows={Math.min(8, Math.max(2, remainder.name === "message" || remainder.name === "prompt" ? 3 : 2))}
+            minRows={remainder.name === "message" || remainder.name === "prompt" ? 3 : 2}
+            maxRows={24}
             placeholder={remainder.defaultValue ?? remainder.description}
-            className={`${fieldClass} font-mono resize-y`}
+            className={`${fieldClass} font-mono`}
           />
         </div>
       )}
@@ -239,12 +241,13 @@ function StepRow({
           </div>
 
           {isChatStep(step) ? (
-            <textarea
+            <AutoResizeTextarea
               value={step}
               onChange={e => onChange(e.target.value)}
-              rows={Math.min(10, Math.max(2, step.split("\n").length))}
+              minRows={2}
+              maxRows={30}
               placeholder="What should the agent do?"
-              className={`${fieldClass} resize-y`}
+              className={fieldClass}
               aria-label={`Step ${index + 1} chat message`}
             />
           ) : (

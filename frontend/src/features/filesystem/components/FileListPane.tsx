@@ -4,7 +4,8 @@ import { useMemo } from "react";
 import NavigationSidebarHeader from "../../../components/layout/NavigationSidebarHeader.tsx";
 import { toastManager } from "../../../components/ui/toast.tsx";
 import { cn } from "../../../lib/utils.ts";
-import { filesystemRPCClient, useDirectoryListing, useWorkspaceFileSearch } from "../../../rpc.ts";
+import { useDirectoryListing, useWorkspaceFileSearch } from "../../../rpc.ts";
+import { downloadWorkspaceFile } from "../downloadFile.ts";
 import { getBasename, getFileIcon, isHiddenEntry, isHiddenPath } from "../fsUtils.ts";
 
 interface FileListPaneProps {
@@ -19,7 +20,6 @@ interface FileListPaneProps {
   onToggleSelectAll: (files: string[]) => void;
   uploadingFiles: string[];
   searchQuery: string;
-  onRefresh: () => void;
   onRename?: (file: string) => void;
   onDelete?: (file: string) => void;
 }
@@ -224,14 +224,7 @@ export default function FileListPane({
                         onClick={async () => {
                           try {
                             if (!provider) return;
-                            const result = await filesystemRPCClient.readTextFile({ path: file, provider });
-                            const blob = new Blob([result.content ?? ""], { type: "text/plain" });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement("a");
-                            a.href = url;
-                            a.download = name;
-                            a.click();
-                            URL.revokeObjectURL(url);
+                            await downloadWorkspaceFile(file, provider);
                           } catch {
                             toastManager.error("Download failed", { duration: 3000 });
                           }

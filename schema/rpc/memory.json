@@ -1,0 +1,1483 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Memory RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/memory",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "getMemoryConfiguration request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.getMemoryConfiguration"
+        },
+        "params": {
+          "$ref": "#/$defs/getMemoryConfigurationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getMemoryConfiguration response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getMemoryConfigurationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listCategories request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.listCategories"
+        },
+        "params": {
+          "$ref": "#/$defs/listCategoriesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listCategories response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listCategoriesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamCategories request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.streamCategories"
+        },
+        "params": {
+          "$ref": "#/$defs/streamCategoriesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamCategories response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamCategoriesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamCategories stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createCategory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.createCategory"
+        },
+        "params": {
+          "$ref": "#/$defs/createCategoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createCategory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createCategoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteCategory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.deleteCategory"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteCategoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteCategory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteCategoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listMemories request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.listMemories"
+        },
+        "params": {
+          "$ref": "#/$defs/listMemoriesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listMemories response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listMemoriesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamMemories request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.streamMemories"
+        },
+        "params": {
+          "$ref": "#/$defs/streamMemoriesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamMemories response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamMemoriesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamMemories stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getMemory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.getMemory"
+        },
+        "params": {
+          "$ref": "#/$defs/getMemoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getMemory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getMemoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createMemory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.createMemory"
+        },
+        "params": {
+          "$ref": "#/$defs/createMemoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createMemory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createMemoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateMemory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.updateMemory"
+        },
+        "params": {
+          "$ref": "#/$defs/updateMemoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateMemory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateMemoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteMemory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.deleteMemory"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteMemoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteMemory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteMemoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchMemories request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.searchMemories"
+        },
+        "params": {
+          "$ref": "#/$defs/searchMemoriesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchMemories response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/searchMemoriesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getMemoryState request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.getMemoryState"
+        },
+        "params": {
+          "$ref": "#/$defs/getMemoryStateParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getMemoryState response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getMemoryStateResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateMemoryState request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/memory.updateMemoryState"
+        },
+        "params": {
+          "$ref": "#/$defs/updateMemoryStateParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateMemoryState response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateMemoryStateResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "getMemoryConfigurationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getMemoryConfigurationResult": {
+      "type": "object",
+      "properties": {
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "agentTypes"
+      ],
+      "additionalProperties": false
+    },
+    "listCategoriesParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listCategoriesResult": {
+      "type": "object",
+      "properties": {
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "memoryCount": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "memoryCount",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "categories"
+      ],
+      "additionalProperties": false
+    },
+    "streamCategoriesParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamCategoriesResult": {
+      "type": "object",
+      "properties": {
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "memoryCount": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "memoryCount",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "categories"
+      ],
+      "additionalProperties": false
+    },
+    "createCategoryParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "createCategoryResult": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "memoryCount": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "memoryCount",
+            "updatedAt"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "category"
+      ],
+      "additionalProperties": false
+    },
+    "deleteCategoryParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "deleteCategoryResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
+      ],
+      "additionalProperties": false
+    },
+    "listMemoriesParams": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "category"
+      ]
+    },
+    "listMemoriesResult": {
+      "type": "object",
+      "properties": {
+        "memories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "category": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "size": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "category",
+              "name",
+              "size",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "memories"
+      ],
+      "additionalProperties": false
+    },
+    "streamMemoriesParams": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "category"
+      ]
+    },
+    "streamMemoriesResult": {
+      "type": "object",
+      "properties": {
+        "memories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "category": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "size": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "category",
+              "name",
+              "size",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "memories"
+      ],
+      "additionalProperties": false
+    },
+    "getMemoryParams": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "name"
+      ]
+    },
+    "getMemoryResult": {
+      "type": "object",
+      "properties": {
+        "memory": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "size": {
+                  "type": "number"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "category",
+                "name",
+                "size",
+                "updatedAt",
+                "content"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "memory"
+      ],
+      "additionalProperties": false
+    },
+    "createMemoryParams": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "content": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "name"
+      ]
+    },
+    "createMemoryResult": {
+      "type": "object",
+      "properties": {
+        "memory": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "size": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "category",
+            "name",
+            "size",
+            "updatedAt",
+            "content"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "memory"
+      ],
+      "additionalProperties": false
+    },
+    "updateMemoryParams": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "name",
+        "content"
+      ]
+    },
+    "updateMemoryResult": {
+      "type": "object",
+      "properties": {
+        "memory": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "size": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "category",
+            "name",
+            "size",
+            "updatedAt",
+            "content"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "memory"
+      ],
+      "additionalProperties": false
+    },
+    "deleteMemoryParams": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "name"
+      ]
+    },
+    "deleteMemoryResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
+      ],
+      "additionalProperties": false
+    },
+    "searchMemoriesParams": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "query"
+      ]
+    },
+    "searchMemoriesResult": {
+      "type": "object",
+      "properties": {
+        "matches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "category": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "size": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "string"
+              },
+              "score": {
+                "type": "number"
+              },
+              "matchType": {
+                "type": "string",
+                "enum": [
+                  "name",
+                  "content",
+                  "both"
+                ]
+              },
+              "lineMatches": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "line": {
+                      "type": "number"
+                    },
+                    "content": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "line",
+                    "content"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "category",
+              "name",
+              "size",
+              "updatedAt",
+              "score",
+              "matchType",
+              "lineMatches"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "matches"
+      ],
+      "additionalProperties": false
+    },
+    "getMemoryStateParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "getMemoryStateResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "selectedCategory": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "selectedMemoryName": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "selectedCategory",
+            "selectedMemoryName"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "updateMemoryStateParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "selectedCategory": {
+          "type": "string"
+        },
+        "selectedMemoryName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "updateMemoryStateResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "selectedCategory": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "selectedMemoryName": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "selectedCategory",
+            "selectedMemoryName"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Memory RPC",
+    "path": "/rpc/memory",
+    "source": "plugin/memory/rpc/schema.ts",
+    "methods": {
+      "getMemoryConfiguration": {
+        "type": "query",
+        "params": "#/$defs/getMemoryConfigurationParams",
+        "result": "#/$defs/getMemoryConfigurationResult"
+      },
+      "listCategories": {
+        "type": "query",
+        "params": "#/$defs/listCategoriesParams",
+        "result": "#/$defs/listCategoriesResult"
+      },
+      "streamCategories": {
+        "type": "stream",
+        "params": "#/$defs/streamCategoriesParams",
+        "result": "#/$defs/streamCategoriesResult"
+      },
+      "createCategory": {
+        "type": "mutation",
+        "params": "#/$defs/createCategoryParams",
+        "result": "#/$defs/createCategoryResult"
+      },
+      "deleteCategory": {
+        "type": "mutation",
+        "params": "#/$defs/deleteCategoryParams",
+        "result": "#/$defs/deleteCategoryResult"
+      },
+      "listMemories": {
+        "type": "query",
+        "params": "#/$defs/listMemoriesParams",
+        "result": "#/$defs/listMemoriesResult"
+      },
+      "streamMemories": {
+        "type": "stream",
+        "params": "#/$defs/streamMemoriesParams",
+        "result": "#/$defs/streamMemoriesResult"
+      },
+      "getMemory": {
+        "type": "query",
+        "params": "#/$defs/getMemoryParams",
+        "result": "#/$defs/getMemoryResult"
+      },
+      "createMemory": {
+        "type": "mutation",
+        "params": "#/$defs/createMemoryParams",
+        "result": "#/$defs/createMemoryResult"
+      },
+      "updateMemory": {
+        "type": "mutation",
+        "params": "#/$defs/updateMemoryParams",
+        "result": "#/$defs/updateMemoryResult"
+      },
+      "deleteMemory": {
+        "type": "mutation",
+        "params": "#/$defs/deleteMemoryParams",
+        "result": "#/$defs/deleteMemoryResult"
+      },
+      "searchMemories": {
+        "type": "query",
+        "params": "#/$defs/searchMemoriesParams",
+        "result": "#/$defs/searchMemoriesResult"
+      },
+      "getMemoryState": {
+        "type": "query",
+        "params": "#/$defs/getMemoryStateParams",
+        "result": "#/$defs/getMemoryStateResult"
+      },
+      "updateMemoryState": {
+        "type": "mutation",
+        "params": "#/$defs/updateMemoryStateParams",
+        "result": "#/$defs/updateMemoryStateResult"
+      }
+    }
+  }
+}

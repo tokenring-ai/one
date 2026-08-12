@@ -3,7 +3,7 @@ import type { CalendarEvent } from "./types.ts";
 
 export const STORAGE_KEY = "tokenring:calendar:events";
 
-function isCalendarEvent(value: unknown): value is CalendarEvent {
+export function isCalendarEvent(value: unknown): value is CalendarEvent {
   if (!value || typeof value !== "object") return false;
   const e = value as Record<string, unknown>;
   return (
@@ -16,10 +16,9 @@ function isCalendarEvent(value: unknown): value is CalendarEvent {
   );
 }
 
-export function loadEvents(): CalendarEvent[] {
+/** Validate and normalize events loaded from localStorage. */
+export function deserializeCalendarEvents(raw: string): CalendarEvent[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(isCalendarEvent).map(e => ({
@@ -28,13 +27,5 @@ export function loadEvents(): CalendarEvent[] {
     }));
   } catch {
     return [];
-  }
-}
-
-export function saveEvents(events: CalendarEvent[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
-  } catch {
-    // Quota or private mode — ignore; in-memory state still works for the session
   }
 }

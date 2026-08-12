@@ -15,14 +15,7 @@ export function fmtPrice(n: number | string | null | undefined) {
   return fmt(n, pricePrecision(Number(n)));
 }
 
-export function fmtVol(n: number | string | null | undefined): string {
-  const v = Number(n);
-  if (!v) return "—";
-  if (v >= 1e9) return `${(v / 1e9).toFixed(2)}B`;
-  if (v >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
-  if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`;
-  return String(v);
-}
+export { formatCompact as fmtVol } from "@tokenring-ai/utility/number/formatCompact";
 
 export function fmtMarketCap(price?: number, shares?: number): string {
   if (!price || !shares) return "—";
@@ -33,8 +26,11 @@ export function fmtMarketCap(price?: number, shares?: number): string {
   return `$${fmt(cap)}`;
 }
 
+/** "+" only for strictly positive values; flat/missing/negative get no prefix. */
 export function changeSign(v: number | string | null | undefined): string {
-  return Number(v) >= 0 ? "+" : "";
+  if (v == null || v === "") return "";
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? "+" : "";
 }
 
 export function fmtTs(ts: number | null | undefined, kind: "date" | "datetime" = "date"): string {

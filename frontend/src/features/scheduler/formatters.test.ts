@@ -30,11 +30,19 @@ describe("formatRelativeTime", () => {
     expect(formatRelativeTime(null, now)).toBe("—");
   });
 
+  test("sub-minute is just now (including 30–59s rounding edge)", () => {
+    expect(formatRelativeTime(now - 10_000, now)).toBe("just now");
+    expect(formatRelativeTime(now - 45_000, now)).toBe("just now");
+    expect(formatRelativeTime(now - 59_000, now)).toBe("just now");
+    expect(formatRelativeTime(now + 30_000, now)).toBe("just now");
+  });
+
   test("future minutes", () => {
     expect(formatRelativeTime(now + 10 * 60_000, now)).toBe("in 10m");
   });
 
-  test("past hours", () => {
+  test("past minutes and hours", () => {
+    expect(formatRelativeTime(now - 2 * 60_000, now)).toBe("2m ago");
     expect(formatRelativeTime(now - 2 * 3_600_000, now)).toBe("2h ago");
   });
 });
@@ -82,6 +90,16 @@ describe("truncateMessage", () => {
     const result = truncateMessage(long, 20);
     expect(result.length).toBe(20);
     expect(result.endsWith("…")).toBe(true);
+  });
+
+  test("does not split multi-code-unit emoji / ZWJ sequences", () => {
+    // 👨‍💻 is one grapheme but multiple UTF-16 code units / code points
+    const long = "👨‍💻".repeat(30);
+    const result = truncateMessage(long, 10);
+    expect(result.endsWith("…")).toBe(true);
+    // 9 full graphemes + ellipsis — no lone surrogates or partial ZWJ sequences
+    expect(result).toBe(`${"👨‍💻".repeat(9)}…`);
+    expect(result).not.toMatch(/\uFFFD/);
   });
 });
 

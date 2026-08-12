@@ -4,6 +4,29 @@ import userEvent from "@testing-library/user-event";
 import type React from "react";
 import { MemoryRouter } from "react-router-dom";
 
+const emptyTokens = {
+  totalInputTokens: 0,
+  totalOutputTokens: 0,
+  totalCachedTokens: 0,
+  totalReasoningTokens: 0,
+};
+const emptyLatency = {
+  requestCount: 0,
+  avgElapsedMs: 0,
+  avgTimeToFirstTokenMs: 0,
+  avgTokensPerSecond: 0,
+};
+const emptyErrors = {
+  errorsByProvider: {} as Record<string, number>,
+  errorsByType: {} as Record<string, number>,
+  retryCount: 0,
+};
+const emptyActivity = {
+  totalSteps: 0,
+  totalToolCalls: 0,
+  toolCallsByName: {} as Record<string, number>,
+};
+
 const sampleSummary = {
   agents: [
     {
@@ -17,6 +40,30 @@ const sampleSummary = {
         "Image Generation (OpenAI:dall-e-3)": 0.1,
         "Web Search": 0.02,
       },
+      tokens: {
+        totalInputTokens: 12000,
+        totalOutputTokens: 3400,
+        totalCachedTokens: 800,
+        totalReasoningTokens: 200,
+      },
+      latency: {
+        requestCount: 8,
+        avgElapsedMs: 450,
+        avgTimeToFirstTokenMs: 120,
+        avgTokensPerSecond: 42,
+        p50ElapsedMs: 400,
+        p95ElapsedMs: 900,
+      },
+      errors: {
+        errorsByProvider: { OpenAI: 1 },
+        errorsByType: { rateLimit: 1 },
+        retryCount: 2,
+      },
+      activity: {
+        totalSteps: 12,
+        totalToolCalls: 7,
+        toolCallsByName: { read_file: 4, search: 3 },
+      },
     },
     {
       agentId: "agent-idle-2",
@@ -25,6 +72,24 @@ const sampleSummary = {
       idle: true,
       total: 0.05,
       costs: { "Chat (OpenAI:gpt-4o-mini)": 0.05 },
+      tokens: {
+        totalInputTokens: 500,
+        totalOutputTokens: 100,
+        totalCachedTokens: 0,
+        totalReasoningTokens: 0,
+      },
+      latency: {
+        requestCount: 1,
+        avgElapsedMs: 200,
+        avgTimeToFirstTokenMs: 50,
+        avgTokensPerSecond: 20,
+      },
+      errors: emptyErrors,
+      activity: {
+        totalSteps: 1,
+        totalToolCalls: 0,
+        toolCallsByName: {},
+      },
     },
   ],
   totalsByCategory: {
@@ -36,6 +101,28 @@ const sampleSummary = {
   grandTotal: 0.47,
   agentCount: 2,
   activeAgentCount: 1,
+  tokens: {
+    totalInputTokens: 12500,
+    totalOutputTokens: 3500,
+    totalCachedTokens: 800,
+    totalReasoningTokens: 200,
+  },
+  latency: {
+    requestCount: 9,
+    avgElapsedMs: 422,
+    avgTimeToFirstTokenMs: 112,
+    avgTokensPerSecond: 39,
+  },
+  errors: {
+    errorsByProvider: { OpenAI: 1 },
+    errorsByType: { rateLimit: 1 },
+    retryCount: 2,
+  },
+  activity: {
+    totalSteps: 13,
+    totalToolCalls: 7,
+    toolCallsByName: { read_file: 4, search: 3 },
+  },
 };
 
 const emptySummary = {
@@ -44,6 +131,10 @@ const emptySummary = {
   grandTotal: 0,
   agentCount: 0,
   activeAgentCount: 0,
+  tokens: emptyTokens,
+  latency: emptyLatency,
+  errors: emptyErrors,
+  activity: emptyActivity,
 };
 
 const resetAgentCosts = mock(async (_args: { agentId: string }) => ({ status: "success" as const }));
@@ -101,6 +192,12 @@ describe("MetricsDashboard", () => {
     expect(screen.getByText("Chat & models")).toBeInTheDocument();
     expect(screen.getByText("Media")).toBeInTheDocument();
     expect(screen.getByText("Active now")).toBeInTheDocument();
+    expect(screen.getByText("Tokens")).toBeInTheDocument();
+    expect(screen.getByText("Latency")).toBeInTheDocument();
+    expect(screen.getByText("Errors")).toBeInTheDocument();
+    expect(screen.getByText("Activity")).toBeInTheDocument();
+    expect(screen.getByTestId("metrics-performance-stats")).toBeInTheDocument();
+    expect(screen.getByTestId("metrics-detail-panels")).toBeInTheDocument();
     expect(screen.getByText("Code Engineer #1")).toBeInTheDocument();
     expect(screen.getByText("Researcher")).toBeInTheDocument();
     expect(screen.getByTestId("metrics-category-bars")).toBeInTheDocument();
@@ -134,6 +231,7 @@ describe("MetricsDashboard", () => {
 
     expect(screen.getByText("Unable to load metrics")).toBeInTheDocument();
     expect(screen.getByText(/stream failed/)).toBeInTheDocument();
+    expect(screen.getByTestId("metrics-live-status")).toHaveTextContent("Error");
     await user.click(screen.getByRole("button", { name: "Retry" }));
     expect(mutate).toHaveBeenCalled();
   });
@@ -174,22 +272,50 @@ describe("MetricsDashboard", () => {
     expect(breakdown).toBeInTheDocument();
     expect(breakdown).toHaveTextContent("Web Search");
     expect(breakdown).toHaveTextContent("OpenAI:gpt-4o");
+    expect(screen.getByTestId("metrics-agent-tokens")).toHaveTextContent("12k");
+    expect(screen.getByTestId("metrics-agent-latency")).toHaveTextContent("450ms");
+    expect(screen.getByTestId("metrics-agent-activity")).toHaveTextContent("read_file");
+    expect(screen.getByTestId("metrics-agent-errors")).toHaveTextContent("rateLimit");
   });
 
-  it("confirms and resets agent costs", async () => {
+  it("confirms and resets agent metrics", async () => {
     const user = userEvent.setup();
     renderDashboard();
 
     const resetButtons = screen.getAllByTestId("metrics-reset-agent");
     await user.click(resetButtons[0]!);
 
-    expect(screen.getByText("Reset cost counters?")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Reset costs" }));
+    expect(screen.getByText("Reset metrics?")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Reset metrics" }));
 
     await waitFor(() => {
       expect(resetAgentCosts).toHaveBeenCalledWith({ agentId: "agent-active-1" });
     });
     expect(mutate).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.queryByText("Reset metrics?")).not.toBeInTheDocument();
+    });
+  });
+
+  it("closes reset dialog after confirm even when reset RPC fails", async () => {
+    const user = userEvent.setup();
+    resetAgentCosts.mockImplementationOnce(async () => {
+      throw new Error("reset failed");
+    });
+    renderDashboard();
+
+    await user.click(screen.getAllByTestId("metrics-reset-agent")[0]!);
+    expect(screen.getByText("Reset metrics?")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Reset metrics" }));
+
+    await waitFor(() => {
+      expect(resetAgentCosts).toHaveBeenCalledWith({ agentId: "agent-active-1" });
+    });
+    // Promise-based confirm closes before the RPC; failures toast and leave the dialog closed.
+    await waitFor(() => {
+      expect(screen.queryByText("Reset metrics?")).not.toBeInTheDocument();
+    });
+    expect(mutate).not.toHaveBeenCalled();
   });
 
   it("cancels reset confirmation", async () => {
@@ -198,7 +324,7 @@ describe("MetricsDashboard", () => {
 
     await user.click(screen.getAllByTestId("metrics-reset-agent")[0]!);
     await user.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.queryByText("Reset cost counters?")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reset metrics?")).not.toBeInTheDocument();
     expect(resetAgentCosts).not.toHaveBeenCalled();
   });
 

@@ -41,7 +41,7 @@ export default function ChartTab({ symbol }: ChartTabProps) {
   const rpcChartUrl = chart.data?.svgDataUri;
   const imageUrl = chartStage === 0 ? darkChartUrl : chartStage === 1 ? rpcChartUrl : undefined;
 
-  // If stage 1 has no RPC URL after load/error, fall through to local market-data chart.
+  // If stage 1 has no RPC URL after load finishes (including error → no data), fall through to local chart.
   useEffect(() => {
     if (chartStage === 1 && !chart.isLoading && !rpcChartUrl) {
       setChartStage(2);
@@ -64,7 +64,7 @@ export default function ChartTab({ symbol }: ChartTabProps) {
   const dataError = selected.useTicks ? ticks.error : history.error;
 
   const imgKey = `${symbol}-${chartInterval}-${chartStage}`;
-  const waitingOnImagePipeline = chartStage === 1 && (chart.isLoading || !rpcChartUrl);
+  const waitingOnImagePipeline = chartStage === 1 && chart.isLoading;
 
   return (
     <div className="space-y-3">

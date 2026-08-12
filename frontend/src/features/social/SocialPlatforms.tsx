@@ -1,110 +1,97 @@
 import { Bot, CheckCircle2, ExternalLink, Hash, KeyRound, Loader2, MessagesSquare, Package, Plug, PlugZap, RefreshCw, Settings2, WifiOff } from "lucide-react";
-import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import ErrorState from "../../components/ui/ErrorState.tsx";
+import PlatformCard, { type ActionLink } from "../../components/ui/PlatformCard.tsx";
+import StatusBadge, { type StatusBadgeDefinition } from "../../components/ui/StatusBadge.tsx";
+import SummaryStat from "../../components/ui/SummaryStat.tsx";
+import { useMultiSourceLoading } from "../../hooks/useMultiSourceLoading.ts";
+import { getServiceBrand } from "../../lib/serviceGradient.ts";
 import { cn } from "../../lib/utils.ts";
 import { useBots, useConfigValues, usePlugins } from "../../rpc.ts";
 import { BOT_PLUGIN_NAME, deriveAllPlatformStatuses, type PlatformStatus, type PlatformStatusId, statusDetail, statusLabel } from "./platforms.ts";
 
-function StatusBadge({ status }: { status: PlatformStatusId }) {
-  const styles: Record<PlatformStatusId, string> = {
-    connected: "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30",
-    configured: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
-    needs_config: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30",
-    not_installed: "bg-tertiary text-muted border-primary",
-  };
-  const icons: Record<PlatformStatusId, ReactNode> = {
-    connected: <PlugZap className="w-3 h-3" />,
-    configured: <CheckCircle2 className="w-3 h-3" />,
-    needs_config: <Settings2 className="w-3 h-3" />,
-    not_installed: <WifiOff className="w-3 h-3" />,
-  };
-  return (
-    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border shrink-0", styles[status])}>
-      {icons[status]}
-      {statusLabel(status)}
-    </span>
-  );
-}
+const PLATFORM_STATUS_BADGES: Record<PlatformStatusId, StatusBadgeDefinition> = {
+  connected: {
+    label: statusLabel("connected"),
+    icon: <PlugZap className="w-3 h-3" />,
+    colorClass: "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30",
+  },
+  configured: {
+    label: statusLabel("configured"),
+    icon: <CheckCircle2 className="w-3 h-3" />,
+    colorClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
+  },
+  needs_config: {
+    label: statusLabel("needs_config"),
+    icon: <Settings2 className="w-3 h-3" />,
+    colorClass: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30",
+  },
+  not_installed: {
+    label: statusLabel("not_installed"),
+    icon: <WifiOff className="w-3 h-3" />,
+    colorClass: "bg-tertiary text-muted border-primary",
+  },
+};
 
-function PlatformCard({ info }: { info: PlatformStatus }) {
+function platformActions(info: PlatformStatus): ActionLink[] {
   const { platform, status, hasConfig, pluginInstalled } = info;
+  // hasConfig = plugin exposes a config schema (settings UI), not "has entries".
   const canConfigure = pluginInstalled && hasConfig;
   const configHref = `/configuration/${encodeURIComponent(platform.pluginName)}`;
-  const muted = status === "not_installed";
+  // Installed plugins without a config schema still need a path when status says needs_config.
+  const showPluginsLink = status === "not_installed" || (status === "needs_config" && !canConfigure);
 
-  return (
-    <div
-      className={cn(
-        "flex flex-col gap-3 px-4 py-3 bg-secondary border border-primary rounded-xl transition-colors",
-        muted ? "opacity-80" : "hover:border-accent-muted",
-      )}
-    >
-      <div className="flex items-start gap-3">
-        <div className={cn("w-8 h-8 rounded-lg bg-linear-to-br shrink-0", platform.color)} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-medium text-primary">{platform.name}</p>
-            <StatusBadge status={status} />
-          </div>
-          <p className="text-xs text-muted mt-0.5">{platform.description}</p>
-          <p className="text-xs text-secondary mt-1.5 leading-relaxed">{statusDetail(info)}</p>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-1.5">
-        {canConfigure ? (
-          <Link
-            to={configHref}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-primary bg-tertiary text-primary hover:bg-hover hover:border-accent-muted transition-colors focus-ring"
-          >
-            <Settings2 className="w-3 h-3" />
-            {status === "needs_config" ? "Configure" : "Edit config"}
-          </Link>
-        ) : null}
-        {status === "not_installed" ? (
-          <Link
-            to="/plugins"
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-primary bg-tertiary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring"
-          >
-            <Package className="w-3 h-3" />
-            View plugins
-          </Link>
-        ) : null}
-        {status === "connected" || (status === "configured" && platform.kind === "messaging") ? (
-          <Link
-            to="/bots"
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-primary bg-tertiary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring"
-          >
-            <Bot className="w-3 h-3" />
-            Manage bots
-          </Link>
-        ) : null}
-        {canConfigure ? (
-          <Link
-            to="/vault"
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-primary bg-tertiary text-muted hover:text-primary hover:bg-hover transition-colors focus-ring"
-            title="Store bot tokens and secrets"
-          >
-            <KeyRound className="w-3 h-3" />
-            Vault
-          </Link>
-        ) : null}
-      </div>
-    </div>
-  );
+  const actions: ActionLink[] = [];
+  if (canConfigure) {
+    actions.push({
+      label: status === "needs_config" ? "Configure" : "Edit config",
+      icon: <Settings2 className="w-3 h-3" />,
+      href: configHref,
+      primary: true,
+    });
+  }
+  if (showPluginsLink) {
+    actions.push({
+      label: "View plugins",
+      icon: <Package className="w-3 h-3" />,
+      href: "/plugins",
+    });
+  }
+  if (status === "connected" || (status === "configured" && platform.kind === "messaging")) {
+    actions.push({
+      label: "Manage bots",
+      icon: <Bot className="w-3 h-3" />,
+      href: "/bots",
+    });
+  }
+  if (canConfigure) {
+    actions.push({
+      label: "Vault",
+      icon: <KeyRound className="w-3 h-3" />,
+      href: "/vault",
+      title: "Store bot tokens and secrets",
+    });
+  }
+  return actions;
 }
 
-function SummaryStat({ label, value, icon, accentClass }: { label: string; value: string; icon: ReactNode; accentClass: string }) {
+function SocialPlatformCard({ info }: { info: PlatformStatus }) {
+  const { platform, status } = info;
+  const brand = getServiceBrand(platform.id);
+  const Icon = brand.icon;
+
   return (
-    <div className="bg-secondary border border-primary rounded-xl px-3 py-2.5 shadow-sm">
-      <div className="flex items-center gap-1.5 mb-0.5">
-        <span className={accentClass}>{icon}</span>
-        <span className="text-xs font-bold text-muted uppercase tracking-widest">{label}</span>
-      </div>
-      <p className="text-base font-semibold text-primary tabular-nums">{value}</p>
-    </div>
+    <PlatformCard
+      name={platform.name}
+      description={platform.description}
+      detail={statusDetail(info)}
+      gradient={platform.color}
+      icon={<Icon />}
+      statusBadge={<StatusBadge status={status} statuses={PLATFORM_STATUS_BADGES} />}
+      actions={platformActions(info)}
+      muted={status === "not_installed"}
+    />
   );
 }
 
@@ -152,15 +139,16 @@ function BotsSummary({
         <ErrorState title="Unable to load bots status" error={botsError} onRetry={onRetryBots} variant="inline" />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <SummaryStat label="Bots" value={String(botCount)} icon={<Bot className="w-3.5 h-3.5" />} accentClass="text-teal-500" />
-          <SummaryStat label="Channels" value={String(channelCount)} icon={<Hash className="w-3.5 h-3.5" />} accentClass="text-sky-500" />
+          <SummaryStat label="Bots" value={String(botCount)} icon={<Bot className="w-3.5 h-3.5" />} accentClass="text-teal-500" size="sm" />
+          <SummaryStat label="Channels" value={String(channelCount)} icon={<Hash className="w-3.5 h-3.5" />} accentClass="text-sky-500" size="sm" />
           <SummaryStat
             label="Conversations"
             value={String(conversationCount)}
             icon={<MessagesSquare className="w-3.5 h-3.5" />}
             accentClass="text-violet-500"
+            size="sm"
           />
-          <SummaryStat label="Services" value={String(serviceCount)} icon={<Plug className="w-3.5 h-3.5" />} accentClass="text-amber-500" />
+          <SummaryStat label="Services" value={String(serviceCount)} icon={<Plug className="w-3.5 h-3.5" />} accentClass="text-amber-500" size="sm" />
         </div>
       )}
 
@@ -205,6 +193,14 @@ export default function SocialPlatforms() {
   const config = useConfigValues();
   const bots = useBots();
 
+  // Wait for plugins + config, and for bots on first load so messaging status is not
+  // briefly shown as offline before listBots returns. Bots errors are non-fatal.
+  const loading = useMultiSourceLoading([
+    { source: plugins, label: "plugins" },
+    { source: config, label: "config" },
+    { source: bots, label: "bots", isFatal: false },
+  ]);
+
   const platformStatuses = useMemo(
     () =>
       deriveAllPlatformStatuses(
@@ -220,25 +216,13 @@ export default function SocialPlatforms() {
   const channelCount = botList.reduce((n, bot) => n + bot.channels.length, 0);
   const conversationCount = botList.reduce((n, bot) => n + bot.conversations.length, 0);
   const serviceCount = bots.data?.services.length ?? 0;
-  // Soft-fail: bots endpoint may be unavailable; only treat as hard error when we have no data.
-  const botsHardError = bots.error && !bots.data ? bots.error : undefined;
+  const botsHardError = loading.getSourceHardError("bots");
 
   const connectedCount = platformStatuses.filter(p => p.status === "connected").length;
   const needsConfigCount = platformStatuses.filter(p => p.status === "needs_config").length;
   const configuredCount = platformStatuses.filter(p => p.status === "configured").length;
 
-  // Wait for plugins + config, and for bots on first load so messaging status is not
-  // briefly shown as offline before listBots returns. Bots errors are non-fatal.
-  const isLoading = (plugins.isLoading && !plugins.data) || (config.isLoading && !config.data) || (bots.isLoading && !bots.data && !bots.error);
-  const hardError = (plugins.error && !plugins.data) || (config.error && !config.data);
-
-  const refresh = () => {
-    void plugins.mutate();
-    void config.mutate();
-    void bots.mutate();
-  };
-
-  if (isLoading) {
+  if (loading.isLoading) {
     return (
       <div className="flex justify-center py-10" role="status" aria-live="polite">
         <Loader2 className="w-6 h-6 text-muted animate-spin" />
@@ -246,9 +230,8 @@ export default function SocialPlatforms() {
     );
   }
 
-  if (hardError) {
-    const err = plugins.error ?? config.error;
-    return <ErrorState title="Unable to load social status" error={err} onRetry={refresh} variant="inline" className="py-6" />;
+  if (loading.hasHardError) {
+    return <ErrorState title="Unable to load social status" error={loading.hardError} onRetry={loading.refresh} variant="inline" className="py-6" />;
   }
 
   return (
@@ -260,18 +243,19 @@ export default function SocialPlatforms() {
         </div>
         <button
           type="button"
-          onClick={refresh}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-primary border border-primary rounded-lg transition-colors focus-ring cursor-pointer"
+          onClick={loading.refresh}
+          disabled={loading.isRefreshing}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-primary border border-primary rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           title="Refresh status"
         >
-          <RefreshCw className={cn("w-3.5 h-3.5", (plugins.isValidating || config.isValidating || bots.isValidating) && "animate-spin")} />
+          <RefreshCw className={cn("w-3.5 h-3.5", loading.isRefreshing && "animate-spin")} />
           Refresh
         </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {platformStatuses.map(info => (
-          <PlatformCard key={info.platform.id} info={info} />
+          <SocialPlatformCard key={info.platform.id} info={info} />
         ))}
       </div>
 

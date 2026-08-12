@@ -16,7 +16,11 @@ export function messageTimestamp(msg: EmailMessage): number | undefined {
 }
 
 export function formatAddress(addr: EmailAddress): string {
-  return addr.name ? `${addr.name} <${addr.email}>` : addr.email;
+  if (!addr.name) return addr.email;
+  // Quote display names that contain RFC 5322 specials so round-trips stay parseable.
+  const needsQuote = /[,;<>@"\\]/.test(addr.name) || /^\s|\s$/.test(addr.name);
+  const name = needsQuote ? `"${addr.name.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"` : addr.name;
+  return `${name} <${addr.email}>`;
 }
 
 export function formatAddressList(addrs: EmailAddress[] | undefined): string {
@@ -34,18 +38,47 @@ export function getBoxPresentation(box: EmailBoxRecord) {
 }
 
 /**
+ * Split a recipient field on commas/semicolons outside of quoted strings and angle brackets.
+ * Handles RFC 5322-style names like `"Smith, John" <john@example.com>`.
+ */
+export function splitAddressList(input: string): string[] {
+  const parts: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  let inAngle = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i]!;
+    if (ch === '"' && !inAngle) {
+      // Toggle quotes unless escaped
+      if (i === 0 || input[i - 1] !== "\\") inQuotes = !inQuotes;
+      current += ch;
+      continue;
+    }
+    if (ch === "<" && !inQuotes) inAngle = true;
+    else if (ch === ">" && !inQuotes) inAngle = false;
+
+    if ((ch === "," || ch === ";") && !inQuotes && !inAngle) {
+      if (current.trim()) parts.push(current.trim());
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  if (current.trim()) parts.push(current.trim());
+  return parts;
+}
+
+/**
  * Parse a free-text recipient field into EmailAddress objects.
- * Supports: "alice@ex.com", "Alice <alice@ex.com>", comma/semicolon separated.
+ * Supports: "alice@ex.com", "Alice <alice@ex.com>", comma/semicolon separated,
+ * and quoted names that contain commas.
  */
 export function parseEmailAddresses(input: string): EmailAddress[] {
   const trimmed = input.trim();
   if (!trimmed) return [];
 
-  const parts = trimmed
-    .split(/[,;]+/)
-    .map(p => p.trim())
-    .filter(Boolean);
-
+  const parts = splitAddressList(trimmed);
   const results: EmailAddress[] = [];
   for (const part of parts) {
     const angle = part.match(/^(.*?)\s*<([^>]+)>$/);
@@ -67,10 +100,7 @@ export function parseEmailAddresses(input: string): EmailAddress[] {
 export function isValidEmailList(input: string): boolean {
   const trimmed = input.trim();
   if (!trimmed) return false;
-  const parts = trimmed
-    .split(/[,;]+/)
-    .map(p => p.trim())
-    .filter(Boolean);
+  const parts = splitAddressList(trimmed);
   if (parts.length === 0) return false;
   return parts.every(part => {
     const angle = part.match(/^(.*?)\s*<([^>]+)>$/);
@@ -119,8 +149,13 @@ function forwardBody(msg: EmailMessage): string {
   return lines.join("\n");
 }
 
+export type DraftFromMessageOptions = {
+  /** Current user's mailbox address; excluded from reply-all CC when provided. */
+  currentEmail?: string;
+};
+
 /** Build a compose draft for reply / reply-all / forward from a message. */
-export function draftFromMessage(msg: EmailMessage, mode: ComposeMode): ComposeDraft {
+export function draftFromMessage(msg: EmailMessage, mode: ComposeMode, options?: DraftFromMessageOptions): ComposeDraft {
   if (mode === "compose") {
     return { mode, to: "", cc: "", bcc: "", subject: "", body: "" };
   }
@@ -141,7 +176,9 @@ export function draftFromMessage(msg: EmailMessage, mode: ComposeMode): ComposeD
   const to = formatAddress(msg.from);
   let cc = "";
   if (mode === "replyAll") {
-    const others = [...msg.to, ...(msg.cc ?? [])].filter(a => a.email.toLowerCase() !== msg.from.email.toLowerCase());
+    const excludeEmails = new Set([msg.from.email.toLowerCase()]);
+    if (options?.currentEmail) excludeEmails.add(options.currentEmail.toLowerCase());
+    const others = [...msg.to, ...(msg.cc ?? [])].filter(a => !excludeEmails.has(a.email.toLowerCase()));
     // Deduplicate by email
     const seen = new Set<string>();
     const unique: EmailAddress[] = [];

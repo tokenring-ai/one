@@ -1,4 +1,4 @@
-import type { AudioIndexEntry, ImageIndexEntry, VideoIndexEntry } from "@tokenring-ai/media-library/rpc/schema";
+import type { MediaIndexEntry } from "@tokenring-ai/media-library/rpc/schema";
 
-export type MediaKind = "image" | "video" | "audio";
-export type MediaEntry = ImageIndexEntry | VideoIndexEntry | AudioIndexEntry;
+export type MediaKind = MediaIndexEntry["kind"];
+export type MediaEntry = MediaIndexEntry;

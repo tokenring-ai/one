@@ -34,7 +34,7 @@ const createAgent = mock(async (_args: { agentType: string; headless: boolean })
   displayName: "Researcher",
   description: "",
 }));
-const sendInput = mock(async () => ({ status: "ok" as const }));
+const sendInput = mock(async () => ({ status: "success" as const, requestId: "req-1" }));
 const deleteAgent = mock(async () => ({ status: "success" as const }));
 const createTopic = mock(async (args: { name: string }) => {
   const topic = { name: args.name, itemCount: 0, updatedAt: new Date().toISOString() };
@@ -92,12 +92,20 @@ void mock.module("../../rpc.ts", () => ({
     error: undefined,
     mutate: mock(async () => undefined),
   }),
+  useResearchConfiguration: () => ({
+    data: { agentTypes: ["research"] },
+    isLoading: false,
+    error: undefined,
+    mutate: mock(async () => undefined),
+  }),
+  useAgentList: () => ({ data: [], isLoading: false, error: undefined, mutate: mock(async () => undefined) }),
   useAgentTypes: () => ({
     data: [{ type: "research", displayName: "Researcher", description: "Deep research", category: "Research", enabledTools: [] }],
     isLoading: false,
   }),
   agentRPCClient: { createAgent, sendInput, deleteAgent },
   researchRPCClient: {
+    getResearchConfiguration: mock(async () => ({ agentTypes: ["research"] })),
     createTopic,
     deleteTopic,
     createItem,
@@ -111,14 +119,6 @@ void mock.module("../../rpc.ts", () => ({
 
 void mock.module("../../components/chat/ChatPanel.tsx", () => ({
   default: ({ agentId }: { agentId: string }) => <div>Chat with {agentId}</div>,
-}));
-
-void mock.module("../../components/AgentLauncherBar.tsx", () => ({
-  default: ({ buttonLabel, onLaunch }: { buttonLabel: string; onLaunch: (id: string) => void }) => (
-    <button type="button" onClick={() => onLaunch("launched-agent")}>
-      {buttonLabel}
-    </button>
-  ),
 }));
 
 void mock.module("@monaco-editor/react", () => ({

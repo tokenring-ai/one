@@ -2,9 +2,11 @@ import formatError from "@tokenring-ai/utility/error/formatError";
 import { Check, Code, Download, File, FileText, Loader2, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import KeyValueMetadata from "../../../components/ui/KeyValueMetadata.tsx";
 import { toastManager } from "../../../components/ui/toast.tsx";
 import { cn } from "../../../lib/utils.ts";
 import { filesystemRPCClient } from "../../../rpc.ts";
+import { downloadWorkspaceFile } from "../downloadFile.ts";
 import { formatFileDate, formatFileSize, getBasename, getFileIcon } from "../fsUtils.ts";
 
 interface FileStats {
@@ -16,7 +18,6 @@ interface FileStats {
 }
 
 interface PreviewMetadataPaneProps {
-  agentId: string;
   file: string | null;
   provider: string | null;
   selectedPaths: Set<string>;
@@ -100,14 +101,7 @@ export default function PreviewMetadataPane({
   const handleDownload = async () => {
     if (!provider) return;
     try {
-      const result = await filesystemRPCClient.readTextFile({ path: file, provider });
-      const blob = new Blob([result.content ?? ""], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = name;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadWorkspaceFile(file, provider);
     } catch {
       toastManager.error("Download failed", { duration: 3000 });
     }
@@ -229,33 +223,44 @@ export default function PreviewMetadataPane({
 
       <div className="px-4 py-3 space-y-1.5 shrink-0 overflow-y-auto flex-1">
         <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">Details</p>
-        <MetaRow label="Path" value={file} mono />
-        <MetaRow label="Type" value={ext ?? "—"} />
+        <KeyValueMetadata
+          labelWidth="w-16"
+          gap="space-y-1.5"
+          items={[
+            {
+              label: "Path",
+              value: (
+                <span className="font-mono text-primary" title={file}>
+                  {file}
+                </span>
+              ),
+            },
+            { label: "Type", value: <span className="text-primary">{ext ?? "—"}</span> },
+            !statsLoading &&
+              !statsError && {
+                label: "Size",
+                value: <span className="text-primary">{formatFileSize(stats?.size)}</span>,
+              },
+            !statsLoading &&
+              !statsError && {
+                label: "Modified",
+                value: <span className="text-primary">{formatFileDate(stats?.modified)}</span>,
+              },
+            !statsLoading &&
+              !statsError && {
+                label: "Created",
+                value: <span className="text-primary">{formatFileDate(stats?.created)}</span>,
+              },
+          ]}
+        />
         {statsLoading ? (
           <div className="flex items-center gap-2 py-2 text-xs text-muted">
             <Loader2 className="w-3 h-3 animate-spin" /> Loading stats…
           </div>
         ) : statsError ? (
           <p className="text-xs text-red-400">{statsError}</p>
-        ) : (
-          <>
-            <MetaRow label="Size" value={formatFileSize(stats?.size)} />
-            <MetaRow label="Modified" value={formatFileDate(stats?.modified)} />
-            <MetaRow label="Created" value={formatFileDate(stats?.created)} />
-          </>
-        )}
+        ) : null}
       </div>
-    </div>
-  );
-}
-
-function MetaRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div className="flex justify-between gap-3 text-xs">
-      <span className="text-muted shrink-0">{label}</span>
-      <span className={cn("text-primary text-right truncate", mono && "font-mono")} title={value}>
-        {value}
-      </span>
     </div>
   );
 }

@@ -695,6 +695,19 @@
             "status"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalProviderNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
         }
       ]
     },
@@ -787,6 +800,19 @@
             "status": {
               "type": "string",
               "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalProviderNotFound"
             }
           },
           "required": [
@@ -1246,6 +1272,19 @@
             "status": {
               "type": "string",
               "const": "terminalNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotInteractive"
             }
           },
           "required": [

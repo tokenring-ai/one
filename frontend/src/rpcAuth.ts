@@ -30,3 +30,27 @@ export function clearRpcAuth(): void {
 export function hasRpcAuth(): boolean {
   return Boolean(rpcAuth.username && rpcAuth.password);
 }
+
+/** Authorization headers for authenticated HTTP calls (filesystem static serving, etc.). */
+export function rpcAuthHeaders(): HeadersInit {
+  if (!hasRpcAuth()) return {};
+  const token = btoa(`${rpcAuth.username}:${rpcAuth.password}`);
+  return { Authorization: `Basic ${token}` };
+}
+
+/**
+ * Establish an HttpOnly session cookie for `/api/fs/*` so `<img>`, `<video>`,
+ * and iframe navigations can load workspace files without an Authorization header.
+ */
+export async function primeFilesystemHttpAuth(): Promise<void> {
+  if (!hasRpcAuth()) return;
+  try {
+    await fetch("/api/fs/session", {
+      method: "POST",
+      headers: rpcAuthHeaders(),
+      credentials: "include",
+    });
+  } catch {
+    // Non-fatal: downloads can still use Authorization headers.
+  }
+}

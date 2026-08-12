@@ -288,6 +288,135 @@
               },
               "total": {
                 "type": "number"
+              },
+              "tokens": {
+                "type": "object",
+                "properties": {
+                  "totalInputTokens": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "totalOutputTokens": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "totalCachedTokens": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "totalReasoningTokens": {
+                    "default": 0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "totalInputTokens",
+                  "totalOutputTokens",
+                  "totalCachedTokens",
+                  "totalReasoningTokens"
+                ],
+                "additionalProperties": false
+              },
+              "latency": {
+                "type": "object",
+                "properties": {
+                  "requestCount": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "avgElapsedMs": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "avgTimeToFirstTokenMs": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "avgTokensPerSecond": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "p50ElapsedMs": {
+                    "type": "number"
+                  },
+                  "p95ElapsedMs": {
+                    "type": "number"
+                  },
+                  "p99ElapsedMs": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "requestCount",
+                  "avgElapsedMs",
+                  "avgTimeToFirstTokenMs",
+                  "avgTokensPerSecond"
+                ],
+                "additionalProperties": false
+              },
+              "errors": {
+                "type": "object",
+                "properties": {
+                  "errorsByProvider": {
+                    "default": {},
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  },
+                  "errorsByType": {
+                    "default": {},
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  },
+                  "retryCount": {
+                    "default": 0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "errorsByProvider",
+                  "errorsByType",
+                  "retryCount"
+                ],
+                "additionalProperties": false
+              },
+              "activity": {
+                "type": "object",
+                "properties": {
+                  "totalSteps": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "totalToolCalls": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "toolCallsByName": {
+                    "default": {},
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "required": [
+                  "totalSteps",
+                  "totalToolCalls",
+                  "toolCallsByName"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -296,7 +425,11 @@
               "agentType",
               "idle",
               "costs",
-              "total"
+              "total",
+              "tokens",
+              "latency",
+              "errors",
+              "activity"
             ],
             "additionalProperties": false
           }
@@ -318,6 +451,135 @@
         },
         "activeAgentCount": {
           "type": "number"
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "totalInputTokens": {
+              "default": 0,
+              "type": "number"
+            },
+            "totalOutputTokens": {
+              "default": 0,
+              "type": "number"
+            },
+            "totalCachedTokens": {
+              "default": 0,
+              "type": "number"
+            },
+            "totalReasoningTokens": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "totalInputTokens",
+            "totalOutputTokens",
+            "totalCachedTokens",
+            "totalReasoningTokens"
+          ],
+          "additionalProperties": false
+        },
+        "latency": {
+          "type": "object",
+          "properties": {
+            "requestCount": {
+              "default": 0,
+              "type": "number"
+            },
+            "avgElapsedMs": {
+              "default": 0,
+              "type": "number"
+            },
+            "avgTimeToFirstTokenMs": {
+              "default": 0,
+              "type": "number"
+            },
+            "avgTokensPerSecond": {
+              "default": 0,
+              "type": "number"
+            },
+            "p50ElapsedMs": {
+              "type": "number"
+            },
+            "p95ElapsedMs": {
+              "type": "number"
+            },
+            "p99ElapsedMs": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "requestCount",
+            "avgElapsedMs",
+            "avgTimeToFirstTokenMs",
+            "avgTokensPerSecond"
+          ],
+          "additionalProperties": false
+        },
+        "errors": {
+          "type": "object",
+          "properties": {
+            "errorsByProvider": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "errorsByType": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "retryCount": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "errorsByProvider",
+            "errorsByType",
+            "retryCount"
+          ],
+          "additionalProperties": false
+        },
+        "activity": {
+          "type": "object",
+          "properties": {
+            "totalSteps": {
+              "default": 0,
+              "type": "number"
+            },
+            "totalToolCalls": {
+              "default": 0,
+              "type": "number"
+            },
+            "toolCallsByName": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "number"
+              }
+            }
+          },
+          "required": [
+            "totalSteps",
+            "totalToolCalls",
+            "toolCallsByName"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -325,7 +587,11 @@
         "totalsByCategory",
         "grandTotal",
         "agentCount",
-        "activeAgentCount"
+        "activeAgentCount",
+        "tokens",
+        "latency",
+        "errors",
+        "activity"
       ],
       "additionalProperties": false
     },
@@ -364,6 +630,135 @@
               },
               "total": {
                 "type": "number"
+              },
+              "tokens": {
+                "type": "object",
+                "properties": {
+                  "totalInputTokens": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "totalOutputTokens": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "totalCachedTokens": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "totalReasoningTokens": {
+                    "default": 0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "totalInputTokens",
+                  "totalOutputTokens",
+                  "totalCachedTokens",
+                  "totalReasoningTokens"
+                ],
+                "additionalProperties": false
+              },
+              "latency": {
+                "type": "object",
+                "properties": {
+                  "requestCount": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "avgElapsedMs": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "avgTimeToFirstTokenMs": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "avgTokensPerSecond": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "p50ElapsedMs": {
+                    "type": "number"
+                  },
+                  "p95ElapsedMs": {
+                    "type": "number"
+                  },
+                  "p99ElapsedMs": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "requestCount",
+                  "avgElapsedMs",
+                  "avgTimeToFirstTokenMs",
+                  "avgTokensPerSecond"
+                ],
+                "additionalProperties": false
+              },
+              "errors": {
+                "type": "object",
+                "properties": {
+                  "errorsByProvider": {
+                    "default": {},
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  },
+                  "errorsByType": {
+                    "default": {},
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  },
+                  "retryCount": {
+                    "default": 0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "errorsByProvider",
+                  "errorsByType",
+                  "retryCount"
+                ],
+                "additionalProperties": false
+              },
+              "activity": {
+                "type": "object",
+                "properties": {
+                  "totalSteps": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "totalToolCalls": {
+                    "default": 0,
+                    "type": "number"
+                  },
+                  "toolCallsByName": {
+                    "default": {},
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "required": [
+                  "totalSteps",
+                  "totalToolCalls",
+                  "toolCallsByName"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -372,7 +767,11 @@
               "agentType",
               "idle",
               "costs",
-              "total"
+              "total",
+              "tokens",
+              "latency",
+              "errors",
+              "activity"
             ],
             "additionalProperties": false
           }
@@ -394,6 +793,135 @@
         },
         "activeAgentCount": {
           "type": "number"
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "totalInputTokens": {
+              "default": 0,
+              "type": "number"
+            },
+            "totalOutputTokens": {
+              "default": 0,
+              "type": "number"
+            },
+            "totalCachedTokens": {
+              "default": 0,
+              "type": "number"
+            },
+            "totalReasoningTokens": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "totalInputTokens",
+            "totalOutputTokens",
+            "totalCachedTokens",
+            "totalReasoningTokens"
+          ],
+          "additionalProperties": false
+        },
+        "latency": {
+          "type": "object",
+          "properties": {
+            "requestCount": {
+              "default": 0,
+              "type": "number"
+            },
+            "avgElapsedMs": {
+              "default": 0,
+              "type": "number"
+            },
+            "avgTimeToFirstTokenMs": {
+              "default": 0,
+              "type": "number"
+            },
+            "avgTokensPerSecond": {
+              "default": 0,
+              "type": "number"
+            },
+            "p50ElapsedMs": {
+              "type": "number"
+            },
+            "p95ElapsedMs": {
+              "type": "number"
+            },
+            "p99ElapsedMs": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "requestCount",
+            "avgElapsedMs",
+            "avgTimeToFirstTokenMs",
+            "avgTokensPerSecond"
+          ],
+          "additionalProperties": false
+        },
+        "errors": {
+          "type": "object",
+          "properties": {
+            "errorsByProvider": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "errorsByType": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "retryCount": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "errorsByProvider",
+            "errorsByType",
+            "retryCount"
+          ],
+          "additionalProperties": false
+        },
+        "activity": {
+          "type": "object",
+          "properties": {
+            "totalSteps": {
+              "default": 0,
+              "type": "number"
+            },
+            "totalToolCalls": {
+              "default": 0,
+              "type": "number"
+            },
+            "toolCallsByName": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "number"
+              }
+            }
+          },
+          "required": [
+            "totalSteps",
+            "totalToolCalls",
+            "toolCallsByName"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -401,7 +929,11 @@
         "totalsByCategory",
         "grandTotal",
         "agentCount",
-        "activeAgentCount"
+        "activeAgentCount",
+        "tokens",
+        "latency",
+        "errors",
+        "activity"
       ],
       "additionalProperties": false
     },
@@ -451,6 +983,135 @@
                 },
                 "total": {
                   "type": "number"
+                },
+                "tokens": {
+                  "type": "object",
+                  "properties": {
+                    "totalInputTokens": {
+                      "default": 0,
+                      "type": "number"
+                    },
+                    "totalOutputTokens": {
+                      "default": 0,
+                      "type": "number"
+                    },
+                    "totalCachedTokens": {
+                      "default": 0,
+                      "type": "number"
+                    },
+                    "totalReasoningTokens": {
+                      "default": 0,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "totalInputTokens",
+                    "totalOutputTokens",
+                    "totalCachedTokens",
+                    "totalReasoningTokens"
+                  ],
+                  "additionalProperties": false
+                },
+                "latency": {
+                  "type": "object",
+                  "properties": {
+                    "requestCount": {
+                      "default": 0,
+                      "type": "number"
+                    },
+                    "avgElapsedMs": {
+                      "default": 0,
+                      "type": "number"
+                    },
+                    "avgTimeToFirstTokenMs": {
+                      "default": 0,
+                      "type": "number"
+                    },
+                    "avgTokensPerSecond": {
+                      "default": 0,
+                      "type": "number"
+                    },
+                    "p50ElapsedMs": {
+                      "type": "number"
+                    },
+                    "p95ElapsedMs": {
+                      "type": "number"
+                    },
+                    "p99ElapsedMs": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "requestCount",
+                    "avgElapsedMs",
+                    "avgTimeToFirstTokenMs",
+                    "avgTokensPerSecond"
+                  ],
+                  "additionalProperties": false
+                },
+                "errors": {
+                  "type": "object",
+                  "properties": {
+                    "errorsByProvider": {
+                      "default": {},
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    },
+                    "errorsByType": {
+                      "default": {},
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    },
+                    "retryCount": {
+                      "default": 0,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "errorsByProvider",
+                    "errorsByType",
+                    "retryCount"
+                  ],
+                  "additionalProperties": false
+                },
+                "activity": {
+                  "type": "object",
+                  "properties": {
+                    "totalSteps": {
+                      "default": 0,
+                      "type": "number"
+                    },
+                    "totalToolCalls": {
+                      "default": 0,
+                      "type": "number"
+                    },
+                    "toolCallsByName": {
+                      "default": {},
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "required": [
+                    "totalSteps",
+                    "totalToolCalls",
+                    "toolCallsByName"
+                  ],
+                  "additionalProperties": false
                 }
               },
               "required": [
@@ -459,7 +1120,11 @@
                 "agentType",
                 "idle",
                 "costs",
-                "total"
+                "total",
+                "tokens",
+                "latency",
+                "errors",
+                "activity"
               ],
               "additionalProperties": false
             }

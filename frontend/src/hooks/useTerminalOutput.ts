@@ -37,11 +37,10 @@ export function useTerminalOutput(terminalName: string | null, resume?: Terminal
         },
         signal,
       ),
-    // terminalNotFound ends the subscription; complete means the process exited and
+    // Non-success statuses end the subscription; complete means the process exited and
     // the server closed the stream — without stopping here useRPCStream would
     // reconnect in a tight loop and re-yield the same terminal-exited chunk.
-    // After excluding terminalNotFound, status is narrowed to success so only complete matters.
-    shouldStop: chunk => chunk.status === "terminalNotFound" || chunk.complete,
+    shouldStop: chunk => chunk.status !== "success" || chunk.complete,
     reduce: (prev, chunk) => {
       if (chunk.status !== "success") {
         return (

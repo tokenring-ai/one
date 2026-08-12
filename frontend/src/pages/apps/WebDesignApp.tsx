@@ -1,37 +1,39 @@
 import Editor from "@monaco-editor/react";
 import formatError from "@tokenring-ai/utility/error/formatError";
-import {
-  ChevronDown,
-  ChevronRight,
-  Code2,
-  Columns2,
-  ExternalLink,
-  Eye,
-  FileCode2,
-  FileUp,
-  Frame,
-  Loader2,
-  Play,
-  Plus,
-  Save,
-  Send,
-  Trash2,
-  Workflow,
-  X,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, Code2, Columns2, ExternalLink, Eye, FileCode2, FileUp, Frame, Loader2, Play, Plus, Trash2, Workflow } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
+import { useNavigate, useParams } from "react-router-dom";
+import AgentSessionBar from "../../components/AgentSessionBar.tsx";
+import AgentSessionList from "../../components/AgentSessionList.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
 import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import ConfirmModal from "../../components/ui/ConfirmModal.tsx";
+import CreateItemModal from "../../components/ui/CreateItemModal.tsx";
+import EditorSaveBar from "../../components/ui/EditorSaveBar.tsx";
+import EmptyStateWithPrompt from "../../components/ui/EmptyStateWithPrompt.tsx";
+import ListItemWithActions from "../../components/ui/ListItemWithActions.tsx";
 import ResizableSplit from "../../components/ui/ResizableSplit.tsx";
+import SaveAsModal from "../../components/ui/SaveAsModal.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
-import { useOwnedAgent } from "../../hooks/useOwnedAgent.ts";
+import ViewModeToggle from "../../components/ui/ViewModeToggle.tsx";
+import { useAppAgentSession } from "../../hooks/useAppAgentSession.tsx";
+import { useAutoExpandTree } from "../../hooks/useAutoExpandTree.ts";
+import { useDebounce } from "../../hooks/useDebounce.ts";
+import { useEntityDelete } from "../../hooks/useEntityDelete.ts";
+import { useFileUpload } from "../../hooks/useFileUpload.ts";
+import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts.ts";
+import { useNavigationStatePayload } from "../../hooks/useNavigationStatePayload.ts";
+import { usePendingAction } from "../../hooks/usePendingAction.tsx";
+import { useRefSync } from "../../hooks/useRefSync.ts";
+import { useRemoteChangeDetection } from "../../hooks/useRemoteChangeDetection.ts";
 import { useTheme } from "../../hooks/useTheme.ts";
+import type { RunningAgent } from "../../lib/agentSessions.ts";
 import { sanitizeDesignHtml } from "../../lib/sanitizeHtml.ts";
-import { agentRPCClient, useDesigns, useFlows, webDesignRPCClient } from "../../rpc.ts";
+import { toastOnReject } from "../../lib/toastOnReject.ts";
+import { workspaceFileUrl } from "../../lib/workspaceFileUrl.ts";
+import { agentRPCClient, useDesigns, useFlows, useWebDesignConfiguration, webDesignRPCClient } from "../../rpc.ts";
 
 const DEFAULT_HTML = `<!DOCTYPE html>
 <html lang="en">
@@ -61,10 +63,13 @@ const FLOW_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
 const FILE_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 
 const WEB_DESIGN_ROOT = "/web-design";
-const WEB_DESIGN_PREVIEW_ROOT = "/web-design-preview";
+/** Workspace-relative directory for design flows (matches webDesign.webDesignDirectory default). */
+const WEB_DESIGN_DIRECTORY = "web-design";
+/** Default filesystem provider that hosts design files on disk. */
+const WEB_DESIGN_FS_PROVIDER = "posix";
 const designPath = (flowName: string, designName: string) => `${WEB_DESIGN_ROOT}/${encodeURIComponent(flowName)}/${encodeURIComponent(designName)}`;
-const previewPath = (flowName: string, fileName: string) => `${WEB_DESIGN_PREVIEW_ROOT}/${encodeURIComponent(flowName)}/${encodeURIComponent(fileName)}`;
-const previewFlowPath = (flowName: string) => `${WEB_DESIGN_PREVIEW_ROOT}/${encodeURIComponent(flowName)}/`;
+const previewPath = (flowName: string, fileName: string) => workspaceFileUrl(WEB_DESIGN_FS_PROVIDER, `${WEB_DESIGN_DIRECTORY}/${flowName}/${fileName}`);
+const previewFlowPath = (flowName: string) => workspaceFileUrl(WEB_DESIGN_FS_PROVIDER, `${WEB_DESIGN_DIRECTORY}/${flowName}/`);
 
 function copyFileName(fileName: string): string {
   const extensionIndex = fileName.lastIndexOf(".");
@@ -81,15 +86,6 @@ function editorLanguage(fileName: string): string {
   if (extension === "md") return "markdown";
   if (extension === "yaml" || extension === "yml") return "yaml";
   return "html";
-}
-
-function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(reader.error ?? new Error(`Could not read "${file.name}"`));
-    reader.onload = () => resolve((reader.result instanceof ArrayBuffer ? new TextDecoder().decode(reader.result) : reader.result)?.split(",", 2)[1] ?? "");
-    reader.readAsDataURL(file);
-  });
 }
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -111,235 +107,7 @@ interface FileState {
 
 type ViewMode = "split" | "code" | "preview";
 
-// ─── SaveModal ─────────────────────────────────────────────────────────────────
-
-function SaveModal({
-  title,
-  initialFlowName,
-  initialDesignName,
-  flows,
-  onSave,
-  onClose,
-}: {
-  title: string;
-  initialFlowName: string;
-  initialDesignName: string;
-  flows: FlowSummary[];
-  onSave: (flowName: string, designName: string) => Promise<void>;
-  onClose: () => void;
-}) {
-  const [flowValue, setFlowValue] = useState(initialFlowName);
-  const [designValue, setDesignValue] = useState(initialDesignName);
-  const [saving, setSaving] = useState(false);
-  const designInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    designInputRef.current?.focus();
-    designInputRef.current?.select();
-  }, []);
-
-  const trimmedFlow = flowValue.trim();
-  const trimmedDesign = designValue.trim();
-  const isValid = FLOW_NAME_PATTERN.test(trimmedFlow) && FILE_NAME_PATTERN.test(trimmedDesign);
-
-  const handleSubmit = async () => {
-    if (!isValid || saving) return;
-    setSaving(true);
-    try {
-      await onSave(trimmedFlow, trimmedDesign);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-secondary border border-primary rounded-xl p-5 w-96 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-primary">{title}</h2>
-          <button type="button" onClick={onClose} className="p-1 text-muted hover:text-primary focus-ring rounded">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-muted uppercase tracking-wide">Flow</label>
-            <input
-              type="text"
-              list="web-design-flow-options"
-              value={flowValue}
-              onChange={e => setFlowValue(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Escape") onClose();
-              }}
-              placeholder="onboarding"
-              className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary placeholder-muted focus-accent"
-            />
-            <datalist id="web-design-flow-options">
-              {flows.map(flow => (
-                <option key={flow.name} value={flow.name} />
-              ))}
-            </datalist>
-            {trimmedFlow && !FLOW_NAME_PATTERN.test(trimmedFlow) && (
-              <p className="text-xs text-red-500">Use letters, numbers, hyphens, and underscores only, starting with a letter or number.</p>
-            )}
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-muted uppercase tracking-wide">File name</label>
-            <input
-              ref={designInputRef}
-              type="text"
-              value={designValue}
-              onChange={e => setDesignValue(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter" && !saving) void handleSubmit();
-                if (e.key === "Escape") onClose();
-              }}
-              placeholder="index.html"
-              className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary placeholder-muted focus-accent"
-            />
-            {trimmedDesign && !FILE_NAME_PATTERN.test(trimmedDesign) && (
-              <p className="text-xs text-red-500">Use letters, numbers, dots, hyphens, and underscores only, starting with a letter or number.</p>
-            )}
-          </div>
-          <div className="flex gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2 border border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors focus-ring cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={!isValid || saving}
-              className="flex-1 flex items-center justify-center gap-2 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-              Save
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── NewFlowModal ──────────────────────────────────────────────────────────────
-
-function NewFlowModal({ onCreate, onClose }: { onCreate: (name: string) => Promise<void>; onClose: () => void }) {
-  const [nameValue, setNameValue] = useState("");
-  const [creating, setCreating] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  const trimmed = nameValue.trim();
-  const isValid = FLOW_NAME_PATTERN.test(trimmed);
-
-  const handleSubmit = async () => {
-    if (!isValid || creating) return;
-    setCreating(true);
-    try {
-      await onCreate(trimmed);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-secondary border border-primary rounded-xl p-5 w-80 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-primary">New Flow</h2>
-          <button type="button" onClick={onClose} className="p-1 text-muted hover:text-primary focus-ring rounded">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="space-y-3">
-          <input
-            ref={inputRef}
-            type="text"
-            value={nameValue}
-            onChange={e => setNameValue(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter" && !creating) void handleSubmit();
-              if (e.key === "Escape") onClose();
-            }}
-            placeholder="onboarding"
-            className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary placeholder-muted focus-accent"
-          />
-          {trimmed && !isValid && (
-            <p className="text-xs text-red-500">Use letters, numbers, hyphens, and underscores only, starting with a letter or number.</p>
-          )}
-          <div className="flex gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2 border border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors focus-ring cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={!isValid || creating}
-              className="flex-1 flex items-center justify-center gap-2 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-              Create
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── ConfirmModal ──────────────────────────────────────────────────────────────
-
-function ConfirmModal({ title, message, onConfirm, onClose }: { title: string; message: string; onConfirm: () => Promise<void>; onClose: () => void }) {
-  const [confirming, setConfirming] = useState(false);
-
-  const handleConfirm = async () => {
-    setConfirming(true);
-    try {
-      await onConfirm();
-    } finally {
-      setConfirming(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-secondary border border-primary rounded-xl p-5 w-80 shadow-xl">
-        <h2 className="text-sm font-semibold text-primary mb-2">{title}</h2>
-        <p className="text-xs text-muted mb-4">{message}</p>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-2 border border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors focus-ring cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={confirming}
-            className="flex-1 flex items-center justify-center gap-2 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {confirming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+type PendingAction = { type: "select"; flowName: string; name: string } | { type: "new"; presetFlowName: string };
 
 // ─── FlowRow ───────────────────────────────────────────────────────────────────
 
@@ -351,7 +119,7 @@ function FlowRow({
   isLoadingSelected,
   onSelectDesign,
   onNewDesign,
-  onUploadFiles,
+  onDesignsUploaded,
   onDeleteDesign,
   onDeleteFlow,
 }: {
@@ -362,15 +130,32 @@ function FlowRow({
   isLoadingSelected: boolean;
   onSelectDesign: (flowName: string, name: string) => void;
   onNewDesign: (flowName: string) => void;
-  onUploadFiles: (flowName: string, files: FileList) => Promise<void>;
+  onDesignsUploaded: (flowName: string, uploaded: number) => void;
   onDeleteDesign: (flowName: string, name: string) => void;
   onDeleteFlow: (flowName: string) => void;
 }) {
-  const [uploading, setUploading] = useState(false);
-  const uploadInputRef = useRef<HTMLInputElement>(null);
   // Live stream while expanded so agent-created designs appear without a manual refresh
   const { data: designsData, isLoading: loadingDesigns, error: designsError } = useDesigns(expanded ? flow.name : null);
   const designs = designsData?.designs ?? null;
+
+  const upload = useFileUpload({
+    encoding: "base64",
+    validateFileName: name => (FILE_NAME_PATTERN.test(name) ? true : `"${name}" has an unsupported file name`),
+    uploadFile: async ({ filePath, content, encoding }) => {
+      await webDesignRPCClient.createDesign({ flowName: flow.name, name: filePath, content, encoding });
+    },
+    onSkip: ({ fileName, reason, detail }) => {
+      if (reason === "invalid-name" || reason === "size") {
+        toastManager.error(detail ?? `"${fileName}" was skipped`, { duration: 5000 });
+      }
+    },
+    onError: ({ error }) => {
+      toastManager.error(formatError(error), { duration: 5000 });
+    },
+    onComplete: ({ uploaded }) => {
+      if (uploaded > 0) onDesignsUploaded(flow.name, uploaded);
+    },
+  });
 
   useEffect(() => {
     if (designsError) toastManager.error(formatError(designsError), { duration: 4000 });
@@ -378,63 +163,50 @@ function FlowRow({
 
   return (
     <div className="border-b border-primary/50">
-      <div className="group flex items-center gap-1.5 px-2 py-2 cursor-pointer hover:bg-hover transition-colors" onClick={onToggle}>
-        {expanded ? <ChevronDown className="w-3.5 h-3.5 shrink-0 text-muted" /> : <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted" />}
-        <Workflow className="w-3.5 h-3.5 shrink-0 opacity-70" />
-        <span className="flex-1 min-w-0 truncate text-xs font-medium text-primary" title={flow.name}>
-          {flow.name}
+      <ListItemWithActions
+        id={`flow:${flow.name}`}
+        onPrimary={onToggle}
+        className="gap-1.5 px-2 py-2 rounded-none"
+        action={
+          <>
+            <input ref={upload.inputRef} type="file" multiple className="hidden" onChange={e => void upload.onChange(e)} />
+            <button
+              type="button"
+              onClick={upload.trigger}
+              disabled={upload.isUploading}
+              title="Upload files to this flow"
+              className="p-0.5 text-muted hover:text-primary rounded transition-opacity cursor-pointer disabled:opacity-50"
+            >
+              {upload.isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileUp className="w-3 h-3" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => onNewDesign(flow.name)}
+              title="New file in this flow"
+              className="p-0.5 text-muted hover:text-primary rounded transition-opacity cursor-pointer"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onDeleteFlow(flow.name)}
+              title="Delete flow"
+              className="p-0.5 text-muted hover:text-red-500 rounded transition-opacity cursor-pointer"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </>
+        }
+      >
+        <span className="flex items-center gap-1.5 min-w-0">
+          {expanded ? <ChevronDown className="w-3.5 h-3.5 shrink-0 text-muted" /> : <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted" />}
+          <Workflow className="w-3.5 h-3.5 shrink-0 opacity-70" />
+          <span className="flex-1 min-w-0 truncate text-xs font-medium text-primary" title={flow.name}>
+            {flow.name}
+          </span>
+          <span className="text-xs text-muted shrink-0">{flow.designCount}</span>
         </span>
-        <span className="text-xs text-muted shrink-0">{flow.designCount}</span>
-        <input
-          ref={uploadInputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={event => {
-            const files = event.target.files;
-            if (!files?.length) return;
-            setUploading(true);
-            void onUploadFiles(flow.name, files).finally(() => {
-              setUploading(false);
-              event.target.value = "";
-            });
-          }}
-        />
-        <button
-          type="button"
-          onClick={event => {
-            event.stopPropagation();
-            uploadInputRef.current?.click();
-          }}
-          disabled={uploading}
-          title="Upload files to this flow"
-          className="opacity-0 group-hover:opacity-100 p-0.5 text-muted hover:text-primary rounded transition-opacity shrink-0 cursor-pointer disabled:opacity-50"
-        >
-          {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileUp className="w-3 h-3" />}
-        </button>
-        <button
-          type="button"
-          onClick={e => {
-            e.stopPropagation();
-            onNewDesign(flow.name);
-          }}
-          title="New file in this flow"
-          className="opacity-0 group-hover:opacity-100 p-0.5 text-muted hover:text-primary rounded transition-opacity shrink-0 cursor-pointer"
-        >
-          <Plus className="w-3 h-3" />
-        </button>
-        <button
-          type="button"
-          onClick={e => {
-            e.stopPropagation();
-            onDeleteFlow(flow.name);
-          }}
-          title="Delete flow"
-          className="opacity-0 group-hover:opacity-100 p-0.5 text-muted hover:text-red-500 rounded transition-opacity shrink-0 cursor-pointer"
-        >
-          <Trash2 className="w-3 h-3" />
-        </button>
-      </div>
+      </ListItemWithActions>
 
       {expanded && (
         <div className="pl-5">
@@ -447,32 +219,33 @@ function FlowRow({
             <p className="px-2 py-2 text-xs text-muted">No files yet</p>
           ) : (
             designs?.map(design => {
-              const isSelected = selected && selected.flowName === flow.name && selected.name === design.name;
+              const isSelected = !!(selected && selected.flowName === flow.name && selected.name === design.name);
               return (
-                <div
+                <ListItemWithActions
                   key={design.name}
-                  className={`group flex items-center gap-1.5 px-2 py-1.5 cursor-pointer transition-colors ${
-                    isSelected ? "bg-accent-muted text-accent" : "hover:bg-hover text-primary"
-                  }`}
-                  onClick={() => onSelectDesign(flow.name, design.name)}
+                  id={`design:${flow.name}/${design.name}`}
+                  selected={isSelected}
+                  onPrimary={() => onSelectDesign(flow.name, design.name)}
+                  className={`gap-1.5 px-2 py-1.5 rounded-none ${isSelected ? "bg-accent-muted text-accent" : "text-primary"}`}
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => onDeleteDesign(flow.name, design.name)}
+                      title="Delete file"
+                      className="p-0.5 text-muted hover:text-red-500 rounded transition-opacity cursor-pointer"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  }
                 >
-                  <FileCode2 className="w-3 h-3 shrink-0 opacity-70" />
-                  <span className="flex-1 min-w-0 truncate text-xs font-mono" title={design.name}>
-                    {design.name}
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <FileCode2 className="w-3 h-3 shrink-0 opacity-70" />
+                    <span className="flex-1 min-w-0 truncate text-xs font-mono" title={design.name}>
+                      {design.name}
+                    </span>
+                    {isLoadingSelected && isSelected && <Loader2 className="w-3 h-3 animate-spin shrink-0" />}
                   </span>
-                  {isLoadingSelected && isSelected && <Loader2 className="w-3 h-3 animate-spin shrink-0" />}
-                  <button
-                    type="button"
-                    onClick={e => {
-                      e.stopPropagation();
-                      onDeleteDesign(flow.name, design.name);
-                    }}
-                    title="Delete file"
-                    className="opacity-0 group-hover:opacity-100 p-0.5 text-muted hover:text-red-500 rounded transition-opacity shrink-0 cursor-pointer"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
+                </ListItemWithActions>
               );
             })
           )}
@@ -493,10 +266,16 @@ function FlowSidebar({
   isLoadingSelected,
   onSelectDesign,
   onNewDesign,
-  onUploadFiles,
+  onDesignsUploaded,
   onDeleteDesign,
   onDeleteFlow,
   onNewFlow,
+  agents,
+  agentsLoading,
+  selectedAgentId,
+  onSelectAgent,
+  onCreateAgent,
+  onTerminateAgent,
 }: {
   flows: FlowSummary[];
   flowsLoading: boolean;
@@ -506,10 +285,16 @@ function FlowSidebar({
   isLoadingSelected: boolean;
   onSelectDesign: (flowName: string, name: string) => void;
   onNewDesign: (flowName: string) => void;
-  onUploadFiles: (flowName: string, files: FileList) => Promise<void>;
+  onDesignsUploaded: (flowName: string, uploaded: number) => void;
   onDeleteDesign: (flowName: string, name: string) => void;
   onDeleteFlow: (flowName: string) => void;
   onNewFlow: () => void;
+  agents: RunningAgent[];
+  agentsLoading: boolean;
+  selectedAgentId: string | null;
+  onSelectAgent: (agentId: string) => void;
+  onCreateAgent: () => void;
+  onTerminateAgent: (agentId: string) => void;
 }) {
   return (
     <div className="h-full flex flex-col border-r border-primary bg-secondary/40">
@@ -524,6 +309,18 @@ function FlowSidebar({
           },
         ]}
       />
+
+      <AgentSessionList
+        agents={agents}
+        selectedAgentId={selectedAgentId}
+        isLoading={agentsLoading}
+        storageKey="webdesign"
+        label="Design agents"
+        onSelect={onSelectAgent}
+        onCreate={onCreateAgent}
+        onTerminate={onTerminateAgent}
+      />
+
       <div className="flex-1 overflow-y-auto">
         {flows.length === 0 ? (
           flowsLoading ? (
@@ -545,7 +342,7 @@ function FlowSidebar({
               isLoadingSelected={isLoadingSelected}
               onSelectDesign={onSelectDesign}
               onNewDesign={onNewDesign}
-              onUploadFiles={onUploadFiles}
+              onDesignsUploaded={onDesignsUploaded}
               onDeleteDesign={onDeleteDesign}
               onDeleteFlow={onDeleteFlow}
             />
@@ -565,12 +362,13 @@ export default function WebDesignApp() {
 // ─── Workspace ─────────────────────────────────────────────────────────────────
 
 function WebDesignWorkspace() {
-  const location = useLocation();
   const navigate = useNavigate();
   const { flowName: routeFlowName, designName: routeDesignName } = useParams<{ flowName?: string; designName?: string }>();
   const [theme] = useTheme();
   const { data: flowsData, mutate: refreshFlows, isLoading: flowsLoading, error: flowsError } = useFlows();
   const flows = flowsData?.flows ?? [];
+  const configuration = useWebDesignConfiguration();
+  const allowedAgentTypes = configuration.data?.agentTypes ?? ["web-design"];
 
   const [htmlContent, setHtmlContent] = useState(DEFAULT_HTML);
   const [previewSource, setPreviewSource] = useState(DEFAULT_HTML);
@@ -612,16 +410,37 @@ function WebDesignWorkspace() {
   const [deleteDesignTarget, setDeleteDesignTarget] = useState<SelectedDesign | null>(null);
   const [deleteFlowTarget, setDeleteFlowTarget] = useState<string | null>(null);
 
-  const [expandedFlows, setExpandedFlows] = useState<Set<string>>(new Set());
-  const appliedNavKey = useRef<string | null>(null);
+  const {
+    agentId,
+    agent,
+    agents,
+    isLoading: agentsLoading,
+    isCreating: isCreatingAgent,
+    selectAgent,
+    createAgent,
+    terminateAgent,
+    TerminateDialog,
+  } = useAppAgentSession({ appName: "Web Design app", storageKey: "webdesign", agentTypes: allowedAgentTypes });
 
-  const { agentId, assignAgent: handleAgentLaunched } = useOwnedAgent("Web Design app");
+  // Auto-expand flows that gain designs while a design agent runs so mockups stream in live
+  const {
+    expandedKeys: expandedFlows,
+    toggle: handleToggleFlow,
+    expand: expandFlow,
+    collapse: collapseFlow,
+  } = useAutoExpandTree({
+    items: flows,
+    getKey: (f: FlowSummary) => f.name,
+    getCount: (f: FlowSummary) => f.designCount,
+    agentId,
+  });
 
   const handleStartDesign = useCallback(
     async (prompt: string): Promise<boolean> => {
+      // Reuse the attached agent so a second prompt continues the same conversation.
+      const id = agentId ?? (await createAgent());
+      if (!id) return false;
       try {
-        const { id } = await agentRPCClient.createAgent({ agentType: "web-design", headless: false });
-        handleAgentLaunched(id);
         await agentRPCClient.sendInput({
           agentId: id,
           input: {
@@ -635,41 +454,39 @@ function WebDesignWorkspace() {
         return false;
       }
     },
-    [handleAgentLaunched],
+    [agentId, createAgent],
   );
 
   // Ready == the editor holds the document the URL points at (or an unsaved draft)
   const isDocumentReady = selectedKey !== null ? loadedKey === selectedKey : isDraft;
   const isDirty = isDocumentReady && htmlContent !== savedContent;
+  const { pendingAction, queueAction, PendingDialog } = usePendingAction<PendingAction>({ isDirty });
+  const isDirtyRef = useRefSync(isDirty);
+  const selectedRef = useRefSync(selected);
+  // Latest poll snapshot so onRemoteChange can apply without a second RPC
+  const lastPollDesignRef = useRef<{
+    content: string;
+    updatedAt: string;
+    encoding: "utf8" | "base64";
+    mimeType: string;
+    flowName: string;
+    name: string;
+  } | null>(null);
+  const markLoadedRef = useRef<(updatedAt: string | null) => void>(() => {});
 
-  // Debounced preview update
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handleEditorChange = (value: string | undefined) => {
-    const newVal = value ?? "";
-    setHtmlContent(newVal);
-    if (autoPreview) {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => setPreviewSource(newVal), 400);
+  // Debounced auto-preview: use a ref so disabling mid-debounce is honored without
+  // re-applying a stale debounced value when auto-preview is turned back on
+  // (re-enable path sets preview from the latest htmlContent in the checkbox handler).
+  const debouncedHtmlContent = useDebounce(htmlContent, 400);
+  const autoPreviewRef = useRefSync(autoPreview);
+  useEffect(() => {
+    if (autoPreviewRef.current) {
+      setPreviewSource(debouncedHtmlContent);
     }
-  };
+  }, [debouncedHtmlContent]);
 
-  useEffect(
-    () => () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    },
-    [],
-  );
-
-  const handleToggleFlow = useCallback((name: string) => {
-    setExpandedFlows(prev => {
-      const next = new Set(prev);
-      if (next.has(name)) {
-        next.delete(name);
-      } else {
-        next.add(name);
-      }
-      return next;
-    });
+  const handleEditorChange = useCallback((value: string | undefined) => {
+    setHtmlContent(value ?? "");
   }, []);
 
   /** Close whatever is open and fall back to the empty state. */
@@ -700,18 +517,19 @@ function WebDesignWorkspace() {
   }, []);
 
   // Load HTML from FilesApp navigation state whenever a new file payload arrives
-  useEffect(() => {
-    const state = location.state as FileState | null;
-    if (state?.fileContent === undefined) return;
-    if (appliedNavKey.current === location.key) return;
-    appliedNavKey.current = location.key;
-    applyImportedContent(state.fileContent);
+  useNavigationStatePayload<FileState>({
+    onPayload: state => {
+      if (state.fileContent === undefined) return;
+      applyImportedContent(state.fileContent);
+    },
     // One-shot payload: land on root as a draft and clear state so later navigations don't re-import
-    void navigate(WEB_DESIGN_ROOT, { replace: true, state: null });
-  }, [location.key, location.state, navigate, applyImportedContent]);
+    clearAfterConsume: true,
+    navigate,
+    clearNavigateTo: WEB_DESIGN_ROOT,
+  });
 
   /** New designs always live inside a flow, so ask where to put it before opening the editor. */
-  const handleNew = useCallback(
+  const openCreateModal = useCallback(
     (presetFlowName = "") => {
       closeDocument();
       setSaveModal({ mode: "create", presetFlowName });
@@ -719,24 +537,45 @@ function WebDesignWorkspace() {
     [closeDocument],
   );
 
+  const handleNew = useCallback(
+    (presetFlowName = "") => {
+      if (queueAction({ type: "new", presetFlowName })) return;
+      openCreateModal(presetFlowName);
+    },
+    [queueAction, openCreateModal],
+  );
+
   // Selecting a design just changes the URL; the effect below loads whatever the URL points at.
   const handleSelectDesign = useCallback(
     (flowName: string, name: string) => {
+      const nextKey = `${flowName}/${name}`;
+      if (selectedKey !== nextKey && queueAction({ type: "select", flowName, name })) return;
       void navigate(designPath(flowName, name));
     },
-    [navigate],
+    [queueAction, selectedKey, navigate],
+  );
+
+  const runPendingAction = useCallback(
+    (action: PendingAction) => {
+      if (action.type === "select") {
+        void navigate(designPath(action.flowName, action.name));
+        return;
+      }
+      openCreateModal(action.presetFlowName);
+    },
+    [navigate, openCreateModal],
   );
 
   const syncAgentSelection = useCallback(
     (flowName: string, designName: string) => {
       if (!agentId) return;
-      webDesignRPCClient
-        .updateWebDesignState({
+      toastOnReject(
+        webDesignRPCClient.updateWebDesignState({
           agentId,
           selectedFlowName: flowName,
           selectedDesignName: designName,
-        })
-        .catch(() => {});
+        }),
+      );
     },
     [agentId],
   );
@@ -773,6 +612,7 @@ function WebDesignWorkspace() {
         setLoadedKey(`${design.flowName}/${design.name}`);
         setPreviewRevision(Date.now());
         setIsDraft(false);
+        markLoadedRef.current(design.updatedAt);
         if (design.name !== routeDesignName) {
           void navigate(designPath(design.flowName, design.name), { replace: true });
         }
@@ -793,24 +633,8 @@ function WebDesignWorkspace() {
   // Reveal the design that the URL points at
   useEffect(() => {
     if (!routeFlowName) return;
-    setExpandedFlows(prev => (prev.has(routeFlowName) ? prev : new Set(prev).add(routeFlowName)));
-  }, [routeFlowName]);
-
-  // Auto-expand flows that gain designs while a design agent is running so mockups stream in live
-  useEffect(() => {
-    if (!agentId) return;
-    setExpandedFlows(prev => {
-      let changed = false;
-      const next = new Set(prev);
-      for (const flow of flows) {
-        if (flow.designCount > 0 && !next.has(flow.name)) {
-          next.add(flow.name);
-          changed = true;
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [agentId, flows]);
+    expandFlow(routeFlowName);
+  }, [routeFlowName, expandFlow]);
 
   useEffect(() => {
     if (flowsError) toastManager.error(formatError(flowsError), { duration: 4000 });
@@ -832,6 +656,7 @@ function WebDesignWorkspace() {
       });
       setSavedContent(design.content);
       setPreviewRevision(Date.now());
+      markLoadedRef.current(design.updatedAt);
       // Re-sync agent attachment content after a successful save
       syncAgentSelection(selected.flowName, selected.name);
       void refreshFlows();
@@ -856,8 +681,9 @@ function WebDesignWorkspace() {
         setPreviewRevision(Date.now());
         setLoadedKey(`${design.flowName}/${design.name}`);
         setIsDraft(false);
+        markLoadedRef.current(design.updatedAt);
         setSaveModal(null);
-        setExpandedFlows(prev => new Set(prev).add(flowName));
+        expandFlow(flowName);
         void navigate(designPath(design.flowName, design.name));
         void refreshFlows();
         toastManager.success("Saved", { duration: 2000 });
@@ -865,7 +691,7 @@ function WebDesignWorkspace() {
         toastManager.error(formatError(e), { duration: 4000 });
       }
     },
-    [htmlContent, navigate, refreshFlows],
+    [htmlContent, navigate, refreshFlows, expandFlow],
   );
 
   const handleNewDesignInFlow = useCallback(
@@ -875,53 +701,44 @@ function WebDesignWorkspace() {
     [handleNew],
   );
 
-  const handleUploadFiles = useCallback(
-    async (flowName: string, files: FileList) => {
-      let uploaded = 0;
-      const errors: string[] = [];
-
-      for (const file of Array.from(files)) {
-        if (!FILE_NAME_PATTERN.test(file.name)) {
-          errors.push(`"${file.name}" has an unsupported file name`);
-          continue;
-        }
-        try {
-          const content = await readFileAsBase64(file);
-          await webDesignRPCClient.createDesign({ flowName, name: file.name, content, encoding: "base64" });
-          uploaded++;
-        } catch (error: unknown) {
-          errors.push(formatError(error));
-        }
-      }
-
-      if (uploaded > 0) {
-        setExpandedFlows(previous => new Set(previous).add(flowName));
-        void refreshFlows();
-        toastManager.success(`Uploaded ${uploaded} file${uploaded === 1 ? "" : "s"}`, { duration: 2500 });
-      }
-      if (errors.length > 0) {
-        toastManager.error(errors.join("\n"), { duration: 5000 });
-      }
+  const handleDesignsUploaded = useCallback(
+    (flowName: string, uploaded: number) => {
+      expandFlow(flowName);
+      void refreshFlows();
+      toastManager.success(`Uploaded ${uploaded} file${uploaded === 1 ? "" : "s"}`, { duration: 2500 });
     },
-    [refreshFlows],
+    [refreshFlows, expandFlow],
   );
+
+  const designDelete = useEntityDelete({
+    currentRouteId: selectedKey,
+    navigateToOverview: closeDocument,
+    refreshList: () => void refreshFlows(),
+    successMessage: () => "Deleted",
+    successDuration: 2000,
+    errorDuration: 4000,
+  });
+
+  const flowDelete = useEntityDelete({
+    currentRouteId: selected?.flowName ?? null,
+    navigateToOverview: closeDocument,
+    refreshList: () => void refreshFlows(),
+    clearLocalState: collapseFlow,
+    successMessage: () => "Flow deleted",
+    successDuration: 2000,
+    errorDuration: 4000,
+  });
 
   const handleDeleteDesign = useCallback(
     async (flowName: string, name: string) => {
-      try {
+      setDeleteDesignTarget(null);
+      const id = `${flowName}/${name}`;
+      await designDelete.deleteEntity(id, name, async () => {
         const { success } = await webDesignRPCClient.deleteDesign({ flowName, name });
         if (!success) throw new Error(`File "${name}" could not be deleted from flow "${flowName}"`);
-        if (selected && selected.flowName === flowName && selected.name === name) {
-          closeDocument();
-        }
-        setDeleteDesignTarget(null);
-        void refreshFlows();
-        toastManager.success("Deleted", { duration: 2000 });
-      } catch (e: unknown) {
-        toastManager.error(formatError(e), { duration: 4000 });
-      }
+      });
     },
-    [selected, closeDocument, refreshFlows],
+    [designDelete],
   );
 
   const handleCreateFlow = useCallback(
@@ -929,89 +746,77 @@ function WebDesignWorkspace() {
       try {
         await webDesignRPCClient.createFlow({ name });
         setNewFlowModalOpen(false);
-        setExpandedFlows(prev => new Set(prev).add(name));
+        expandFlow(name);
         void refreshFlows();
         toastManager.success("Flow created", { duration: 2000 });
       } catch (e: unknown) {
         toastManager.error(formatError(e), { duration: 4000 });
       }
     },
-    [refreshFlows],
+    [refreshFlows, expandFlow],
   );
 
   const handleDeleteFlow = useCallback(
     async (flowName: string) => {
-      try {
+      setDeleteFlowTarget(null);
+      await flowDelete.deleteEntity(flowName, flowName, async () => {
         const { success } = await webDesignRPCClient.deleteFlow({ name: flowName });
         if (!success) throw new Error(`Flow "${flowName}" could not be deleted`);
-        if (selected?.flowName === flowName) {
-          closeDocument();
-        }
-        setExpandedFlows(prev => {
-          const next = new Set(prev);
-          next.delete(flowName);
-          return next;
-        });
-        setDeleteFlowTarget(null);
-        void refreshFlows();
-        toastManager.success("Flow deleted", { duration: 2000 });
-      } catch (e: unknown) {
-        toastManager.error(formatError(e), { duration: 4000 });
-      }
+      });
     },
-    [selected, closeDocument, refreshFlows],
+    [flowDelete],
   );
 
   // Ctrl/Cmd+S shortcut
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        void handleSave();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [handleSave]);
+  useKeyboardShortcuts([{ key: "s", handler: () => void handleSave() }]);
 
   // When an agent (or another client) updates the open design on disk, pull it in
   // if the user has no local unsaved edits so the preview stays current.
-  const htmlContentRef = useRef(htmlContent);
-  const savedContentRef = useRef(savedContent);
-  htmlContentRef.current = htmlContent;
-  savedContentRef.current = savedContent;
-  useEffect(() => {
-    if (!selected || !isDocumentReady || isDirty || isDraft) return;
-    let cancelled = false;
-    const poll = () => {
-      void webDesignRPCClient
-        .getDesign({ flowName: selected.flowName, name: selected.name })
-        .then(({ design }) => {
-          if (cancelled || !design) return;
-          // Skip if the user has dirty local edits (race with typing mid-flight)
-          if (htmlContentRef.current !== savedContentRef.current) return;
-          if (htmlContentRef.current === design.content) return;
-          setHtmlContent(design.content);
-          setPreviewSource(design.content);
-          setSavedContent(design.content);
-          setFileEncoding(design.encoding);
-          setFileMimeType(design.mimeType);
-          setPreviewRevision(Date.now());
-          // Keep agent attachment content aligned with the on-disk design
-          syncAgentSelection(selected.flowName, selected.name);
-        })
-        .catch(() => {
-          /* ignore transient poll errors */
+  const { markLoaded } = useRemoteChangeDetection({
+    documentKey: isDraft ? null : selectedKey,
+    isDocumentReady: isDocumentReady && !isDraft,
+    isDirty,
+    strategy: {
+      type: "polling",
+      poll: async () => {
+        const sel = selectedRef.current;
+        if (!sel) return null;
+        const { design } = await webDesignRPCClient.getDesign({
+          flowName: sel.flowName,
+          name: sel.name,
         });
-    };
-    const id = window.setInterval(poll, 3000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-  }, [selected, isDocumentReady, isDirty, isDraft, syncAgentSelection]);
+        if (!design) return null;
+        lastPollDesignRef.current = {
+          content: design.content,
+          updatedAt: design.updatedAt,
+          encoding: design.encoding,
+          mimeType: design.mimeType,
+          flowName: design.flowName,
+          name: design.name,
+        };
+        return { content: design.content, updatedAt: design.updatedAt };
+      },
+      intervalMs: 3000,
+    },
+    onRemoteChange: () => {
+      const design = lastPollDesignRef.current;
+      if (!design) return;
+      // Race with typing mid-flight
+      if (isDirtyRef.current) return;
+      setHtmlContent(design.content);
+      setPreviewSource(design.content);
+      setSavedContent(design.content);
+      setFileEncoding(design.encoding);
+      setFileMimeType(design.mimeType);
+      setPreviewRevision(Date.now());
+      markLoadedRef.current(design.updatedAt);
+      // Keep agent attachment content aligned with the on-disk design
+      syncAgentSelection(design.flowName, design.name);
+    },
+  });
+  markLoadedRef.current = markLoaded;
 
-  const runPreview = () => setPreviewSource(htmlContent);
+  const runPreview = useCallback(() => setPreviewSource(htmlContent), [htmlContent]);
 
   const isTextFile = fileEncoding === "utf8";
   const hostedPreviewUrl = selected
@@ -1033,6 +838,7 @@ function WebDesignWorkspace() {
       htmlContent={htmlContent}
       hostedPreviewUrl={hostedPreviewUrl}
       previewHtml={previewHtml}
+      previewRevision={previewRevision}
       useHostedPreview={useHostedPreview}
       isTextFile={isTextFile}
       mimeType={fileMimeType}
@@ -1062,28 +868,91 @@ function WebDesignWorkspace() {
       Loading flows…
     </div>
   ) : (
-    <EmptyState
-      hasFlows={flows.length > 0}
+    <EmptyStateWithPrompt
+      icon={Frame}
+      iconGradient="from-purple-500 to-violet-600"
+      title="Design with agents"
+      descriptionWithContent={
+        <>
+          Open a mockup from the <span className="font-medium text-secondary">Flows</span> panel, edit HTML live, or describe screens below and a design agent
+          will write mockups into flows for you.
+        </>
+      }
+      descriptionEmpty={
+        <>
+          Describe the product area and screens you need. A design agent will create a flow and save self-contained HTML mockups you can preview and refine
+          here.
+        </>
+      }
+      hasContent={flows.length > 0}
+      agentRunningMessage="A design agent is running in the chat panel below. Designs it writes appear in the Flows sidebar — select one to open the editor and live preview."
       hasAgent={!!agentId}
-      onNewFlow={() => setNewFlowModalOpen(true)}
-      onNewDesign={() => handleNew()}
-      onStartDesign={handleStartDesign}
+      promptLabel="Design prompt"
+      promptPlaceholder="e.g. Onboarding for a notes app: welcome, sign-up, empty state, first note"
+      submitLabel="Start design"
+      submitAriaLabel="Start design agent"
+      buttonVariant="violet"
+      onSubmit={handleStartDesign}
+      secondaryActions={
+        <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => setNewFlowModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors focus-ring cursor-pointer"
+          >
+            <Workflow className="w-3.5 h-3.5" />
+            New Flow
+          </button>
+          <button
+            type="button"
+            onClick={() => handleNew()}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-muted hover:bg-accent-muted-hover text-accent text-xs font-medium rounded-lg transition-colors focus-ring cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            New Design
+          </button>
+        </div>
+      }
     />
   );
 
   return (
     <div className="w-full h-full flex flex-col bg-primary overflow-hidden">
       {saveModal && (
-        <SaveModal
+        <SaveAsModal
           title={saveModal.mode === "create" ? "Save File" : "Save As"}
-          initialFlowName={saveModal.presetFlowName || selected?.flowName || ""}
-          initialDesignName={saveModal.mode === "saveAs" && selected ? copyFileName(selected.name) : "index.html"}
-          flows={flows}
+          containerField={{
+            label: "Flow",
+            placeholder: "onboarding",
+            initialValue: saveModal.presetFlowName || selected?.flowName || "",
+            pattern: FLOW_NAME_PATTERN,
+            validationError: "Use letters, numbers, hyphens, and underscores only, starting with a letter or number.",
+            options: flows.map(flow => ({ value: flow.name })),
+          }}
+          itemField={{
+            label: "File name",
+            placeholder: "index.html",
+            initialValue: saveModal.mode === "saveAs" && selected ? copyFileName(selected.name) : "index.html",
+            pattern: FILE_NAME_PATTERN,
+            validationError: "Use letters, numbers, dots, hyphens, and underscores only, starting with a letter or number.",
+            options: [],
+            autoFocus: true,
+            selectOnFocus: true,
+          }}
           onSave={handleSaveModalSubmit}
           onClose={() => setSaveModal(null)}
         />
       )}
-      {newFlowModalOpen && <NewFlowModal onCreate={handleCreateFlow} onClose={() => setNewFlowModalOpen(false)} />}
+      {newFlowModalOpen && (
+        <CreateItemModal
+          title="New Flow"
+          placeholder="onboarding"
+          pattern={FLOW_NAME_PATTERN}
+          validationError="Use letters, numbers, hyphens, and underscores only, starting with a letter or number."
+          onCreate={handleCreateFlow}
+          onClose={() => setNewFlowModalOpen(false)}
+        />
+      )}
       {deleteDesignTarget && (
         <ConfirmModal
           title="Delete file?"
@@ -1100,33 +969,35 @@ function WebDesignWorkspace() {
           onClose={() => setDeleteFlowTarget(null)}
         />
       )}
+      {pendingAction && (
+        <PendingDialog
+          title="Discard unsaved changes?"
+          message="You have unsaved edits. Leave this design and lose those changes?"
+          confirmLabel="Discard"
+          onConfirm={runPendingAction}
+        />
+      )}
+      <TerminateDialog />
 
       <AppPageHeader title="Web Design" subtitle={subtitle} icon={<Frame className="w-4 h-4" />} iconGradient="from-purple-500 to-violet-600" size="compact">
         {isDocumentReady && (
           <>
-            <div className="flex items-center rounded-lg border border-primary p-0.5 shrink-0" role="group" aria-label="Code and preview view">
-              {(
-                [
-                  { value: "split", label: "Split", title: "Show code and preview", icon: Columns2 },
-                  { value: "code", label: "Code", title: "Show code only", icon: Code2 },
-                  { value: "preview", label: "Preview", title: "Show preview only", icon: Eye },
-                ] as const
-              ).map(({ value, label, title, icon: Icon }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setViewMode(value)}
-                  className={`${value === "split" ? "hidden md:flex" : "flex"} items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer focus-ring ${
-                    viewMode === value ? "bg-accent text-white" : "text-muted hover:text-primary hover:bg-hover"
-                  }`}
-                  aria-pressed={viewMode === value}
-                  title={title}
-                >
-                  <Icon className="w-3 h-3" />
-                  {label}
-                </button>
-              ))}
-            </div>
+            <ViewModeToggle
+              aria-label="Code and preview view"
+              value={viewMode}
+              onChange={setViewMode}
+              options={[
+                {
+                  value: "split",
+                  label: "Split",
+                  title: "Show code and preview",
+                  icon: Columns2,
+                  hiddenClassname: "hidden md:flex",
+                },
+                { value: "code", label: "Code", title: "Show code only", icon: Code2 },
+                { value: "preview", label: "Preview", title: "Show preview only", icon: Eye },
+              ]}
+            />
 
             {isTextFile && (
               <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
@@ -1159,29 +1030,14 @@ function WebDesignWorkspace() {
             )}
 
             {/* Save controls — drafts can be saved even if content is unchanged */}
-            <div className="flex items-center gap-1 shrink-0">
-              {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" title="Unsaved changes" />}
-              <button
-                type="button"
-                onClick={() => void handleSave()}
-                disabled={!isTextFile || isSaving || (!isDirty && !!selected)}
-                title={selected ? "Save (Ctrl/⌘+S)" : "Save…"}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-muted hover:text-primary hover:bg-hover rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                {selected ? (isDirty ? "Save" : "Saved") : "Save…"}
-              </button>
-              {selected && isTextFile && (
-                <button
-                  type="button"
-                  onClick={() => setSaveModal({ mode: "saveAs", presetFlowName: selected.flowName })}
-                  title="Save As…"
-                  className="px-2 py-1 text-xs text-muted hover:text-primary hover:bg-hover rounded-lg transition-colors focus-ring cursor-pointer"
-                >
-                  Save As…
-                </button>
-              )}
-            </div>
+            <EditorSaveBar
+              isDirty={isDirty}
+              isSaving={isSaving}
+              hasItem={!!selected}
+              onSave={handleSave}
+              onSaveAs={selected && isTextFile ? () => setSaveModal({ mode: "saveAs", presetFlowName: selected.flowName }) : undefined}
+              disabled={!isTextFile}
+            />
 
             {hostedPreviewUrl && (
               <a
@@ -1213,15 +1069,15 @@ function WebDesignWorkspace() {
 
         <div className="w-px h-5 bg-primary/70 mx-0.5 shrink-0" aria-hidden="true" />
 
-        {/* Agent launcher */}
-        {!agentId && (
-          <AgentLauncherBar
-            defaultAgentType="web-design"
-            buttonLabel="Start Agent"
-            buttonClassName="bg-violet-600 hover:bg-violet-500 text-white shadow-button-primary"
-            onLaunch={handleAgentLaunched}
-          />
-        )}
+        {/* Agent session */}
+        <AgentSessionBar
+          agentTypes={allowedAgentTypes}
+          currentAgent={agent}
+          busy={isCreatingAgent}
+          buttonClassName="bg-violet-600 hover:bg-violet-500 text-white shadow-button-primary"
+          onCreate={agentType => void createAgent(agentType)}
+          onTerminate={() => void terminateAgent()}
+        />
       </AppPageHeader>
 
       <WorkspaceShell
@@ -1240,153 +1096,23 @@ function WebDesignWorkspace() {
             isLoadingSelected={isLoadingDesign}
             onSelectDesign={handleSelectDesign}
             onNewDesign={handleNewDesignInFlow}
-            onUploadFiles={handleUploadFiles}
+            onDesignsUploaded={handleDesignsUploaded}
             onDeleteDesign={(flowName, name) => setDeleteDesignTarget({ flowName, name })}
             onDeleteFlow={setDeleteFlowTarget}
             onNewFlow={() => setNewFlowModalOpen(true)}
+            agents={agents}
+            agentsLoading={agentsLoading}
+            selectedAgentId={agentId}
+            onSelectAgent={selectAgent}
+            onCreateAgent={() => void createAgent()}
+            onTerminateAgent={id => void terminateAgent(id)}
           />
         }
       >
-        <ChatDock agentId={agentId} storageKey="webdesign" initialRatio={0.65} headerTitle="Design Agent">
+        <ChatDock agentId={agentId} storageKey="webdesign" initialRatio={0.65} headerTitle={agent?.displayName ?? "Design Agent"}>
           {mainPane}
         </ChatDock>
       </WorkspaceShell>
-    </div>
-  );
-}
-
-// ─── EmptyState ────────────────────────────────────────────────────────────────
-
-function EmptyState({
-  onNewFlow,
-  onNewDesign,
-  onStartDesign,
-  hasFlows,
-  hasAgent,
-  className = "h-full",
-}: {
-  onNewFlow: () => void;
-  onNewDesign: () => void;
-  onStartDesign: (prompt: string) => Promise<boolean>;
-  hasFlows: boolean;
-  hasAgent: boolean;
-  className?: string;
-}) {
-  const [query, setQuery] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (!hasAgent) textareaRef.current?.focus();
-  }, [hasAgent]);
-
-  const handleSubmit = async () => {
-    const trimmed = query.trim();
-    if (!trimmed || submitting) return;
-    setSubmitting(true);
-    try {
-      const ok = await onStartDesign(trimmed);
-      if (ok) setQuery("");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className={`${className} flex flex-col items-center justify-center gap-6 p-6 sm:p-8 bg-primary`}>
-      <div className="w-full max-w-xl space-y-6">
-        <div className="text-center space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg mx-auto">
-            <Frame className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-primary">Design with agents</h2>
-            <p className="text-sm text-muted mt-1.5 max-w-md mx-auto leading-relaxed">
-              {hasFlows ? (
-                <>
-                  Open a mockup from the <span className="font-medium text-secondary">Flows</span> panel, edit HTML live, or describe screens below and a design
-                  agent will write mockups into flows for you.
-                </>
-              ) : (
-                <>
-                  Describe the product area and screens you need. A design agent will create a flow and save self-contained HTML mockups you can preview and
-                  refine here.
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-
-        {hasAgent ? (
-          <div className="bg-secondary border border-primary rounded-xl px-4 py-3 text-center">
-            <p className="text-xs text-muted leading-relaxed">
-              A design agent is running in the chat panel below. Designs it writes appear in the Flows sidebar — select one to open the editor and live preview.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-secondary border border-primary rounded-xl p-4 shadow-sm space-y-3">
-            <label htmlFor="web-design-landing-query" className="text-xs font-semibold text-muted uppercase tracking-wide">
-              Design prompt
-            </label>
-            <textarea
-              id="web-design-landing-query"
-              ref={textareaRef}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                  e.preventDefault();
-                  void handleSubmit();
-                }
-              }}
-              rows={4}
-              placeholder="e.g. Onboarding for a notes app: welcome, sign-up, empty state, first note"
-              disabled={submitting}
-              className="w-full bg-input border border-primary rounded-xl px-3 py-2.5 text-sm text-primary placeholder-muted focus-accent resize-y min-h-[96px] disabled:opacity-60"
-              aria-label="Design prompt"
-            />
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-muted">⌘/Ctrl + Enter to send</p>
-              <button
-                type="button"
-                onClick={() => void handleSubmit()}
-                disabled={submitting || !query.trim()}
-                className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-ring shadow-button-primary"
-                aria-label="Start design agent"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Starting…
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" /> Start design
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={onNewFlow}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors focus-ring cursor-pointer"
-          >
-            <Workflow className="w-3.5 h-3.5" />
-            New Flow
-          </button>
-          <button
-            type="button"
-            onClick={onNewDesign}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-muted hover:bg-accent-muted-hover text-accent text-xs font-medium rounded-lg transition-colors focus-ring cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New Design
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -1398,6 +1124,7 @@ function EditorPreviewPane({
   htmlContent,
   hostedPreviewUrl,
   previewHtml,
+  previewRevision,
   useHostedPreview,
   isTextFile,
   mimeType,
@@ -1410,6 +1137,7 @@ function EditorPreviewPane({
   htmlContent: string;
   hostedPreviewUrl: string | null;
   previewHtml: string;
+  previewRevision: number;
   useHostedPreview: boolean;
   isTextFile: boolean;
   mimeType: string;
@@ -1452,6 +1180,8 @@ function EditorPreviewPane({
     </div>
   );
 
+  // Distinct keys force a remount when switching hosted (src) ↔ local (srcDoc) modes.
+  // Reusing the same key lets React patch src↔srcDoc in place, which browsers handle inconsistently.
   const previewPane = (
     <div className="h-full min-w-0 flex flex-col">
       <div className="shrink-0 px-3 py-1.5 bg-tertiary/60 border-b border-primary flex items-center gap-2">
@@ -1460,7 +1190,7 @@ function EditorPreviewPane({
       </div>
       {useHostedPreview && hostedPreviewUrl ? (
         <iframe
-          key={hostedPreviewUrl}
+          key={`hosted:${hostedPreviewUrl}`}
           className="flex-1 w-full bg-white border-0"
           src={hostedPreviewUrl}
           sandbox="allow-scripts"
@@ -1469,7 +1199,7 @@ function EditorPreviewPane({
         />
       ) : (
         <iframe
-          key={hostedPreviewUrl}
+          key={`srcdoc:${previewRevision}`}
           className="flex-1 w-full bg-white border-0"
           srcDoc={previewHtml}
           sandbox="allow-scripts"

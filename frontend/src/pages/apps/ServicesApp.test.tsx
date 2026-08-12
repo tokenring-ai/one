@@ -71,9 +71,9 @@ const mutateLogs = mock(async () => undefined);
 let enabledToolList: string[] = [];
 let enabledHookList: string[] = [];
 let agentList: (typeof agent)[] = [agent];
-let logEntries: Array<{ timestamp: number; level: "info" | "error"; message: string }> = [
-  { timestamp: 1_700_000_000_000, level: "info", message: "App started" },
-  { timestamp: 1_700_000_001_000, level: "error", message: "Plugin failed to load" },
+let logEntries: Array<{ id: number; timestamp: number; level: "info" | "error"; message: string }> = [
+  { id: 0, timestamp: 1_700_000_000_000, level: "info", message: "App started" },
+  { id: 1, timestamp: 1_700_000_001_000, level: "error", message: "Plugin failed to load" },
 ];
 
 void mock.module("../../rpc.ts", () => ({
@@ -107,6 +107,7 @@ void mock.module("../../components/ui/toast.tsx", () => ({
     success: mock(),
     error: mock(),
     warning: mock(),
+    info: mock(),
   },
 }));
 
@@ -141,8 +142,8 @@ describe("ServicesApp", () => {
     enabledHookList = ["checkpoint/auto"];
     agentList = [agent];
     logEntries = [
-      { timestamp: 1_700_000_000_000, level: "info", message: "App started" },
-      { timestamp: 1_700_000_001_000, level: "error", message: "Plugin failed to load" },
+      { id: 0, timestamp: 1_700_000_000_000, level: "info", message: "App started" },
+      { id: 1, timestamp: 1_700_000_001_000, level: "error", message: "Plugin failed to load" },
     ];
   });
 

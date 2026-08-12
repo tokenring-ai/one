@@ -12,10 +12,8 @@ export type RPCStreamSWRResult<TData> = {
 export function useRPCStreamSWR<TChunk, TData = TChunk>(options: UseRPCStreamOptions<TChunk, TData>): RPCStreamSWRResult<TData> {
   const { data, error, isLoading, isConnecting, manualReconnect } = useRPCStream(options);
 
-  const mutate = useCallback(() => {
-    manualReconnect();
-    return Promise.resolve(data);
-  }, [manualReconnect, data]);
+  // Reconnect and wait until the next chunk arrives or the reconnect attempt errors.
+  const mutate = useCallback(() => manualReconnect(), [manualReconnect]);
 
   return {
     data,

@@ -1,13 +1,19 @@
+import { pickNextItem } from "@tokenring-ai/utility/array/pickNextItem";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2, Plus, Terminal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import TerminalTabBar from "../../components/terminal/TerminalTabBar.tsx";
 import XTermView from "../../components/terminal/XTermView.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import CenteredLoadingSpinner from "../../components/ui/CenteredLoadingSpinner.tsx";
+import EmptyState from "../../components/ui/EmptyState.tsx";
+import OverlayText from "../../components/ui/OverlayText.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useConfirmDialog } from "../../hooks/useConfirmDialog.tsx";
+import { useRefSync } from "../../hooks/useRefSync.ts";
 import { useTerminalOutput } from "../../hooks/useTerminalOutput.ts";
+import { toastOnReject } from "../../lib/toastOnReject.ts";
 import { terminalRPCClient, useTerminalList } from "../../rpc.ts";
 
 type TerminalSession = {
@@ -26,7 +32,7 @@ export default function TerminalApp() {
   const terminals = useTerminalList();
   const [sessions, setSessions] = useState<Record<string, TerminalSession>>({});
   const [spawning, setSpawning] = useState(false);
-  const [confirmClose, setConfirmClose] = useState<string | null>(null);
+  const { openConfirm, Dialog: ConfirmDialog } = useConfirmDialog();
   /**
    * Names we have closed client-side but the list stream may still include until the next
    * snapshot. Filtering them out avoids ghost tabs and auto-select re-opening a just-closed session.
@@ -77,6 +83,11 @@ export default function TerminalApp() {
   const activeTerminalName = terminalId ?? null;
   const activeTerminal = terminalList.find(t => t.name === activeTerminalName);
 
+  // Keep latest values in refs so async close/spawn can read post-await state without stale closures.
+  const activeTerminalNameRef = useRefSync(activeTerminalName);
+  const terminalListRef = useRefSync(terminalList);
+  const hiddenNamesRef = useRefSync(hiddenNames);
+
   const activeResume = activeTerminalName ? sessions[activeTerminalName] : undefined;
   const outputStream = useTerminalOutput(activeTerminalName, activeResume);
 
@@ -119,6 +130,48 @@ export default function TerminalApp() {
     void navigate(`/terminal/${encodeURIComponent(firstTerminalName)}`, { replace: true });
   }, [terminals.isLoading, activeTerminalName, firstTerminalName, navigate]);
 
+  const removeTerminalLocally = useCallback((name: string) => {
+    // Eager ref update so concurrent close handlers see this name as already hidden
+    // before React re-renders from setState.
+    if (!hiddenNamesRef.current.has(name)) {
+      const nextHidden = new Set(hiddenNamesRef.current);
+      nextHidden.add(name);
+      hiddenNamesRef.current = nextHidden;
+    }
+    setHiddenNames(prev => {
+      if (prev.has(name)) return prev;
+      const nextHidden = new Set(prev);
+      nextHidden.add(name);
+      return nextHidden;
+    });
+    setPendingOpenName(prev => (prev === name ? null : prev));
+    setSessions(prev => {
+      if (!(name in prev)) return prev;
+      const remaining = { ...prev };
+      delete remaining[name];
+      return remaining;
+    });
+  }, []);
+
+  const navigateAfterClose = useCallback(
+    (closedName: string) => {
+      // Only leave the current route if the closed tab is still the one on screen — the user
+      // may have switched tabs while terminate was in flight.
+      if (activeTerminalNameRef.current !== closedName) return;
+
+      // hiddenNamesRef already includes `closedName` when removeTerminalLocally ran first.
+      // Prefer the neighbour to the right, then left, among tabs still visible client-side.
+      const next = pickNextItem(
+        terminalListRef.current,
+        closedName,
+        t => t.name,
+        t => !hiddenNamesRef.current.has(t.name),
+      );
+      void navigate(next ? `/terminal/${encodeURIComponent(next.name)}` : "/terminal", { replace: true });
+    },
+    [navigate],
+  );
+
   const spawnTerminal = async () => {
     setSpawning(true);
     try {
@@ -134,8 +187,9 @@ export default function TerminalApp() {
             next.delete(terminalName);
             return next;
           });
-          await terminals.mutate();
+          // Navigate first so the UI responds immediately; list refresh is best-effort.
           openTerminal(terminalName);
+          void terminals.mutate();
           break;
         }
         case "agentNotFound":
@@ -150,6 +204,7 @@ export default function TerminalApp() {
         }
       }
     } catch (error) {
+      setPendingOpenName(null);
       toastManager.error(formatError(error), { duration: 5000 });
     } finally {
       setSpawning(false);
@@ -158,10 +213,6 @@ export default function TerminalApp() {
 
   const closeTerminal = useCallback(
     async (name: string) => {
-      // Move to a neighbour before the tab disappears, mirroring how editors pick the next tab.
-      const index = terminalList.findIndex(t => t.name === name);
-      const next = terminalList[index + 1] ?? terminalList[index - 1];
-
       try {
         const result = await terminalRPCClient.terminateTerminal({ terminalName: name });
         switch (result.status) {
@@ -170,7 +221,10 @@ export default function TerminalApp() {
             // Already gone server-side — still clean up the tab locally.
             break;
           case "terminalNotInteractive":
-            toastManager.error("Terminal could not be closed", { duration: 5000 });
+            // Server cannot kill it, but leaving a stuck tab is worse than hiding it locally.
+            toastManager.error("Terminal could not be closed. Removing it from the tab bar.", { duration: 5000 });
+            removeTerminalLocally(name);
+            navigateAfterClose(name);
             return;
           default: {
             const exhaustive: never = result;
@@ -178,39 +232,34 @@ export default function TerminalApp() {
           }
         }
 
-        setHiddenNames(prev => {
-          const nextHidden = new Set(prev);
-          nextHidden.add(name);
-          return nextHidden;
-        });
-        setPendingOpenName(prev => (prev === name ? null : prev));
-        setSessions(prev => {
-          const remaining = { ...prev };
-          delete remaining[name];
-          return remaining;
-        });
-        if (activeTerminalName === name) {
-          void navigate(next ? `/terminal/${encodeURIComponent(next.name)}` : "/terminal", { replace: true });
-        }
-        await terminals.mutate();
+        removeTerminalLocally(name);
+        navigateAfterClose(name);
+        void terminals.mutate();
       } catch (error) {
         toastManager.error(formatError(error), { duration: 5000 });
       }
     },
-    [activeTerminalName, navigate, terminalList, terminals],
+    [navigateAfterClose, removeTerminalLocally, terminals],
   );
 
   const requestClose = useCallback(
-    (name: string) => {
+    async (name: string) => {
       // Closing an exited session throws nothing away; killing a live process needs a confirmation.
       const terminal = terminalList.find(t => t.name === name);
       if (terminal && !terminal.running) {
         void closeTerminal(name);
         return;
       }
-      setConfirmClose(name);
+      const confirmed = await openConfirm({
+        title: "Close Terminal",
+        message: "This terminal is still running. Closing the tab will terminate its process.",
+        confirmText: "Close",
+        variant: "danger",
+      });
+      if (!confirmed) return;
+      void closeTerminal(name);
     },
-    [closeTerminal, terminalList],
+    [closeTerminal, openConfirm, terminalList],
   );
 
   const sendInput = useCallback(
@@ -245,7 +294,9 @@ export default function TerminalApp() {
     (cols: number, rows: number) => {
       if (!activeTerminalName) return;
       // Best-effort: a session on plain pipes has no window, and a dead one is about to be cleaned up.
-      void terminalRPCClient.resizeTerminal({ terminalName: activeTerminalName, cols, rows }).catch(() => {});
+      toastOnReject(terminalRPCClient.resizeTerminal({ terminalName: activeTerminalName, cols, rows }), {
+        type: "warning",
+      });
     },
     [activeTerminalName],
   );
@@ -258,11 +309,7 @@ export default function TerminalApp() {
     : null;
 
   if (terminals.isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 text-muted animate-spin" />
-      </div>
-    );
+    return <CenteredLoadingSpinner className="h-full" />;
   }
 
   // A bookmarked or stale URL can name a terminal that no longer exists.
@@ -326,9 +373,7 @@ export default function TerminalApp() {
                 className="w-full h-full"
               />
               {!activeSession?.output && (
-                <div className="absolute inset-0 flex items-start p-4 pointer-events-none font-mono text-xs text-muted">
-                  {connectingOutput ? "Connecting..." : "Waiting for output..."}
-                </div>
+                <OverlayText message={connectingOutput ? "Connecting..." : "Waiting for output..."} font="mono" size="xs" position="top-left" />
               )}
             </div>
 
@@ -358,44 +403,23 @@ export default function TerminalApp() {
             </div>
           </>
         ) : awaitingAutoSelect || awaitingPendingOpen ? (
-          <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="w-6 h-6 text-muted animate-spin" />
-          </div>
+          <CenteredLoadingSpinner fill />
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <Terminal className="w-12 h-12 text-muted mx-auto mb-4 opacity-30" />
-              <p className="text-sm font-medium text-primary mb-1">{missingTerminal ? "Terminal not found" : "No terminals"}</p>
-              <p className="text-xs text-muted max-w-xs mx-auto mb-4">
-                {missingTerminal ? `'${activeTerminalName}' is no longer available. Open another tab or start a new one.` : "Create a terminal to get started"}
-              </p>
-              <button
-                type="button"
-                onClick={spawnTerminal}
-                disabled={spawning}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors focus-ring cursor-pointer shadow-lg shadow-emerald-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {spawning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} New Terminal
-              </button>
-            </div>
-          </div>
+          <EmptyState
+            variant="page"
+            className="flex-1"
+            icon={Terminal}
+            title={missingTerminal ? "Terminal not found" : "No terminals"}
+            hint={missingTerminal ? `'${activeTerminalName}' is no longer available. Open another tab or start a new one.` : "Create a terminal to get started"}
+            ctaLabel="New Terminal"
+            ctaVariant="emerald"
+            ctaLoading={spawning}
+            onCta={spawnTerminal}
+          />
         )}
       </div>
 
-      {confirmClose && (
-        <ConfirmDialog
-          title="Close Terminal"
-          message="This terminal is still running. Closing the tab will terminate its process."
-          confirmText="Close"
-          onConfirm={() => {
-            const name = confirmClose;
-            setConfirmClose(null);
-            void closeTerminal(name);
-          }}
-          onCancel={() => setConfirmClose(null)}
-          variant="danger"
-        />
-      )}
+      <ConfirmDialog />
     </div>
   );
 }

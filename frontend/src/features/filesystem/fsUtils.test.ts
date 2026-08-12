@@ -1,5 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { formatFileSize, getBasename, getParentPath, isHiddenEntry, isHiddenPath, isImageFile, isLikelyTextFile, joinPath } from "./fsUtils.ts";
+import {
+  base64ToUint8Array,
+  formatFileSize,
+  getBasename,
+  getParentPath,
+  guessMimeType,
+  isHiddenEntry,
+  isHiddenPath,
+  isImageFile,
+  isLikelyTextFile,
+  joinPath,
+} from "./fsUtils.ts";
 
 describe("getBasename", () => {
   test("returns last segment", () => {
@@ -70,5 +81,22 @@ describe("formatFileSize", () => {
     expect(formatFileSize(null)).toBe("—");
     expect(formatFileSize(512)).toBe("512 B");
     expect(formatFileSize(2048)).toBe("2.0 KB");
+  });
+});
+
+describe("guessMimeType", () => {
+  test("common extensions", () => {
+    expect(guessMimeType("a.png")).toBe("image/png");
+    expect(guessMimeType("a.pdf")).toBe("application/pdf");
+    expect(guessMimeType("a.json")).toBe("application/json");
+    expect(guessMimeType("a.ts")).toBe("text/plain");
+    expect(guessMimeType("a.bin")).toBe("application/octet-stream");
+  });
+});
+
+describe("base64ToUint8Array", () => {
+  test("round-trips ASCII", () => {
+    const bytes = base64ToUint8Array(btoa("hello"));
+    expect(Array.from(bytes)).toEqual([104, 101, 108, 108, 111]);
   });
 });

@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type React from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+
+const PassThroughFocusTrap = ({ children }: { children: React.ReactNode }) => children;
+void mock.module("focus-trap-react", () => ({ FocusTrap: PassThroughFocusTrap, default: PassThroughFocusTrap }));
 
 const bugHunter = {
   name: "bugHunter",
@@ -199,6 +203,29 @@ describe("WorkflowsApp", () => {
     await waitFor(() => expect(deleteWorkflow).toHaveBeenCalledWith({ name: "bugHunter" }));
   });
 
+  it("clones the currently viewed workflow into a new draft", async () => {
+    const user = userEvent.setup();
+    renderApp("/workflows/bugHunter");
+
+    await user.click(screen.getByRole("button", { name: "Clone" }));
+
+    expect(screen.getByRole("button", { name: "Create" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toHaveValue("bugHunter-copy");
+    expect(screen.getByLabelText("Display name")).toHaveValue("All-Package Bug Hunter (copy)");
+    expect(screen.getByDisplayValue("Finds and fixes bugs")).toBeInTheDocument();
+    expect(screen.getByLabelText("Step 1 chat message")).toHaveValue("List all packages in the monorepo");
+    expect(screen.getByLabelText("Step 2 command")).toHaveValue("agent run");
+
+    await user.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => expect(createWorkflow).toHaveBeenCalledTimes(1));
+    const call = createWorkflow.mock.calls[0]![0];
+    expect(call.name).toBe("bugHunter-copy");
+    expect(call.workflow.displayName).toBe("All-Package Bug Hunter (copy)");
+    expect(call.workflow.agentType).toBe("leader");
+    expect(call.workflow.steps).toEqual(bugHunter.steps);
+  });
+
   it("launches a workflow on a new agent", async () => {
     const user = userEvent.setup();
     renderApp("/workflows/bugHunter");
@@ -235,6 +262,33 @@ describe("WorkflowsApp", () => {
 
     expect(screen.getByText("Starting agent…")).toBeInTheDocument();
     expect(screen.getByText(/· starting agent…/)).toBeInTheDocument();
+    expect(screen.getByText("Spawning agent…")).toBeInTheDocument();
+    // Header may still spin for "Starting", but no step row should claim to be running.
+    expect(screen.queryByText(/Step \d+ of \d+/)).not.toBeInTheDocument();
+  });
+
+  it("closes the delete confirmation modal with Escape", async () => {
+    const user = userEvent.setup();
+    renderApp("/workflows/bugHunter");
+
+    await user.click(screen.getByRole("button", { name: "Delete workflow" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(deleteWorkflow).not.toHaveBeenCalled();
+  });
+
+  it("cancels create and returns to the empty selection state", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getAllByRole("button", { name: "New workflow" })[0]!);
+    expect(screen.getByRole("button", { name: "Create" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByText("Select a workflow")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create" })).not.toBeInTheDocument();
   });
 
   it("shows finished run history in the sidebar and editor", () => {

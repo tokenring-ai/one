@@ -29,6 +29,7 @@
   },
   "rules": {
     "eslint/no-useless-assignment": "error",
+    "typescript/no-deprecated": "error",
     "typescript/no-unnecessary-condition": "error",
     "typescript/no-floating-promises": "error",
     "typescript/no-unsafe-assignment": "warn",

@@ -1,10 +1,16 @@
-import { ChevronLeft, ChevronRight, Database, Lock, RefreshCw, Table2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Database, Lock, Table2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
-import { databaseRPCClient, useDatabaseTables, useDatasources, useTableRows, useTableSchema } from "../../rpc.ts";
+import AgentLaunchPanel from "../../components/ui/AgentLaunchPanel.tsx";
+import PaginationControls from "../../components/ui/PaginationControls.tsx";
+import PanelToolbar from "../../components/ui/PanelToolbar.tsx";
+import { useCyclicSort } from "../../hooks/useCyclicSort.ts";
+import { useDebounce } from "../../hooks/useDebounce.ts";
+import { toastOnReject } from "../../lib/toastOnReject.ts";
+import { databaseRPCClient, useDatabaseConfiguration, useDatabaseTables, useTableRows, useTableSchema } from "../../rpc.ts";
 import DatasourceFormModal from "./components/DatasourceFormModal.tsx";
 import DatasourceSidebar from "./components/DatasourceSidebar.tsx";
 import FilterBar from "./components/FilterBar.tsx";
@@ -12,20 +18,25 @@ import RowDetailPane from "./components/RowDetailPane.tsx";
 import RowGrid from "./components/RowGrid.tsx";
 import { DATABASE_AGENT_TYPE, PAGE_SIZE } from "./constants.ts";
 import { draftFiltersToQuery } from "./filterQuery.ts";
-import type { DatasourceSummary, DraftFilter, OrderBy, Row } from "./types.ts";
+import type { DatasourceSummary, DraftFilter, Row } from "./types.ts";
 
 const FILTER_DEBOUNCE_MS = 300;
 
-function rowKeyOf(row: Row, index: number, primaryKey: string[]): string {
+/**
+ * Stable identity for selection / React state. Prefer the primary key when the
+ * table has one; otherwise fingerprint the full row so sort/filter/pagination
+ * do not reshuffle selection. Index is intentionally not part of the key.
+ */
+function rowKeyOf(row: Row, _index: number, primaryKey: string[]): string {
   if (primaryKey.length > 0) {
     return primaryKey.map(column => JSON.stringify(row[column] ?? null)).join("|");
   }
-  // No PK — fall back to a stable-ish fingerprint of the visible cells plus index
-  // so two identical rows on the same page stay distinct for selection.
   try {
-    return `${index}:${JSON.stringify(row)}`;
+    return JSON.stringify(row);
   } catch {
-    return String(index);
+    // Non-serializable cell values are rare; collapse them rather than use index
+    // (index keys corrupt selection when the page is reordered).
+    return "unserializable";
   }
 }
 
@@ -35,19 +46,29 @@ export default function DatabaseApp() {
   // URL is the source of truth for which datasource is open (params are already decoded).
   const activeDatasource = routeDatasource ?? null;
 
-  const datasourcesQuery = useDatasources();
-  const datasources = datasourcesQuery.data?.datasources ?? [];
+  const configuration = useDatabaseConfiguration();
+  const datasources = configuration.data?.datasources ?? [];
+  const allowedAgentTypes = configuration.data?.agentTypes ?? [DATABASE_AGENT_TYPE];
+  const defaultAgentType = allowedAgentTypes[0] ?? DATABASE_AGENT_TYPE;
 
   const [activeTable, setActiveTable] = useState<string | null>(null);
   const [draftFilters, setDraftFilters] = useState<DraftFilter[]>([]);
-  const [appliedFilters, setAppliedFilters] = useState<DraftFilter[]>([]);
-  const [orderBy, setOrderBy] = useState<OrderBy[]>([]);
+  // Debounce filter edits so every keystroke doesn't fire a new selectRows call.
+  // Empty drafts apply immediately (table switch / clear) so we never query the new
+  // table with the previous table's filters during the debounce window.
+  const debouncedFilters = useDebounce(draftFilters, FILTER_DEBOUNCE_MS);
+  const appliedFilters = draftFilters.length === 0 ? draftFilters : debouncedFilters;
   const [offset, setOffset] = useState(0);
+  const { orderBy, handleSort, clearSort } = useCyclicSort({
+    onSortChange: () => setOffset(0),
+  });
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => new Set());
   const [selectedRowsByKey, setSelectedRowsByKey] = useState<Map<string, Row>>(() => new Map());
   const [detailRow, setDetailRow] = useState<Row | null>(null);
   const [formMode, setFormMode] = useState<{ existing?: DatasourceSummary } | null>(null);
   const [agentId, setAgentId] = useState<string | null>(null);
+  /** AgentLaunchPanel calls attach once per selected key; bulk-sync only on the first call per agent. */
+  const preparedAgentRef = useRef<string | null>(null);
 
   const tablesQuery = useDatabaseTables(activeDatasource ?? undefined);
   const tables = tablesQuery.data?.tables ?? [];
@@ -63,12 +84,6 @@ export default function DatabaseApp() {
     },
     [navigate],
   );
-
-  // Debounce filter edits so every keystroke doesn't fire a new selectRows call.
-  useEffect(() => {
-    const handle = window.setTimeout(() => setAppliedFilters(draftFilters), FILTER_DEBOUNCE_MS);
-    return () => window.clearTimeout(handle);
-  }, [draftFilters]);
 
   const queryFilters = useMemo(() => draftFiltersToQuery(appliedFilters, columns), [appliedFilters, columns]);
 
@@ -90,7 +105,7 @@ export default function DatabaseApp() {
 
   // Keep a valid datasource selected as the list loads and changes; bare `/database` opens the first one.
   useEffect(() => {
-    if (datasourcesQuery.isLoading) return;
+    if (configuration.isLoading) return;
     if (datasources.length === 0) {
       if (routeDatasource) openDatasource(null, { replace: true });
       setActiveTable(null);
@@ -100,30 +115,30 @@ export default function DatabaseApp() {
       openDatasource(datasources[0]!.name, { replace: true });
       setActiveTable(null);
     }
-  }, [datasources, activeDatasource, routeDatasource, datasourcesQuery.isLoading, openDatasource]);
+  }, [datasources, activeDatasource, routeDatasource, configuration.isLoading, openDatasource]);
 
   // Drop selection / paging / filters when the table context changes.
+  // appliedFilters follows draftFilters via useDebounce.
   useEffect(() => {
     setDraftFilters([]);
-    setAppliedFilters([]);
-    setOrderBy([]);
+    clearSort();
     setOffset(0);
     setSelectedKeys(new Set());
     setSelectedRowsByKey(new Map());
     setDetailRow(null);
-  }, [activeDatasource, activeTable]);
+  }, [activeDatasource, activeTable, clearSort]);
 
   // Keep the agent pointed at whatever the user is looking at so tools can act on it.
   useEffect(() => {
     if (!agentId || !activeDatasource) return;
-    databaseRPCClient
-      .updateDatabaseState({
+    toastOnReject(
+      databaseRPCClient.updateDatabaseState({
         agentId,
         datasource: activeDatasource,
         ...(activeTable ? { table: activeTable } : {}),
         selectedRows: Array.from(selectedRowsByKey.values()),
-      })
-      .catch(() => {});
+      }),
+    );
   }, [agentId, activeDatasource, activeTable, selectedRowsByKey]);
 
   const handleSelectDatasource = useCallback(
@@ -137,16 +152,6 @@ export default function DatabaseApp() {
 
   const handleSelectTable = useCallback((table: string) => {
     setActiveTable(table);
-  }, []);
-
-  const handleSort = useCallback((column: string) => {
-    setOrderBy(prev => {
-      const existing = prev.find(order => order.column === column);
-      if (!existing) return [{ column, direction: "asc" }];
-      if (existing.direction === "asc") return [{ column, direction: "desc" }];
-      return [];
-    });
-    setOffset(0);
   }, []);
 
   const handleFiltersChange = useCallback((next: DraftFilter[]) => {
@@ -206,37 +211,52 @@ export default function DatabaseApp() {
   }, [keyOf, rows, selectedKeys]);
 
   const handleRefresh = useCallback(() => {
-    void datasourcesQuery.mutate();
+    void configuration.mutate();
     void tablesQuery.mutate();
     void schemaQuery.mutate();
     void rowsQuery.mutate();
-  }, [datasourcesQuery, tablesQuery, schemaQuery, rowsQuery]);
+  }, [configuration, tablesQuery, schemaQuery, rowsQuery]);
 
   const handleDatasourceSaved = useCallback(
     (name: string) => {
-      void datasourcesQuery.mutate().then(() => {
+      void configuration.mutate().then(() => {
         setActiveTable(null);
         openDatasource(name);
       });
     },
-    [datasourcesQuery, openDatasource],
+    [configuration, openDatasource],
   );
 
-  const activeDatasourceMeta = datasources.find(ds => ds.name === activeDatasource);
-  const pageStart = rows.length === 0 ? 0 : offset + 1;
-  const pageEnd = offset + rows.length;
-  const canPrev = offset > 0;
-  const canNext = hasMore || (totalCount !== null && offset + rows.length < totalCount);
+  const clearRowSelection = useCallback(() => {
+    setSelectedKeys(new Set());
+    setSelectedRowsByKey(new Map());
+  }, []);
 
-  const rangeLabel = (() => {
-    if (!activeTable) return null;
-    if (rowsQuery.isLoading && rows.length === 0) return "Loading…";
-    if (totalCount !== null) {
-      return `${pageStart}–${pageEnd} of ${totalCount}`;
-    }
-    if (rows.length === 0) return "0 rows";
-    return hasMore ? `${pageStart}–${pageEnd}+` : `${pageStart}–${pageEnd}`;
-  })();
+  /**
+   * Domain agents receive the full selection in one `updateDatabaseState` call.
+   * The panel invokes this per key, so only the first call for an agent id does work.
+   */
+  const attachSelectedRowsToAgent = useCallback(
+    async (newAgentId: string, _itemId: string) => {
+      if (preparedAgentRef.current === newAgentId) return;
+      preparedAgentRef.current = newAgentId;
+      if (!activeDatasource) return;
+      await databaseRPCClient.updateDatabaseState({
+        agentId: newAgentId,
+        datasource: activeDatasource,
+        ...(activeTable ? { table: activeTable } : {}),
+        selectedRows: Array.from(selectedRowsByKey.values()),
+      });
+    },
+    [activeDatasource, activeTable, selectedRowsByKey],
+  );
+
+  const openAgentWithSelection = useCallback((id: string) => {
+    setDetailRow(null);
+    setAgentId(id);
+  }, []);
+
+  const activeDatasourceMeta = datasources.find(ds => ds.name === activeDatasource);
 
   const body = (
     <WorkspaceShell
@@ -248,8 +268,8 @@ export default function DatabaseApp() {
         <div className="h-full flex flex-col min-h-0 bg-secondary">
           <DatasourceSidebar
             datasources={datasources}
-            datasourcesLoading={datasourcesQuery.isLoading}
-            datasourcesError={datasourcesQuery.error}
+            datasourcesLoading={configuration.isLoading}
+            datasourcesError={configuration.error}
             activeDatasource={activeDatasource}
             tables={tables}
             tablesLoading={tablesQuery.isLoading}
@@ -294,34 +314,20 @@ export default function DatabaseApp() {
               )}
               <span className="text-xs text-muted truncate">{activeDatasource}</span>
               <div className="flex-1" />
-              {selectedKeys.size > 0 && <span className="text-xs text-muted">{selectedKeys.size} selected</span>}
-              {rangeLabel && <span className="text-xs text-muted tabular-nums">{rangeLabel}</span>}
-              <button
-                type="button"
-                onClick={() => void rowsQuery.mutate()}
-                className="p-1.5 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring"
-                title="Refresh rows"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                disabled={!canPrev || rowsQuery.isLoading}
-                onClick={() => setOffset(prev => Math.max(0, prev - PAGE_SIZE))}
-                className="p-1.5 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring disabled:opacity-40"
-                aria-label="Previous page"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                disabled={!canNext || rowsQuery.isLoading}
-                onClick={() => setOffset(prev => prev + PAGE_SIZE)}
-                className="p-1.5 text-muted hover:text-primary rounded transition-colors cursor-pointer focus-ring disabled:opacity-40"
-                aria-label="Next page"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              <PaginationControls
+                offset={offset}
+                pageSize={PAGE_SIZE}
+                // Backend computes hasMore from the same totalCount/limit math; trust it as
+                // the sole authority so a stale totalCount alone cannot open an empty page.
+                hasMore={hasMore}
+                itemCount={rows.length}
+                totalCount={totalCount}
+                loading={rowsQuery.isLoading}
+                selectionCount={selectedKeys.size}
+                showRefresh
+                onRefresh={() => void rowsQuery.mutate()}
+                onPageChange={setOffset}
+              />
             </div>
 
             <FilterBar columns={columns} filters={draftFilters} onChange={handleFiltersChange} />
@@ -359,29 +365,41 @@ export default function DatabaseApp() {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-primary">
-      <div className="shrink-0 h-11 border-b border-primary bg-secondary flex items-center gap-2 px-3">
-        <div className="w-7 h-7 rounded-lg bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-sm shrink-0">
-          <Database className="w-4 h-4 text-white" />
-        </div>
-        <span className="text-sm font-semibold text-primary">Database</span>
-        <div className="flex-1" />
-        <div className="w-px h-5 bg-primary/70 mx-0.5 shrink-0" aria-hidden="true" />
-        <AgentLauncherBar
-          defaultAgentType={DATABASE_AGENT_TYPE}
-          buttonLabel="Open Agent"
-          buttonClassName="bg-accent hover:bg-accent-hover text-white shadow-button-primary"
-          onLaunch={id => {
-            setDetailRow(null);
-            setAgentId(id);
-          }}
-        />
-      </div>
+      <PanelToolbar
+        icon={Database}
+        iconGradient="from-cyan-500 to-blue-600"
+        title="Database"
+        actions={
+          // Always-available launcher for browsing without a row selection.
+          // When rows are selected, prefer the bottom AgentLaunchPanel.
+          <AgentLauncherBar
+            defaultAgentType={defaultAgentType}
+            allowedAgentTypes={allowedAgentTypes}
+            buttonLabel="Open Agent"
+            buttonClassName="bg-accent hover:bg-accent-hover text-white shadow-button-primary"
+            onLaunch={openAgentWithSelection}
+          />
+        }
+      />
 
       <div className="flex-1 min-h-0">
         <ChatDock agentId={agentId} storageKey="database" initialRatio={0.65} headerTitle="Database Agent">
           {body}
         </ChatDock>
       </div>
+
+      {selectedKeys.size > 0 && (
+        <AgentLaunchPanel
+          selectedItems={selectedKeys}
+          itemLabel="row"
+          onClear={clearRowSelection}
+          attachItemToAgent={attachSelectedRowsToAgent}
+          onNavigateToAgent={openAgentWithSelection}
+          defaultAgentType={defaultAgentType}
+          allowedAgentTypes={allowedAgentTypes}
+          launchLabel="Open Agent"
+        />
+      )}
 
       {formMode && (
         <DatasourceFormModal

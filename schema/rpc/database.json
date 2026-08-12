@@ -7,7 +7,7 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
-      "title": "getDatasources request",
+      "title": "getDatabaseConfiguration request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -17,10 +17,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/database.getDatasources"
+          "const": "/rpc/database.getDatabaseConfiguration"
         },
         "params": {
-          "$ref": "#/$defs/getDatasourcesParams"
+          "$ref": "#/$defs/getDatabaseConfigurationParams"
         }
       },
       "required": [
@@ -32,7 +32,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getDatasources response",
+      "title": "getDatabaseConfiguration response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -42,7 +42,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getDatasourcesResult"
+          "$ref": "#/$defs/getDatabaseConfigurationResult"
         }
       },
       "required": [
@@ -366,11 +366,11 @@
       ],
       "additionalProperties": false
     },
-    "getDatasourcesParams": {
+    "getDatabaseConfigurationParams": {
       "type": "object",
       "properties": {}
     },
-    "getDatasourcesResult": {
+    "getDatabaseConfigurationResult": {
       "type": "object",
       "properties": {
         "datasources": {
@@ -395,10 +395,17 @@
             ],
             "additionalProperties": false
           }
+        },
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
-        "datasources"
+        "datasources",
+        "agentTypes"
       ],
       "additionalProperties": false
     },
@@ -1122,10 +1129,10 @@
     "path": "/rpc/database",
     "source": "plugin/database/rpc/schema.ts",
     "methods": {
-      "getDatasources": {
+      "getDatabaseConfiguration": {
         "type": "query",
-        "params": "#/$defs/getDatasourcesParams",
-        "result": "#/$defs/getDatasourcesResult"
+        "params": "#/$defs/getDatabaseConfigurationParams",
+        "result": "#/$defs/getDatabaseConfigurationResult"
       },
       "testConnection": {
         "type": "mutation",

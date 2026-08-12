@@ -2,7 +2,6 @@ import formatError from "@tokenring-ai/utility/error/formatError";
 import {
   Activity,
   AlertCircle,
-  CheckCircle2,
   ChevronDown,
   ChevronRight,
   Clock,
@@ -12,67 +11,69 @@ import {
   Play,
   Plus,
   RefreshCw,
+  Search,
   Timer,
   Trash2,
   User,
-  XCircle,
 } from "lucide-react";
-import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import EmptyState from "../../components/ui/EmptyState.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import FilterTabs, { type FilterTabOption } from "../../components/ui/FilterTabs.tsx";
+import HistoryRunRow from "../../components/ui/HistoryRunRow.tsx";
+import StatusBadge, { type StatusBadgeDefinition } from "../../components/ui/StatusBadge.tsx";
+import SummaryStat from "../../components/ui/SummaryStat.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useAsyncActionGuard } from "../../hooks/useAsyncActionGuard.ts";
+import { useConfirmDialog } from "../../hooks/useConfirmDialog.tsx";
+import { useTick } from "../../hooks/useTick.ts";
 import { cn } from "../../lib/utils.ts";
 import { agentRPCClient, schedulerRPCClient, useAgentList, useAgentTypes, useSchedulerHistory, useSchedulerStatus, useSchedulerTasks } from "../../rpc.ts";
 import AddTaskForm from "./AddTaskForm.tsx";
-import { formatDuration, formatRelativeTime, formatScheduleSummary, formatScheduleTime, truncateMessage } from "./formatters.ts";
+import { formatRelativeTime, formatScheduleSummary, formatScheduleTime, truncateMessage } from "./formatters.ts";
 
 type MainTab = "tasks" | "history";
 type HistoryStatusFilter = "all" | "completed" | "failed";
+type TaskRunStatus = "pending" | "running" | "idle";
 
 const MAIN_TABS: FilterTabOption<MainTab>[] = [
   { id: "tasks", label: "Tasks" },
   { id: "history", label: "History" },
 ];
 
-function StatusPill({ running }: { running: boolean }) {
-  return running ? (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-      Scheduler enabled
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-tertiary text-muted border border-primary">
-      <Pause className="w-3 h-3" />
-      Scheduler disabled
-    </span>
-  );
-}
+const SCHEDULER_STATUS_BADGES: Record<"enabled" | "disabled", StatusBadgeDefinition> = {
+  enabled: {
+    label: "Scheduler enabled",
+    dotColor: "bg-emerald-500",
+    pulse: true,
+    colorClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+  },
+  disabled: {
+    label: "Scheduler disabled",
+    icon: <Pause className="w-3 h-3" />,
+    colorClass: "bg-tertiary text-muted border-primary",
+  },
+};
 
-function TaskStatusBadge({ status }: { status: "pending" | "running" | "idle" }) {
-  if (status === "running") {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 shrink-0">
-        <Activity className="w-3 h-3 animate-pulse" /> Running
-      </span>
-    );
-  }
-  if (status === "pending") {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 shrink-0">
-        <Clock className="w-3 h-3" /> Pending
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 text-xs text-muted shrink-0">
-      <Pause className="w-3 h-3" /> Not scheduled
-    </span>
-  );
-}
+const TASK_STATUS_BADGES: Record<TaskRunStatus, StatusBadgeDefinition> = {
+  running: {
+    label: "Running",
+    icon: <Activity className="w-3 h-3 animate-pulse" />,
+    colorClass: "text-amber-600 dark:text-amber-400",
+  },
+  pending: {
+    label: "Pending",
+    icon: <Clock className="w-3 h-3" />,
+    colorClass: "text-indigo-600 dark:text-indigo-400",
+  },
+  idle: {
+    label: "Not scheduled",
+    icon: <Pause className="w-3 h-3" />,
+    colorClass: "text-muted",
+  },
+};
 
 export default function SchedulerDashboard() {
   const navigate = useNavigate();
@@ -81,15 +82,12 @@ export default function SchedulerDashboard() {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [tab, setTab] = useState<MainTab>("tasks");
   const [showAddForm, setShowAddForm] = useState(false);
-  /** Capture agentId with the task name so a mid-dialog agent switch cannot delete from the wrong agent. */
-  const [confirmRemove, setConfirmRemove] = useState<{ agentId: string; name: string } | null>(null);
-  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const { openConfirm, Dialog: ConfirmDialog } = useConfirmDialog();
+  const { activeKey: busyAction, execute: executeBusy } = useAsyncActionGuard();
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [historyTaskFilter, setHistoryTaskFilter] = useState<string>("");
   const [historyStatusFilter, setHistoryStatusFilter] = useState<HistoryStatusFilter>("all");
-  // Live clock so relative next/last-run labels stay current without waiting for SWR
-  const [, setNowTick] = useState(0);
 
   // Auto-select first agent when list loads / selection disappears
   useEffect(() => {
@@ -105,7 +103,6 @@ export default function SchedulerDashboard() {
 
   // Drop agent-scoped UI state when the selected agent changes
   useEffect(() => {
-    setConfirmRemove(null);
     setShowAddForm(false);
     setExpandedTask(null);
     setHistoryTaskFilter("");
@@ -172,12 +169,7 @@ export default function SchedulerDashboard() {
   const schedulerRunning = statusQuery.data?.running ?? false;
 
   // Refresh relative-time labels while there is upcoming or active work
-  useEffect(() => {
-    const needsTick = runningTaskCount > 0 || taskEntries.some(t => t.nextRunTime != null);
-    if (!needsTick) return;
-    const id = setInterval(() => setNowTick(n => n + 1), 15_000);
-    return () => clearInterval(id);
-  }, [runningTaskCount, taskEntries]);
+  useTick(15_000, runningTaskCount > 0 || taskEntries.some(t => t.nextRunTime != null));
 
   const tabs = useMemo<FilterTabOption<MainTab>[]>(
     () => [
@@ -187,12 +179,12 @@ export default function SchedulerDashboard() {
     [taskCount, historyEntries.length],
   );
 
-  const openHistoryForTask = (taskName: string) => {
+  const openHistoryForTask = useCallback((taskName: string) => {
     setHistoryTaskFilter(taskName);
     setHistoryStatusFilter("all");
     setTab("history");
     setShowAddForm(false);
-  };
+  }, []);
 
   const refreshAll = async () => {
     await Promise.all([tasksQuery.mutate(), statusQuery.mutate(), historyQuery.mutate(), agents.mutate()]);
@@ -201,50 +193,54 @@ export default function SchedulerDashboard() {
   const handleStartStop = async () => {
     if (!selectedAgentId) return;
     const action = schedulerRunning ? "stop" : "start";
-    setBusyAction(action);
-    try {
-      const result = schedulerRunning
-        ? await schedulerRPCClient.stopScheduler({ agentId: selectedAgentId })
-        : await schedulerRPCClient.startScheduler({ agentId: selectedAgentId });
-      if (result.status === "agentNotFound") {
-        toastManager.error("Agent no longer exists", { duration: 4000 });
-        return;
+    await executeBusy(action, async () => {
+      try {
+        const result = schedulerRunning
+          ? await schedulerRPCClient.stopScheduler({ agentId: selectedAgentId })
+          : await schedulerRPCClient.startScheduler({ agentId: selectedAgentId });
+        if (result.status === "agentNotFound") {
+          toastManager.error("Agent no longer exists", { duration: 4000 });
+          return;
+        }
+        toastManager.success(result.message, { duration: 2500 });
+        await Promise.all([statusQuery.mutate(), tasksQuery.mutate()]);
+      } catch (err) {
+        toastManager.error(formatError(err), { duration: 5000 });
       }
-      toastManager.success(result.message, { duration: 2500 });
-      await Promise.all([statusQuery.mutate(), tasksQuery.mutate()]);
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
-    }
+    });
   };
 
-  const handleRemove = async () => {
-    if (!confirmRemove) return;
-    const { agentId, name } = confirmRemove;
-    setConfirmRemove(null);
-    setBusyAction(`remove:${name}`);
-    try {
-      const result = await schedulerRPCClient.removeTask({ agentId, name });
-      if (result.status === "agentNotFound") {
-        toastManager.error("Agent no longer exists", { duration: 4000 });
-        return;
+  const handleRemove = async (agentId: string, name: string) => {
+    const confirmed = await openConfirm({
+      title: "Remove scheduled task",
+      message: `Remove "${name}" from this agent's schedule? This cannot be undone.`,
+      confirmText: "Remove",
+      cancelText: "Cancel",
+      variant: "danger",
+    });
+    if (!confirmed) return;
+    await executeBusy(`remove:${name}`, async () => {
+      try {
+        const result = await schedulerRPCClient.removeTask({ agentId, name });
+        if (result.status === "agentNotFound") {
+          toastManager.error("Agent no longer exists", { duration: 4000 });
+          return;
+        }
+        toastManager.success(result.message, { duration: 2500 });
+        if (expandedTask === name) setExpandedTask(null);
+        if (historyTaskFilter === name) setHistoryTaskFilter("");
+        await refreshAll();
+      } catch (err) {
+        toastManager.error(formatError(err), { duration: 5000 });
       }
-      toastManager.success(result.message, { duration: 2500 });
-      if (expandedTask === name) setExpandedTask(null);
-      if (historyTaskFilter === name) setHistoryTaskFilter("");
-      await refreshAll();
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
-    }
+    });
   };
 
   const handleCreateAgent = async () => {
     setCreatingAgent(true);
     try {
-      const types = agentTypes.data ?? (await agentRPCClient.getAgentTypes({}));
+      // Prefer SWR cache / revalidation so we don't race a parallel getAgentTypes fetch.
+      const types = agentTypes.data ?? (await agentTypes.mutate()) ?? [];
       const preferred = types.find(t => t.type === "code") ?? types.find(t => t.category?.toLowerCase().includes("interactive")) ?? types[0];
       if (!preferred) {
         toastManager.error("No agent types available", { duration: 4000 });
@@ -293,22 +289,17 @@ export default function SchedulerDashboard() {
           ) : agents.error && agentList.length === 0 ? (
             <ErrorState title="Unable to load agents" error={agents.error} onRetry={() => void agents.mutate()} variant="page" />
           ) : agentList.length === 0 ? (
-            <div className="px-6 py-14 text-center bg-secondary border border-primary border-dashed rounded-xl">
-              <Timer className="w-10 h-10 text-muted mx-auto mb-3 opacity-50" />
-              <p className="text-sm font-medium text-primary mb-1">No agents available</p>
-              <p className="text-xs text-muted max-w-sm mx-auto mb-5">
-                Scheduled tasks run on a specific agent. Create an agent first, then add recurring prompts.
-              </p>
-              <button
-                type="button"
-                onClick={() => void handleCreateAgent()}
-                disabled={creatingAgent}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-50 shadow-sm"
-              >
-                {creatingAgent ? <Loader2 className="w-4 h-4 animate-spin" /> : <User className="w-4 h-4" />}
-                Create agent
-              </button>
-            </div>
+            <EmptyState
+              variant="card"
+              icon={Timer}
+              title="No agents available"
+              hint="Scheduled tasks run on a specific agent. Create an agent first, then add recurring prompts."
+              ctaLabel="Create agent"
+              ctaIcon={User}
+              ctaVariant="indigo"
+              ctaLoading={creatingAgent}
+              onCta={() => void handleCreateAgent()}
+            />
           ) : (
             <>
               {/* Summary */}
@@ -319,6 +310,8 @@ export default function SchedulerDashboard() {
                   sub={selectedAgent ? selectedAgent.displayName : "Select an agent"}
                   icon={<Timer className="w-4 h-4" />}
                   accentClass="text-indigo-500"
+                  size="lg"
+                  iconPosition="right"
                 />
                 <SummaryStat
                   label="Scheduler"
@@ -326,6 +319,8 @@ export default function SchedulerDashboard() {
                   sub={statusQuery.data?.autoStart ? "Auto-start enabled" : "Auto-start off"}
                   icon={schedulerRunning ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
                   accentClass={schedulerRunning ? "text-emerald-500" : "text-muted"}
+                  size="lg"
+                  iconPosition="right"
                 />
                 <SummaryStat
                   label="Running now"
@@ -333,6 +328,8 @@ export default function SchedulerDashboard() {
                   sub={runningTaskCount === 1 ? "1 task executing" : `${runningTaskCount} tasks executing`}
                   icon={<Activity className="w-4 h-4" />}
                   accentClass="text-amber-500"
+                  size="lg"
+                  iconPosition="right"
                 />
                 <SummaryStat
                   label="History"
@@ -340,6 +337,8 @@ export default function SchedulerDashboard() {
                   sub="In-memory run log"
                   icon={<History className="w-4 h-4" />}
                   accentClass="text-violet-500"
+                  size="lg"
+                  iconPosition="right"
                 />
               </div>
 
@@ -365,7 +364,7 @@ export default function SchedulerDashboard() {
                   </label>
 
                   <div className="flex flex-wrap items-center gap-2 sm:pt-5">
-                    <StatusPill running={schedulerRunning} />
+                    <StatusBadge status={schedulerRunning ? "enabled" : "disabled"} statuses={SCHEDULER_STATUS_BADGES} gap="md" />
                     <button
                       type="button"
                       disabled={!selectedAgentId || busyAction === "start" || busyAction === "stop" || (!schedulerRunning && taskCount === 0)}
@@ -448,21 +447,15 @@ export default function SchedulerDashboard() {
                   ) : null}
 
                   {tab === "tasks" && taskEntries.length === 0 && !showAddForm ? (
-                    <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
-                      <Clock className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
-                      <p className="text-sm font-medium text-secondary mb-1">No scheduled tasks</p>
-                      <p className="text-xs text-muted max-w-xs mx-auto mb-4">
-                        Add a recurring prompt—health checks, daily briefs, cleanup, monitoring—to this agent.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setShowAddForm(true)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg focus-ring cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        Add your first task
-                      </button>
-                    </div>
+                    <EmptyState
+                      variant="card"
+                      icon={Clock}
+                      title="No scheduled tasks"
+                      hint="Add a recurring prompt—health checks, daily briefs, cleanup, monitoring—to this agent."
+                      ctaLabel="Add your first task"
+                      ctaVariant="indigo"
+                      onCta={() => setShowAddForm(true)}
+                    />
                   ) : null}
 
                   {tab === "tasks" && taskEntries.length > 0 ? (
@@ -484,7 +477,7 @@ export default function SchedulerDashboard() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                                   <span className="text-sm font-medium text-primary truncate">{entry.name}</span>
-                                  <TaskStatusBadge status={entry.status} />
+                                  <StatusBadge status={entry.status} statuses={TASK_STATUS_BADGES} variant="inline" />
                                 </div>
                                 <p className="text-xs text-muted mb-1.5" title={entry.task.message}>
                                   {isExpanded ? entry.task.message : truncateMessage(entry.task.message)}
@@ -532,7 +525,7 @@ export default function SchedulerDashboard() {
                                 type="button"
                                 onClick={() => {
                                   if (!selectedAgentId) return;
-                                  setConfirmRemove({ agentId: selectedAgentId, name: entry.name });
+                                  void handleRemove(selectedAgentId, entry.name);
                                 }}
                                 disabled={!selectedAgentId || busyAction === `remove:${entry.name}`}
                                 className="p-1.5 text-muted hover:text-red-500 transition-colors rounded-md focus-ring cursor-pointer disabled:opacity-50 shrink-0"
@@ -559,13 +552,12 @@ export default function SchedulerDashboard() {
                   ) : null}
 
                   {tab === "history" && historyQuery.data && historyEntries.length === 0 ? (
-                    <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
-                      <History className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
-                      <p className="text-sm font-medium text-secondary mb-1">No runs yet</p>
-                      <p className="text-xs text-muted max-w-xs mx-auto">
-                        Execution history is kept in memory for this session. Completed and failed runs will appear here.
-                      </p>
-                    </div>
+                    <EmptyState
+                      variant="card"
+                      icon={History}
+                      title="No runs yet"
+                      hint="Execution history is kept in memory for this session. Completed and failed runs will appear here."
+                    />
                   ) : null}
 
                   {tab === "history" && historyEntries.length > 0 ? (
@@ -615,54 +607,21 @@ export default function SchedulerDashboard() {
                       </div>
 
                       {filteredHistory.length === 0 ? (
-                        <div className="px-6 py-10 text-center bg-secondary border border-primary border-dashed rounded-xl">
-                          <p className="text-sm font-medium text-secondary mb-1">No matching runs</p>
-                          <p className="text-xs text-muted">Try a different task or status filter.</p>
-                        </div>
+                        <EmptyState variant="card" icon={Search} title="No matching runs" hint="Try a different task or status filter." />
                       ) : (
                         <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
                           {filteredHistory.map((run, idx) => (
-                            <div key={`${run.taskName}-${run.startTime}-${idx}`} className="px-4 py-3">
-                              <div className="flex items-start gap-3">
-                                <div className="mt-0.5 shrink-0">
-                                  {run.status === "completed" ? (
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                  ) : (
-                                    <XCircle className="w-4 h-4 text-red-500" />
-                                  )}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                                    <button
-                                      type="button"
-                                      onClick={() => setHistoryTaskFilter(run.taskName)}
-                                      className="text-sm font-medium text-primary hover:underline focus-ring rounded cursor-pointer"
-                                      title={`Filter history to ${run.taskName}`}
-                                    >
-                                      {run.taskName}
-                                    </button>
-                                    <span
-                                      className={cn(
-                                        "text-xs px-1.5 py-0.5 rounded-md border",
-                                        run.status === "completed"
-                                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                                          : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
-                                      )}
-                                    >
-                                      {run.status}
-                                    </span>
-                                    <span className="text-xs text-muted tabular-nums">{formatDuration(run.startTime, run.endTime)}</span>
-                                    <span className="text-xs text-muted tabular-nums">({formatRelativeTime(run.startTime)})</span>
-                                  </div>
-                                  <p className="text-xs text-muted mb-1">{formatScheduleTime(run.startTime, { withSeconds: true })}</p>
-                                  {run.message ? (
-                                    <p className="text-xs text-secondary line-clamp-3 whitespace-pre-wrap break-words" title={run.message}>
-                                      {run.message}
-                                    </p>
-                                  ) : null}
-                                </div>
-                              </div>
-                            </div>
+                            <HistoryRunRow
+                              key={`${run.taskName}-${run.startTime}-${idx}`}
+                              id={`${run.taskName}-${run.startTime}-${idx}`}
+                              entityName={run.taskName}
+                              onEntityClick={() => setHistoryTaskFilter(run.taskName)}
+                              status={run.status === "completed" ? "completed" : "failed"}
+                              startTime={run.startTime}
+                              endTime={run.endTime}
+                              message={run.message}
+                              timestampOptions={{ weekday: true }}
+                            />
                           ))}
                         </div>
                       )}
@@ -675,30 +634,7 @@ export default function SchedulerDashboard() {
         </div>
       </div>
 
-      {confirmRemove ? (
-        <ConfirmDialog
-          title="Remove scheduled task"
-          message={`Remove "${confirmRemove.name}" from this agent's schedule? This cannot be undone.`}
-          confirmText="Remove"
-          cancelText="Cancel"
-          variant="danger"
-          onConfirm={() => void handleRemove()}
-          onCancel={() => setConfirmRemove(null)}
-        />
-      ) : null}
-    </div>
-  );
-}
-
-function SummaryStat({ label, value, sub, icon, accentClass }: { label: string; value: string; sub?: string; icon: ReactNode; accentClass?: string }) {
-  return (
-    <div className="px-4 py-3.5 bg-secondary rounded-xl border border-primary shadow-sm">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-bold text-muted uppercase tracking-widest">{label}</span>
-        <span className={cn("opacity-80", accentClass)}>{icon}</span>
-      </div>
-      <div className={cn("text-xl font-semibold tabular-nums tracking-tight", accentClass ?? "text-primary")}>{value}</div>
-      {sub ? <p className="text-xs text-muted mt-1 truncate">{sub}</p> : null}
+      <ConfirmDialog />
     </div>
   );
 }

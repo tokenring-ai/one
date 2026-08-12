@@ -6,6 +6,7 @@ import { History, Loader2, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { checkpointRPCClient, useAgentList, useCheckpointList } from "../../rpc.ts";
+import LaunchButton from "../ui/LaunchButton.tsx";
 import { toastManager } from "../ui/toast.tsx";
 
 type CheckpointItem = { id: number; name: string; agentId: string; createdAt: number };
@@ -27,7 +28,7 @@ export default function DeletedAgentRestorePanel({ agentId }: DeletedAgentRestor
   const [launching, setLaunching] = useState(false);
 
   const agentCheckpoints = useMemo(() => {
-    const items = (checkpoints.data ?? []) as CheckpointItem[];
+    const items = (checkpoints.data?.items ?? []) as CheckpointItem[];
     return items.filter(cp => cp.agentId === agentId).sort((a, b) => b.createdAt - a.createdAt);
   }, [checkpoints.data, agentId]);
 
@@ -117,16 +118,16 @@ export default function DeletedAgentRestorePanel({ agentId }: DeletedAgentRestor
             </select>
           </label>
 
-          <button
-            type="button"
+          <LaunchButton
+            loading={launching}
+            disabled={!selected}
             onClick={() => void launchFromCheckpoint()}
-            disabled={!selected || launching}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-ring shadow-button-primary shrink-0"
+            icon={RotateCcw}
+            label="Restore"
+            loadingLabel="Restore"
             aria-label={selected ? `Restore agent from checkpoint: ${selected.name}` : "Restore agent from checkpoint"}
-          >
-            {launching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
-            Restore
-          </button>
+            className="justify-center px-4 py-2 font-medium shadow-button-primary shrink-0"
+          />
         </div>
 
         {selected ? (

@@ -7,6 +7,52 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
+      "title": "getWebDesignConfiguration request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/web-design.getWebDesignConfiguration"
+        },
+        "params": {
+          "$ref": "#/$defs/getWebDesignConfigurationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getWebDesignConfiguration response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getWebDesignConfigurationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "listFlows request",
       "type": "object",
       "properties": {
@@ -646,6 +692,25 @@
       ],
       "additionalProperties": false
     },
+    "getWebDesignConfigurationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getWebDesignConfigurationResult": {
+      "type": "object",
+      "properties": {
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "agentTypes"
+      ],
+      "additionalProperties": false
+    },
     "listFlowsParams": {
       "type": "object",
       "properties": {}
@@ -1279,6 +1344,11 @@
     "path": "/rpc/web-design",
     "source": "plugin/web-design/rpc/schema.ts",
     "methods": {
+      "getWebDesignConfiguration": {
+        "type": "query",
+        "params": "#/$defs/getWebDesignConfigurationParams",
+        "result": "#/$defs/getWebDesignConfigurationResult"
+      },
       "listFlows": {
         "type": "query",
         "params": "#/$defs/listFlowsParams",

@@ -1,10 +1,15 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, Lock, Pencil, Plus, RefreshCw, Save, Search, Trash2, Upload, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, Lock, Pencil, Plus, RefreshCw, Save, Trash2, Upload, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
+import PasswordInput from "../../components/ui/PasswordInput.tsx";
+import SearchInput from "../../components/ui/SearchInput.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useCopyToClipboard } from "../../hooks/useCopyToClipboard.ts";
+import { useEntityDelete } from "../../hooks/useEntityDelete.ts";
+import { useRevealSecret } from "../../hooks/useRevealSecret.ts";
 import { useVaultKeys, vaultRPCClient } from "../../rpc.ts";
 
 // ─── Categories ───────────────────────────────────────────────────────────────
@@ -16,9 +21,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const DEFAULT_CATEGORIES = ["env", "token"] as const;
-
-/** Auto-hide revealed secrets so values do not linger on screen / in React state. */
-const REVEAL_AUTO_HIDE_MS = 30_000;
 
 function categoryLabel(id: string): string {
   return CATEGORY_LABELS[id] ?? id;
@@ -43,128 +45,50 @@ async function assertMutationOk(result: { success: boolean; message: string }, f
   }
 }
 
-async function copyText(text: string): Promise<boolean> {
-  try {
-    //oxlint-disable typescript/no-unnecessary-condition
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // fall through
-  }
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    return ok;
-  } catch {
-    return false;
-  }
-}
-
 // ─── Key row ──────────────────────────────────────────────────────────────────
 
 function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; keyName: string; onDeleted: () => void; onSaved: () => void }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
-  const [showValue, setShowValue] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const { copy, copied } = useCopyToClipboard({ showToast: true, feedbackDuration: 1500 });
 
   // Reveal existing secret (fetched on demand — list RPC only returns keys)
-  const [revealed, setRevealed] = useState(false);
-  const [revealedValue, setRevealedValue] = useState<string | null>(null);
-  const [revealing, setRevealing] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const copiedTimeoutRef = useRef<number | null>(null);
-
-  const resetReveal = () => {
-    setRevealed(false);
-    setRevealedValue(null);
-  };
+  const secret = useRevealSecret({
+    fetchSecret: async () => {
+      const result = await vaultRPCClient.getItem({ category, key: keyName });
+      if (!result.found || result.value === undefined) {
+        throw new Error(`"${keyName}" not found in vault`);
+      }
+      return result.value;
+    },
+    autoHideMs: 30_000,
+    onError: err => {
+      toastManager.error(formatError(err), { duration: 5000 });
+    },
+  });
 
   const cancelEdit = () => {
     setEditing(false);
     setValue("");
-    setShowValue(false);
   };
 
-  // Drop revealed secrets from UI/state after a short window (and on unmount).
-  useEffect(() => {
-    if (!revealed) return;
-    const t = window.setTimeout(() => {
-      resetReveal();
-    }, REVEAL_AUTO_HIDE_MS);
-    return () => window.clearTimeout(t);
-  }, [revealed, revealedValue]);
-
-  useEffect(() => {
-    return () => {
-      if (copiedTimeoutRef.current != null) {
-        window.clearTimeout(copiedTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleReveal = async () => {
-    if (revealed) {
-      resetReveal();
-      return;
-    }
-    setRevealing(true);
-    try {
-      const result = await vaultRPCClient.getItem({ category, key: keyName });
-      if (!result.found || result.value === undefined) {
-        toastManager.error(`"${keyName}" not found in vault`, { duration: 4000 });
-        return;
-      }
-      setRevealedValue(result.value);
-      setRevealed(true);
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-    } finally {
-      setRevealing(false);
-    }
-  };
+  const entityDelete = useEntityDelete({
+    // Vault keys are not route-scoped; no navigation needed after delete.
+    currentRouteId: null,
+    navigateToOverview: () => {},
+    refreshList: onDeleted,
+    clearLocalState: () => {
+      secret.hide();
+      cancelEdit();
+    },
+    successMessage: name => `"${name}" deleted`,
+  });
 
   const handleCopy = async () => {
-    // Prefer already-revealed value; otherwise fetch for clipboard only (do not force reveal).
-    let text: string | null = revealed && revealedValue != null ? revealedValue : null;
-    if (text == null) {
-      setRevealing(true);
-      try {
-        const result = await vaultRPCClient.getItem({ category, key: keyName });
-        if (!result.found || result.value === undefined) {
-          toastManager.error(`"${keyName}" not found in vault`, { duration: 4000 });
-          return;
-        }
-        text = result.value;
-      } catch (err) {
-        toastManager.error(formatError(err), { duration: 5000 });
-        return;
-      } finally {
-        setRevealing(false);
-      }
-    }
-    if (text == null) return;
-    const ok = await copyText(text);
-    if (ok) {
-      setCopied(true);
-      toastManager.success("Copied to clipboard", { duration: 2000 });
-      if (copiedTimeoutRef.current != null) {
-        window.clearTimeout(copiedTimeoutRef.current);
-      }
-      copiedTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
-    } else {
-      toastManager.error("Could not copy to clipboard", { duration: 3000 });
-    }
+    const text = await secret.fetchForClipboard();
+    if (text != null) await copy(text);
   };
 
   const handleSave = async () => {
@@ -175,7 +99,7 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
       await assertMutationOk(result, "Failed to save key");
       toastManager.success(`"${keyName}" saved`, { duration: 3000 });
       cancelEdit();
-      resetReveal();
+      secret.hide();
       onSaved();
     } catch (err) {
       toastManager.error(formatError(err), { duration: 5000 });
@@ -189,21 +113,14 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
       setConfirmDelete(true);
       return;
     }
-    setDeleting(true);
-    try {
+    setConfirmDelete(false);
+    await entityDelete.deleteEntity(keyName, keyName, async () => {
       const result = await vaultRPCClient.deleteItems({ updates: [{ category, key: keyName }] });
       await assertMutationOk(result, "Failed to delete key");
-      toastManager.success(`"${keyName}" deleted`, { duration: 3000 });
-      // Clear local secret state before the row may unmount after revalidate
-      resetReveal();
-      cancelEdit();
-      onDeleted();
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-      setDeleting(false);
-      setConfirmDelete(false);
-    }
+    });
   };
+
+  const deleting = entityDelete.isDeleting;
 
   return (
     <div className="flex flex-col gap-2 px-4 py-3 border-b border-primary last:border-b-0">
@@ -217,18 +134,24 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
             <>
               <button
                 type="button"
-                onClick={() => void handleReveal()}
-                disabled={revealing}
+                onClick={() => void secret.toggleReveal()}
+                disabled={secret.loading}
                 className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring cursor-pointer disabled:opacity-50"
-                title={revealed ? "Hide value" : "Show value"}
-                aria-label={revealed ? "Hide value" : "Show value"}
+                title={secret.revealed ? "Hide value" : "Show value"}
+                aria-label={secret.revealed ? "Hide value" : "Show value"}
               >
-                {revealing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : revealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                {secret.loading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : secret.revealed ? (
+                  <EyeOff className="w-3.5 h-3.5" />
+                ) : (
+                  <Eye className="w-3.5 h-3.5" />
+                )}
               </button>
               <button
                 type="button"
                 onClick={() => void handleCopy()}
-                disabled={revealing}
+                disabled={secret.loading}
                 className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring cursor-pointer disabled:opacity-50"
                 title="Copy value"
                 aria-label="Copy value"
@@ -240,9 +163,8 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
                 onClick={() => {
                   setEditing(true);
                   setConfirmDelete(false);
-                  resetReveal();
+                  secret.hide();
                   setValue("");
-                  setShowValue(false);
                 }}
                 className="p-1.5 text-muted hover:text-primary transition-colors rounded-md focus-ring cursor-pointer"
                 title="Update value"
@@ -288,37 +210,26 @@ function KeyRow({ category, keyName, onDeleted, onSaved }: { category: string; k
         </div>
       </div>
 
-      {revealed && revealedValue != null && !editing && (
+      {secret.revealed && secret.value != null && !editing && (
         <div className="pl-6">
-          <div className="bg-input border border-primary rounded-lg px-3 py-2 font-mono text-xs text-primary break-all select-all">{revealedValue}</div>
+          <div className="bg-input border border-primary rounded-lg px-3 py-2 font-mono text-xs text-primary break-all select-all">{secret.value}</div>
         </div>
       )}
 
       {editing && (
         <div className="flex items-center gap-2 pl-6">
-          <div className="relative flex-1">
-            <input
-              type={showValue ? "text" : "password"}
-              placeholder="New value..."
-              value={value}
-              onChange={e => setValue(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter") void handleSave();
-                if (e.key === "Escape") cancelEdit();
-              }}
-              autoFocus
-              className="w-full bg-input border border-primary rounded-lg py-1.5 pl-3 pr-8 text-xs text-primary placeholder-muted focus-accent font-mono"
-            />
-            <button
-              type="button"
-              onClick={() => setShowValue(v => !v)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-primary cursor-pointer"
-              title={showValue ? "Hide value" : "Show value"}
-              aria-label={showValue ? "Hide value" : "Show value"}
-            >
-              {showValue ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-            </button>
-          </div>
+          <PasswordInput
+            className="flex-1"
+            placeholder="New value..."
+            value={value}
+            onChange={setValue}
+            onKeyDown={e => {
+              if (e.key === "Enter") void handleSave();
+              if (e.key === "Escape") cancelEdit();
+            }}
+            autoFocus
+            aria-label="New value"
+          />
           <button
             type="button"
             onClick={() => void handleSave()}
@@ -349,13 +260,11 @@ function AddKeyForm({ category, onAdded }: { category: string; onAdded: () => vo
   const [open, setOpen] = useState(false);
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
-  const [showValue, setShowValue] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const resetForm = () => {
     setKey("");
     setValue("");
-    setShowValue(false);
     setOpen(false);
   };
 
@@ -401,28 +310,17 @@ function AddKeyForm({ category, onAdded }: { category: string; onAdded: () => vo
         className="w-full bg-input border border-primary rounded-lg py-1.5 px-3 text-xs text-primary placeholder-muted focus-accent font-mono"
       />
       <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <input
-            type={showValue ? "text" : "password"}
-            placeholder="Value"
-            value={value}
-            onChange={e => setValue(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter") void handleSave();
-              if (e.key === "Escape") resetForm();
-            }}
-            className="w-full bg-input border border-primary rounded-lg py-1.5 pl-3 pr-8 text-xs text-primary placeholder-muted focus-accent font-mono"
-          />
-          <button
-            type="button"
-            onClick={() => setShowValue(v => !v)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-primary cursor-pointer"
-            title={showValue ? "Hide value" : "Show value"}
-            aria-label={showValue ? "Hide value" : "Show value"}
-          >
-            {showValue ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-          </button>
-        </div>
+        <PasswordInput
+          className="flex-1"
+          placeholder="Value"
+          value={value}
+          onChange={setValue}
+          onKeyDown={e => {
+            if (e.key === "Enter") void handleSave();
+            if (e.key === "Escape") resetForm();
+          }}
+          aria-label="Value"
+        />
         <button
           type="button"
           onClick={() => void handleSave()}
@@ -461,6 +359,15 @@ function BulkImportModal({
 }) {
   const [text, setText] = useState("");
   const [importing, setImporting] = useState(false);
+
+  // Escape closes the modal (same pattern as OpenDocumentModal and other dialogs)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !importing) onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose, importing]);
 
   const parseEntries = (raw: string) => {
     const entries: { key: string; value: string }[] = [];
@@ -709,28 +616,7 @@ export default function VaultApp() {
           <ErrorState title="Failed to load vault" error={vault.error} onRetry={() => void vault.mutate()} variant="page" />
         ) : (
           <div className="max-w-2xl mx-auto py-6 px-4 sm:px-6 space-y-6">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
-              <input
-                type="search"
-                placeholder="Search keys..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full bg-input border border-primary rounded-lg py-1.5 pl-9 pr-8 text-xs text-primary placeholder-muted focus-accent"
-                aria-label="Search vault keys"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted hover:text-primary cursor-pointer"
-                  aria-label="Clear search"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
+            <SearchInput value={search} onChange={setSearch} placeholder="Search keys..." aria-label="Search vault keys" />
 
             {/* Category sections */}
             {displayedCategories.map(id => (

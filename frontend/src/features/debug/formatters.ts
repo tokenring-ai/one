@@ -1,9 +1,4 @@
-/** Formats a snapshot file size for the snapshot list. */
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+export { formatBytes } from "@tokenring-ai/utility/number/formatBytes";
 
 /** Formats a capture time as a local time-of-day, with the date when it is not today. */
 export function formatCaptureTime(timestamp: number): string {

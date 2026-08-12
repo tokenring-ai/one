@@ -1,9 +1,9 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2, Plus, X } from "lucide-react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
+import FormActionBar from "../../components/ui/FormActionBar.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
-import { cn } from "../../lib/utils.ts";
 import { queueRPCClient, useAgentTypes } from "../../rpc.ts";
 
 type CreateQueueFormProps = {
@@ -35,7 +35,7 @@ export default function CreateQueueForm({ existingNames, onCreated, onCancel }: 
   const effectiveAgentType = agentType.trim();
   const typesLoading = agentTypes.isLoading && typeList.length === 0;
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -176,25 +176,14 @@ export default function CreateQueueForm({ existingNames, onCreated, onCancel }: 
         </label>
       </div>
 
-      <div className="flex items-center justify-end gap-2 pt-1">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-3 py-1.5 text-xs text-muted hover:text-primary border border-primary rounded-lg focus-ring cursor-pointer"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={saving || typesLoading || !effectiveAgentType}
-          className={cn(
-            "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-sky-600 hover:bg-sky-500 text-white rounded-lg focus-ring cursor-pointer disabled:opacity-50 shadow-sm",
-          )}
-        >
-          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-          Create queue
-        </button>
-      </div>
+      <FormActionBar
+        onCancel={onCancel}
+        submitLabel="Create queue"
+        submitIcon={Plus}
+        loading={saving}
+        disabled={typesLoading || !effectiveAgentType}
+        variant="sky"
+      />
     </form>
   );
 }

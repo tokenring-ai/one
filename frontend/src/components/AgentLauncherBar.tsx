@@ -1,12 +1,17 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { agentRPCClient, useAgentTypes } from "../rpc.ts";
 import { toastManager } from "./ui/toast.tsx";
 
 interface AgentLauncherBarProps {
   /** Pre-selected agent type. Defaults to first available type. */
   defaultAgentType?: string;
+  /**
+   * When set, only these agent type ids are offered in the selector
+   * (still resolved against the installed agent type catalog for display names).
+   */
+  allowedAgentTypes?: readonly string[];
   /** Label shown on the launch button */
   buttonLabel: string;
   /** Tailwind classes applied to the launch button */
@@ -19,20 +24,27 @@ interface AgentLauncherBarProps {
  * Compact agent-type selector and launch button, designed to sit inside a
  * toolbar or header bar. Calls `onLaunch` with the created agent id.
  */
-export default function AgentLauncherBar({ defaultAgentType, buttonLabel, buttonClassName, onLaunch }: AgentLauncherBarProps) {
+export default function AgentLauncherBar({ defaultAgentType, allowedAgentTypes, buttonLabel, buttonClassName, onLaunch }: AgentLauncherBarProps) {
   const agentTypes = useAgentTypes();
   const [selectedType, setSelectedType] = useState<string>(defaultAgentType ?? "");
   const [launching, setLaunching] = useState(false);
 
-  // Once types load, pre-select only if a defaultAgentType was provided
+  const types = useMemo(() => {
+    const all = agentTypes.data ?? [];
+    if (!allowedAgentTypes) return all;
+    return all.filter(t => allowedAgentTypes.includes(t.type));
+  }, [agentTypes.data, allowedAgentTypes]);
+
+  // Once types load, pre-select the default (or first available) type.
   useEffect(() => {
     if (selectedType) return;
-    const types = agentTypes.data ?? [];
     if (types.length === 0) return;
     if (defaultAgentType && types.find(t => t.type === defaultAgentType)) {
       setSelectedType(defaultAgentType);
+    } else if (!defaultAgentType) {
+      setSelectedType(types[0]!.type);
     }
-  }, [agentTypes.data, defaultAgentType, selectedType]);
+  }, [types, defaultAgentType, selectedType]);
 
   const handleLaunch = async () => {
     if (!selectedType) return;
@@ -46,8 +58,6 @@ export default function AgentLauncherBar({ defaultAgentType, buttonLabel, button
       setLaunching(false);
     }
   };
-
-  const types = agentTypes.data ?? [];
 
   return (
     <div className="flex items-center gap-1.5">

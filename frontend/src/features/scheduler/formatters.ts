@@ -1,33 +1,16 @@
+import { formatDurationBetween } from "@tokenring-ai/utility/date/formatDuration";
+import { formatRelativeTime as formatRelativeTimeBase } from "@tokenring-ai/utility/date/formatRelativeTime";
+import { formatTimestamp } from "@tokenring-ai/utility/date/formatTimestamp";
+import { truncateText } from "@tokenring-ai/utility/string/truncateText";
+
 /** Format a unix-ms timestamp for schedule UI display. */
 export function formatScheduleTime(ts: number | null | undefined, opts?: { withSeconds?: boolean }): string {
-  if (ts == null || ts <= 0) return "—";
-  return new Date(ts).toLocaleString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    ...(opts?.withSeconds ? { second: "2-digit" } : {}),
-  });
+  return formatTimestamp(ts, { ...opts, weekday: true });
 }
 
-/** Relative phrase for next/last run times. */
+/** Relative phrase for next/last run times (second-precision "just now"). */
 export function formatRelativeTime(ts: number | null | undefined, now = Date.now()): string {
-  if (ts == null || ts <= 0) return "—";
-  const delta = ts - now;
-  const abs = Math.abs(delta);
-  const minutes = Math.round(abs / 60_000);
-  const hours = Math.round(abs / 3_600_000);
-  const days = Math.round(abs / 86_400_000);
-
-  let unit: string;
-  if (minutes < 1) unit = "just now";
-  else if (minutes < 60) unit = `${minutes}m`;
-  else if (hours < 48) unit = `${hours}h`;
-  else unit = `${days}d`;
-
-  if (unit === "just now") return unit;
-  return delta >= 0 ? `in ${unit}` : `${unit} ago`;
+  return formatRelativeTimeBase(ts, { now, precise: true });
 }
 
 /** Human summary of schedule constraints. */
@@ -64,23 +47,12 @@ export function formatScheduleSummary(task: {
 
 /** Duration between two unix-ms timestamps. */
 export function formatDuration(startTime: number, endTime: number): string {
-  const ms = Math.max(0, endTime - startTime);
-  if (ms < 1000) return `${ms}ms`;
-  const seconds = Math.round(ms / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  const rem = seconds % 60;
-  if (minutes < 60) return rem ? `${minutes}m ${rem}s` : `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const remMin = minutes % 60;
-  return remMin ? `${hours}h ${remMin}m` : `${hours}h`;
+  return formatDurationBetween(startTime, endTime);
 }
 
-/** Truncate long task messages for list rows. */
+/** Truncate long task messages for list rows (default max 120 for schedule UI density). */
 export function truncateMessage(message: string, max = 120): string {
-  const cleaned = message.replace(/\s+/g, " ").trim();
-  if (cleaned.length <= max) return cleaned;
-  return `${cleaned.slice(0, max - 1)}…`;
+  return truncateText(message, max);
 }
 
 /**

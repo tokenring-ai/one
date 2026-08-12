@@ -1,6 +1,6 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { Cpu, Glasses, Loader2, Pause, Play, Trash2, User, Wrench } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Cpu, Glasses, Loader2, Pause, Trash2, User, Wrench } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AgentTodoList from "../../components/AgentTodoList.tsx";
 import CheckpointBrowser from "../../components/CheckpointBrowser.tsx";
@@ -8,11 +8,17 @@ import ChatPanel from "../../components/chat/ChatPanel.tsx";
 import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
 import SidebarCategoryAccordion from "../../components/layout/SidebarCategoryAccordion.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
-import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import EmptyState from "../../components/ui/EmptyState.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
+import LaunchButton from "../../components/ui/LaunchButton.tsx";
+import ListItemWithActions from "../../components/ui/ListItemWithActions.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useConfirmDialog } from "../../hooks/useConfirmDialog.tsx";
+import { useEntityDelete } from "../../hooks/useEntityDelete.ts";
+import { useStaleRouteRedirect } from "../../hooks/useStaleRouteRedirect.ts";
+import { toastOnReject } from "../../lib/toastOnReject.ts";
 import { agentRPCClient, useAgentList, useAgentTypes } from "../../rpc.ts";
 
 /** Fallback group for agent types whose config omits a category. */
@@ -199,49 +205,53 @@ function AgentSidebar({
           loadingState={<LoadingState size="sm" className="py-6" />}
           errorState={<ErrorState title="Failed to load agent types" error={agentTypesError} onRetry={onRetryAgentTypes} variant="inline" />}
           emptyState={
-            <div className="px-3 py-6 text-center">
-              <User className="w-6 h-6 text-muted mx-auto mb-2 opacity-60" />
-              <p className="text-xs text-muted">No agent types configured</p>
-              <Link to="/configuration" className="inline-block mt-2 text-xs text-accent hover:text-accent-soft focus-ring rounded">
-                Open Configuration
-              </Link>
-            </div>
+            <EmptyState
+              variant="compact"
+              icon={User}
+              title="No agent types configured"
+              action={
+                <Link to="/configuration" className="text-xs text-accent hover:text-accent-soft focus-ring rounded">
+                  Open Configuration
+                </Link>
+              }
+            />
           }
           noMatchState={query => <div className="px-3 py-4 text-center text-muted text-xs italic">No types match “{query}”</div>}
           renderItem={agentType => {
             const isSelected = selectedType === agentType.type;
             const isLaunching = launchingType === agentType.type;
             return (
-              <div
-                className={`group flex items-center gap-0.5 pl-5 pr-1.5 py-1 transition-colors ${
-                  isSelected ? "bg-accent/30" : "hover:bg-accent/15 text-primary"
-                }`}
+              <ListItemWithActions
+                id={agentType.type}
+                selected={isSelected}
+                onPrimary={() => onLaunchType(agentType.type)}
+                alwaysShowAction={isSelected}
+                primaryProps={{
+                  disabled: isLaunching,
+                  title: agentType.description || `Launch ${agentType.displayName || agentType.type}`,
+                  "aria-label": `Launch ${agentType.displayName || agentType.type}`,
+                  className: "disabled:cursor-not-allowed disabled:opacity-60",
+                }}
+                className={`gap-0.5 pl-5 pr-1.5 py-1 rounded-none ${isSelected ? "bg-accent/30" : "hover:bg-accent/15 text-primary"}`}
+                action={
+                  <button
+                    type="button"
+                    onClick={() => onSelectType(agentType.type)}
+                    title={`View ${agentType.displayName || agentType.type}`}
+                    aria-label={`View ${agentType.displayName || agentType.type}`}
+                    className={`p-1 rounded transition-colors cursor-pointer focus-ring ${
+                      isSelected ? "text-accent hover:bg-accent/15" : "text-muted hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/10"
+                    }`}
+                  >
+                    <Glasses className="w-3 h-3" />
+                  </button>
+                }
               >
-                <button
-                  type="button"
-                  onClick={() => onLaunchType(agentType.type)}
-                  disabled={isLaunching}
-                  className="min-w-0 flex-1 flex items-center gap-1.5 py-0.5 text-left cursor-pointer focus-ring rounded disabled:cursor-not-allowed disabled:opacity-60"
-                  title={agentType.description || `Launch ${agentType.displayName || agentType.type}`}
-                  aria-label={`Launch ${agentType.displayName || agentType.type}`}
-                >
+                <span className="flex items-center gap-1.5 py-0.5 min-w-0">
                   {isLaunching ? <Loader2 className="w-3 h-3 shrink-0 animate-spin opacity-70" /> : <User className="w-3 h-3 shrink-0 opacity-70" />}
                   <span className="flex-1 min-w-0 truncate text-xs">{agentType.displayName || agentType.type}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSelectType(agentType.type)}
-                  title={`View ${agentType.displayName || agentType.type}`}
-                  aria-label={`View ${agentType.displayName || agentType.type}`}
-                  className={`p-1 rounded transition-colors cursor-pointer focus-ring shrink-0 ${
-                    isSelected
-                      ? "text-accent hover:bg-accent/15"
-                      : "text-muted opacity-0 group-hover:opacity-100 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/10 focus-visible:opacity-100"
-                  }`}
-                >
-                  <Glasses className="w-3 h-3" />
-                </button>
-              </div>
+                </span>
+              </ListItemWithActions>
             );
           }}
         />
@@ -291,16 +301,7 @@ function AgentTypeDetail({
         >
           Overview
         </button>
-        <button
-          type="button"
-          onClick={onLaunch}
-          disabled={launching}
-          title="Start a new agent of this type"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {launching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-          {launching ? "Launching…" : "Launch"}
-        </button>
+        <LaunchButton loading={launching} onClick={onLaunch} title="Start a new agent of this type" />
       </AppPageHeader>
 
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
@@ -400,27 +401,28 @@ function AgentsOverview({
           {agentTypesError && !hasAgentTypes ? (
             <ErrorState title="Failed to load agent types" error={agentTypesError} onRetry={onRetryAgentTypes} variant="page" className="py-8" />
           ) : (
-            <div className="flex flex-col items-center text-center gap-3 py-4">
-              <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
-                <Cpu className="w-7 h-7 text-white" />
-              </div>
-              <div className="max-w-md space-y-2">
-                <h2 className="text-base font-semibold text-primary">{hasAgentTypes ? "Select an agent type" : "No agent types configured"}</h2>
-                <p className="text-sm text-muted leading-relaxed">
-                  {hasAgentTypes
-                    ? "Pick an agent type from the list to see what it does and which tools it can use, then launch it. Running agents and their todo lists are shown above the list."
-                    : "Agent types come from your TokenRing configuration. Add one in the Configuration app to get started."}
-                </p>
-                {!hasAgentTypes && (
+            <EmptyState
+              variant="page"
+              className="h-auto py-4"
+              icon={Cpu}
+              iconBadgeClassName="bg-linear-to-br from-amber-500 to-orange-600"
+              title={hasAgentTypes ? "Select an agent type" : "No agent types configured"}
+              hint={
+                hasAgentTypes
+                  ? "Pick an agent type from the list to see what it does and which tools it can use, then launch it. Running agents and their todo lists are shown above the list."
+                  : "Agent types come from your TokenRing configuration. Add one in the Configuration app to get started."
+              }
+              action={
+                hasAgentTypes ? null : (
                   <Link
                     to="/configuration"
-                    className="inline-flex items-center gap-1.5 mt-1 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors focus-ring"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors focus-ring"
                   >
                     Open Configuration
                   </Link>
-                )}
-              </div>
-            </div>
+                )
+              }
+            />
           )}
 
           <CheckpointBrowser agents={agents} />
@@ -439,13 +441,11 @@ export default function AgentsApp() {
   const { agentType: routeAgentType, agentId: routeAgentId } = useParams<{ agentType?: string; agentId?: string }>();
   const agents = useAgentList();
   const agentTypes = useAgentTypes();
-  const [deletingAgentId, setDeletingAgentId] = useState<string | null>(null);
   const [launchingType, setLaunchingType] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const { openConfirm, Dialog: ConfirmDialog } = useConfirmDialog();
 
   // Synchronous guards so double-clicks cannot start the same action twice before re-render disables the control.
   const launchingTypesRef = useRef(new Set<string>());
-  const deletingAgentsRef = useRef(new Set<string>());
 
   const agentList = (agents.data ?? []) as RunningAgent[];
   const agentTypeList = (agentTypes.data ?? []) as AgentType[];
@@ -455,15 +455,17 @@ export default function AgentsApp() {
     [agentTypeList, routeAgentType],
   );
 
-  const confirmDeleteAgent = useMemo(() => (confirmDeleteId ? (agentList.find(a => a.id === confirmDeleteId) ?? null) : null), [agentList, confirmDeleteId]);
-
   // A route pointing at an agent type that is no longer configured resets to the overview.
-  useEffect(() => {
-    if (routeAgentType && !agentTypes.isLoading && !agentTypes.error && agentTypeList.length > 0 && !selectedAgentType) {
-      toastManager.error(`Agent type "${routeAgentType}" not found`, { duration: 4000 });
-      void navigate("/agents", { replace: true });
-    }
-  }, [routeAgentType, selectedAgentType, agentTypeList.length, agentTypes.isLoading, agentTypes.error, navigate]);
+  // Wait until agent types have loaded (non-empty list) so an empty initial payload does not flash a not-found toast.
+  useStaleRouteRedirect({
+    routeParam: routeAgentType,
+    entity: selectedAgentType,
+    isLoading: agentTypes.isLoading || agentTypeList.length === 0,
+    hasError: !!agentTypes.error,
+    navigate,
+    fallbackPath: "/agents",
+    entityLabel: "Agent type",
+  });
 
   const handleGoOverview = useCallback(() => void navigate("/agents"), [navigate]);
 
@@ -471,8 +473,17 @@ export default function AgentsApp() {
 
   const refreshAgents = useCallback(() => {
     // Sidebar refresh is best-effort; stream reconnect can fail without undoing the action.
-    void Promise.resolve(agents.mutate()).catch(() => {});
+    toastOnReject(Promise.resolve(agents.mutate()), {
+      message: err => `Failed to refresh agent list: ${formatError(err)}`,
+      duration: 4000,
+    });
   }, [agents]);
+
+  const entityDelete = useEntityDelete({
+    currentRouteId: routeAgentId ?? null,
+    navigateToOverview: () => void navigate("/agents"),
+    refreshList: refreshAgents,
+  });
 
   const handleLaunch = useCallback(
     async (type: string) => {
@@ -495,32 +506,33 @@ export default function AgentsApp() {
     [navigate, refreshAgents],
   );
 
-  const handleConfirmDelete = useCallback(async () => {
-    if (!confirmDeleteId || deletingAgentsRef.current.has(confirmDeleteId)) return;
-    const agentId = confirmDeleteId;
-    const displayName = confirmDeleteAgent?.displayName ?? agentId;
-    deletingAgentsRef.current.add(agentId);
-    setConfirmDeleteId(null);
-    setDeletingAgentId(agentId);
-    try {
-      const result = await agentRPCClient.deleteAgent({ agentId, reason: "User initiated agent deletion from Agents app" });
-      if (result.status === "agentNotFound") {
-        toastManager.error(`Agent "${displayName}" is no longer running`, { duration: 4000 });
-        refreshAgents();
-        if (routeAgentId === agentId) void navigate("/agents");
-        return;
-      }
-      toastManager.success(`Deleted "${displayName}"`, { duration: 3000 });
-      // Leave the deleted chat before refreshing so the sidebar doesn't briefly re-highlight it.
-      if (routeAgentId === agentId) void navigate("/agents");
-      refreshAgents();
-    } catch (error) {
-      toastManager.error(formatError(error), { duration: 5000 });
-    } finally {
-      deletingAgentsRef.current.delete(agentId);
-      setDeletingAgentId(prev => (prev === agentId ? null : prev));
-    }
-  }, [confirmDeleteAgent, confirmDeleteId, navigate, refreshAgents, routeAgentId]);
+  const handleDeleteAgent = useCallback(
+    async (agentId: string) => {
+      if (entityDelete.deletingId === agentId) return;
+      const displayName = agentList.find(a => a.id === agentId)?.displayName ?? agentId;
+      const confirmed = await openConfirm({
+        title: "Delete Agent",
+        message: `Are you sure you want to delete "${displayName}"? This action cannot be undone.`,
+        confirmText: "Delete",
+        variant: "danger",
+      });
+      if (!confirmed) return;
+      await entityDelete.deleteEntity(agentId, displayName, async () => {
+        const result = await agentRPCClient.deleteAgent({
+          agentId,
+          reason: "User initiated agent deletion from Agents app",
+        });
+        if (result.status === "agentNotFound") {
+          // Agent is already gone — clean up the route/list here, then throw so the hook
+          // shows an error toast (and skips the success path).
+          if (routeAgentId === agentId) void navigate("/agents");
+          refreshAgents();
+          throw new Error(`Agent "${displayName}" is no longer running`);
+        }
+      });
+    },
+    [agentList, entityDelete, navigate, openConfirm, refreshAgents, routeAgentId],
+  );
 
   const detailPane = (() => {
     if (routeAgentId) {
@@ -551,7 +563,7 @@ export default function AgentsApp() {
           agentType={selectedAgentType}
           runningAgents={agentList.filter(agent => agent.agentType === selectedAgentType.type)}
           launching={launchingType === selectedAgentType.type}
-          onLaunch={() => void handleLaunch(selectedAgentType.type)}
+          onLaunch={() => toastOnReject(handleLaunch(selectedAgentType.type))}
           onOpenAgent={id => void navigate(`/agent/${id}`)}
           onBack={handleGoOverview}
         />
@@ -574,7 +586,9 @@ export default function AgentsApp() {
         appId="agents"
         title="Agents"
         navigationLabel="Agents and agent types"
-        hasSelection={routeAgentId !== undefined || selectedAgentType !== null}
+        // Only an open agent chat counts as a selection for mobile master/detail.
+        // Type detail pages keep the navigation sidebar available on small viewports.
+        hasSelection={routeAgentId !== undefined}
         className="flex-1"
         navigation={
           <AgentSidebar
@@ -589,11 +603,11 @@ export default function AgentsApp() {
             selectedAgentId={routeAgentId ?? null}
             selectedType={selectedAgentType?.type ?? null}
             launchingType={launchingType}
-            deletingAgentId={deletingAgentId}
+            deletingAgentId={entityDelete.deletingId}
             onSelectType={handleSelectType}
-            onLaunchType={type => void handleLaunch(type)}
+            onLaunchType={type => toastOnReject(handleLaunch(type))}
             onOpenAgent={id => void navigate(`/agent/${id}`)}
-            onDeleteAgent={setConfirmDeleteId}
+            onDeleteAgent={id => void handleDeleteAgent(id)}
             onGoOverview={handleGoOverview}
           />
         }
@@ -601,20 +615,7 @@ export default function AgentsApp() {
         {detailPane}
       </WorkspaceShell>
 
-      {confirmDeleteId && (
-        <ConfirmDialog
-          title="Delete Agent"
-          message={
-            confirmDeleteAgent
-              ? `Are you sure you want to delete "${confirmDeleteAgent.displayName}"? This action cannot be undone.`
-              : "Are you sure you want to delete this agent? This action cannot be undone."
-          }
-          confirmText="Delete"
-          onConfirm={handleConfirmDelete}
-          onCancel={() => setConfirmDeleteId(null)}
-          variant="danger"
-        />
-      )}
+      <ConfirmDialog />
     </div>
   );
 }

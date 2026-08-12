@@ -1,6 +1,3 @@
-linuxAudio:
-  accounts:
-    linux: {}
 audio:
   agentDefaults:
     provider: linux

@@ -2,6 +2,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useRefSync } from "../../hooks/useRefSync.ts";
 
 /** Matches the `bg-[#1a1a2e]` panel the terminal used to render into. */
 const TERMINAL_THEME = {
@@ -86,8 +87,7 @@ export default function XTermView({ output, onResize, onSubmit, readOnly, classN
   const interactive = onSubmit !== undefined && !readOnly;
 
   // Held in a ref so a new callback identity doesn't tear down and rebuild the terminal.
-  const onResizeRef = useRef(onResize);
-  onResizeRef.current = onResize;
+  const onResizeRef = useRefSync(onResize);
 
   const measureCaret = useCallback(() => {
     const term = termRef.current;

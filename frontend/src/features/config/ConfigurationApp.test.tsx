@@ -217,6 +217,54 @@ describe("ConfigForm", () => {
     expect(onDraftChange.mock.calls.at(-1)?.[0]).toEqual({ widget: { tags: [] } });
   });
 
+  it("collapses map entries until the row is clicked", async () => {
+    const user = userEvent.setup();
+    renderForm();
+
+    expect(screen.queryByRole("textbox", { name: "Url" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^main/ }));
+    expect(screen.getByRole("textbox", { name: "Url" })).toHaveValue("sqlite://x");
+
+    await user.click(screen.getByRole("button", { name: /^main/ }));
+    expect(screen.queryByRole("textbox", { name: "Url" })).not.toBeInTheDocument();
+  });
+
+  it("expands a newly added map entry", async () => {
+    const user = userEvent.setup();
+    let draft: Record<string, unknown> = {};
+
+    const Harness = () => {
+      const [current, setCurrent] = useState(draft);
+      return (
+        <ConfigForm
+          plugin={pluginFixture}
+          draft={current}
+          effective={(valuesData as any).effective}
+          issues={[]}
+          onDraftChange={next => {
+            draft = next;
+            setCurrent(next);
+          }}
+        />
+      );
+    };
+
+    render(<Harness />);
+    await user.type(screen.getByRole("textbox", { name: "Add entry to Connections" }), "replica");
+    await user.click(screen.getByRole("button", { name: "Add entry" }));
+
+    expect(draft).toEqual({ connections: { replica: {} } });
+    expect(screen.getByRole("button", { name: /^replica/ })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("keeps map entries with validation issues expanded", () => {
+    renderForm({}, [{ path: ["connections", "main", "url"], message: "Bad url" }]);
+
+    expect(screen.getByRole("button", { name: /^main/ })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("Bad url");
+  });
+
   it("restores a secret override within the same mount when source is toggled away and back", async () => {
     const secretPlugin: ConfigUIPluginSchema = {
       pluginName: "secret-plugin",
@@ -307,10 +355,10 @@ describe("ConfigurationApp", () => {
 
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toBeInTheDocument());
     await user.type(screen.getByRole("textbox", { name: "Name" }), "x");
-    await user.click(screen.getByRole("button", { name: "Save to user" }));
+    await user.click(screen.getByRole("button", { name: "Save to global" }));
 
-    expect(applyConfigMock).toHaveBeenCalledWith({ scope: "user", overrides: { widget: { name: "eff-namex" } } });
-    await waitFor(() => expect(screen.getByText(/Saved to user configuration/)).toBeInTheDocument());
+    expect(applyConfigMock).toHaveBeenCalledWith({ scope: "global", overrides: { widget: { name: "eff-namex" } } });
+    await waitFor(() => expect(screen.getByText(/Saved to global configuration/)).toBeInTheDocument());
   });
 
   it("reseeds the draft from post-save server values so sensitive redaction does not leave the form dirty", async () => {
@@ -331,10 +379,10 @@ describe("ConfigurationApp", () => {
 
     await waitFor(() => expect(screen.getByLabelText("Api Key")).toBeInTheDocument());
     await user.type(screen.getByLabelText("Api Key"), "new-secret");
-    expect(screen.getByText(/Unsaved changes to the user configuration/)).toBeInTheDocument();
+    expect(screen.getByText(/Unsaved changes to the global configuration/)).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Save to user" }));
-    await waitFor(() => expect(screen.getByText(/Saved to user configuration/)).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Save to global" }));
+    await waitFor(() => expect(screen.getByText(/Saved to global configuration/)).toBeInTheDocument());
     // Draft must match the redacted server snapshot — no lingering "unsaved changes".
     expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument();
     expect(screen.getByLabelText("Api Key")).toHaveAttribute("placeholder", expect.stringContaining("set"));
@@ -348,7 +396,7 @@ describe("ConfigurationApp", () => {
     await waitFor(() => expect(screen.getByRole("spinbutton", { name: "Size" })).toBeInTheDocument());
     await user.clear(screen.getByRole("spinbutton", { name: "Size" }));
     await user.type(screen.getByRole("spinbutton", { name: "Size" }), "0");
-    await user.click(screen.getByRole("button", { name: "Save to user" }));
+    await user.click(screen.getByRole("button", { name: "Save to global" }));
 
     await waitFor(() => expect(screen.getByText("Too small")).toBeInTheDocument());
     expect(screen.getByText(/1 validation issue/)).toBeInTheDocument();
@@ -362,7 +410,7 @@ describe("ConfigurationApp", () => {
     await waitFor(() => expect(screen.getByRole("spinbutton", { name: "Size" })).toBeInTheDocument());
     await user.clear(screen.getByRole("spinbutton", { name: "Size" }));
     await user.type(screen.getByRole("spinbutton", { name: "Size" }), "0");
-    await user.click(screen.getByRole("button", { name: "Save to user" }));
+    await user.click(screen.getByRole("button", { name: "Save to global" }));
     await waitFor(() => expect(screen.getByText("Too small")).toBeInTheDocument());
 
     await user.clear(screen.getByRole("spinbutton", { name: "Size" }));
@@ -377,43 +425,43 @@ describe("ConfigurationApp", () => {
 
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toBeInTheDocument());
     await user.type(screen.getByRole("textbox", { name: "Name" }), "x");
-    expect(screen.getByText(/Unsaved changes to the user configuration/)).toBeInTheDocument();
+    expect(screen.getByText(/Unsaved changes to the global configuration/)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Discard" }));
     expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("eff-name");
   });
 
-  it("switches between user and project scopes", async () => {
+  it("switches between global and workspace scopes", async () => {
     valuesData = {
       ...valuesData,
       overrides: {
-        global: { widget: { name: "user-name" } },
-        workspace: { widget: { name: "project-name" } },
+        global: { widget: { name: "global-name" } },
+        workspace: { widget: { name: "workspace-name" } },
       },
     };
     const user = userEvent.setup();
-    renderApp("/configuration/widget-plugin?scope=user");
+    renderApp("/configuration/widget-plugin?scope=global");
 
-    await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("user-name"));
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("global-name"));
     expect(screen.getByText("/home/user/.tokenring/config.yaml")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /^Project/ }));
-    await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("project-name"));
+    await user.click(screen.getByRole("button", { name: /^Workspace/ }));
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("workspace-name"));
     expect(screen.getByText("/repo/.tokenring/config.yaml")).toBeInTheDocument();
   });
 
-  it("saves to the project scope when selected", async () => {
+  it("saves to the workspace scope when selected", async () => {
     applyConfigMock.mockResolvedValue({ ok: true });
     const user = userEvent.setup();
-    renderApp("/configuration/widget-plugin?scope=project");
+    renderApp("/configuration/widget-plugin?scope=workspace");
 
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toBeInTheDocument());
     await user.type(screen.getByRole("textbox", { name: "Name" }), "y");
-    await user.click(screen.getByRole("button", { name: "Save to project" }));
+    await user.click(screen.getByRole("button", { name: "Save to workspace" }));
 
-    expect(applyConfigMock).toHaveBeenCalledWith({ scope: "project", overrides: { widget: { name: "eff-namey" } } });
-    await waitFor(() => expect(screen.getByText(/Saved to project configuration/)).toBeInTheDocument());
+    expect(applyConfigMock).toHaveBeenCalledWith({ scope: "workspace", overrides: { widget: { name: "eff-namey" } } });
+    await waitFor(() => expect(screen.getByText(/Saved to workspace configuration/)).toBeInTheDocument());
   });
 
   it("shows the overlay error banner", async () => {
@@ -422,17 +470,60 @@ describe("ConfigurationApp", () => {
     await waitFor(() => expect(screen.getByText("overrides were rejected")).toBeInTheDocument());
   });
 
-  it("warns when project overrides shadow the user scope", async () => {
+  it("warns when workspace overrides shadow the global scope", async () => {
     valuesData = {
       ...valuesData,
       overrides: {
-        user: {},
-        project: { widget: { name: "project-name" } },
+        global: {},
+        workspace: { widget: { name: "workspace-name" } },
       },
     };
-    renderApp("/configuration/widget-plugin?scope=user");
+    renderApp("/configuration/widget-plugin?scope=global");
     await waitFor(() => {
-      expect(screen.getByText(/also configured at the project level/)).toBeInTheDocument();
+      expect(screen.getByText(/also configured at the workspace level/)).toBeInTheDocument();
     });
+  });
+
+  it("seeds empty objects when a scope key is missing from server overrides", async () => {
+    // Missing workspace key — must not leave draft as undefined (false dirty + broken form).
+    valuesData = {
+      ...valuesData,
+      overrides: { global: {} },
+    };
+    const user = userEvent.setup();
+    renderApp("/configuration/widget-plugin");
+
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toBeInTheDocument());
+    // Switching scopes must still render a form (seeded to {}).
+    await user.click(screen.getByRole("button", { name: /^Workspace/ }));
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Name" })).toBeInTheDocument());
+    // No false dirty indicator after seeding an empty object for the missing key.
+    expect(screen.queryByText(/Unsaved changes/)).not.toBeInTheDocument();
+  });
+
+  it("does not auto-select a plugin when the URL has no plugin segment", async () => {
+    renderApp("/configuration");
+    await waitFor(() => expect(screen.getByRole("button", { name: /Widget Plugin/ })).toBeInTheDocument());
+    expect(screen.getByText("Select a plugin to configure")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Widget Plugin" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Alpha Plugin" })).not.toBeInTheDocument();
+  });
+
+  it("does not change selection when search filters the list", async () => {
+    const user = userEvent.setup();
+    renderApp("/configuration/widget-plugin");
+
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Widget Plugin" })).toBeInTheDocument());
+    await user.type(screen.getByRole("searchbox", { name: "Search plugins" }), "alpha");
+    // Widget is filtered out of the sidebar, but the detail pane stays on the URL plugin.
+    expect(screen.queryByRole("button", { name: /Widget Plugin/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Widget Plugin" })).toBeInTheDocument();
+  });
+
+  it("clears an unknown plugin deep-link instead of falling back to another plugin", async () => {
+    renderApp("/configuration/missing-plugin");
+    await waitFor(() => expect(screen.getByText("Select a plugin to configure")).toBeInTheDocument());
+    expect(screen.queryByRole("heading", { name: "Widget Plugin" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Alpha Plugin" })).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,6 @@
+import formatError from "@tokenring-ai/utility/error/formatError";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toastManager } from "../components/ui/toast.tsx";
 import { cleanupAgent } from "../lib/agentCleanup.ts";
 import { agentRPCClient } from "../rpc.ts";
 
@@ -39,7 +41,8 @@ export function useLazyAgent({ appName, agentType, headless = false }: UseLazyAg
         ownedRef.current = id;
         setAgentId(id);
         return id;
-      } catch {
+      } catch (error: unknown) {
+        toastManager.error(`Failed to start ${appName} agent: ${formatError(error)}`, { duration: 5000 });
         return null;
       } finally {
         startPromiseRef.current = null;
@@ -48,7 +51,7 @@ export function useLazyAgent({ appName, agentType, headless = false }: UseLazyAg
 
     startPromiseRef.current = startPromise;
     return startPromise;
-  }, [agentId, agentType, headless]);
+  }, [agentId, agentType, headless, appName]);
 
   const assignAgent = useCallback((id: string) => {
     ownedRef.current = id;

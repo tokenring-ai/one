@@ -3,6 +3,7 @@ import type { MaybePromise } from "bun";
 import { Check, ChevronDown, ChevronRight, Send, X } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRefSync } from "../../../hooks/useRefSync.ts";
 import { sendInteractionResponse } from "../sendInteractionResponse.ts";
 
 interface TreeInlineProps {
@@ -191,8 +192,7 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
 
   const [selected, setSelected] = useState<Set<string>>(() => new Set(initialSelected));
   // Keep a ref so submit always sees the latest selection (avoids stale closure if defaults were set on mount)
-  const selectedRef = useRef(selected);
-  selectedRef.current = selected;
+  const selectedRef = useRefSync(selected);
 
   // Expand first root plus every ancestor of pre-selected leaves so defaults are visible and interactable
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
@@ -210,8 +210,7 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedValue, setFocusedValue] = useState<string | null>(null);
-  const focusedValueRef = useRef<string | null>(null);
-  focusedValueRef.current = focusedValue;
+  const focusedValueRef = useRefSync(focusedValue);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Seed selection from defaults once. Avoid re-running when parent re-creates the question object.

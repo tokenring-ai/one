@@ -1,31 +1,23 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import {
-  Activity,
-  Ban,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Clock,
-  Eraser,
-  ExternalLink,
-  History,
-  Layers,
-  ListOrdered,
-  Loader2,
-  Plus,
-  RefreshCw,
-  XCircle,
-} from "lucide-react";
-import type { ReactNode } from "react";
+import { Activity, Ban, ChevronDown, ChevronRight, Clock, Eraser, ExternalLink, History, Layers, ListOrdered, Loader2, Plus, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
-import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import EmptyState from "../../components/ui/EmptyState.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import FilterTabs, { type FilterTabOption } from "../../components/ui/FilterTabs.tsx";
+import HistoryRunRow from "../../components/ui/HistoryRunRow.tsx";
+import StatusBadge from "../../components/ui/StatusBadge.tsx";
+import SummaryStat from "../../components/ui/SummaryStat.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useAsyncActionGuard } from "../../hooks/useAsyncActionGuard.ts";
+import { useConfirmDialog } from "../../hooks/useConfirmDialog.tsx";
+import { useExpandedSet } from "../../hooks/useExpandedSet.ts";
+import { type FilterTabDefinition, useFilterTabs } from "../../hooks/useFilterTabs.ts";
+import { useLiveStreamStatusFromSWR } from "../../hooks/useLiveStreamStatus.ts";
+import { useTick } from "../../hooks/useTick.ts";
 import { cn } from "../../lib/utils.ts";
 import { queueRPCClient, useQueues } from "../../rpc.ts";
 import AddItemForm from "./AddItemForm.tsx";
@@ -34,10 +26,19 @@ import { formatDurationBetween, formatDurationMs, formatQueueTime, formatRelativ
 
 type MainTab = "pending" | "running" | "results";
 type ResultFilter = "all" | "completed" | "failed" | "cancelled";
+type QueueResult = { status: string };
+
+const RESULT_FILTER_TAB_DEFS: FilterTabDefinition<QueueResult, ResultFilter>[] = [
+  { id: "all", label: "All" },
+  { id: "completed", label: "Completed", predicate: r => r.status === "completed" },
+  { id: "failed", label: "Failed", predicate: r => r.status === "failed" },
+  { id: "cancelled", label: "Cancelled", predicate: r => r.status === "cancelled" },
+];
 
 export default function QueueDashboard() {
   const navigate = useNavigate();
   const queues = useQueues();
+  const streamStatus = useLiveStreamStatusFromSWR(queues);
   const [selectedQueue, setSelectedQueue] = useState<string | null>(null);
   /** Name to select once the live stream includes a newly created queue. */
   const [pendingSelect, setPendingSelect] = useState<string | null>(null);
@@ -45,11 +46,8 @@ export default function QueueDashboard() {
   const [resultFilter, setResultFilter] = useState<ResultFilter>("all");
   const [showAddForm, setShowAddForm] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
-  const [confirmClear, setConfirmClear] = useState(false);
-  const [busyAction, setBusyAction] = useState<string | null>(null);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
-  const [, setTick] = useState(0);
+  const { openConfirm, Dialog: ConfirmDialog } = useConfirmDialog();
+  const { activeKey: busyAction, execute: executeBusy } = useAsyncActionGuard();
 
   const allQueues = queues.data?.queues ?? {};
   const queueNames = useMemo(() => Object.keys(allQueues).sort((a, b) => a.localeCompare(b)), [allQueues]);
@@ -60,7 +58,7 @@ export default function QueueDashboard() {
     if (pendingSelect && queueNames.includes(pendingSelect)) return pendingSelect;
     if (selectedQueue && queueNames.includes(selectedQueue)) return selectedQueue;
     if (queueNames.length === 0) return null;
-    return queueNames.includes("default") ? "default" : (queueNames[0] ?? null);
+    return queueNames.includes("default") ? "default" : queueNames[0]!;
   }, [pendingSelect, selectedQueue, queueNames]);
 
   // Persist resolved selection into state once stream/create catches up
@@ -88,16 +86,12 @@ export default function QueueDashboard() {
   const totalResults = useMemo(() => Object.values(allQueues).reduce((n, q) => n + q.results.length, 0), [allQueues]);
 
   // Live-tick running durations only when there is active work
-  useEffect(() => {
-    if (running.length === 0) return;
-    const id = setInterval(() => setTick(t => t + 1), 2000);
-    return () => clearInterval(id);
-  }, [running.length]);
+  useTick(2000, running.length > 0);
 
-  // Reset expand state when switching queues/tabs so rows don't stay open with stale ids
-  useEffect(() => {
-    setExpandedIds(new Set());
-  }, [selectedQueueName, tab]);
+  // Collapse rows when switching queues/tabs so stale ids do not stay open
+  const { isExpanded, toggle: toggleExpanded } = useExpandedSet({
+    resetKey: `${selectedQueueName ?? ""}|${tab}`,
+  });
 
   const tabs = useMemo<FilterTabOption<MainTab>[]>(
     () => [
@@ -108,66 +102,58 @@ export default function QueueDashboard() {
     [pending.length, running.length, results.length],
   );
 
-  const resultFilterTabs = useMemo<FilterTabOption<ResultFilter>[]>(
-    () => [
-      { id: "all", label: "All", count: results.length },
-      { id: "completed", label: "Completed", count: results.filter(r => r.status === "completed").length },
-      { id: "failed", label: "Failed", count: results.filter(r => r.status === "failed").length },
-      { id: "cancelled", label: "Cancelled", count: results.filter(r => r.status === "cancelled").length },
-    ],
-    [results],
-  );
+  const { tabs: resultFilterTabs } = useFilterTabs(results, RESULT_FILTER_TAB_DEFS);
 
   const refresh = () => void queues.mutate();
 
-  const toggleExpanded = (id: string) => {
-    setExpandedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  const handleCancel = async (queueName: string, itemId: string) => {
+    const confirmed = await openConfirm({
+      title: "Cancel queue item",
+      message: "Cancel this item? If it is running, its agent will be aborted. This cannot be undone.",
+      confirmText: "Cancel item",
+      cancelText: "Keep",
+      variant: "warning",
+    });
+    if (!confirmed) return;
+    await executeBusy(`cancel:${itemId}`, async () => {
+      try {
+        const result = await queueRPCClient.cancelItem({ queueName, itemId });
+        if (!result.cancelled) {
+          toastManager.warning(result.message, { duration: 3000 });
+        } else {
+          toastManager.success(result.message, { duration: 2500 });
+        }
+        // Live stream already reflects state mutations; reconnect only on failure recovery paths.
+      } catch (err) {
+        toastManager.error(formatError(err, { includeStack: false }), { duration: 5000 });
+      }
     });
   };
 
-  const handleCancel = async () => {
-    if (!selectedQueueName || !confirmCancel) return;
-    const itemId = confirmCancel;
-    setConfirmCancel(null);
-    setBusyAction(`cancel:${itemId}`);
-    try {
-      const result = await queueRPCClient.cancelItem({ queueName: selectedQueueName, itemId });
-      if (!result.cancelled) {
-        toastManager.warning(result.message, { duration: 3000 });
-      } else {
+  const handleClear = async (queueName: string) => {
+    const confirmed = await openConfirm({
+      title: "Clear pending items",
+      message: `Remove all pending items from queue "${queueName}"? Running items will not be affected. This cannot be undone.`,
+      confirmText: "Clear all",
+      cancelText: "Keep",
+      variant: "danger",
+    });
+    if (!confirmed) return;
+    await executeBusy("clear", async () => {
+      try {
+        const result = await queueRPCClient.clear({ queueName });
+        if (result.status === "queueNotFound") {
+          toastManager.error(`Queue "${queueName}" no longer exists`, { duration: 4000 });
+          return;
+        }
         toastManager.success(result.message, { duration: 2500 });
+      } catch (err) {
+        toastManager.error(formatError(err, { includeStack: false }), { duration: 5000 });
       }
-      // Live stream already reflects state mutations; reconnect only on failure recovery paths.
-    } catch (err) {
-      toastManager.error(formatError(err, { includeStack: false }), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
-    }
+    });
   };
 
-  const handleClear = async () => {
-    if (!selectedQueueName) return;
-    setConfirmClear(false);
-    setBusyAction("clear");
-    try {
-      const result = await queueRPCClient.clear({ queueName: selectedQueueName });
-      if (result.status === "queueNotFound") {
-        toastManager.error(`Queue "${selectedQueueName}" no longer exists`, { duration: 4000 });
-        return;
-      }
-      toastManager.success(result.message, { duration: 2500 });
-    } catch (err) {
-      toastManager.error(formatError(err, { includeStack: false }), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
-    }
-  };
-
-  const isLoading = queues.isLoading && !queues.data;
+  const isLoading = queues.isLoading && streamStatus.isInitial;
   const concurrency = queueData?.config.concurrency ?? 0;
 
   const openAgent = (agentId: string | null | undefined) => {
@@ -245,8 +231,19 @@ export default function QueueDashboard() {
                       <span className="block text-xs text-muted truncate">{queue?.config.agentType ?? "Queue"}</span>
                     </span>
                     {(pendingCount > 0 || runningCount > 0) && (
-                      <span className="text-xs text-muted tabular-nums">
-                        {pendingCount}/{runningCount}
+                      <span className="flex items-center gap-1.5 text-xs text-muted tabular-nums shrink-0">
+                        {pendingCount > 0 && (
+                          <span className="inline-flex items-center gap-0.5" title={`${pendingCount} pending`}>
+                            <Clock className="w-3 h-3" aria-hidden />
+                            {pendingCount}
+                          </span>
+                        )}
+                        {runningCount > 0 && (
+                          <span className="inline-flex items-center gap-0.5" title={`${runningCount} running`}>
+                            <Activity className="w-3 h-3" aria-hidden />
+                            {runningCount}
+                          </span>
+                        )}
                       </span>
                     )}
                   </button>
@@ -263,7 +260,7 @@ export default function QueueDashboard() {
               <div className="flex justify-center py-20">
                 <Loader2 className="w-7 h-7 text-muted animate-spin" />
               </div>
-            ) : queues.error && !queues.data ? (
+            ) : streamStatus.status === "error" ? (
               <ErrorState title="Unable to load queues" error={queues.error} onRetry={refresh} variant="page" />
             ) : queueNames.length === 0 ? (
               <div className="px-6 py-14 text-center bg-secondary border border-primary border-dashed rounded-xl">
@@ -299,7 +296,7 @@ export default function QueueDashboard() {
               </div>
             ) : (
               <>
-                {queues.error ? (
+                {streamStatus.isStale ? (
                   <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs text-amber-800 dark:text-amber-200">
                     <span>Live queue updates interrupted. Showing the last snapshot.</span>
                     <button
@@ -315,10 +312,38 @@ export default function QueueDashboard() {
 
                 {/* Summary */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <SummaryStat label="Queues" value={String(queueNames.length)} icon={<Layers className="w-4 h-4" />} accentClass="text-sky-500" />
-                  <SummaryStat label="Pending" value={String(totalPending)} icon={<Clock className="w-4 h-4" />} accentClass="text-indigo-500" />
-                  <SummaryStat label="Running" value={String(totalRunning)} icon={<Activity className="w-4 h-4" />} accentClass="text-amber-500" />
-                  <SummaryStat label="Results" value={String(totalResults)} icon={<History className="w-4 h-4" />} accentClass="text-violet-500" />
+                  <SummaryStat
+                    label="Queues"
+                    value={String(queueNames.length)}
+                    icon={<Layers className="w-4 h-4" />}
+                    accentClass="text-sky-500"
+                    size="lg"
+                    iconPosition="right"
+                  />
+                  <SummaryStat
+                    label="Pending"
+                    value={String(totalPending)}
+                    icon={<Clock className="w-4 h-4" />}
+                    accentClass="text-indigo-500"
+                    size="lg"
+                    iconPosition="right"
+                  />
+                  <SummaryStat
+                    label="Running"
+                    value={String(totalRunning)}
+                    icon={<Activity className="w-4 h-4" />}
+                    accentClass="text-amber-500"
+                    size="lg"
+                    iconPosition="right"
+                  />
+                  <SummaryStat
+                    label="Results"
+                    value={String(totalResults)}
+                    icon={<History className="w-4 h-4" />}
+                    accentClass="text-violet-500"
+                    size="lg"
+                    iconPosition="right"
+                  />
                 </div>
 
                 {/* Queue picker + controls */}
@@ -348,10 +373,12 @@ export default function QueueDashboard() {
 
                     <div className="flex flex-wrap items-center gap-2 sm:pt-5">
                       {queueData ? (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-tertiary text-muted border border-primary">
-                          <Activity className="w-3 h-3" />
-                          {running.length} / {concurrency} active
-                        </span>
+                        <StatusBadge
+                          label={`${running.length} / ${concurrency} active`}
+                          icon={<Activity className="w-3 h-3" />}
+                          colorClass="bg-tertiary text-muted border-primary"
+                          gap="md"
+                        />
                       ) : null}
                       <button
                         type="button"
@@ -417,7 +444,9 @@ export default function QueueDashboard() {
                           {pending.length > 0 ? (
                             <button
                               type="button"
-                              onClick={() => setConfirmClear(true)}
+                              onClick={() => {
+                                if (selectedQueueName) void handleClear(selectedQueueName);
+                              }}
                               disabled={busyAction === "clear"}
                               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-error border border-primary hover:bg-error/5 rounded-lg focus-ring cursor-pointer transition-colors"
                             >
@@ -453,16 +482,18 @@ export default function QueueDashboard() {
                     {tab === "pending" ? (
                       pending.length === 0 && !showAddForm ? (
                         <EmptyState
-                          icon={<Clock className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                          variant="card"
+                          icon={Clock}
                           title="No pending items"
                           hint="Add a task to this queue and a fresh agent will pick it up."
                           ctaLabel="Add your first task"
+                          ctaVariant="sky"
                           onCta={() => setShowAddForm(true)}
                         />
                       ) : pending.length === 0 ? null : (
                         <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
                           {pending.map((item, index) => {
-                            const expanded = expandedIds.has(item.id);
+                            const expanded = isExpanded(item.id);
                             return (
                               <div key={item.id} className="px-4 py-3 hover:bg-hover/30 transition-colors">
                                 <div className="flex items-start gap-3">
@@ -501,7 +532,13 @@ export default function QueueDashboard() {
                                       Queued {formatRelativeTime(item.createdAt)} · from {item.input.from}
                                     </p>
                                   </div>
-                                  <CancelButton itemId={item.id} busy={busyAction === `cancel:${item.id}`} onClick={() => setConfirmCancel(item.id)} />
+                                  <CancelButton
+                                    itemId={item.id}
+                                    busy={busyAction === `cancel:${item.id}`}
+                                    onClick={() => {
+                                      if (selectedQueueName) void handleCancel(selectedQueueName, item.id);
+                                    }}
+                                  />
                                 </div>
                               </div>
                             );
@@ -511,14 +548,15 @@ export default function QueueDashboard() {
                     ) : tab === "running" ? (
                       running.length === 0 ? (
                         <EmptyState
-                          icon={<Activity className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                          variant="card"
+                          icon={Activity}
                           title="Nothing running"
                           hint="Items currently being processed by worker agents will appear here."
                         />
                       ) : (
                         <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
                           {running.map(item => {
-                            const expanded = expandedIds.has(item.id);
+                            const expanded = isExpanded(item.id);
                             return (
                               <div key={item.id} className="px-4 py-3 hover:bg-hover/30 transition-colors">
                                 <div className="flex items-start gap-3">
@@ -568,7 +606,13 @@ export default function QueueDashboard() {
                                       ) : null}
                                     </div>
                                   </div>
-                                  <CancelButton itemId={item.id} busy={busyAction === `cancel:${item.id}`} onClick={() => setConfirmCancel(item.id)} />
+                                  <CancelButton
+                                    itemId={item.id}
+                                    busy={busyAction === `cancel:${item.id}`}
+                                    onClick={() => {
+                                      if (selectedQueueName) void handleCancel(selectedQueueName, item.id);
+                                    }}
+                                  />
                                 </div>
                               </div>
                             );
@@ -576,27 +620,32 @@ export default function QueueDashboard() {
                         </div>
                       )
                     ) : results.length === 0 ? (
-                      <EmptyState
-                        icon={<History className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
-                        title="No results yet"
-                        hint="Completed, failed, and cancelled items will appear here."
-                      />
+                      <EmptyState variant="card" icon={History} title="No results yet" hint="Completed, failed, and cancelled items will appear here." />
                     ) : (
                       <div className="space-y-3">
                         <FilterTabs tabs={resultFilterTabs} value={resultFilter} onChange={setResultFilter} tabClassName="flex-none px-3" />
                         {filteredResults.length === 0 ? (
                           <EmptyState
-                            icon={<History className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                            variant="card"
+                            icon={History}
                             title={`No ${resultFilter} results`}
                             hint="Try another status filter to see more history."
                           />
                         ) : (
                           <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden divide-y divide-primary">
                             {filteredResults.map(item => {
-                              const expanded = expandedIds.has(item.id);
+                              const expanded = isExpanded(item.id);
                               return (
-                                <div key={item.id} className="px-4 py-3 hover:bg-hover/30 transition-colors">
-                                  <div className="flex items-start gap-3">
+                                <HistoryRunRow
+                                  key={item.id}
+                                  id={item.id}
+                                  entityName={item.name}
+                                  status={item.status}
+                                  startTime={item.completedAt}
+                                  duration={formatDurationMs(item.durationMs)}
+                                  message={!expanded ? item.resultMessage : undefined}
+                                  className="hover:bg-hover/30 transition-colors"
+                                  leading={
                                     <button
                                       type="button"
                                       onClick={() => toggleExpanded(item.id)}
@@ -606,49 +655,28 @@ export default function QueueDashboard() {
                                     >
                                       {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                                     </button>
-                                    <div className="mt-0.5 shrink-0">
-                                      {item.status === "completed" ? (
-                                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                      ) : item.status === "failed" ? (
-                                        <XCircle className="w-4 h-4 text-red-500" />
-                                      ) : (
-                                        <Ban className="w-4 h-4 text-muted" />
-                                      )}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                                        <span className="text-sm font-medium text-primary">{item.name}</span>
-                                        <ResultStatusBadge status={item.status} />
-                                        <span className="text-xs text-muted tabular-nums">{formatDurationMs(item.durationMs)}</span>
+                                  }
+                                >
+                                  {expanded ? (
+                                    <div className="mt-2 space-y-2">
+                                      <DetailBlock label="Task / prompt" value={item.input.message} />
+                                      {item.input.attachments?.length ? (
+                                        <DetailBlock label="Attachments" value={item.input.attachments.map(a => a.name).join(", ")} />
+                                      ) : null}
+                                      {item.resultMessage ? <DetailBlock label="Result" value={item.resultMessage} /> : null}
+                                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+                                        <span>
+                                          From <span className="text-secondary">{item.input.from}</span>
+                                        </span>
+                                        <span>Queued {formatQueueTime(item.createdAt)}</span>
+                                        {item.startedAt ? <span>Started {formatQueueTime(item.startedAt)}</span> : null}
+                                        <span className="font-mono">id {item.id}</span>
+                                        {/* Worker agents are deleted when the item finishes; keep id as metadata only. */}
+                                        {item.agentId ? <span className="font-mono">agent {item.agentId}</span> : null}
                                       </div>
-                                      <p className="text-xs text-muted mb-1">{formatQueueTime(item.completedAt, { withSeconds: true })}</p>
-                                      {!expanded && item.resultMessage ? (
-                                        <p className="text-xs text-secondary line-clamp-3 whitespace-pre-wrap" title={item.resultMessage}>
-                                          {item.resultMessage}
-                                        </p>
-                                      ) : null}
-                                      {expanded ? (
-                                        <div className="mt-2 space-y-2">
-                                          <DetailBlock label="Task / prompt" value={item.input.message} />
-                                          {item.input.attachments?.length ? (
-                                            <DetailBlock label="Attachments" value={item.input.attachments.map(a => a.name).join(", ")} />
-                                          ) : null}
-                                          {item.resultMessage ? <DetailBlock label="Result" value={item.resultMessage} /> : null}
-                                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-                                            <span>
-                                              From <span className="text-secondary">{item.input.from}</span>
-                                            </span>
-                                            <span>Queued {formatQueueTime(item.createdAt)}</span>
-                                            {item.startedAt ? <span>Started {formatQueueTime(item.startedAt)}</span> : null}
-                                            <span className="font-mono">id {item.id}</span>
-                                            {/* Worker agents are deleted when the item finishes; keep id as metadata only. */}
-                                            {item.agentId ? <span className="font-mono">agent {item.agentId}</span> : null}
-                                          </div>
-                                        </div>
-                                      ) : null}
                                     </div>
-                                  </div>
-                                </div>
+                                  ) : null}
+                                </HistoryRunRow>
                               );
                             })}
                           </div>
@@ -663,55 +691,9 @@ export default function QueueDashboard() {
         </div>
       </WorkspaceShell>
 
-      {confirmCancel ? (
-        <ConfirmDialog
-          title="Cancel queue item"
-          message="Cancel this item? If it is running, its agent will be aborted. This cannot be undone."
-          confirmText="Cancel item"
-          cancelText="Keep"
-          variant="warning"
-          onConfirm={() => void handleCancel()}
-          onCancel={() => setConfirmCancel(null)}
-        />
-      ) : null}
-
-      {confirmClear ? (
-        <ConfirmDialog
-          title="Clear pending items"
-          message={`Remove all pending items from queue "${selectedQueueName}"? Running items will not be affected. This cannot be undone.`}
-          confirmText="Clear all"
-          cancelText="Keep"
-          variant="danger"
-          onConfirm={() => void handleClear()}
-          onCancel={() => setConfirmClear(false)}
-        />
-      ) : null}
+      <ConfirmDialog />
     </div>
   );
-}
-
-function SummaryStat({ label, value, icon, accentClass }: { label: string; value: string; icon: ReactNode; accentClass?: string }) {
-  return (
-    <div className="px-4 py-3.5 bg-secondary rounded-xl border border-primary shadow-sm">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-bold text-muted uppercase tracking-widest">{label}</span>
-        <span className={cn("opacity-80", accentClass)}>{icon}</span>
-      </div>
-      <div className={cn("text-xl font-semibold tabular-nums tracking-tight", accentClass ?? "text-primary")}>{value}</div>
-    </div>
-  );
-}
-
-function ResultStatusBadge({ status }: { status: "completed" | "failed" | "cancelled" }) {
-  if (status === "completed") {
-    return (
-      <span className="text-xs px-1.5 py-0.5 rounded-md border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">completed</span>
-    );
-  }
-  if (status === "failed") {
-    return <span className="text-xs px-1.5 py-0.5 rounded-md border bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30">failed</span>;
-  }
-  return <span className="text-xs px-1.5 py-0.5 rounded-md border bg-tertiary text-muted border-primary">cancelled</span>;
 }
 
 function CancelButton({ itemId, busy, onClick }: { itemId: string; busy: boolean; onClick: () => void }) {
@@ -737,26 +719,6 @@ function DetailBlock({ label, value }: { label: string; value: string }) {
     <div className="rounded-lg border border-primary bg-tertiary/40 px-3 py-2">
       <p className="text-xs font-bold text-muted uppercase tracking-widest mb-1">{label}</p>
       <p className="text-xs text-secondary whitespace-pre-wrap break-words">{value}</p>
-    </div>
-  );
-}
-
-function EmptyState({ icon, title, hint, ctaLabel, onCta }: { icon: ReactNode; title: string; hint: string; ctaLabel?: string; onCta?: () => void }) {
-  return (
-    <div className="px-6 py-12 text-center bg-secondary border border-primary border-dashed rounded-xl">
-      {icon}
-      <p className="text-sm font-medium text-secondary mb-1">{title}</p>
-      <p className="text-xs text-muted max-w-xs mx-auto mb-4">{hint}</p>
-      {ctaLabel && onCta ? (
-        <button
-          type="button"
-          onClick={onCta}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-sky-600 hover:bg-sky-500 text-white rounded-lg focus-ring cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          {ctaLabel}
-        </button>
-      ) : null}
     </div>
   );
 }

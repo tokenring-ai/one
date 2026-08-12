@@ -8,20 +8,29 @@ import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
 import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
-import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import ContentListItem from "../../components/ui/ContentListItem.tsx";
+import DetailViewerArea from "../../components/ui/DetailViewerArea.tsx";
+import EmptyState from "../../components/ui/EmptyState.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import FilterTabs from "../../components/ui/FilterTabs.tsx";
+import InlineDropdown, { InlineDropdownItem } from "../../components/ui/InlineDropdown.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
+import PanelToolbar from "../../components/ui/PanelToolbar.tsx";
+import TagChip from "../../components/ui/TagChip.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import CreatePostModal from "../../features/blog/CreatePostModal.tsx";
-import { BLOG_AGENT_TYPES, parseTagsInput, STATUS_FILTERS } from "../../features/blog/constants.ts";
-import StatusBadge from "../../features/blog/StatusBadge.tsx";
+import { parseTagsInput, STATUS_FILTERS } from "../../features/blog/constants.ts";
+import BlogStatusBadge from "../../features/blog/StatusBadge.tsx";
 import type { PostStatus, StatusFilter } from "../../features/blog/types.ts";
 import { POST_STATUSES } from "../../features/blog/types.ts";
+import { useBusyAction } from "../../hooks/useBusyAction.ts";
 import { useHeadlessAgent } from "../../hooks/useHeadlessAgent.ts";
+import { useRefSync } from "../../hooks/useRefSync.ts";
+import { useSearchFilter } from "../../hooks/useSearchFilter.ts";
 import { sanitizeBlogHtml } from "../../lib/sanitizeHtml.ts";
+import { toastOnReject } from "../../lib/toastOnReject.ts";
 import { cn } from "../../lib/utils.ts";
-import { agentRPCClient, blogRPCClient, useBlogPost, useBlogPosts, useBlogState } from "../../rpc.ts";
+import { agentRPCClient, blogRPCClient, useBlogConfiguration, useBlogPost, useBlogPosts, useBlogState } from "../../rpc.ts";
 
 // ─── Blog selector ────────────────────────────────────────────────────────────
 
@@ -38,11 +47,9 @@ function BlogSelector({
   loading: boolean;
   onProviderChange: (p: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
 
   const switchProvider = async (name: string) => {
-    setOpen(false);
     if (!agentId || name === provider) return;
     setSwitching(true);
     try {
@@ -74,49 +81,43 @@ function BlogSelector({
   }
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        disabled={switching}
-        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover transition-colors focus-ring cursor-pointer disabled:opacity-50"
-      >
-        <BookOpen className="w-4 h-4 shrink-0 text-rose-400" />
-        <span className="text-sm font-medium text-primary">{provider ?? "Select blog"}</span>
-        {switching ? (
-          <Loader2 className="w-3.5 h-3.5 text-muted animate-spin" />
-        ) : (
-          <ChevronDown className={cn("w-3.5 h-3.5 text-muted transition-transform", open && "rotate-180")} />
-        )}
-      </button>
-      {open && (
+    <InlineDropdown
+      header="Select Blog"
+      width="w-56"
+      align="left"
+      closeOnSelect
+      disabled={switching}
+      triggerClassName="gap-2 bg-transparent border-transparent hover:bg-hover text-primary"
+      trigger={open => (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 w-56 bg-secondary border border-primary rounded-xl shadow-card z-50 overflow-hidden">
-            <div className="px-3 py-2 border-b border-primary">
-              <p className="text-xs font-semibold text-muted uppercase tracking-wider">Select Blog</p>
-            </div>
-            <nav className="py-1">
-              {availableProviders.map(p => (
-                <button
-                  type="button"
-                  key={p}
-                  onClick={() => void switchProvider(p)}
-                  className={cn(
-                    "w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-hover transition-colors cursor-pointer text-left focus-ring",
-                    p === provider ? "text-primary font-medium bg-active" : "text-muted hover:text-primary",
-                  )}
-                >
-                  <BookOpen className={cn("w-4 h-4 shrink-0", p === provider ? "text-rose-400" : "text-muted")} />
-                  {p}
-                  {p === provider && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />}
-                </button>
-              ))}
-            </nav>
-          </div>
+          <BookOpen className="w-4 h-4 shrink-0 text-rose-400" />
+          <span className="text-sm font-medium text-primary">{provider ?? "Select blog"}</span>
+          {switching ? (
+            <Loader2 className="w-3.5 h-3.5 text-muted animate-spin" />
+          ) : (
+            <ChevronDown className={cn("w-3.5 h-3.5 text-muted transition-transform", open && "rotate-180")} />
+          )}
         </>
       )}
-    </div>
+    >
+      <nav className="py-1">
+        {availableProviders.map(p => {
+          const isActive = p === provider;
+          return (
+            <InlineDropdownItem
+              key={p}
+              active={isActive}
+              onClick={() => void switchProvider(p)}
+              className={cn("gap-2.5", isActive && "bg-active")}
+              activeColor="bg-rose-500"
+              leading={<BookOpen className={cn("w-4 h-4 shrink-0", isActive ? "text-rose-400" : "text-muted")} />}
+            >
+              {p}
+            </InlineDropdownItem>
+          );
+        })}
+      </nav>
+    </InlineDropdown>
   );
 }
 
@@ -124,36 +125,28 @@ function BlogSelector({
 
 function PostListItem({ post, selected, onClick }: { post: BlogPostListItem; selected: boolean; onClick: () => void }) {
   return (
-    <button
-      type="button"
+    <ContentListItem
+      selected={selected}
       onClick={onClick}
-      className={cn(
-        "w-full flex flex-col gap-1 px-3 py-3 text-left border-b border-primary hover:bg-hover transition-colors focus-ring cursor-pointer border-l-2",
-        selected ? "bg-active border-l-accent" : "border-l-transparent",
-      )}
-      aria-current={selected ? "true" : undefined}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <span className={cn("text-sm font-medium leading-tight flex-1 min-w-0", selected ? "text-primary" : "text-secondary")}>
-          {post.title || <em className="text-muted">Untitled</em>}
-        </span>
-        <StatusBadge status={post.status} />
-      </div>
-      <div className="flex items-center gap-2 text-xs text-muted">
-        <Calendar className="w-3 h-3 shrink-0" />
-        <span>{formatDate(post.updated_at)}</span>
-        {post.tags && post.tags.length > 0 && (
-          <>
-            <span>·</span>
-            <Tag className="w-3 h-3 shrink-0" />
-            <span className="truncate">
-              {post.tags.slice(0, 2).join(", ")}
-              {post.tags.length > 2 ? ` +${post.tags.length - 2}` : ""}
-            </span>
-          </>
-        )}
-      </div>
-    </button>
+      title={post.title || <em className="text-muted">Untitled</em>}
+      status={<BlogStatusBadge status={post.status} />}
+      metadata={
+        <>
+          <Calendar className="w-3 h-3 shrink-0" />
+          <span>{formatDate(post.updated_at)}</span>
+          {post.tags && post.tags.length > 0 && (
+            <>
+              <span>·</span>
+              <Tag className="w-3 h-3 shrink-0" />
+              <span className="truncate">
+                {post.tags.slice(0, 2).join(", ")}
+                {post.tags.length > 2 ? ` +${post.tags.length - 2}` : ""}
+              </span>
+            </>
+          )}
+        </>
+      }
+    />
   );
 }
 
@@ -164,7 +157,7 @@ function PostEditor({ post, provider, onCancel, onSaved }: { post: BlogPost; pro
   const [html, setHtml] = useState(post.html);
   const [tags, setTags] = useState((post.tags ?? []).join(", "));
   const [status, setStatus] = useState<PostStatus>(post.status);
-  const [saving, setSaving] = useState(false);
+  const { busy: saving, execute: executeSave } = useBusyAction();
 
   // Parent should remount via key={post.id}; this guards against stale form state if it does not.
   useEffect(() => {
@@ -175,31 +168,29 @@ function PostEditor({ post, provider, onCancel, onSaved }: { post: BlogPost; pro
   }, [post.id]);
 
   const handleSave = async () => {
-    if (saving) return;
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
       toastManager.error("Title is required", { duration: 3000 });
       return;
     }
-    setSaving(true);
-    try {
-      const result = await blogRPCClient.updatePost({
-        provider,
-        id: post.id,
-        updatedData: {
-          title: trimmedTitle,
-          html,
-          tags: parseTagsInput(tags),
-          status,
-        },
-      });
-      toastManager.success(result.message || "Post saved", { duration: 3000 });
-      onSaved(result.post);
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-    } finally {
-      setSaving(false);
-    }
+    await executeSave(async () => {
+      try {
+        const result = await blogRPCClient.updatePost({
+          provider,
+          id: post.id,
+          updatedData: {
+            title: trimmedTitle,
+            html,
+            tags: parseTagsInput(tags),
+            status,
+          },
+        });
+        toastManager.success(result.message || "Post saved", { duration: 3000 });
+        onSaved(result.post);
+      } catch (err) {
+        toastManager.error(formatError(err), { duration: 5000 });
+      }
+    });
   };
 
   return (
@@ -320,8 +311,8 @@ function PostViewer({
   onRefresh: () => void;
   onUpdated: (post: BlogPost) => void;
 }) {
-  const [starting, setStarting] = useState(false);
-  const [statusBusy, setStatusBusy] = useState(false);
+  const { busy: starting, execute: executeWork } = useBusyAction();
+  const { busy: statusBusy, execute: executeStatus } = useBusyAction();
   const [editing, setEditing] = useState(false);
   const sanitizedHtml = useMemo(() => (post.html ? sanitizeBlogHtml(post.html) : ""), [post.html]);
 
@@ -331,29 +322,22 @@ function PostViewer({
   }, [post.id]);
 
   const handleWorkOnPost = async () => {
-    if (starting) return;
-    setStarting(true);
-    try {
-      await onWorkOnPost(post.id);
-    } finally {
-      setStarting(false);
-    }
+    await executeWork(() => onWorkOnPost(post.id));
   };
 
   const setStatus = async (status: PostStatus) => {
-    if (post.status === status || statusBusy) return;
-    setStatusBusy(true);
-    try {
-      const result = await blogRPCClient.updatePost({ provider, id: post.id, updatedData: { status } });
-      const label = status === "published" ? "Post published!" : status === "draft" ? "Post unpublished (draft)" : `Status set to ${status}`;
-      toastManager.success(result.message || label, { duration: 3000 });
-      // Keep optimistic override; onUpdated revalidates list/detail without clearing it.
-      onUpdated(result.post);
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-    } finally {
-      setStatusBusy(false);
-    }
+    if (post.status === status) return;
+    await executeStatus(async () => {
+      try {
+        const result = await blogRPCClient.updatePost({ provider, id: post.id, updatedData: { status } });
+        const label = status === "published" ? "Post published!" : status === "draft" ? "Post unpublished (draft)" : `Status set to ${status}`;
+        toastManager.success(result.message || label, { duration: 3000 });
+        // Keep optimistic override; onUpdated revalidates list/detail without clearing it.
+        onUpdated(result.post);
+      } catch (err) {
+        toastManager.error(formatError(err), { duration: 5000 });
+      }
+    });
   };
 
   if (editing) {
@@ -382,7 +366,7 @@ function PostViewer({
 
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-xl font-bold text-primary leading-tight flex-1">{post.title || <em className="text-muted font-normal">Untitled</em>}</h2>
-          <StatusBadge status={post.status} />
+          <BlogStatusBadge status={post.status} />
         </div>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted">
@@ -406,10 +390,7 @@ function PostViewer({
         {post.tags && post.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {post.tags.map(tag => (
-              <span key={tag} className="flex items-center gap-1 px-2 py-0.5 bg-tertiary border border-primary rounded-full text-xs text-muted">
-                <Tag className="w-2.5 h-2.5" />
-                {tag}
-              </span>
+              <TagChip key={tag} label={tag} />
             ))}
           </div>
         )}
@@ -573,17 +554,18 @@ function PostListSidebar({
         ) : postsError ? (
           <ErrorState title="Failed to load posts" error={postsError} onRetry={onRefresh} variant="inline" className="py-6" />
         ) : filteredPosts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 gap-3 text-center px-4">
-            <BookOpen className="w-8 h-8 text-muted opacity-30" />
-            <p className="text-sm text-muted">
-              {search ? `No posts matching "${search}"` : statusFilter === "all" ? "No posts found" : `No ${statusFilter} posts`}
-            </p>
-            {!search && (
-              <button type="button" onClick={onNewPost} className="text-xs text-accent hover:text-accent-soft cursor-pointer transition-colors focus-ring">
-                Create your first post →
-              </button>
-            )}
-          </div>
+          <EmptyState
+            variant="compact"
+            icon={BookOpen}
+            title={search ? `No posts matching "${search}"` : statusFilter === "all" ? "No posts found" : `No ${statusFilter} posts`}
+            action={
+              search ? null : (
+                <button type="button" onClick={onNewPost} className="text-xs text-accent hover:text-accent-soft cursor-pointer transition-colors focus-ring">
+                  Create your first post →
+                </button>
+              )
+            }
+          />
         ) : (
           filteredPosts.map(post => <PostListItem key={post.id} post={post} selected={post.id === selectedPostId} onClick={() => onSelectPost(post.id)} />)
         )}
@@ -640,64 +622,49 @@ function PostViewerArea({
   onUpdated: (post: BlogPost) => void;
   onRetryPost: () => void;
 }) {
-  if (!agentId) {
-    return <LoadingState message="Connecting to blog service…" className="h-full" />;
-  }
+  const ready = Boolean(agentId && provider && availableProviders.length > 0);
 
-  if (availableProviders.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-6">
-        <WifiOff className="w-10 h-10 text-muted opacity-30" />
-        <div>
-          <h2 className="text-base font-semibold text-primary mb-1">No blog providers configured</h2>
-          <p className="text-sm text-muted max-w-sm">Configure a Ghost or WordPress provider in settings to manage posts here.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!provider) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-6">
-        <WifiOff className="w-10 h-10 text-muted opacity-30" />
-        <div>
-          <h2 className="text-base font-semibold text-primary mb-1">No provider selected</h2>
-          <p className="text-sm text-muted max-w-xs">Select a blog provider from the dropdown to get started.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (selectedPostId) {
-    if (selectedPost) {
-      return (
-        <PostViewer key={selectedPost.id} post={selectedPost} provider={provider} onWorkOnPost={onWorkOnPost} onRefresh={onRefresh} onUpdated={onUpdated} />
-      );
-    }
-    if (selectedPostError) {
-      return <ErrorState title="Failed to load post" error={selectedPostError} onRetry={onRetryPost} variant="page" />;
-    }
-    // Selected but not yet loaded (or still resolving after a provider/id change)
-    return <LoadingState message="Loading post…" className="h-full" />;
-  }
+  // Distinguish connecting (spinner) from misconfiguration (empty) via notReady.
+  const notReady =
+    agentId && availableProviders.length === 0
+      ? {
+          icon: WifiOff,
+          title: "No blog providers configured",
+          hint: "Configure a Ghost or WordPress provider in settings to manage posts here.",
+        }
+      : agentId && !provider
+        ? {
+            icon: WifiOff,
+            title: "No provider selected",
+            hint: "Select a blog provider from the dropdown to get started.",
+          }
+        : undefined;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-6">
-      <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-lg">
-        <BookOpen className="w-8 h-8 text-white" />
-      </div>
-      <div>
-        <h2 className="text-base font-semibold text-primary mb-1">No post selected</h2>
-        <p className="text-sm text-muted max-w-xs">Select a post from the list to view and edit it, or create a new draft.</p>
-      </div>
-      <button
-        type="button"
-        onClick={onNewPost}
-        className="flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-xl transition-colors cursor-pointer focus-ring shadow-button-primary"
-      >
-        <FilePlus className="w-4 h-4" /> New post
-      </button>
-    </div>
+    <DetailViewerArea
+      ready={ready}
+      readyLoadingMessage="Connecting to blog service…"
+      {...(notReady != null ? { notReady } : {})}
+      hasSelection={selectedPostId != null}
+      data={selectedPost}
+      {...(selectedPostError != null ? { error: selectedPostError } : {})}
+      loading={selectedPostId != null && selectedPost == null && selectedPostError == null}
+      loadingMessage="Loading post…"
+      errorTitle="Failed to load post"
+      onRetry={onRetryPost}
+      emptyState={{
+        icon: BookOpen,
+        iconBadgeClassName: "bg-linear-to-br from-rose-500 to-pink-600",
+        title: "No post selected",
+        hint: "Select a post from the list to view and edit it, or create a new draft.",
+        ctaLabel: "New post",
+        ctaIcon: FilePlus,
+        onCta: onNewPost,
+      }}
+      renderContent={post => (
+        <PostViewer key={post.id} post={post} provider={provider as string} onWorkOnPost={onWorkOnPost} onRefresh={onRefresh} onUpdated={onUpdated} />
+      )}
+    />
   );
 }
 
@@ -709,23 +676,32 @@ export default function BlogApp() {
   // URL is the source of truth for which post is open (params are already decoded).
   const selectedPostId = routeBlogId ?? null;
 
+  const configuration = useBlogConfiguration();
+  // Fallback matches BlogConfigSchema.agentTypes default so headless agent init
+  // can resolve a preferred type before the configuration RPC returns.
+  const allowedAgentTypes = configuration.data?.agentTypes ?? ["blog", "writer", "contentWriter", "content-writer", "managingEditor"];
+  const defaultAgentType = allowedAgentTypes[0] ?? "blog";
+
   const {
     agentId,
     initialising,
     error: initError,
   } = useHeadlessAgent({
     appName: "Blog app",
-    preferredTypes: [...BLOG_AGENT_TYPES],
+    preferredTypes: allowedAgentTypes,
     noTypesMessage: "No agent types available.",
   });
   const [chatAgentId, setChatAgentId] = useState<string | null>(null);
   const [provider, setProvider] = useState<string | null>(null);
   const [availableProviders, setAvailableProviders] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [search, setSearch] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   /** Optimistic override after local mutations until SWR revalidates */
   const [postOverride, setPostOverride] = useState<BlogPost | null>(null);
+
+  // Always read the latest provider after awaits (avoids stale closure in launchChatAgent).
+  const providerRef = useRefSync(provider);
+  const allowedAgentTypesRef = useRefSync(allowedAgentTypes);
 
   const blogState = useBlogState(agentId ?? undefined);
   const blogStateData = blogState.data?.status === "success" ? blogState.data : null;
@@ -761,34 +737,6 @@ export default function BlogApp() {
     setProvider(next);
   }, [blogStateData, provider]);
 
-  // Clear selection and override when provider changes
-  const handleProviderChange = useCallback(
-    (p: string) => {
-      setProvider(p);
-      setPostOverride(null);
-      setSearch("");
-      clearPost();
-    },
-    [clearPost],
-  );
-
-  // Keep the chat agent’s current post in sync so addSelectedPost can attach it to chat input.
-  useEffect(() => {
-    if (!chatAgentId || (!provider && !selectedPostId)) return;
-    blogRPCClient
-      .updateBlogState({
-        agentId: chatAgentId,
-        ...(provider !== null && { selectedProvider: provider }),
-        ...(selectedPostId !== null && { selectedPostId }),
-      })
-      .catch(() => {});
-  }, [chatAgentId, provider, selectedPostId]);
-
-  // Drop stale override when selection changes
-  useEffect(() => {
-    setPostOverride(null);
-  }, [selectedPostId, provider]);
-
   const allPosts = useMemo(() => (posts.data?.posts ?? []) as BlogPostListItem[], [posts.data]);
 
   const postCounts = useMemo(
@@ -800,17 +748,44 @@ export default function BlogApp() {
     [allPosts],
   );
 
-  const filteredPosts = useMemo(() => {
-    let list = allPosts;
-    if (statusFilter !== "all") {
-      list = list.filter(p => p.status === statusFilter);
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(p => p.title.toLowerCase().includes(q) || p.tags?.some(t => t.toLowerCase().includes(q)));
-    }
-    return list;
-  }, [allPosts, statusFilter, search]);
+  const {
+    query: search,
+    setQuery: setSearch,
+    filtered: filteredPosts,
+    clear: clearSearch,
+  } = useSearchFilter({
+    items: allPosts,
+    searchFields: p => `${p.title} ${(p.tags ?? []).join(" ")}`,
+    predicate: p => statusFilter === "all" || p.status === statusFilter,
+  });
+
+  // Clear selection and override when provider changes
+  const handleProviderChange = useCallback(
+    (p: string) => {
+      setProvider(p);
+      setPostOverride(null);
+      clearSearch();
+      clearPost();
+    },
+    [clearPost, clearSearch],
+  );
+
+  // Keep the chat agent’s current post in sync so addSelectedPost can attach it to chat input.
+  useEffect(() => {
+    if (!chatAgentId || (!provider && !selectedPostId)) return;
+    toastOnReject(
+      blogRPCClient.updateBlogState({
+        agentId: chatAgentId,
+        ...(provider !== null && { selectedProvider: provider }),
+        ...(selectedPostId !== null && { selectedPostId }),
+      }),
+    );
+  }, [chatAgentId, provider, selectedPostId]);
+
+  // Drop stale override when selection changes
+  useEffect(() => {
+    setPostOverride(null);
+  }, [selectedPostId, provider]);
 
   const selectedPost =
     postOverride && postOverride.id === selectedPostId
@@ -830,37 +805,44 @@ export default function BlogApp() {
     void posts.mutate();
   }, [selectedPostQuery.mutate, posts.mutate]);
 
-  const launchChatAgent = async (agentType: string, postId?: string) => {
+  const launchChatAgent = useCallback(async (agentType: string, postId?: string) => {
     const { id } = await agentRPCClient.createAgent({ agentType, headless: false });
-    if (postId && provider) {
+    // Read current provider after the await so a mid-flight provider switch is respected.
+    const currentProvider = providerRef.current;
+    if (currentProvider) {
       try {
-        await blogRPCClient.updateBlogState({ agentId: id, selectedPostId: postId, selectedProvider: provider });
-      } catch {
-        // Non-fatal — agent still usable
-      }
-    } else if (provider) {
-      try {
-        await blogRPCClient.updateBlogState({ agentId: id, selectedProvider: provider });
-      } catch {
-        // Non-fatal
+        await blogRPCClient.updateBlogState({
+          agentId: id,
+          selectedProvider: currentProvider,
+          ...(postId ? { selectedPostId: postId } : {}),
+        });
+      } catch (error: unknown) {
+        // Non-fatal — agent still usable, but tools may lack the selection.
+        toastManager.warning(`Agent started, but blog selection could not be synced: ${formatError(error)}`, {
+          duration: 4000,
+        });
       }
     }
     setChatAgentId(id);
-  };
+  }, []);
 
-  const handleWorkOnPost = async (postId: string) => {
-    try {
-      const types = await agentRPCClient.getAgentTypes({});
-      const preferred = types.find(t => (BLOG_AGENT_TYPES as readonly string[]).includes(t.type)) ?? types[0];
-      if (!preferred) {
-        toastManager.error("No blog agent type available", { duration: 4000 });
-        return;
+  const handleWorkOnPost = useCallback(
+    async (postId: string) => {
+      try {
+        const preferredTypes = allowedAgentTypesRef.current;
+        const types = await agentRPCClient.getAgentTypes({});
+        const preferred = types.find(t => preferredTypes.includes(t.type)) ?? types[0];
+        if (!preferred) {
+          toastManager.error("No blog agent type available", { duration: 4000 });
+          return;
+        }
+        await launchChatAgent(preferred.type, postId || undefined);
+      } catch (err) {
+        toastManager.error(formatError(err), { duration: 5000 });
       }
-      await launchChatAgent(preferred.type, postId || undefined);
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-    }
-  };
+    },
+    [launchChatAgent],
+  );
 
   const handlePostCreated = (postId: string) => {
     setShowCreateModal(false);
@@ -886,12 +868,7 @@ export default function BlogApp() {
   if (initError) {
     return (
       <div className="w-full h-full flex flex-col bg-primary">
-        <AppPageHeader
-          title="Blog"
-          subtitle="Manage posts across your providers"
-          icon={<BookOpen className="w-4 h-4" />}
-          iconGradient="from-rose-500 to-pink-600"
-        />
+        <PanelToolbar icon={BookOpen} iconGradient="from-rose-500 to-pink-600" title="Blog" actions={null} showDivider={false} />
         <ErrorState title="Blog Unavailable" error={initError} onRetry={() => window.location.reload()} variant="page" />
       </div>
     );
@@ -900,12 +877,7 @@ export default function BlogApp() {
   if (initialising && !agentId) {
     return (
       <div className="w-full h-full flex flex-col bg-primary">
-        <AppPageHeader
-          title="Blog"
-          subtitle="Manage posts across your providers"
-          icon={<BookOpen className="w-4 h-4" />}
-          iconGradient="from-rose-500 to-pink-600"
-        />
+        <PanelToolbar icon={BookOpen} iconGradient="from-rose-500 to-pink-600" title="Blog" actions={null} showDivider={false} />
         <LoadingState message="Starting blog app…" className="flex-1" />
       </div>
     );
@@ -965,8 +937,10 @@ export default function BlogApp() {
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">
-      <AppPageHeader
-        title={
+      <PanelToolbar
+        icon={BookOpen}
+        iconGradient="from-rose-500 to-pink-600"
+        middle={
           <BlogSelector
             agentId={agentId}
             provider={provider}
@@ -975,45 +949,51 @@ export default function BlogApp() {
             onProviderChange={handleProviderChange}
           />
         }
-        subtitle={provider ? `Managing ${provider}` : "Manage posts across your providers"}
-        icon={<BookOpen className="w-4 h-4" />}
-        iconGradient="from-rose-500 to-pink-600"
-        size="compact"
-      >
-        <button
-          type="button"
-          onClick={openCreate}
-          disabled={!provider}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-accent hover:bg-accent-hover text-white shadow-button-primary transition-colors focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <FilePlus className="w-3.5 h-3.5" />
-          New post
-        </button>
-        <div className="w-px h-5 bg-primary/70 mx-0.5 shrink-0" aria-hidden="true" />
-        <AgentLauncherBar
-          buttonLabel="Agent"
-          buttonClassName="bg-secondary border border-primary text-primary hover:bg-hover"
-          onLaunch={id => {
-            if (provider) {
-              void blogRPCClient.updateBlogState({ agentId: id, selectedProvider: provider, ...(selectedPostId ? { selectedPostId } : {}) }).catch(() => {});
-            }
-            setChatAgentId(id);
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => {
-            setPostOverride(null);
-            void blogState.mutate();
-            refreshPosts();
-            if (selectedPostId) void selectedPostQuery.mutate();
-          }}
-          className="p-2 text-muted hover:text-primary border border-primary rounded-lg hover:bg-hover transition-colors focus-ring cursor-pointer"
-          title="Refresh"
-        >
-          <RefreshCw className={cn("w-3.5 h-3.5", (posts.isValidating || blogState.isValidating) && "animate-spin")} />
-        </button>
-      </AppPageHeader>
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={openCreate}
+              disabled={!provider}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-accent hover:bg-accent-hover text-white shadow-button-primary transition-colors focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+            >
+              <FilePlus className="w-3.5 h-3.5" />
+              New post
+            </button>
+            <AgentLauncherBar
+              buttonLabel="Agent"
+              buttonClassName="bg-secondary border border-primary text-primary hover:bg-hover"
+              defaultAgentType={defaultAgentType}
+              allowedAgentTypes={allowedAgentTypes}
+              onLaunch={id => {
+                if (provider) {
+                  toastOnReject(
+                    blogRPCClient.updateBlogState({
+                      agentId: id,
+                      selectedProvider: provider,
+                      ...(selectedPostId ? { selectedPostId } : {}),
+                    }),
+                  );
+                }
+                setChatAgentId(id);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setPostOverride(null);
+                void blogState.mutate();
+                refreshPosts();
+                if (selectedPostId) void selectedPostQuery.mutate();
+              }}
+              className="p-2 text-muted hover:text-primary border border-primary rounded-lg hover:bg-hover transition-colors focus-ring cursor-pointer shrink-0"
+              title="Refresh"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5", (posts.isValidating || blogState.isValidating) && "animate-spin")} />
+            </button>
+          </>
+        }
+      />
 
       <div className="flex-1 min-h-0">
         <ChatDock agentId={chatAgentId} storageKey="blog" initialRatio={0.6} headerTitle="Blog Agent">

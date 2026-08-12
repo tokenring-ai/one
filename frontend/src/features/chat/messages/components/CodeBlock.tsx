@@ -1,18 +1,12 @@
 import { Check, Copy } from "lucide-react";
-import { useState } from "react";
+import { useCopyToClipboard } from "../../../../hooks/useCopyToClipboard.ts";
 
 export default function CodeBlock({ children, className }: { children: string; className?: string }) {
-  const [copied, setCopied] = useState(false);
+  const { copy, copied } = useCopyToClipboard();
   const lang = className?.replace("language-", "") ?? "";
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(children);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
+    await copy(children);
   };
 
   return (

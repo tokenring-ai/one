@@ -1,7 +1,7 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2 } from "lucide-react";
 import type React from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { agentRPCClient, useAgentList } from "../rpc.ts";
 import AppPageHeader from "./ui/AppPageHeader.tsx";
@@ -42,7 +42,7 @@ export default function AgentLauncherApp({
 
   const existingAgents = useMemo(() => (agents.data ?? []).filter(agent => agent.agentType === agentType), [agents.data, agentType]);
 
-  const launch = async () => {
+  const launch = useCallback(async () => {
     setCreating(true);
     try {
       const { id } = await agentRPCClient.createAgent({ agentType, headless: false });
@@ -53,7 +53,7 @@ export default function AgentLauncherApp({
     } finally {
       setCreating(false);
     }
-  };
+  }, [agentType, agents, navigate]);
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">

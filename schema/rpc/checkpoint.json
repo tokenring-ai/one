@@ -254,82 +254,214 @@
       "additionalProperties": false
     },
     "listCheckpointsParams": {
+      "default": {},
       "type": "object",
-      "properties": {}
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "agentId": {
+          "type": "string"
+        },
+        "agentType": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "before": {
+          "type": "number"
+        },
+        "after": {
+          "type": "number"
+        },
+        "orderBy": {
+          "type": "string",
+          "enum": [
+            "createdAt",
+            "id"
+          ]
+        },
+        "orderDir": {
+          "type": "string",
+          "enum": [
+            "ASC",
+            "DESC"
+          ]
+        }
+      }
     },
     "listCheckpointsResult": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "number"
-          },
-          "sessionId": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "agentId": {
-            "type": "string"
-          },
-          "agentType": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "number"
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number"
+              },
+              "sessionId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "agentId": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "sessionId",
+              "name",
+              "agentId",
+              "agentType",
+              "createdAt"
+            ],
+            "additionalProperties": false
           }
         },
-        "required": [
-          "id",
-          "sessionId",
-          "name",
-          "agentId",
-          "agentType",
-          "createdAt"
-        ],
-        "additionalProperties": false
-      }
+        "total": {
+          "type": "number"
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "limit": {
+          "type": "number"
+        },
+        "offset": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "hasMore",
+        "limit",
+        "offset"
+      ],
+      "additionalProperties": false
     },
     "streamCheckpointsParams": {
+      "default": {},
       "type": "object",
-      "properties": {}
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "agentId": {
+          "type": "string"
+        },
+        "agentType": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "before": {
+          "type": "number"
+        },
+        "after": {
+          "type": "number"
+        },
+        "orderBy": {
+          "type": "string",
+          "enum": [
+            "createdAt",
+            "id"
+          ]
+        },
+        "orderDir": {
+          "type": "string",
+          "enum": [
+            "ASC",
+            "DESC"
+          ]
+        }
+      }
     },
     "streamCheckpointsResult": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "number"
-          },
-          "sessionId": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "agentId": {
-            "type": "string"
-          },
-          "agentType": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "number"
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number"
+              },
+              "sessionId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "agentId": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "sessionId",
+              "name",
+              "agentId",
+              "agentType",
+              "createdAt"
+            ],
+            "additionalProperties": false
           }
         },
-        "required": [
-          "id",
-          "sessionId",
-          "name",
-          "agentId",
-          "agentType",
-          "createdAt"
-        ],
-        "additionalProperties": false
-      }
+        "total": {
+          "type": "number"
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "limit": {
+          "type": "number"
+        },
+        "offset": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "hasMore",
+        "limit",
+        "offset"
+      ],
+      "additionalProperties": false
     },
     "getCheckpointParams": {
       "type": "object",

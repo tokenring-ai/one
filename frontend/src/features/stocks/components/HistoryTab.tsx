@@ -1,5 +1,6 @@
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import DateRangePicker, { type DateRange } from "../../../components/ui/DateRangePicker.tsx";
 import { useStockPriceHistory } from "../../../rpc.ts";
 import { bufferedHistoryRange, fmt, fmtHistoryDate, fmtVol, isoDateOffset } from "../formatters.ts";
 import PriceLineChart from "./PriceLineChart.tsx";
@@ -10,67 +11,38 @@ interface HistoryTabProps {
 
 export default function HistoryTab({ symbol }: HistoryTabProps) {
   // UI dates are the range the user wants; API gets ±1 day buffer (initial + on apply).
-  const [from, setFrom] = useState(() => isoDateOffset(-90));
-  const [to, setTo] = useState(() => isoDateOffset(0));
-  const [rangeError, setRangeError] = useState<string | null>(null);
+  const [range, setRange] = useState<DateRange>(() => ({
+    from: isoDateOffset(-90),
+    to: isoDateOffset(0),
+  }));
   const [fetchParams, setFetchParams] = useState(() => {
     const buffered = bufferedHistoryRange(isoDateOffset(-90), isoDateOffset(0));
     return buffered ?? { from: isoDateOffset(-91), to: isoDateOffset(1) };
   });
   const history = useStockPriceHistory(symbol, fetchParams.from, fetchParams.to);
 
-  const apply = () => {
-    if (!from || !to) {
-      setRangeError("Select both start and end dates");
-      return;
+  const applyRange = (next: DateRange) => {
+    setRange(next);
+    const buffered = bufferedHistoryRange(next.from, next.to);
+    if (buffered) {
+      setFetchParams(buffered);
     }
-    if (from > to) {
-      setRangeError("Start date must be on or before end date");
-      return;
-    }
-    const buffered = bufferedHistoryRange(from, to);
-    if (!buffered) {
-      setRangeError("Invalid date range");
-      return;
-    }
-    setRangeError(null);
-    setFetchParams(buffered);
   };
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 flex-wrap">
-        <input
-          type="date"
-          value={from}
-          onChange={e => {
-            setFrom(e.target.value);
-            setRangeError(null);
-          }}
-          className="text-xs bg-secondary border border-primary rounded-lg px-3 py-1.5 text-primary focus:border-accent outline-none"
-          aria-label="History start date"
-        />
-        <span className="text-xs text-muted">to</span>
-        <input
-          type="date"
-          value={to}
-          onChange={e => {
-            setTo(e.target.value);
-            setRangeError(null);
-          }}
-          className="text-xs bg-secondary border border-primary rounded-lg px-3 py-1.5 text-primary focus:border-accent outline-none"
-          aria-label="History end date"
-        />
-        <button
-          type="button"
-          onClick={apply}
-          className="px-3 py-1.5 text-xs bg-accent hover:bg-accent-hover text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1"
-        >
-          <RefreshCw className="w-3 h-3" /> Apply
-        </button>
-      </div>
+      <DateRangePicker
+        value={range}
+        onChange={applyRange}
+        fromAriaLabel="History start date"
+        toAriaLabel="History end date"
+        presets={[
+          { label: "7D", days: 7 },
+          { label: "30D", days: 30 },
+          { label: "90D", days: 90 },
+        ]}
+      />
 
-      {rangeError && <div className="py-1 text-center text-red-400 text-sm">{rangeError}</div>}
       {history.error && <div className="py-2 text-center text-red-400 text-sm">Failed to load price history</div>}
 
       {history.data?.rows && history.data.rows.length > 1 && (

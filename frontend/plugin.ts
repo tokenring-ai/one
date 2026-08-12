@@ -13,6 +13,8 @@ const routes = [
   "/web-design",
   "/documents",
   "/research",
+  "/memories",
+  "/tasks",
   "/blog",
   "/files",
   "/terminal",

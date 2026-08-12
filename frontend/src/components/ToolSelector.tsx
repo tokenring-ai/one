@@ -1,6 +1,7 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import {
   Bot,
+  Brain,
   Bug,
   Check,
   Circle,
@@ -43,7 +44,7 @@ const packageIcons: Record<string, React.ReactNode> = {
   "@tokenring-ai/ai-client": <Database className={iconSm} />,
   "@tokenring-ai/websearch": <Globe className={iconSm} />,
   "@tokenring-ai/filesystem": <Code className={iconSm} />,
-  "@tokenring-ai/memory": <Cloud className={iconSm} />,
+  "@tokenring-ai/memory": <Brain className={iconSm} />,
   "@tokenring-ai/git": <GitBranch className={iconSm} />,
   "@tokenring-ai/testing": <Bug className={iconSm} />,
   "@tokenring-ai/codebase": <FileCode className={iconSm} />,
@@ -78,7 +79,7 @@ const packageColors: Record<string, string> = {
   "@tokenring-ai/ai-client": "text-blue-600 dark:text-blue-400",
   "@tokenring-ai/websearch": "text-cyan-600 dark:text-cyan-400",
   "@tokenring-ai/filesystem": "text-emerald-600 dark:text-emerald-400",
-  "@tokenring-ai/memory": "text-purple-600 dark:text-purple-400",
+  "@tokenring-ai/memory": "text-teal-600 dark:text-teal-400",
   "@tokenring-ai/git": "text-orange-600 dark:text-orange-500",
   "@tokenring-ai/testing": "text-pink-600 dark:text-pink-500",
   "@tokenring-ai/codebase": "text-amber-600 dark:text-amber-500",

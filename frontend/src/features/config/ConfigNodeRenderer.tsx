@@ -14,7 +14,9 @@ import deepEqual from "@tokenring-ai/utility/object/deepEqual";
 import { isPlainObject } from "@tokenring-ai/utility/object/isPlainObject";
 import { ChevronRight, Plus, RotateCcw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { isRedactedSensitiveValue } from "../../lib/utils.ts";
+import PasswordInput from "../../components/ui/PasswordInput.tsx";
+import { useExpandedSet } from "../../hooks/useExpandedSet.ts";
+import { cn, isRedactedSensitiveValue } from "../../lib/utils.ts";
 
 export interface ConfigIssue {
   path: (string | number)[];
@@ -32,6 +34,8 @@ interface NodeRendererProps {
   /** Reports the new override value for this node; undefined clears the override. */
   onChange: (value: unknown) => void;
   issues: ConfigIssue[];
+  /** Render a group's children without its own header/card — used where the container already labels it. */
+  bare?: boolean;
 }
 
 function pathsEqual(a: (string | number)[], b: (string | number)[]): boolean {
@@ -102,6 +106,8 @@ function GroupRenderer(props: NodeRendererProps & { node: ConfigGroupNode }) {
       )}
     </div>
   );
+
+  if (props.bare) return body;
 
   // Top-level slice groups get a section card; nested groups a lighter header.
   return (
@@ -210,12 +216,12 @@ function FieldControl({
     case "password": {
       const isSet = isRedactedSensitiveValue(value) ? value.isSet : typeof value === "string" && value.length > 0;
       return (
-        <input
-          type="password"
-          className={inputClass + inheritedClass}
+        <PasswordInput
+          className={cn("min-w-0 w-full sm:w-56", !overridden && "opacity-70")}
+          inputClassName="px-2.5 py-1.5 bg-tertiary rounded-lg text-sm focus-ring font-sans"
           value={typeof value === "string" ? value : ""}
           placeholder={isSet ? "•••••••• (set — type to replace)" : (node.placeholder ?? "")}
-          onChange={event => onChange(event.target.value === "" ? undefined : event.target.value)}
+          onChange={next => onChange(next === "" ? undefined : next)}
           aria-label={node.label}
         />
       );
@@ -639,9 +645,29 @@ function ListRenderer(props: NodeRendererProps & { node: ConfigListNode }) {
 
 /* ----------------------------------- map ----------------------------------- */
 
+/** Fields worth showing next to an entry key so collapsed rows stay identifiable. */
+const ENTRY_SUMMARY_KEYS = ["displayName", "name", "title", "label", "description"];
+
+function entrySummary(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (!isPlainObject(value)) return undefined;
+  for (const key of ENTRY_SUMMARY_KEYS) {
+    const candidate = value[key];
+    if (typeof candidate === "string" && candidate.trim() !== "") return candidate;
+  }
+  return undefined;
+}
+
+/** Number of entries past which the list gets a filter box. */
+const MAP_FILTER_THRESHOLD = 8;
+
 function MapRenderer(props: NodeRendererProps & { node: ConfigMapNode }) {
   const { node } = props;
   const [pendingKey, setPendingKey] = useState("");
+  const [filter, setFilter] = useState("");
+  const { isExpanded, toggle: toggleEntry, expand } = useExpandedSet();
+  // Set when the user adds an entry so the new row scrolls itself into view once it mounts.
+  const addedKeyRef = useRef<string | null>(null);
   const overrideMap = isPlainObject(props.overrideValue) ? props.overrideValue : {};
   const effectiveMap = isPlainObject(props.effectiveValue) ? props.effectiveValue : {};
   const entryKeys = [...new Set([...Object.keys(effectiveMap), ...Object.keys(overrideMap)])];
@@ -661,7 +687,20 @@ function MapRenderer(props: NodeRendererProps & { node: ConfigMapNode }) {
     if (!trimmed || entryKeys.includes(trimmed)) return;
     setEntry(trimmed, {});
     setPendingKey("");
+    setFilter("");
+    expand(trimmed);
+    addedKeyRef.current = trimmed;
   };
+
+  const showFilter = entryKeys.length > MAP_FILTER_THRESHOLD;
+  const needle = filter.trim().toLowerCase();
+  const visibleKeys =
+    needle === ""
+      ? entryKeys
+      : entryKeys.filter(entryKey => {
+          const summary = entrySummary(mergeEntry(effectiveMap[entryKey], overrideMap[entryKey]));
+          return entryKey.toLowerCase().includes(needle) || (summary?.toLowerCase().includes(needle) ?? false);
+        });
 
   return (
     <section className="space-y-2">
@@ -690,17 +729,56 @@ function MapRenderer(props: NodeRendererProps & { node: ConfigMapNode }) {
           </button>
         </div>
       </div>
-      {entryKeys.map(entryKey => {
-        const onlyInOverride = !(entryKey in effectiveMap) || (entryKey in overrideMap && !(entryKey in effectiveMap));
+      {showFilter && (
+        <div className="px-1">
+          <input
+            type="search"
+            className={inputClass + " sm:w-full"}
+            value={filter}
+            placeholder={`Filter ${entryKeys.length} entries…`}
+            onChange={event => setFilter(event.target.value)}
+            aria-label={`Filter ${node.label}`}
+          />
+        </div>
+      )}
+      {visibleKeys.map(entryKey => {
+        const onlyInOverride = !(entryKey in effectiveMap);
+        const entryIssues = issuesWithin(props.issues, [...props.absPath, entryKey]);
+        // Entries with validation issues stay open so problems are never hidden behind a collapsed row.
+        const expanded = isExpanded(entryKey) || entryIssues.length > 0;
+        const summary = entrySummary(mergeEntry(effectiveMap[entryKey], overrideMap[entryKey]));
         return (
-          <div key={entryKey} className="bg-secondary border border-primary rounded-xl px-4 py-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-primary font-mono">{entryKey}</span>
+          <div
+            key={entryKey}
+            ref={element => {
+              if (!element || addedKeyRef.current !== entryKey) return;
+              addedKeyRef.current = null;
+              element.scrollIntoView({ block: "nearest" });
+            }}
+            className="bg-secondary border border-primary rounded-xl"
+          >
+            <div className="flex items-center gap-2 px-3 py-2">
+              <button
+                type="button"
+                onClick={() => toggleEntry(entryKey)}
+                aria-expanded={expanded}
+                className="flex flex-1 items-center gap-2 min-w-0 text-left cursor-pointer focus-ring rounded-md"
+              >
+                <ChevronRight className={`w-3.5 h-3.5 shrink-0 text-muted transition-transform ${expanded ? "rotate-90" : ""}`} aria-hidden="true" />
+                <span className="text-sm font-semibold text-primary font-mono truncate">{entryKey}</span>
+                {summary && <span className="text-xs text-muted truncate min-w-0">{summary}</span>}
+                {entryKey in overrideMap && <span className="text-xs px-1.5 py-px bg-accent/10 text-accent rounded-full shrink-0">modified</span>}
+                {entryIssues.length > 0 && (
+                  <span className="text-xs px-1.5 py-px bg-red-500/10 text-red-400 rounded-full shrink-0">
+                    {entryIssues.length} {entryIssues.length === 1 ? "issue" : "issues"}
+                  </span>
+                )}
+              </button>
               {entryKey in overrideMap && (
                 <button
                   type="button"
                   onClick={() => setEntry(entryKey, undefined)}
-                  className="p-1 text-muted hover:text-red-400 cursor-pointer"
+                  className="p-1 text-muted hover:text-red-400 cursor-pointer shrink-0"
                   title={onlyInOverride ? "Remove entry" : "Reset entry to base configuration"}
                   aria-label={`${onlyInOverride ? "Remove" : "Reset"} ${entryKey}`}
                 >
@@ -708,20 +786,32 @@ function MapRenderer(props: NodeRendererProps & { node: ConfigMapNode }) {
                 </button>
               )}
             </div>
-            <ConfigNodeRenderer
-              node={node.value}
-              absPath={[...props.absPath, entryKey]}
-              overrideValue={overrideMap[entryKey]}
-              effectiveValue={effectiveMap[entryKey]}
-              onChange={value => setEntry(entryKey, value)}
-              issues={props.issues}
-            />
+            {expanded && (
+              <div className="px-4 pb-3 pt-3 border-t border-primary">
+                <ConfigNodeRenderer
+                  node={node.value}
+                  absPath={[...props.absPath, entryKey]}
+                  overrideValue={overrideMap[entryKey]}
+                  effectiveValue={effectiveMap[entryKey]}
+                  onChange={value => setEntry(entryKey, value)}
+                  issues={props.issues}
+                  bare
+                />
+              </div>
+            )}
           </div>
         );
       })}
       {entryKeys.length === 0 && <p className="text-xs text-muted px-1">No entries</p>}
+      {entryKeys.length > 0 && visibleKeys.length === 0 && <p className="text-xs text-muted px-1">No entries match “{filter.trim()}”</p>}
     </section>
   );
+}
+
+/** Override wins per-field for summary purposes; non-objects replace outright. */
+function mergeEntry(effective: unknown, override: unknown): unknown {
+  if (isPlainObject(effective) && isPlainObject(override)) return { ...effective, ...override };
+  return override ?? effective;
 }
 
 /* --------------------------------- variant --------------------------------- */
@@ -946,18 +1036,26 @@ function SecretRenderer(props: NodeRendererProps & { node: ConfigSecretNode }) {
               ))}
             </select>
 
-            {source === "value" && (
-              <input
-                type={node.sensitive ? "password" : "text"}
-                className={inputClass + (overridden ? "" : " opacity-70")}
-                value={valueInput}
-                placeholder={
-                  node.sensitive ? (isSet ? "•••••••• (set — type to replace)" : (node.placeholder ?? "Secret value")) : (node.placeholder ?? "Value")
-                }
-                onChange={event => emitValue(event.target.value)}
-                aria-label={`${node.label} value`}
-              />
-            )}
+            {source === "value" &&
+              (node.sensitive ? (
+                <PasswordInput
+                  className={cn("min-w-0 w-full sm:w-56", !overridden && "opacity-70")}
+                  inputClassName="px-2.5 py-1.5 bg-tertiary rounded-lg text-sm focus-ring font-sans"
+                  value={valueInput}
+                  placeholder={isSet ? "•••••••• (set — type to replace)" : (node.placeholder ?? "Secret value")}
+                  onChange={emitValue}
+                  aria-label={`${node.label} value`}
+                />
+              ) : (
+                <input
+                  type="text"
+                  className={inputClass + (overridden ? "" : " opacity-70")}
+                  value={valueInput}
+                  placeholder={node.placeholder ?? "Value"}
+                  onChange={event => emitValue(event.target.value)}
+                  aria-label={`${node.label} value`}
+                />
+              ))}
 
             {source === "env" && (
               <input

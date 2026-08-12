@@ -2,7 +2,7 @@ import { Bot, Calendar, GitBranch } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { cn } from "../../../lib/utils.ts";
 import { HOUR_H, HOURS, MONTHS, WEEKDAYS_SHORT } from "../constants.ts";
-import { eventDurationHours, toDateKey } from "../dateUtils.ts";
+import { eventDurationHours, layoutOverlappingEvents, toDateKey } from "../dateUtils.ts";
 import type { CalendarEvent } from "../types.ts";
 import EventChip from "./EventChip.tsx";
 
@@ -29,11 +29,14 @@ export default function DayView({
   const isToday = dayKey === toDateKey(today);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Scroll to 8am when the day changes
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 8 * HOUR_H - 20;
-  }, []);
+  }, [dayKey]);
 
   const dayEvents = useMemo(() => events.filter(ev => ev.date === dayKey && ev.startTime), [events, dayKey]);
+
+  const layout = useMemo(() => layoutOverlappingEvents(dayEvents), [dayEvents]);
 
   const allDay = useMemo(() => events.filter(ev => ev.date === dayKey && (ev.allDay || !ev.startTime)), [events, dayKey]);
 
@@ -86,6 +89,9 @@ export default function DayView({
               const [h, min] = ev.startTime!.split(":").map(Number) as [number, number];
               const top = (h + min / 60) * HOUR_H;
               const height = Math.max(eventDurationHours(ev.startTime!, ev.endTime) * HOUR_H, 24);
+              const slot = layout.get(ev.id) ?? { col: 0, totalCols: 1 };
+              const widthPct = 100 / slot.totalCols;
+              const leftPct = slot.col * widthPct;
               return (
                 <button
                   type="button"
@@ -95,10 +101,15 @@ export default function DayView({
                     onEventClick(ev);
                   }}
                   className={cn(
-                    "absolute left-2 right-2 rounded-lg px-2 py-1 text-white text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity text-left overflow-hidden shadow-sm",
+                    "absolute rounded-lg px-2 py-1 text-white text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity text-left overflow-hidden shadow-sm",
                     ev.color,
                   )}
-                  style={{ top: `${top}px`, height: `${height}px` }}
+                  style={{
+                    top: `${top}px`,
+                    height: `${height}px`,
+                    left: `calc(${leftPct}% + 4px)`,
+                    width: `calc(${widthPct}% - 8px)`,
+                  }}
                 >
                   <div className="flex items-center gap-1.5 truncate font-semibold">
                     {eventTypeIcon(ev.type, 10)}

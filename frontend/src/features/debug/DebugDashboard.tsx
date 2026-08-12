@@ -4,11 +4,13 @@ import { Bug, Camera, CircleDot, Cpu, FileJson, Loader2, RefreshCw, Server, Squa
 import { useCallback, useEffect, useMemo, useState } from "react";
 import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
-import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
+import ListItemWithActions from "../../components/ui/ListItemWithActions.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useConfirmDialog } from "../../hooks/useConfirmDialog.tsx";
+import { useRefSync } from "../../hooks/useRefSync.ts";
 import { useTheme } from "../../hooks/useTheme.ts";
 import { cn } from "../../lib/utils.ts";
 import { appRPCClient, useDebugRecording, useDebugSnapshots, useDebugTargets } from "../../rpc.ts";
@@ -25,7 +27,10 @@ const INTERVAL_OPTIONS = [
 
 const DEFAULT_INTERVAL_SECONDS = 5;
 
-/** `kind:id`, the key used to track which targets are selected. */
+/**
+ * `kind:id`, the key used to track which targets are selected.
+ * Module-level so the stale-target cleanup effect can depend on a stable reference.
+ */
 function targetKey(target: { kind: string; id: string }): string {
   return `${target.kind}:${target.id}`;
 }
@@ -43,12 +48,17 @@ export default function DebugDashboard() {
   const [snapshotError, setSnapshotError] = useState<string | null>(null);
   const [loadingSnapshot, setLoadingSnapshot] = useState(false);
   const [capturing, setCapturing] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const { openConfirm, Dialog: ConfirmDialog } = useConfirmDialog();
   const [navigationTab, setNavigationTab] = useState<"capture" | "snapshots">("snapshots");
+
+  // Latest selection after awaits (delete / capture) without closing over a stale render value.
+  const selectedSnapshotRef = useRefSync(selectedSnapshot);
 
   const targetList = useMemo(() => targets.data ?? [], [targets.data]);
   const snapshotList = useMemo(() => snapshots.data ?? [], [snapshots.data]);
   const isRecording = recording.data?.recording ?? false;
+  const snapshotsMutate = snapshots.mutate;
+  const recordingMutate = recording.mutate;
 
   // Drop targets that have gone away (agents get cleaned up while the app is open).
   useEffect(() => {
@@ -62,9 +72,9 @@ export default function DebugDashboard() {
 
   const selectedTargets = useMemo(() => targetList.filter(target => selectedKeys.includes(targetKey(target))), [targetList, selectedKeys]);
 
-  const toggleTarget = (key: string) => {
+  const toggleTarget = useCallback((key: string) => {
     setSelectedKeys(previous => (previous.includes(key) ? previous.filter(existing => existing !== key) : [...previous, key]));
-  };
+  }, []);
 
   const openSnapshot = useCallback(async (name: string) => {
     setSelectedSnapshot(name);
@@ -72,6 +82,8 @@ export default function DebugDashboard() {
     setSnapshotError(null);
     try {
       const result = await appRPCClient.readDebugSnapshot({ name });
+      // Ignore late responses if the user picked another snapshot while this load was in flight.
+      if (selectedSnapshotRef.current !== name) return;
       if (result.status === "notFound") {
         setSnapshotContent(null);
         setSnapshotError(`Snapshot ${name} no longer exists`);
@@ -79,14 +91,17 @@ export default function DebugDashboard() {
       }
       setSnapshotContent(prettyPrintSnapshot(result.content));
     } catch (error: unknown) {
+      if (selectedSnapshotRef.current !== name) return;
       setSnapshotContent(null);
       setSnapshotError(formatError(error));
     } finally {
-      setLoadingSnapshot(false);
+      if (selectedSnapshotRef.current === name) {
+        setLoadingSnapshot(false);
+      }
     }
   }, []);
 
-  const handleCapture = async () => {
+  const handleCapture = useCallback(async () => {
     if (selectedTargets.length === 0) {
       toastManager.warning("Select at least one target to capture", { duration: 3000 });
       return;
@@ -103,20 +118,23 @@ export default function DebugDashboard() {
         names.push(result.name);
       }
 
-      await snapshots.mutate();
+      await snapshotsMutate();
       const [firstName] = names;
       if (firstName) {
         toastManager.success(names.length === 1 ? `Captured ${firstName}` : `Captured ${names.length} snapshots`, { duration: 3000 });
-        await openSnapshot(firstName);
+        // Only auto-open when the viewer is empty so an in-progress inspection is preserved.
+        if (selectedSnapshotRef.current === null) {
+          await openSnapshot(firstName);
+        }
       }
     } catch (error: unknown) {
       toastManager.error(formatError(error), { duration: 5000 });
     } finally {
       setCapturing(false);
     }
-  };
+  }, [openSnapshot, selectedTargets, snapshotsMutate]);
 
-  const handleToggleRecording = async () => {
+  const handleToggleRecording = useCallback(async () => {
     try {
       if (isRecording) {
         await appRPCClient.stopDebugRecording({});
@@ -132,30 +150,41 @@ export default function DebugDashboard() {
         });
         toastManager.success(`Recording every ${intervalSeconds}s`, { duration: 3000 });
       }
-      await recording.mutate();
+      await recordingMutate();
     } catch (error: unknown) {
       toastManager.error(formatError(error), { duration: 5000 });
     }
-  };
+  }, [intervalSeconds, isRecording, recordingMutate, selectedTargets]);
 
-  const handleDelete = async (name: string) => {
-    setConfirmDelete(null);
-    try {
-      await appRPCClient.deleteDebugSnapshot({ name });
-      if (selectedSnapshot === name) {
-        setSelectedSnapshot(null);
-        setSnapshotContent(null);
-        setSnapshotError(null);
+  const handleDelete = useCallback(
+    async (name: string) => {
+      const confirmed = await openConfirm({
+        title: "Delete snapshot",
+        message: `Delete ${name}? This cannot be undone.`,
+        confirmText: "Delete",
+        variant: "danger",
+      });
+      if (!confirmed) return;
+      try {
+        await appRPCClient.deleteDebugSnapshot({ name });
+        // Read the latest selection after the await — the user may have switched snapshots
+        // while the delete was in flight.
+        if (selectedSnapshotRef.current === name) {
+          setSelectedSnapshot(null);
+          setSnapshotContent(null);
+          setSnapshotError(null);
+        }
+        await snapshotsMutate();
+        toastManager.success(`Deleted ${name}`, { duration: 3000 });
+      } catch (error: unknown) {
+        toastManager.error(formatError(error), { duration: 5000 });
       }
-      await snapshots.mutate();
-      toastManager.success(`Deleted ${name}`, { duration: 3000 });
-    } catch (error: unknown) {
-      toastManager.error(formatError(error), { duration: 5000 });
-    }
-  };
+    },
+    [openConfirm, snapshotsMutate],
+  );
 
-  // While recording, keep the snapshot list in step with the captures landing on disk.
-  const snapshotsMutate = snapshots.mutate;
+  // While recording, refresh the snapshot list once per captureCount change (not a loop —
+  // SWR mutate is stable, so the effect only re-runs when captureCount increments).
   const captureCount = recording.data?.captureCount ?? 0;
   useEffect(() => {
     if (captureCount > 0) void snapshotsMutate();
@@ -322,31 +351,26 @@ export default function DebugDashboard() {
                     <ul className="p-2 space-y-1">
                       {snapshotList.map(snapshot => (
                         <li key={snapshot.name}>
-                          <div
-                            className={cn(
-                              "group flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors",
-                              selectedSnapshot === snapshot.name ? "bg-active" : "hover:bg-hover",
-                            )}
+                          <ListItemWithActions
+                            id={snapshot.name}
+                            selected={selectedSnapshot === snapshot.name}
+                            onPrimary={() => void openSnapshot(snapshot.name)}
+                            action={
+                              <button
+                                type="button"
+                                onClick={() => void handleDelete(snapshot.name)}
+                                className="p-1 text-muted hover:text-red-500 rounded-md transition-colors focus-ring cursor-pointer"
+                                aria-label={`Delete ${snapshot.name}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            }
                           >
-                            <button
-                              type="button"
-                              onClick={() => void openSnapshot(snapshot.name)}
-                              className="flex-1 min-w-0 text-left cursor-pointer focus-ring rounded-md"
-                            >
-                              <span className="block text-xs text-primary truncate font-mono">{snapshot.name}</span>
-                              <span className="block text-xs text-muted">
-                                {formatCaptureTime(snapshot.capturedAt)} · {formatBytes(snapshot.sizeBytes)}
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setConfirmDelete(snapshot.name)}
-                              className="shrink-0 p-1 text-muted hover:text-red-500 rounded-md transition-colors focus-ring cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100"
-                              aria-label={`Delete ${snapshot.name}`}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                            <span className="block text-xs text-primary truncate font-mono">{snapshot.name}</span>
+                            <span className="block text-xs text-muted">
+                              {formatCaptureTime(snapshot.capturedAt)} · {formatBytes(snapshot.sizeBytes)}
+                            </span>
+                          </ListItemWithActions>
                         </li>
                       ))}
                     </ul>
@@ -396,16 +420,7 @@ export default function DebugDashboard() {
         </div>
       </WorkspaceShell>
 
-      {confirmDelete && (
-        <ConfirmDialog
-          title="Delete snapshot"
-          message={`Delete ${confirmDelete}? This cannot be undone.`}
-          confirmText="Delete"
-          variant="danger"
-          onConfirm={() => void handleDelete(confirmDelete)}
-          onCancel={() => setConfirmDelete(null)}
-        />
-      )}
+      <ConfirmDialog />
     </div>
   );
 }

@@ -7,7 +7,7 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
-      "title": "getAudios request",
+      "title": "getMediaLibraryConfiguration request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -17,10 +17,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/media-library.getAudios"
+          "const": "/rpc/media-library.getMediaLibraryConfiguration"
         },
         "params": {
-          "$ref": "#/$defs/getAudiosParams"
+          "$ref": "#/$defs/getMediaLibraryConfigurationParams"
         }
       },
       "required": [
@@ -32,7 +32,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getAudios response",
+      "title": "getMediaLibraryConfiguration response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -42,7 +42,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getAudiosResult"
+          "$ref": "#/$defs/getMediaLibraryConfigurationResult"
         }
       },
       "required": [
@@ -53,7 +53,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamAudios request",
+      "title": "getMedia request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -63,10 +63,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/media-library.streamAudios"
+          "const": "/rpc/media-library.getMedia"
         },
         "params": {
-          "$ref": "#/$defs/streamAudiosParams"
+          "$ref": "#/$defs/getMediaParams"
         }
       },
       "required": [
@@ -78,7 +78,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamAudios response",
+      "title": "getMedia response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -88,7 +88,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/streamAudiosResult"
+          "$ref": "#/$defs/getMediaResult"
         }
       },
       "required": [
@@ -99,32 +99,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamAudios stream end response",
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "const": "2.0"
-        },
-        "id": {
-          "type": "number"
-        },
-        "result": {
-          "type": "null"
-        },
-        "stream": {
-          "const": "end"
-        }
-      },
-      "required": [
-        "jsonrpc",
-        "id",
-        "result",
-        "stream"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "title": "getImages request",
+      "title": "streamMedia request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -134,10 +109,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/media-library.getImages"
+          "const": "/rpc/media-library.streamMedia"
         },
         "params": {
-          "$ref": "#/$defs/getImagesParams"
+          "$ref": "#/$defs/streamMediaParams"
         }
       },
       "required": [
@@ -149,7 +124,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getImages response",
+      "title": "streamMedia response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -159,7 +134,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getImagesResult"
+          "$ref": "#/$defs/streamMediaResult"
         }
       },
       "required": [
@@ -170,170 +145,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamImages request",
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "const": "2.0"
-        },
-        "id": {
-          "type": "number"
-        },
-        "method": {
-          "const": "/rpc/media-library.streamImages"
-        },
-        "params": {
-          "$ref": "#/$defs/streamImagesParams"
-        }
-      },
-      "required": [
-        "jsonrpc",
-        "id",
-        "method",
-        "params"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "title": "streamImages response",
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "const": "2.0"
-        },
-        "id": {
-          "type": "number"
-        },
-        "result": {
-          "$ref": "#/$defs/streamImagesResult"
-        }
-      },
-      "required": [
-        "jsonrpc",
-        "id",
-        "result"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "title": "streamImages stream end response",
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "const": "2.0"
-        },
-        "id": {
-          "type": "number"
-        },
-        "result": {
-          "type": "null"
-        },
-        "stream": {
-          "const": "end"
-        }
-      },
-      "required": [
-        "jsonrpc",
-        "id",
-        "result",
-        "stream"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "title": "getVideos request",
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "const": "2.0"
-        },
-        "id": {
-          "type": "number"
-        },
-        "method": {
-          "const": "/rpc/media-library.getVideos"
-        },
-        "params": {
-          "$ref": "#/$defs/getVideosParams"
-        }
-      },
-      "required": [
-        "jsonrpc",
-        "id",
-        "method",
-        "params"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "title": "getVideos response",
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "const": "2.0"
-        },
-        "id": {
-          "type": "number"
-        },
-        "result": {
-          "$ref": "#/$defs/getVideosResult"
-        }
-      },
-      "required": [
-        "jsonrpc",
-        "id",
-        "result"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "title": "streamVideos request",
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "const": "2.0"
-        },
-        "id": {
-          "type": "number"
-        },
-        "method": {
-          "const": "/rpc/media-library.streamVideos"
-        },
-        "params": {
-          "$ref": "#/$defs/streamVideosParams"
-        }
-      },
-      "required": [
-        "jsonrpc",
-        "id",
-        "method",
-        "params"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "title": "streamVideos response",
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "const": "2.0"
-        },
-        "id": {
-          "type": "number"
-        },
-        "result": {
-          "$ref": "#/$defs/streamVideosResult"
-        }
-      },
-      "required": [
-        "jsonrpc",
-        "id",
-        "result"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "title": "streamVideos stream end response",
+      "title": "streamMedia stream end response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -487,7 +299,34 @@
       ],
       "additionalProperties": false
     },
-    "getAudiosParams": {
+    "getMediaLibraryConfigurationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getMediaLibraryConfigurationResult": {
+      "type": "object",
+      "properties": {
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outputDirectory": {
+          "type": "string"
+        },
+        "serveDirectory": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentTypes",
+        "outputDirectory",
+        "serveDirectory"
+      ],
+      "additionalProperties": false
+    },
+    "getMediaParams": {
       "type": "object",
       "properties": {
         "search": {
@@ -498,63 +337,154 @@
           "type": "integer",
           "exclusiveMinimum": 0,
           "maximum": 9007199254740991
+        },
+        "kind": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video",
+              "audio"
+            ]
+          }
         }
       }
     },
-    "getAudiosResult": {
+    "getMediaResult": {
       "type": "object",
       "properties": {
-        "audios": {
+        "media": {
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "const": "audio"
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "filename": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "string"
+                  },
+                  "keywords": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "prompt": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "const": "image"
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "filename",
+                  "mimeType",
+                  "keywords",
+                  "kind"
+                ],
+                "additionalProperties": false
               },
-              "filename": {
-                "type": "string"
+              {
+                "type": "object",
+                "properties": {
+                  "filename": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "string"
+                  },
+                  "keywords": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "prompt": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "const": "video"
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  },
+                  "duration": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "filename",
+                  "mimeType",
+                  "keywords",
+                  "kind"
+                ],
+                "additionalProperties": false
               },
-              "mimeType": {
-                "type": "string"
-              },
-              "width": {
-                "type": "number"
-              },
-              "height": {
-                "type": "number"
-              },
-              "duration": {
-                "type": "number"
-              },
-              "sampleRate": {
-                "type": "number"
-              },
-              "channels": {
-                "type": "number"
-              },
-              "keywords": {
-                "default": [],
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "prompt": {
-                "type": "string"
-              },
-              "createdAt": {
-                "type": "string"
+              {
+                "type": "object",
+                "properties": {
+                  "filename": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "string"
+                  },
+                  "keywords": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "prompt": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "const": "audio"
+                  },
+                  "duration": {
+                    "type": "number"
+                  },
+                  "sampleRate": {
+                    "type": "number"
+                  },
+                  "channels": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "filename",
+                  "mimeType",
+                  "keywords",
+                  "kind"
+                ],
+                "additionalProperties": false
               }
-            },
-            "required": [
-              "kind",
-              "filename",
-              "mimeType",
-              "keywords"
-            ],
-            "additionalProperties": false
+            ]
           }
         },
         "count": {
@@ -562,12 +492,12 @@
         }
       },
       "required": [
-        "audios",
+        "media",
         "count"
       ],
       "additionalProperties": false
     },
-    "streamAudiosParams": {
+    "streamMediaParams": {
       "type": "object",
       "properties": {
         "search": {
@@ -578,63 +508,154 @@
           "type": "integer",
           "exclusiveMinimum": 0,
           "maximum": 9007199254740991
+        },
+        "kind": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video",
+              "audio"
+            ]
+          }
         }
       }
     },
-    "streamAudiosResult": {
+    "streamMediaResult": {
       "type": "object",
       "properties": {
-        "audios": {
+        "media": {
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "const": "audio"
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "filename": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "string"
+                  },
+                  "keywords": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "prompt": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "const": "image"
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "filename",
+                  "mimeType",
+                  "keywords",
+                  "kind"
+                ],
+                "additionalProperties": false
               },
-              "filename": {
-                "type": "string"
+              {
+                "type": "object",
+                "properties": {
+                  "filename": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "string"
+                  },
+                  "keywords": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "prompt": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "const": "video"
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  },
+                  "duration": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "filename",
+                  "mimeType",
+                  "keywords",
+                  "kind"
+                ],
+                "additionalProperties": false
               },
-              "mimeType": {
-                "type": "string"
-              },
-              "width": {
-                "type": "number"
-              },
-              "height": {
-                "type": "number"
-              },
-              "duration": {
-                "type": "number"
-              },
-              "sampleRate": {
-                "type": "number"
-              },
-              "channels": {
-                "type": "number"
-              },
-              "keywords": {
-                "default": [],
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "prompt": {
-                "type": "string"
-              },
-              "createdAt": {
-                "type": "string"
+              {
+                "type": "object",
+                "properties": {
+                  "filename": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "string"
+                  },
+                  "keywords": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "prompt": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "const": "audio"
+                  },
+                  "duration": {
+                    "type": "number"
+                  },
+                  "sampleRate": {
+                    "type": "number"
+                  },
+                  "channels": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "filename",
+                  "mimeType",
+                  "keywords",
+                  "kind"
+                ],
+                "additionalProperties": false
               }
-            },
-            "required": [
-              "kind",
-              "filename",
-              "mimeType",
-              "keywords"
-            ],
-            "additionalProperties": false
+            ]
           }
         },
         "count": {
@@ -642,301 +663,7 @@
         }
       },
       "required": [
-        "audios",
-        "count"
-      ],
-      "additionalProperties": false
-    },
-    "getImagesParams": {
-      "type": "object",
-      "properties": {
-        "search": {
-          "type": "string"
-        },
-        "limit": {
-          "default": 200,
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "maximum": 9007199254740991
-        }
-      }
-    },
-    "getImagesResult": {
-      "type": "object",
-      "properties": {
-        "images": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "default": "image",
-                "type": "string",
-                "const": "image"
-              },
-              "filename": {
-                "type": "string"
-              },
-              "mimeType": {
-                "type": "string"
-              },
-              "width": {
-                "type": "number"
-              },
-              "height": {
-                "type": "number"
-              },
-              "keywords": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            },
-            "required": [
-              "kind",
-              "filename",
-              "mimeType",
-              "width",
-              "height",
-              "keywords"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "count": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "images",
-        "count"
-      ],
-      "additionalProperties": false
-    },
-    "streamImagesParams": {
-      "type": "object",
-      "properties": {
-        "search": {
-          "type": "string"
-        },
-        "limit": {
-          "default": 200,
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "maximum": 9007199254740991
-        }
-      }
-    },
-    "streamImagesResult": {
-      "type": "object",
-      "properties": {
-        "images": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "default": "image",
-                "type": "string",
-                "const": "image"
-              },
-              "filename": {
-                "type": "string"
-              },
-              "mimeType": {
-                "type": "string"
-              },
-              "width": {
-                "type": "number"
-              },
-              "height": {
-                "type": "number"
-              },
-              "keywords": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            },
-            "required": [
-              "kind",
-              "filename",
-              "mimeType",
-              "width",
-              "height",
-              "keywords"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "count": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "images",
-        "count"
-      ],
-      "additionalProperties": false
-    },
-    "getVideosParams": {
-      "type": "object",
-      "properties": {
-        "search": {
-          "type": "string"
-        },
-        "limit": {
-          "default": 200,
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "maximum": 9007199254740991
-        }
-      }
-    },
-    "getVideosResult": {
-      "type": "object",
-      "properties": {
-        "videos": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "const": "video"
-              },
-              "filename": {
-                "type": "string"
-              },
-              "mimeType": {
-                "type": "string"
-              },
-              "width": {
-                "type": "number"
-              },
-              "height": {
-                "type": "number"
-              },
-              "duration": {
-                "type": "number"
-              },
-              "sampleRate": {
-                "type": "number"
-              },
-              "channels": {
-                "type": "number"
-              },
-              "keywords": {
-                "default": [],
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "prompt": {
-                "type": "string"
-              },
-              "createdAt": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "kind",
-              "filename",
-              "mimeType",
-              "keywords"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "count": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "videos",
-        "count"
-      ],
-      "additionalProperties": false
-    },
-    "streamVideosParams": {
-      "type": "object",
-      "properties": {
-        "search": {
-          "type": "string"
-        },
-        "limit": {
-          "default": 200,
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "maximum": 9007199254740991
-        }
-      }
-    },
-    "streamVideosResult": {
-      "type": "object",
-      "properties": {
-        "videos": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "const": "video"
-              },
-              "filename": {
-                "type": "string"
-              },
-              "mimeType": {
-                "type": "string"
-              },
-              "width": {
-                "type": "number"
-              },
-              "height": {
-                "type": "number"
-              },
-              "duration": {
-                "type": "number"
-              },
-              "sampleRate": {
-                "type": "number"
-              },
-              "channels": {
-                "type": "number"
-              },
-              "keywords": {
-                "default": [],
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "prompt": {
-                "type": "string"
-              },
-              "createdAt": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "kind",
-              "filename",
-              "mimeType",
-              "keywords"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "count": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "videos",
+        "media",
         "count"
       ],
       "additionalProperties": false
@@ -1097,35 +824,20 @@
     "path": "/rpc/media-library",
     "source": "plugin/media-library/rpc/schema.ts",
     "methods": {
-      "getAudios": {
+      "getMediaLibraryConfiguration": {
         "type": "query",
-        "params": "#/$defs/getAudiosParams",
-        "result": "#/$defs/getAudiosResult"
+        "params": "#/$defs/getMediaLibraryConfigurationParams",
+        "result": "#/$defs/getMediaLibraryConfigurationResult"
       },
-      "streamAudios": {
-        "type": "stream",
-        "params": "#/$defs/streamAudiosParams",
-        "result": "#/$defs/streamAudiosResult"
-      },
-      "getImages": {
+      "getMedia": {
         "type": "query",
-        "params": "#/$defs/getImagesParams",
-        "result": "#/$defs/getImagesResult"
+        "params": "#/$defs/getMediaParams",
+        "result": "#/$defs/getMediaResult"
       },
-      "streamImages": {
+      "streamMedia": {
         "type": "stream",
-        "params": "#/$defs/streamImagesParams",
-        "result": "#/$defs/streamImagesResult"
-      },
-      "getVideos": {
-        "type": "query",
-        "params": "#/$defs/getVideosParams",
-        "result": "#/$defs/getVideosResult"
-      },
-      "streamVideos": {
-        "type": "stream",
-        "params": "#/$defs/streamVideosParams",
-        "result": "#/$defs/streamVideosResult"
+        "params": "#/$defs/streamMediaParams",
+        "result": "#/$defs/streamMediaResult"
       },
       "getMediaLibraryState": {
         "type": "query",

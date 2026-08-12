@@ -1,9 +1,9 @@
 import { Building2, Clock, DollarSign, Globe } from "lucide-react";
+import StatCard from "../../../components/ui/StatCard.tsx";
 import { changeSign, fmt, fmtMarketCap, fmtPrice, fmtTs, fmtVol } from "../formatters.ts";
 import type { StockHistoricalRow, StockQuote } from "../types.ts";
 import PriceLineChart from "./PriceLineChart.tsx";
 import RangeBar from "./RangeBar.tsx";
-import StatCard from "./StatCard.tsx";
 
 interface OverviewTabProps {
   quote: StockQuote | undefined;
@@ -28,8 +28,10 @@ export default function OverviewTab({ quote, quoteLoading, quoteError, history, 
   if (!quote) return <div className="py-8 text-center text-muted text-sm">No quote data</div>;
 
   const price = quote.Price;
-  const peRatio = quote.Price && quote.EPS ? quote.Price / quote.EPS : null;
-  const dividendYield = quote.AnnualDividend && quote.Price ? (quote.AnnualDividend / quote.Price) * 100 : null;
+  // P/E is only meaningful for positive EPS; zero/negative EPS → "—"
+  const peRatio = quote.Price != null && quote.EPS != null && quote.EPS > 0 ? quote.Price / quote.EPS : null;
+  // Zero dividend is a real value (0%), not missing data
+  const dividendYield = quote.AnnualDividend != null && quote.Price != null && quote.Price !== 0 ? (quote.AnnualDividend / quote.Price) * 100 : null;
 
   return (
     <div className="space-y-4">
@@ -89,7 +91,11 @@ export default function OverviewTab({ quote, quoteLoading, quoteError, history, 
           <StatCard label="Prev Close" value={money(quote.PrevClose)} />
           <StatCard label="Volume" value={fmtVol(quote.Volume)} sub={quote.AverageVolume ? `Avg ${fmtVol(quote.AverageVolume)}` : undefined} />
           <StatCard label="Market Cap" value={fmtMarketCap(quote.Price, quote.SharesOutstanding)} />
-          <StatCard label="P/E Ratio" value={peRatio != null ? fmt(peRatio) : "—"} sub={quote.EPS != null ? `EPS $${fmt(quote.EPS)}` : undefined} />
+          <StatCard
+            label="P/E Ratio"
+            value={peRatio != null ? fmt(peRatio) : "—"}
+            sub={quote.EPS != null ? (quote.EPS <= 0 ? `EPS $${fmt(quote.EPS)} (N/M)` : `EPS $${fmt(quote.EPS)}`) : undefined}
+          />
           <StatCard
             label="Dividend Yield"
             value={dividendYield != null ? `${fmt(dividendYield)}%` : "—"}

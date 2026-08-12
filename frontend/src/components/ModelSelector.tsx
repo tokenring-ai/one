@@ -1,8 +1,8 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Bot, Check, Cloud, Code, Cpu, Database, GitFork, Search, Sparkles, Zap } from "lucide-react";
-import type React from "react";
+import { Check, Cpu, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { resolveProviderBrand } from "../lib/providerBrand.ts";
 import { chatRPCClient, useChatModelsByProvider, useModel } from "../rpc.ts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "./ui/dropdown-menu.tsx";
 import { toastManager } from "./ui/toast.tsx";
@@ -11,37 +11,6 @@ interface ModelSelectorProps {
   agentId: string;
   triggerVariant?: "default" | "icon";
 }
-
-// Provider icon mapping
-const providerIcons: Record<string, React.ReactNode> = {
-  anthropic: <Sparkles className="w-3.5 h-3.5" />,
-  azure: <Cloud className="w-3.5 h-3.5" />,
-  cerebras: <Cpu className="w-3.5 h-3.5" />,
-  deepseek: <Code className="w-3.5 h-3.5" />,
-  google: <Sparkles className="w-3.5 h-3.5" />,
-  groq: <Zap className="w-3.5 h-3.5" />,
-  openai: <Bot className="w-3.5 h-3.5" />,
-  openrouter: <GitFork className="w-3.5 h-3.5" />,
-  qwen: <Cloud className="w-3.5 h-3.5" />,
-  xai: <Cloud className="w-3.5 h-3.5" />,
-  zai: <BookOpen className="w-3.5 h-3.5" />,
-};
-
-// Provider color mapping
-const providerColors: Record<string, string> = {
-  anthropic: "text-accent",
-  azure: "text-blue-600 dark:text-blue-400",
-  cerebras: "text-amber-600 dark:text-amber-500",
-  deepseek: "text-cyan-600 dark:text-cyan-500",
-  google: "text-blue-500 dark:text-blue-400",
-  groq: "text-orange-600 dark:text-orange-500",
-  openai: "text-zinc-900 dark:text-white",
-  openrouter: "text-purple-600 dark:text-purple-400",
-  qwen: "text-pink-600 dark:text-pink-500",
-  xai: "text-zinc-800 dark:text-zinc-100",
-  zai: "text-green-600 dark:text-green-500",
-  default: "text-muted",
-};
 
 export default function ModelSelector({ agentId, triggerVariant = "default" }: ModelSelectorProps) {
   const currentModel = useModel(agentId);
@@ -202,9 +171,8 @@ export default function ModelSelector({ agentId, triggerVariant = "default" }: M
           <div className="flex-1 overflow-y-auto custom-scrollbar py-1 space-y-0.5">
             {Object.entries(groupedModels).map(([provider, models]) => {
               const isProviderExpanded = expandedProviders.has(provider);
-              const providerCode = models[0]?.modelName.replace(/:.*/, "") ?? "unknown";
-              const providerIcon = providerIcons[providerCode] ?? <Database className="w-3.5 h-3.5" />;
-              const providerColor = providerColors[providerCode] ?? providerColors.default;
+              const brand = resolveProviderBrand(provider, models[0]?.modelId);
+              const ProviderIcon = brand.icon;
 
               return (
                 <div key={provider} className="flex flex-col">
@@ -242,7 +210,9 @@ export default function ModelSelector({ agentId, triggerVariant = "default" }: M
                       </svg>
                     </span>
                     <div className="flex-1 flex items-center gap-2 text-primary text-xs font-medium">
-                      <span className={providerColor}>{providerIcon}</span>
+                      <span className={brand.color}>
+                        <ProviderIcon className="w-3.5 h-3.5" />
+                      </span>
                       {provider}
                     </div>
                     <span className="text-xs font-mono text-muted px-1.5">{models.length}</span>

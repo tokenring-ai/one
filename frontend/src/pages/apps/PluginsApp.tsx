@@ -1,11 +1,15 @@
 import { CheckCircle2, Copy, ExternalLink, Package, RefreshCw, Search, Settings2, Store, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import EmptyState from "../../components/ui/EmptyState.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import FilterTabs from "../../components/ui/FilterTabs.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
-import { toastManager } from "../../components/ui/toast.tsx";
+import SearchInput from "../../components/ui/SearchInput.tsx";
+import { type ListFieldConfig, useFilteredList } from "../../hooks/useFilteredList.ts";
+import { type FilterTabDefinition, useFilterTabs } from "../../hooks/useFilterTabs.ts";
+import { copyToClipboard } from "../../lib/clipboard.ts";
 import { cn } from "../../lib/utils.ts";
 import { usePlugins } from "../../rpc.ts";
 
@@ -18,47 +22,42 @@ export type InstalledPlugin = {
 };
 
 type FilterId = "all" | "configurable";
-type SortId = "displayName" | "name" | "version";
 
-function matchesQuery(plugin: InstalledPlugin, query: string): boolean {
-  if (!query) return true;
+const PLUGIN_FILTER_TAB_DEFS: FilterTabDefinition<InstalledPlugin, FilterId>[] = [
+  { id: "all", label: "All" },
+  { id: "configurable", label: "Configurable", predicate: plugin => plugin.hasConfig },
+];
+
+const PLUGIN_SORT_FIELDS: ListFieldConfig<InstalledPlugin>[] = [
+  {
+    key: "displayName",
+    label: "Display name",
+    compare: (a, b) => a.displayName.localeCompare(b.displayName) || a.name.localeCompare(b.name),
+  },
+  {
+    key: "name",
+    label: "Package name",
+    compare: (a, b) => a.name.localeCompare(b.name),
+  },
+  {
+    key: "version",
+    label: "Version",
+    compare: (a, b) => a.version.localeCompare(b.version, undefined, { numeric: true }) || a.displayName.localeCompare(b.displayName),
+  },
+];
+
+function matchesPluginSearch(plugin: InstalledPlugin, query: string): boolean {
   const haystack = [plugin.displayName, plugin.name, plugin.description, plugin.version].join(" ").toLowerCase();
   return haystack.includes(query);
+}
+
+function pluginFilterPredicate(plugin: InstalledPlugin, filter: string): boolean {
+  return filter === "all" || (filter === "configurable" && plugin.hasConfig);
 }
 
 function packageShortName(name: string): string {
   const slash = name.lastIndexOf("/");
   return slash >= 0 ? name.slice(slash + 1) : name;
-}
-
-async function copyText(text: string, label: string) {
-  try {
-    //oxlint-disable typescript/no-unnecessary-condition
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      toastManager.success(`Copied ${label}`, { duration: 2000 });
-      return;
-    }
-  } catch {
-    // fall through to execCommand fallback
-  }
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    if (ok) {
-      toastManager.success(`Copied ${label}`, { duration: 2000 });
-      return;
-    }
-  } catch {
-    // ignore
-  }
-  toastManager.error("Could not copy to clipboard", { duration: 3000 });
 }
 
 function PluginCard({ plugin, selected, onSelect }: { plugin: InstalledPlugin; selected: boolean; onSelect: () => void }) {
@@ -101,7 +100,7 @@ function PluginCard({ plugin, selected, onSelect }: { plugin: InstalledPlugin; s
           </div>
           <p className="text-xs text-muted line-clamp-2">{plugin.description || "No description"}</p>
         </div>
-        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" aria-label="Installed" />
+        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" aria-hidden="true" />
       </button>
       {plugin.hasConfig && (
         <Link
@@ -180,7 +179,7 @@ function PluginDetail({ plugin, onClose }: { plugin: InstalledPlugin; onClose: (
         )}
         <button
           type="button"
-          onClick={() => void copyText(plugin.name, "package name")}
+          onClick={() => void copyToClipboard(plugin.name, { label: "package name" })}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary bg-tertiary border border-primary hover:bg-hover transition-colors focus-ring"
         >
           <Copy className="w-3.5 h-3.5" />
@@ -188,7 +187,7 @@ function PluginDetail({ plugin, onClose }: { plugin: InstalledPlugin; onClose: (
         </button>
         <button
           type="button"
-          onClick={() => void copyText(packageShortName(plugin.name), "short name")}
+          onClick={() => void copyToClipboard(packageShortName(plugin.name), { label: "short name" })}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary bg-tertiary border border-primary hover:bg-hover transition-colors focus-ring"
         >
           <Copy className="w-3.5 h-3.5" />
@@ -201,31 +200,21 @@ function PluginDetail({ plugin, onClose }: { plugin: InstalledPlugin; onClose: (
 
 export default function PluginsApp() {
   const plugins = usePlugins();
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<FilterId>("all");
-  const [sort, setSort] = useState<SortId>("displayName");
   const [selectedName, setSelectedName] = useState<string | null>(null);
 
   const installedPlugins = plugins.data?.plugins ?? [];
 
-  const configurableCount = useMemo(() => installedPlugins.filter(plugin => plugin.hasConfig).length, [installedPlugins]);
-
-  const filteredPlugins = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const list = installedPlugins.filter(plugin => {
-      if (filter === "configurable" && !plugin.hasConfig) return false;
-      return matchesQuery(plugin, query);
-    });
-
-    return [...list].sort((a, b) => {
-      if (sort === "name") return a.name.localeCompare(b.name);
-      if (sort === "version") return a.version.localeCompare(b.version, undefined, { numeric: true }) || a.displayName.localeCompare(b.displayName);
-      return a.displayName.localeCompare(b.displayName) || a.name.localeCompare(b.name);
-    });
-  }, [installedPlugins, search, filter, sort]);
+  const list = useFilteredList({
+    items: installedPlugins,
+    matchesSearch: matchesPluginSearch,
+    filterPredicate: pluginFilterPredicate,
+    sortFields: PLUGIN_SORT_FIELDS,
+    defaultSort: "displayName",
+    defaultFilter: "all",
+  });
 
   // Only surface details for plugins still visible under current filters.
-  const selectedPlugin = selectedName ? (filteredPlugins.find(plugin => plugin.name === selectedName) ?? null) : null;
+  const selectedPlugin = selectedName ? (list.items.find(plugin => plugin.name === selectedName) ?? null) : null;
   // Treat as hard failure only when there is no cached payload (matches other apps).
   const hardError = Boolean(plugins.error && !plugins.data);
   const showStats = !(plugins.isLoading && !plugins.data) && !hardError;
@@ -236,12 +225,8 @@ export default function PluginsApp() {
     }
   }, [selectedName, installedPlugins, plugins.isLoading]);
 
-  const filterTabs = [
-    { id: "all" as const, label: "All", count: installedPlugins.length },
-    { id: "configurable" as const, label: "Configurable", count: configurableCount },
-  ];
-
-  const hasActiveFilters = search.trim().length > 0 || filter !== "all";
+  const { tabs: filterTabs } = useFilterTabs(installedPlugins, PLUGIN_FILTER_TAB_DEFS);
+  const configurableCount = filterTabs.find(tab => tab.id === "configurable")?.count ?? 0;
 
   return (
     <div className="w-full h-full flex flex-col bg-primary overflow-hidden">
@@ -273,51 +258,39 @@ export default function PluginsApp() {
                   <span className="text-xs px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-full">
                     {configurableCount} configurable
                   </span>
-                  {hasActiveFilters && (
-                    <span className="text-xs px-2 py-0.5 bg-secondary border border-primary rounded-full text-muted">Showing {filteredPlugins.length}</span>
+                  {list.hasActiveFilters && (
+                    <span className="text-xs px-2 py-0.5 bg-secondary border border-primary rounded-full text-muted">Showing {list.matchedCount}</span>
                   )}
                 </>
               )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-              <div className="relative flex-1 min-w-0">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
-                <input
-                  type="search"
-                  value={search}
-                  onChange={event => setSearch(event.target.value)}
-                  placeholder="Search by name, package, or description…"
-                  className="w-full bg-input border border-primary rounded-md py-1.5 pl-8 pr-8 text-xs text-primary placeholder-muted focus-ring"
-                  aria-label="Search plugins"
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted hover:text-primary rounded focus-ring"
-                    aria-label="Clear search"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+              <SearchInput
+                value={list.search}
+                onChange={list.setSearch}
+                placeholder="Search by name, package, or description…"
+                aria-label="Search plugins"
+                className="flex-1 min-w-0"
+              />
               <label className="flex items-center gap-1.5 shrink-0 text-xs text-muted">
                 <span className="sr-only sm:not-sr-only">Sort</span>
                 <select
-                  value={sort}
-                  onChange={event => setSort(event.target.value as SortId)}
+                  value={list.sort}
+                  onChange={event => list.setSort(event.target.value)}
                   className="bg-input border border-primary rounded-md py-1.5 px-2 text-xs text-primary focus-ring"
                   aria-label="Sort plugins"
                 >
-                  <option value="displayName">Display name</option>
-                  <option value="name">Package name</option>
-                  <option value="version">Version</option>
+                  {PLUGIN_SORT_FIELDS.map(field => (
+                    <option key={field.key} value={field.key}>
+                      {field.label}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>
 
-            <FilterTabs tabs={filterTabs} value={filter} onChange={setFilter} showZeroCounts className="bg-transparent" />
+            <FilterTabs tabs={filterTabs} value={list.filter as FilterId} onChange={list.setFilter} showZeroCounts className="bg-transparent" />
           </div>
 
           {/* Installed plugins */}
@@ -345,36 +318,37 @@ export default function PluginsApp() {
                   />
                 )}
                 {installedPlugins.length === 0 ? (
-                  <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
-                    <Package className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
-                    <p className="text-sm font-medium text-secondary mb-1">No plugins installed</p>
-                    <p className="text-xs text-muted max-w-sm mx-auto">
-                      Plugins are bundled with your TokenRing instance at startup. Once loaded, they appear here for inspection and configuration.
-                    </p>
-                  </div>
-                ) : filteredPlugins.length === 0 ? (
-                  <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
-                    <Search className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
-                    <p className="text-sm font-medium text-secondary mb-1">No matching plugins</p>
-                    <p className="text-xs text-muted max-w-sm mx-auto mb-3">
-                      Nothing matches{search.trim() ? ` “${search.trim()}”` : ""}
-                      {filter === "configurable" ? " in configurable plugins" : ""}.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearch("");
-                        setFilter("all");
-                      }}
-                      className="text-xs text-accent hover:text-accent-soft transition-colors focus-ring cursor-pointer"
-                    >
-                      Clear filters
-                    </button>
-                  </div>
+                  <EmptyState
+                    variant="card"
+                    icon={Package}
+                    title="No plugins installed"
+                    hint="Plugins are bundled with your TokenRing instance at startup. Once loaded, they appear here for inspection and configuration."
+                  />
+                ) : list.items.length === 0 ? (
+                  <EmptyState
+                    variant="card"
+                    icon={Search}
+                    title="No matching plugins"
+                    hint={
+                      <>
+                        Nothing matches{list.search.trim() ? ` “${list.search.trim()}”` : ""}
+                        {list.filter === "configurable" ? " in configurable plugins" : ""}.
+                      </>
+                    }
+                    action={
+                      <button
+                        type="button"
+                        onClick={list.clearFilters}
+                        className="text-xs text-accent hover:text-accent-soft transition-colors focus-ring cursor-pointer"
+                      >
+                        Clear filters
+                      </button>
+                    }
+                  />
                 ) : (
                   <div className={cn("grid gap-4", selectedPlugin ? "lg:grid-cols-[1fr_20rem]" : "grid-cols-1")}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0 content-start">
-                      {filteredPlugins.map(plugin => (
+                      {list.items.map(plugin => (
                         <PluginCard
                           key={plugin.name}
                           plugin={plugin}
@@ -397,14 +371,12 @@ export default function PluginsApp() {
           {/* Plugin store — no registry API yet */}
           <section>
             <p className="text-xs font-bold text-muted uppercase tracking-widest px-1 mb-3">Plugin Store</p>
-            <div className="px-6 py-10 bg-secondary border border-primary border-dashed rounded-xl text-center">
-              <Store className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
-              <p className="text-sm font-medium text-secondary mb-1">Coming soon</p>
-              <p className="text-xs text-muted max-w-xs mx-auto">
-                Browse and install community plugins from the TokenRing plugin registry. Install, enable, and disable from the store are not available via RPC
-                yet.
-              </p>
-            </div>
+            <EmptyState
+              variant="card"
+              icon={Store}
+              title="Coming soon"
+              hint="Browse and install community plugins from the TokenRing plugin registry. Install, enable, and disable from the store are not available via RPC yet."
+            />
           </section>
         </div>
       </div>

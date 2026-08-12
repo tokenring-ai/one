@@ -1,9 +1,12 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import {
   Activity,
+  AlertTriangle,
   BarChart3,
   ChevronDown,
   ChevronRight,
+  Clock,
+  Coins,
   DollarSign,
   Image as ImageIcon,
   Loader2,
@@ -13,16 +16,23 @@ import {
   RotateCcw,
   Search,
   Sparkles,
+  Wrench,
+  Zap,
 } from "lucide-react";
-import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import EmptyState from "../../components/ui/EmptyState.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
-import FilterTabs, { type FilterTabOption } from "../../components/ui/FilterTabs.tsx";
+import FilterTabs from "../../components/ui/FilterTabs.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
+import StatusBadge from "../../components/ui/StatusBadge.tsx";
+import SummaryStat from "../../components/ui/SummaryStat.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useConfirmDialog } from "../../hooks/useConfirmDialog.tsx";
+import { useExpandedSet } from "../../hooks/useExpandedSet.ts";
+import { type FilterTabDefinition, useFilterTabs } from "../../hooks/useFilterTabs.ts";
+import { type LiveStreamStatus, useLiveStreamStatusFromSWR } from "../../hooks/useLiveStreamStatus.ts";
 import { cn } from "../../lib/utils.ts";
 import { metricsRPCClient, useCostSummary } from "../../rpc.ts";
 import {
@@ -32,10 +42,55 @@ import {
   categoryShares,
   filterAgents,
   formatAgentIdShort,
+  formatCount,
+  formatMs,
   formatPercent,
+  formatTps,
   formatUsd,
   shortCategoryLabel,
+  sumRecord,
+  topRecordEntries,
 } from "./formatters.ts";
+
+type AgentMetricsRow = {
+  agentId: string;
+  displayName: string;
+  agentType: string;
+  idle: boolean;
+  total: number;
+  costs: Record<string, number>;
+  tokens: {
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalCachedTokens: number;
+    totalReasoningTokens: number;
+  };
+  latency: {
+    requestCount: number;
+    avgElapsedMs: number;
+    avgTimeToFirstTokenMs: number;
+    avgTokensPerSecond: number;
+    p50ElapsedMs?: number | undefined;
+    p95ElapsedMs?: number | undefined;
+    p99ElapsedMs?: number | undefined;
+  };
+  errors: {
+    errorsByProvider: Record<string, number>;
+    errorsByType: Record<string, number>;
+    retryCount: number;
+  };
+  activity: {
+    totalSteps: number;
+    totalToolCalls: number;
+    toolCallsByName: Record<string, number>;
+  };
+};
+
+const AGENT_TAB_DEFS: FilterTabDefinition<AgentMetricsRow, AgentFilter>[] = [
+  { id: "all", label: "All" },
+  { id: "active", label: "Active", predicate: a => !a.idle },
+  { id: "idle", label: "Idle", predicate: a => a.idle },
+];
 
 const KIND_BAR: Record<ReturnType<typeof categoryKind>, string> = {
   chat: "bg-accent",
@@ -51,52 +106,59 @@ const KIND_TEXT: Record<ReturnType<typeof categoryKind>, string> = {
   other: "text-amber-500",
 };
 
-function SummaryStat({ label, value, sub, icon, accentClass }: { label: string; value: string; sub?: string; icon: ReactNode; accentClass?: string }) {
-  return (
-    <div className="px-4 py-3.5 bg-secondary rounded-xl border border-primary shadow-sm" data-testid="metrics-summary-stat">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-bold text-muted uppercase tracking-widest">{label}</span>
-        <span className={cn("opacity-80", accentClass)}>{icon}</span>
-      </div>
-      <div className={cn("text-xl font-semibold tabular-nums tracking-tight", accentClass ?? "text-primary")}>{value}</div>
-      {sub ? <p className="text-xs text-muted mt-1 truncate">{sub}</p> : null}
-    </div>
-  );
+function emptyAgentMetrics(): Pick<AgentMetricsRow, "tokens" | "latency" | "errors" | "activity"> {
+  return {
+    tokens: { totalInputTokens: 0, totalOutputTokens: 0, totalCachedTokens: 0, totalReasoningTokens: 0 },
+    latency: { requestCount: 0, avgElapsedMs: 0, avgTimeToFirstTokenMs: 0, avgTokensPerSecond: 0 },
+    errors: { errorsByProvider: {}, errorsByType: {}, retryCount: 0 },
+    activity: { totalSteps: 0, totalToolCalls: 0, toolCallsByName: {} },
+  };
 }
 
-function LiveStatusBadge({ isValidating, error, hasData }: { isValidating: boolean; error: Error | undefined; hasData: boolean }) {
-  if (error && !hasData) return null;
-  if (error) {
+function LiveStatusBadge({ status, showSpinner }: { status: LiveStreamStatus; showSpinner: boolean }) {
+  // Never show "Live" without a snapshot — covers first connect and paused/waiting gaps.
+  if (status === "error") {
     return (
-      <span
-        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+      <StatusBadge
+        label="Error"
+        icon={<AlertTriangle className="w-3 h-3" />}
+        colorClass="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30"
+        gap="md"
         data-testid="metrics-live-status"
-      >
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-        Reconnecting
-      </span>
+      />
     );
   }
-  // Never show "Live" without a snapshot — covers first connect and paused/waiting gaps.
-  if (!hasData) {
+  if (status === "reconnecting") {
     return (
-      <span
-        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-tertiary text-muted border border-primary"
+      <StatusBadge
+        label="Reconnecting"
+        dotColor="bg-amber-500"
+        colorClass="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
+        gap="md"
         data-testid="metrics-live-status"
-      >
-        <Loader2 className={cn("w-3 h-3", isValidating && "animate-spin")} />
-        Connecting
-      </span>
+      />
+    );
+  }
+  if (status === "connecting") {
+    return (
+      <StatusBadge
+        label="Connecting"
+        icon={<Loader2 className={cn("w-3 h-3", showSpinner && "animate-spin")} />}
+        colorClass="bg-tertiary text-muted border-primary"
+        gap="md"
+        data-testid="metrics-live-status"
+      />
     );
   }
   return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+    <StatusBadge
+      label="Live"
+      dotColor="bg-emerald-500"
+      pulse
+      colorClass="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+      gap="md"
       data-testid="metrics-live-status"
-    >
-      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-      Live
-    </span>
+    />
   );
 }
 
@@ -105,11 +167,13 @@ function CategoryBars({ totalsByCategory, grandTotal }: { totalsByCategory: Reco
 
   if (shares.length === 0) {
     return (
-      <div className="px-4 py-10 text-center bg-secondary border border-primary border-dashed rounded-xl" data-testid="metrics-category-empty">
-        <BarChart3 className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
-        <p className="text-sm font-medium text-secondary mb-1">No spend yet</p>
-        <p className="text-xs text-muted max-w-xs mx-auto">Costs appear here as agents chat, generate images, or use other billable tools.</p>
-      </div>
+      <EmptyState
+        variant="card"
+        icon={BarChart3}
+        title="No spend yet"
+        hint="Costs appear here as agents chat, generate images, or use other billable tools."
+        data-testid="metrics-category-empty"
+      />
     );
   }
 
@@ -147,7 +211,37 @@ function CategoryBars({ totalsByCategory, grandTotal }: { totalsByCategory: Reco
   );
 }
 
-function AgentCostRow({
+function MiniStatRow({ items }: { items: Array<{ label: string; value: string }> }) {
+  return (
+    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
+      {items.map(item => (
+        <span key={item.label} className="tabular-nums">
+          <span className="opacity-70">{item.label}</span> <span className="text-secondary font-medium">{item.value}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function KeyValueList({ entries, emptyLabel }: { entries: Array<{ key: string; value: number }>; emptyLabel: string }) {
+  if (entries.length === 0) {
+    return <p className="text-xs text-muted">{emptyLabel}</p>;
+  }
+  return (
+    <div className="space-y-1">
+      {entries.map(e => (
+        <div key={e.key} className="flex items-center justify-between gap-3 text-xs">
+          <span className="truncate text-secondary font-medium" title={e.key}>
+            {e.key}
+          </span>
+          <span className="tabular-nums text-muted shrink-0">{formatCount(e.value)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const AgentCostRow = memo(function AgentCostRow({
   agent,
   maxTotal,
   onReset,
@@ -155,14 +249,7 @@ function AgentCostRow({
   expanded,
   onToggleExpand,
 }: {
-  agent: {
-    agentId: string;
-    displayName: string;
-    agentType: string;
-    idle: boolean;
-    total: number;
-    costs: Record<string, number>;
-  };
+  agent: AgentMetricsRow;
   maxTotal: number;
   onReset: (agentId: string) => void;
   resetting: boolean;
@@ -174,6 +261,17 @@ function AgentCostRow({
   const allCategories = categoryShares(agent.costs, agent.total);
   const topCategories = allCategories.slice(0, 3);
   const hasMore = allCategories.length > 3;
+  const totalErrors = Math.max(sumRecord(agent.errors.errorsByProvider), sumRecord(agent.errors.errorsByType));
+  const hasPerformance =
+    agent.tokens.totalInputTokens > 0 ||
+    agent.tokens.totalOutputTokens > 0 ||
+    agent.latency.requestCount > 0 ||
+    agent.activity.totalSteps > 0 ||
+    agent.activity.totalToolCalls > 0 ||
+    totalErrors > 0 ||
+    agent.errors.retryCount > 0;
+
+  const canReset = agent.total > 0 || hasPerformance;
 
   return (
     <div className="px-4 py-3 border-b border-primary last:border-b-0 hover:bg-hover/40 transition-colors" data-testid="metrics-agent-row">
@@ -209,34 +307,57 @@ function AgentCostRow({
           <div className="h-1.5 rounded-full bg-tertiary overflow-hidden mb-2">
             <div className="h-full rounded-full bg-emerald-500/80 transition-all duration-500" style={{ width: `${barWidth}%` }} />
           </div>
-          {!expanded && topCategories.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {topCategories.map(c => (
-                <span
-                  key={c.category}
-                  className={cn(
-                    "text-xs px-1.5 py-0.5 rounded-md bg-tertiary/80 border border-primary/60 truncate max-w-[12rem]",
-                    KIND_TEXT[categoryKind(c.category)],
-                  )}
-                  title={c.category}
-                >
-                  {shortCategoryLabel(c.category)} {formatUsd(c.amount)}
-                </span>
-              ))}
-              {hasMore ? <span className="text-xs text-muted self-center">+{allCategories.length - 3} more</span> : null}
+          {!expanded ? (
+            <div className="space-y-1.5">
+              {topCategories.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {topCategories.map(c => (
+                    <span
+                      key={c.category}
+                      className={cn(
+                        "text-xs px-1.5 py-0.5 rounded-md bg-tertiary/80 border border-primary/60 truncate max-w-[12rem]",
+                        KIND_TEXT[categoryKind(c.category)],
+                      )}
+                      title={c.category}
+                    >
+                      {shortCategoryLabel(c.category)} {formatUsd(c.amount)}
+                    </span>
+                  ))}
+                  {hasMore ? <span className="text-xs text-muted self-center">+{allCategories.length - 3} more</span> : null}
+                </div>
+              ) : (
+                <span className="text-xs text-muted">No recorded costs</span>
+              )}
+              {hasPerformance ? (
+                <MiniStatRow
+                  items={[
+                    {
+                      label: "tok",
+                      value: `${formatCount(agent.tokens.totalInputTokens)}↓ ${formatCount(agent.tokens.totalOutputTokens)}↑`,
+                    },
+                    ...(agent.latency.requestCount > 0
+                      ? [
+                          { label: "req", value: formatCount(agent.latency.requestCount) },
+                          { label: "avg", value: formatMs(agent.latency.avgElapsedMs) },
+                        ]
+                      : []),
+                    ...(agent.activity.totalSteps > 0 ? [{ label: "steps", value: formatCount(agent.activity.totalSteps) }] : []),
+                    ...(agent.activity.totalToolCalls > 0 ? [{ label: "tools", value: formatCount(agent.activity.totalToolCalls) }] : []),
+                    ...(totalErrors > 0 ? [{ label: "err", value: formatCount(totalErrors) }] : []),
+                  ]}
+                />
+              ) : null}
             </div>
-          ) : !expanded ? (
-            <span className="text-xs text-muted">No recorded costs</span>
           ) : null}
         </button>
         <div className="flex flex-col items-end gap-2 shrink-0">
           <span className="text-sm font-semibold tabular-nums text-primary">{formatUsd(agent.total)}</span>
           <button
             type="button"
-            disabled={resetting || agent.total === 0}
+            disabled={resetting || !canReset}
             onClick={() => onReset(agent.agentId)}
             className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md transition-colors focus-ring cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Reset cost counters for this agent"
+            title="Reset metrics for this agent"
             data-testid="metrics-reset-agent"
           >
             {resetting ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
@@ -244,99 +365,188 @@ function AgentCostRow({
           </button>
         </div>
       </div>
-      {expanded && allCategories.length > 0 ? (
-        <div className="mt-3 ml-6 pl-3 border-l border-primary space-y-1.5" data-testid="metrics-agent-breakdown">
-          {allCategories.map(c => (
-            <div key={c.category} className="flex items-center justify-between gap-3 text-xs">
-              <span className={cn("truncate font-medium", KIND_TEXT[categoryKind(c.category)])} title={c.category}>
-                {shortCategoryLabel(c.category)}
-              </span>
-              <span className="tabular-nums text-muted shrink-0">
-                {formatUsd(c.amount)}
-                <span className="ml-1.5 opacity-70">{formatPercent(c.share)}</span>
-              </span>
-            </div>
-          ))}
+      {expanded ? (
+        <div className="mt-3 ml-6 pl-3 border-l border-primary space-y-4" data-testid="metrics-agent-breakdown">
+          <div>
+            <p className="text-xs font-bold text-muted uppercase tracking-widest mb-2">Costs</p>
+            {allCategories.length > 0 ? (
+              <div className="space-y-1.5">
+                {allCategories.map(c => (
+                  <div key={c.category} className="flex items-center justify-between gap-3 text-xs">
+                    <span className={cn("truncate font-medium", KIND_TEXT[categoryKind(c.category)])} title={c.category}>
+                      {shortCategoryLabel(c.category)}
+                    </span>
+                    <span className="tabular-nums text-muted shrink-0">
+                      {formatUsd(c.amount)}
+                      <span className="ml-1.5 opacity-70">{formatPercent(c.share)}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted">No recorded costs for this agent.</p>
+            )}
+          </div>
+
+          <div data-testid="metrics-agent-tokens">
+            <p className="text-xs font-bold text-muted uppercase tracking-widest mb-2">Tokens</p>
+            <MiniStatRow
+              items={[
+                { label: "in", value: formatCount(agent.tokens.totalInputTokens) },
+                { label: "out", value: formatCount(agent.tokens.totalOutputTokens) },
+                { label: "cached", value: formatCount(agent.tokens.totalCachedTokens) },
+                { label: "reasoning", value: formatCount(agent.tokens.totalReasoningTokens) },
+              ]}
+            />
+          </div>
+
+          <div data-testid="metrics-agent-latency">
+            <p className="text-xs font-bold text-muted uppercase tracking-widest mb-2">Latency</p>
+            <MiniStatRow
+              items={[
+                { label: "requests", value: formatCount(agent.latency.requestCount) },
+                { label: "avg", value: formatMs(agent.latency.avgElapsedMs) },
+                { label: "p50", value: formatMs(agent.latency.p50ElapsedMs) },
+                { label: "p95", value: formatMs(agent.latency.p95ElapsedMs) },
+                { label: "ttft", value: formatMs(agent.latency.avgTimeToFirstTokenMs) },
+                { label: "tps", value: formatTps(agent.latency.avgTokensPerSecond) },
+              ]}
+            />
+          </div>
+
+          <div data-testid="metrics-agent-activity">
+            <p className="text-xs font-bold text-muted uppercase tracking-widest mb-2">Activity</p>
+            <MiniStatRow
+              items={[
+                { label: "steps", value: formatCount(agent.activity.totalSteps) },
+                { label: "tool calls", value: formatCount(agent.activity.totalToolCalls) },
+              ]}
+            />
+            {Object.keys(agent.activity.toolCallsByName).length > 0 ? (
+              <div className="mt-2">
+                <p className="text-xs text-muted mb-1">Top tools</p>
+                <KeyValueList entries={topRecordEntries(agent.activity.toolCallsByName, 8)} emptyLabel="No tool calls" />
+              </div>
+            ) : null}
+          </div>
+
+          <div data-testid="metrics-agent-errors">
+            <p className="text-xs font-bold text-muted uppercase tracking-widest mb-2">Errors & retries</p>
+            <MiniStatRow
+              items={[
+                { label: "errors", value: formatCount(totalErrors) },
+                { label: "retries", value: formatCount(agent.errors.retryCount) },
+              ]}
+            />
+            {totalErrors > 0 ? (
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted mb-1">By type</p>
+                  <KeyValueList entries={topRecordEntries(agent.errors.errorsByType, 5)} emptyLabel="—" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted mb-1">By provider</p>
+                  <KeyValueList entries={topRecordEntries(agent.errors.errorsByProvider, 5)} emptyLabel="—" />
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
-      ) : null}
-      {expanded && allCategories.length === 0 ? (
-        <p className="mt-2 ml-6 pl-3 text-xs text-muted border-l border-primary">No recorded costs for this agent.</p>
       ) : null}
     </div>
   );
-}
+});
 
 export default function MetricsDashboard() {
   const summary = useCostSummary();
+  const streamStatus = useLiveStreamStatusFromSWR(summary);
+  const mutateSummary = summary.mutate;
   const [resettingId, setResettingId] = useState<string | null>(null);
-  const [confirmResetId, setConfirmResetId] = useState<string | null>(null);
+  const { openConfirm, Dialog: ConfirmDialog } = useConfirmDialog();
   const [agentFilter, setAgentFilter] = useState<AgentFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const { isExpanded, toggle: toggleExpand } = useExpandedSet();
 
   const data = summary.data;
   const buckets = useMemo(() => bucketTotals(data?.totalsByCategory ?? {}), [data?.totalsByCategory]);
   const maxAgentTotal = useMemo(() => Math.max(0, ...(data?.agents.map(a => a.total) ?? [0])), [data?.agents]);
 
-  const filteredAgents = useMemo(() => filterAgents(data?.agents ?? [], agentFilter, searchQuery), [data?.agents, agentFilter, searchQuery]);
-
-  const agentTabs = useMemo<FilterTabOption<AgentFilter>[]>(() => {
-    const agents = data?.agents ?? [];
-    return [
-      { id: "all", label: "All", count: agents.length },
-      { id: "active", label: "Active", count: agents.filter(a => !a.idle).length },
-      { id: "idle", label: "Idle", count: agents.filter(a => a.idle).length },
-    ];
+  const agentsWithMetrics = useMemo((): AgentMetricsRow[] => {
+    return (data?.agents ?? []).map(agent => ({
+      agentId: agent.agentId,
+      displayName: agent.displayName,
+      agentType: agent.agentType,
+      idle: agent.idle,
+      total: agent.total,
+      costs: agent.costs,
+      tokens: agent.tokens,
+      latency: agent.latency,
+      errors: agent.errors,
+      activity: agent.activity,
+    }));
   }, [data?.agents]);
 
-  const confirmAgent = useMemo(() => data?.agents.find(a => a.agentId === confirmResetId) ?? null, [data?.agents, confirmResetId]);
+  const filteredAgents = useMemo(() => filterAgents(agentsWithMetrics, agentFilter, searchQuery), [agentsWithMetrics, agentFilter, searchQuery]);
 
-  const handleResetRequest = (agentId: string) => {
-    setConfirmResetId(agentId);
-  };
+  const totals = useMemo(() => {
+    const defaults = emptyAgentMetrics();
+    return {
+      tokens: data?.tokens ?? defaults.tokens,
+      latency: data?.latency ?? defaults.latency,
+      errors: data?.errors ?? defaults.errors,
+      activity: data?.activity ?? defaults.activity,
+    };
+  }, [data]);
 
-  const handleResetConfirm = async () => {
-    if (!confirmResetId) return;
-    const agentId = confirmResetId;
-    setConfirmResetId(null);
-    setResettingId(agentId);
-    try {
-      const result = await metricsRPCClient.resetAgentCosts({ agentId });
-      if (result.status === "agentNotFound") {
-        toastManager.error("Agent no longer exists", { duration: 4000 });
-      } else {
-        toastManager.success("Cost counters reset", { duration: 2500 });
+  const totalErrors = Math.max(sumRecord(totals.errors.errorsByProvider), sumRecord(totals.errors.errorsByType));
+
+  const { tabs: agentTabs } = useFilterTabs(agentsWithMetrics, AGENT_TAB_DEFS);
+
+  const handleResetRequest = useCallback(
+    async (agentId: string) => {
+      if (resettingId) return;
+      const agent = agentsWithMetrics.find(a => a.agentId === agentId);
+      const displayName = agent?.displayName ?? agentId;
+      const total = agent?.total ?? 0;
+      const confirmed = await openConfirm({
+        title: "Reset metrics?",
+        message: `Clear all recorded costs, tokens, latency, errors, and activity for “${displayName}” (${formatUsd(total)})? This only resets session counters — it does not refund provider usage.`,
+        confirmText: "Reset metrics",
+        cancelText: "Cancel",
+        variant: "warning",
+      });
+      if (!confirmed) return;
+      setResettingId(agentId);
+      try {
+        const result = await metricsRPCClient.resetAgentCosts({ agentId });
+        if (result.status === "agentNotFound") {
+          toastManager.error("Agent no longer exists", { duration: 4000 });
+        } else {
+          toastManager.success("Metrics reset", { duration: 2500 });
+        }
+        // Refresh either way: clear counters or drop a ghost agent row.
+        await mutateSummary();
+      } catch (err) {
+        toastManager.error(formatError(err, { includeStack: false }), { duration: 5000 });
+      } finally {
+        setResettingId(null);
       }
-      // Refresh either way: clear counters or drop a ghost agent row.
-      await summary.mutate();
-    } catch (err) {
-      toastManager.error(formatError(err, { includeStack: false }), { duration: 5000 });
-    } finally {
-      setResettingId(null);
-    }
-  };
-
-  const toggleExpand = (agentId: string) => {
-    setExpandedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(agentId)) next.delete(agentId);
-      else next.add(agentId);
-      return next;
-    });
-  };
+    },
+    [agentsWithMetrics, mutateSummary, openConfirm, resettingId],
+  );
 
   return (
     <div className="w-full h-full flex flex-col bg-primary" data-testid="metrics-dashboard">
       <AppPageHeader
         title="Metrics"
-        subtitle="Live cost tracking across agents, models, and media"
+        subtitle="Live cost, tokens, latency, and activity across agents"
         icon={<DollarSign className="w-4 h-4" />}
         iconGradient="from-emerald-500 to-teal-600"
       >
-        <LiveStatusBadge isValidating={summary.isValidating} error={summary.error} hasData={!!data} />
+        <LiveStatusBadge status={streamStatus.status} showSpinner={streamStatus.showSpinner} />
         <button
           type="button"
-          onClick={() => void summary.mutate()}
+          onClick={() => void mutateSummary()}
           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-primary border border-primary rounded-lg transition-colors focus-ring cursor-pointer"
           title="Refresh now"
           data-testid="metrics-refresh"
@@ -350,16 +560,16 @@ export default function MetricsDashboard() {
         <div className="max-w-5xl mx-auto space-y-8">
           {summary.isLoading && !data ? (
             <LoadingState message="Loading metrics…" size="lg" className="py-20" />
-          ) : summary.error && !data ? (
+          ) : streamStatus.status === "error" ? (
             <ErrorState
               title="Unable to load metrics"
               error={formatError(summary.error, { includeStack: false }).split("\n")[0]}
-              onRetry={() => void summary.mutate()}
+              onRetry={() => void mutateSummary()}
               variant="page"
             />
           ) : data ? (
             <>
-              {summary.error ? (
+              {streamStatus.isStale ? (
                 <div
                   className="px-3 py-2 text-xs text-warning bg-warning/10 border border-warning/30 rounded-lg"
                   role="status"
@@ -369,7 +579,7 @@ export default function MetricsDashboard() {
                 </div>
               ) : null}
 
-              {/* Summary cards */}
+              {/* Cost summary cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <SummaryStat
                   label="Session total"
@@ -377,6 +587,9 @@ export default function MetricsDashboard() {
                   sub={`${data.agentCount} agent${data.agentCount === 1 ? "" : "s"} tracked`}
                   icon={<DollarSign className="w-4 h-4" />}
                   accentClass="text-emerald-500"
+                  size="lg"
+                  iconPosition="right"
+                  data-testid="metrics-summary-stat"
                 />
                 <SummaryStat
                   label="Chat & models"
@@ -384,6 +597,9 @@ export default function MetricsDashboard() {
                   sub="Chat + structured generation"
                   icon={<MessageSquare className="w-4 h-4" />}
                   accentClass="text-accent"
+                  size="lg"
+                  iconPosition="right"
+                  data-testid="metrics-summary-stat"
                 />
                 <SummaryStat
                   label="Media"
@@ -391,6 +607,9 @@ export default function MetricsDashboard() {
                   sub="Image + video generation"
                   icon={<ImageIcon className="w-4 h-4" />}
                   accentClass="text-pink-500"
+                  size="lg"
+                  iconPosition="right"
+                  data-testid="metrics-summary-stat"
                 />
                 <SummaryStat
                   label="Active now"
@@ -398,6 +617,57 @@ export default function MetricsDashboard() {
                   sub={data.agentCount === 0 ? "Start an agent to track spend" : `${data.agentCount - data.activeAgentCount} idle`}
                   icon={<Sparkles className="w-4 h-4" />}
                   accentClass="text-amber-500"
+                  size="lg"
+                  iconPosition="right"
+                  data-testid="metrics-summary-stat"
+                />
+              </div>
+
+              {/* Performance summary cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" data-testid="metrics-performance-stats">
+                <SummaryStat
+                  label="Tokens"
+                  value={`${formatCount(totals.tokens.totalInputTokens)} / ${formatCount(totals.tokens.totalOutputTokens)}`}
+                  sub={`in / out · cached ${formatCount(totals.tokens.totalCachedTokens)} · reason ${formatCount(totals.tokens.totalReasoningTokens)}`}
+                  icon={<Coins className="w-4 h-4" />}
+                  accentClass="text-sky-500"
+                  size="lg"
+                  iconPosition="right"
+                  data-testid="metrics-summary-stat"
+                />
+                <SummaryStat
+                  label="Latency"
+                  value={formatMs(totals.latency.avgElapsedMs)}
+                  sub={
+                    totals.latency.requestCount > 0
+                      ? `${formatCount(totals.latency.requestCount)} req · ttft ${formatMs(totals.latency.avgTimeToFirstTokenMs)} · ${formatTps(totals.latency.avgTokensPerSecond)}`
+                      : "No requests yet"
+                  }
+                  icon={<Clock className="w-4 h-4" />}
+                  accentClass="text-indigo-500"
+                  size="lg"
+                  iconPosition="right"
+                  data-testid="metrics-summary-stat"
+                />
+                <SummaryStat
+                  label="Errors"
+                  value={formatCount(totalErrors)}
+                  sub={`${formatCount(totals.errors.retryCount)} retries across providers`}
+                  icon={<AlertTriangle className="w-4 h-4" />}
+                  accentClass="text-rose-500"
+                  size="lg"
+                  iconPosition="right"
+                  data-testid="metrics-summary-stat"
+                />
+                <SummaryStat
+                  label="Activity"
+                  value={`${formatCount(totals.activity.totalSteps)} / ${formatCount(totals.activity.totalToolCalls)}`}
+                  sub="steps / tool calls"
+                  icon={<Wrench className="w-4 h-4" />}
+                  accentClass="text-cyan-500"
+                  size="lg"
+                  iconPosition="right"
+                  data-testid="metrics-summary-stat"
                 />
               </div>
 
@@ -436,6 +706,36 @@ export default function MetricsDashboard() {
                 </div>
               ) : null}
 
+              {/* Errors + top tools overview when present */}
+              {(totalErrors > 0 || Object.keys(totals.activity.toolCallsByName).length > 0) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" data-testid="metrics-detail-panels">
+                  {totalErrors > 0 ? (
+                    <section className="bg-secondary border border-primary rounded-xl p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Zap className="w-3.5 h-3.5 text-rose-500" />
+                        <p className="text-xs font-bold text-muted uppercase tracking-widest">Errors by type</p>
+                      </div>
+                      <KeyValueList entries={topRecordEntries(totals.errors.errorsByType, 8)} emptyLabel="No errors" />
+                      {Object.keys(totals.errors.errorsByProvider).length > 0 ? (
+                        <div className="mt-4 pt-3 border-t border-primary">
+                          <p className="text-xs text-muted mb-2">By provider</p>
+                          <KeyValueList entries={topRecordEntries(totals.errors.errorsByProvider, 8)} emptyLabel="—" />
+                        </div>
+                      ) : null}
+                    </section>
+                  ) : null}
+                  {Object.keys(totals.activity.toolCallsByName).length > 0 ? (
+                    <section className="bg-secondary border border-primary rounded-xl p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Wrench className="w-3.5 h-3.5 text-cyan-500" />
+                        <p className="text-xs font-bold text-muted uppercase tracking-widest">Top tools</p>
+                      </div>
+                      <KeyValueList entries={topRecordEntries(totals.activity.toolCallsByName, 10)} emptyLabel="No tool calls" />
+                    </section>
+                  ) : null}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* By category */}
                 <section>
@@ -455,12 +755,13 @@ export default function MetricsDashboard() {
                     <span className="text-xs text-muted">Updates every ~2s</span>
                   </div>
                   <div className="bg-secondary border border-primary rounded-xl shadow-sm overflow-hidden">
-                    {data.agents.length === 0 ? (
-                      <div className="px-4 py-10 text-center" data-testid="metrics-agents-empty">
-                        <Activity className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
-                        <p className="text-sm font-medium text-secondary mb-1">No agents running</p>
-                        <p className="text-xs text-muted max-w-xs mx-auto">Create an agent to start tracking costs for this session.</p>
-                      </div>
+                    {agentsWithMetrics.length === 0 ? (
+                      <EmptyState
+                        icon={Activity}
+                        title="No agents running"
+                        hint="Create an agent to start tracking costs for this session."
+                        data-testid="metrics-agents-empty"
+                      />
                     ) : (
                       <>
                         <FilterTabs tabs={agentTabs} value={agentFilter} onChange={setAgentFilter} showZeroCounts className="px-2" />
@@ -479,10 +780,13 @@ export default function MetricsDashboard() {
                           </div>
                         </div>
                         {filteredAgents.length === 0 ? (
-                          <div className="px-4 py-8 text-center" data-testid="metrics-agents-filtered-empty">
-                            <p className="text-sm text-secondary mb-1">No matching agents</p>
-                            <p className="text-xs text-muted">Try a different filter or search.</p>
-                          </div>
+                          <EmptyState
+                            variant="compact"
+                            icon={Search}
+                            title="No matching agents"
+                            hint="Try a different filter or search."
+                            data-testid="metrics-agents-filtered-empty"
+                          />
                         ) : (
                           filteredAgents.map(agent => (
                             <AgentCostRow
@@ -491,7 +795,7 @@ export default function MetricsDashboard() {
                               maxTotal={maxAgentTotal}
                               onReset={handleResetRequest}
                               resetting={resettingId === agent.agentId}
-                              expanded={expandedIds.has(agent.agentId)}
+                              expanded={isExpanded(agent.agentId)}
                               onToggleExpand={toggleExpand}
                             />
                           ))
@@ -503,8 +807,8 @@ export default function MetricsDashboard() {
               </div>
 
               <p className="text-xs text-muted text-center px-4">
-                Costs are tracked per agent for the current session (and restored checkpoints). Amounts come from model provider usage reported by the AI
-                client.
+                Metrics are tracked per agent for the current session (and restored from storage when available). Costs and tokens come from model provider
+                usage; latency, steps, tool calls, and errors are collected by the chat and AI client layers.
               </p>
             </>
           ) : (
@@ -513,17 +817,7 @@ export default function MetricsDashboard() {
         </div>
       </div>
 
-      {confirmAgent ? (
-        <ConfirmDialog
-          title="Reset cost counters?"
-          message={`Clear all recorded costs for “${confirmAgent.displayName}” (${formatUsd(confirmAgent.total)})? This only resets session counters — it does not refund provider usage.`}
-          confirmText="Reset costs"
-          cancelText="Cancel"
-          variant="warning"
-          onConfirm={() => void handleResetConfirm()}
-          onCancel={() => setConfirmResetId(null)}
-        />
-      ) : null}
+      <ConfirmDialog />
     </div>
   );
 }

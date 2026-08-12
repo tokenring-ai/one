@@ -66,7 +66,7 @@ void mock.module("../../rpc.ts", () => ({
     mutate: mutateAgentTypes,
   }),
   useTodos: () => ({ data: { status: "success", todos }, isLoading: false }),
-  useCheckpointList: () => ({ data: [], isLoading: false }),
+  useCheckpointList: () => ({ data: { items: [], total: 0 }, isLoading: false }),
   agentRPCClient: { createAgent, deleteAgent },
   checkpointRPCClient: {},
 }));
@@ -95,6 +95,7 @@ function renderApp(initialPath = "/agents") {
 
 describe("AgentsApp", () => {
   beforeEach(() => {
+    localStorage.clear();
     createAgent.mockClear();
     deleteAgent.mockClear();
     mutateAgents.mockClear();
@@ -195,17 +196,56 @@ describe("AgentsApp", () => {
     expect(screen.getByText(/· 1 running/)).toBeInTheDocument();
   });
 
-  it("deletes a running agent after confirmation", async () => {
+  it("deletes a running agent after floating confirmation", async () => {
     const user = userEvent.setup();
     agentList = [runningAgent];
     renderApp();
 
     await user.click(screen.getByRole("button", { name: "Delete agent Code Engineer #1" }));
-    expect(screen.getByText(/delete "Code Engineer #1"/i)).toBeInTheDocument();
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    expect(screen.getByText(/Delete "Code Engineer #1"\?/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Delete" }));
 
     await waitFor(() => expect(deleteAgent).toHaveBeenCalledTimes(1));
     expect(deleteAgent.mock.calls[0]![0]!.agentId).toBe("agent-1");
+  });
+
+  it("cancels floating delete confirmation without deleting", async () => {
+    const user = userEvent.setup();
+    agentList = [runningAgent];
+    renderApp();
+
+    await user.click(screen.getByRole("button", { name: "Delete agent Code Engineer #1" }));
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(deleteAgent).not.toHaveBeenCalled();
+  });
+
+  it("skips confirmation when confirm-agent-delete preference is off", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("tokenring-confirm-agent-delete", "false");
+    agentList = [runningAgent];
+    renderApp();
+
+    await user.click(screen.getByRole("button", { name: "Delete agent Code Engineer #1" }));
+
+    await waitFor(() => expect(deleteAgent).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  it("persists don't-ask-again from the delete confirm panel", async () => {
+    const user = userEvent.setup();
+    agentList = [runningAgent];
+    renderApp();
+
+    await user.click(screen.getByRole("button", { name: "Delete agent Code Engineer #1" }));
+    await user.click(screen.getByRole("checkbox", { name: /don't ask again/i }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => expect(deleteAgent).toHaveBeenCalledTimes(1));
+    expect(localStorage.getItem("tokenring-confirm-agent-delete")).toBe("false");
   });
 
   it("filters agent types by search query", async () => {

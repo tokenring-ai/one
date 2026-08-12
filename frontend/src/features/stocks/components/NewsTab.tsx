@@ -1,5 +1,6 @@
 import { ExternalLink, Loader2, Newspaper } from "lucide-react";
 import { useMemo } from "react";
+import ListItemWithActions from "../../../components/ui/ListItemWithActions.tsx";
 import { useNewsRPMIndexedDataSearchResults, useStockHeadlines } from "../../../rpc.ts";
 import { parseHistoryDate } from "../formatters.ts";
 import type { StockNewsItem } from "../types.ts";
@@ -103,30 +104,35 @@ export default function NewsTab({ symbol, symbolId }: NewsTabProps) {
       {rows.map((item, i) => {
         const n = normalizeItem(item);
         return (
-          <div
+          <ListItemWithActions
             key={n.key || i}
-            className="flex items-start gap-3 px-4 py-3 bg-secondary rounded-xl border border-primary hover:border-accent-muted transition-colors group"
+            id={n.key || String(i)}
+            className="items-start gap-3 px-4 py-3 rounded-xl bg-secondary border border-primary hover:border-accent-muted hover:bg-secondary"
+            action={
+              n.link ? (
+                <a
+                  href={n.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 text-muted hover:text-accent-soft transition-all rounded-md focus-ring cursor-pointer"
+                  aria-label={`Open article: ${n.headline}`}
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              ) : undefined
+            }
           >
-            <Newspaper className="w-4 h-4 text-muted shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-primary leading-snug mb-1">{n.headline}</p>
-              <div className="flex items-center gap-3">
-                {n.provider && <span className="text-xs text-muted">{n.provider}</span>}
-                {n.date && <span className="text-xs text-muted font-mono">{n.date}</span>}
-              </div>
-            </div>
-            {n.link && (
-              <a
-                href={n.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 p-1.5 text-muted hover:text-accent-soft opacity-0 group-hover:opacity-100 transition-all rounded-md focus-ring cursor-pointer"
-                aria-label={`Open article: ${n.headline}`}
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
-          </div>
+            <span className="flex items-start gap-3 min-w-0">
+              <Newspaper className="w-4 h-4 text-muted shrink-0 mt-0.5" />
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-medium text-primary leading-snug mb-1">{n.headline}</span>
+                <span className="flex items-center gap-3">
+                  {n.provider && <span className="text-xs text-muted">{n.provider}</span>}
+                  {n.date && <span className="text-xs text-muted font-mono">{n.date}</span>}
+                </span>
+              </span>
+            </span>
+          </ListItemWithActions>
         );
       })}
     </div>

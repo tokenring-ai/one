@@ -1,6 +1,6 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2, Send, X } from "lucide-react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import { useMemo, useState } from "react";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { cn } from "../../lib/utils.ts";
@@ -47,7 +47,7 @@ export default function SendMessageForm({ options, initialTarget, onSent, onCanc
     return service || null;
   }, [target]);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault();
     const body = message.trim();
     if (!target) {

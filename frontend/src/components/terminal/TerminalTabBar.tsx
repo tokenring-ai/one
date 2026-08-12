@@ -1,6 +1,7 @@
 import type { ParsedTerminalSessionSummary } from "@tokenring-ai/terminal/schema";
 import { ChevronLeft, ChevronRight, Loader2, Plus, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import ListItemWithActions from "../ui/ListItemWithActions.tsx";
 
 type TerminalTabBarProps = {
   terminals: ParsedTerminalSessionSummary[];
@@ -60,7 +61,7 @@ export default function TerminalTabBar({ terminals, activeName, onSelect, onClos
   useEffect(() => {
     if (!activeName) return;
     const strip = stripRef.current;
-    const tab = strip?.querySelector<HTMLElement>(`[data-terminal-tab="${CSS.escape(activeName)}"]`);
+    const tab = strip?.querySelector<HTMLElement>(`[data-item-id="${CSS.escape(activeName)}"]`);
     // scrollIntoView is missing in some test environments (jsdom); skip rather than throw.
     tab?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
   }, [activeName]);
@@ -70,7 +71,8 @@ export default function TerminalTabBar({ terminals, activeName, onSelect, onClos
   };
 
   return (
-    <div className="shrink-0 flex items-stretch border-b border-primary bg-secondary/50">
+    // min-h matches a tab row (py-2 + text-xs + border-b-2) so the strip doesn't collapse when empty.
+    <div className="shrink-0 flex items-stretch border-b border-primary bg-secondary/50 min-h-9">
       {canScrollLeft && (
         <button
           type="button"
@@ -86,35 +88,36 @@ export default function TerminalTabBar({ terminals, activeName, onSelect, onClos
         {terminals.map(terminal => {
           const isActive = terminal.name === activeName;
           return (
-            <div
+            <ListItemWithActions
               key={terminal.name}
-              data-terminal-tab={terminal.name}
-              className={`group flex items-center gap-2 pl-3 pr-1.5 py-2 border-r border-primary shrink-0 max-w-52 transition-colors ${
-                isActive ? "bg-[#1a1a2e] border-b-2 border-b-emerald-500" : "hover:bg-hover border-b-2 border-b-transparent"
+              id={terminal.name}
+              selected={isActive}
+              alwaysShowAction={isActive}
+              onPrimary={() => onSelect(terminal.name)}
+              primaryProps={{
+                role: "tab",
+                "aria-selected": isActive,
+                title: `${tabLabel(terminal)} — ${terminal.workingDirectory}`,
+                className: "flex items-center gap-2 rounded-sm",
+              }}
+              className={`gap-2 pl-3 pr-1.5 py-2 rounded-none border-r border-primary shrink-0 max-w-52 border-b-2 ${
+                isActive ? "bg-[#1a1a2e] border-b-emerald-500" : "border-b-transparent"
               }`}
+              data-testid={`terminal-tab-${terminal.name}`}
+              action={
+                <button
+                  type="button"
+                  onClick={() => onClose(terminal.name)}
+                  className="p-0.5 rounded-md text-muted hover:text-red-500 hover:bg-hover transition-all cursor-pointer focus-ring"
+                  aria-label={`Close terminal ${tabLabel(terminal)}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              }
             >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => onSelect(terminal.name)}
-                className="flex items-center gap-2 min-w-0 text-left cursor-pointer focus-ring rounded-sm"
-                title={`${tabLabel(terminal)} — ${terminal.workingDirectory}`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${terminal.running ? "bg-emerald-500" : "bg-muted/50"}`} />
-                <span className={`text-xs font-mono truncate ${isActive ? "text-primary" : "text-secondary"}`}>{tabLabel(terminal)}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onClose(terminal.name)}
-                className={`p-0.5 rounded-md text-muted hover:text-red-500 hover:bg-hover transition-all cursor-pointer focus-ring shrink-0 ${
-                  isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus:opacity-100"
-                }`}
-                aria-label={`Close terminal ${tabLabel(terminal)}`}
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${terminal.running ? "bg-emerald-500" : "bg-muted/50"}`} />
+              <span className={`text-xs font-mono truncate ${isActive ? "text-primary" : "text-secondary"}`}>{tabLabel(terminal)}</span>
+            </ListItemWithActions>
           );
         })}
       </div>
@@ -134,7 +137,7 @@ export default function TerminalTabBar({ terminals, activeName, onSelect, onClos
         type="button"
         onClick={onNew}
         disabled={spawning}
-        className="shrink-0 flex items-center gap-1.5 px-3 border-l border-primary text-muted hover:text-emerald-500 hover:bg-hover transition-colors focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        className="shrink-0 flex items-center justify-center gap-1.5 px-3 border-l border-primary text-muted hover:text-emerald-500 hover:bg-hover transition-colors focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="New terminal"
       >
         {spawning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}

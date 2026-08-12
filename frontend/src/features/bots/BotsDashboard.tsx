@@ -15,7 +15,6 @@ import {
   PlugZap,
   Plus,
   RefreshCw,
-  RotateCcw,
   Search,
   Send,
   Settings2,
@@ -30,28 +29,44 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
-import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import ConversationRow from "../../components/ui/ConversationRow.tsx";
+import EmptyState from "../../components/ui/EmptyState.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import FilterTabs, { type FilterTabOption } from "../../components/ui/FilterTabs.tsx";
+import StatusBadge, { type StatusBadgeDefinition } from "../../components/ui/StatusBadge.tsx";
+import SummaryStat from "../../components/ui/SummaryStat.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useAsyncActionGuard } from "../../hooks/useAsyncActionGuard.ts";
+import { useConfirmDialog } from "../../hooks/useConfirmDialog.tsx";
+import { type FilterTabDefinition, useFilterTabs } from "../../hooks/useFilterTabs.ts";
+import { useLiveStreamStatusFromSWR } from "../../hooks/useLiveStreamStatus.ts";
+import { useSearchFilter } from "../../hooks/useSearchFilter.ts";
+import { useTabState } from "../../hooks/useTabState.ts";
+import { useTick } from "../../hooks/useTick.ts";
 import { formatConfigIssues } from "../../lib/configWrites.ts";
+import { getServiceBrand } from "../../lib/serviceGradient.ts";
 import { cn } from "../../lib/utils.ts";
 import { botRPCClient, useBots, useConfigSchema } from "../../rpc.ts";
 import ConnectServiceForm, { type ConnectablePlatform, PLATFORMS } from "./ConnectServiceForm.tsx";
 import CreateBotForm from "./CreateBotForm.tsx";
-import { formatDirectMessagePolicy, formatRelativeTime, formatTimestamp } from "./formatters.ts";
+import { formatDirectMessagePolicy, formatRelativeTime } from "./formatters.ts";
 import SendMessageForm, { type MessageTargetOption } from "./SendMessageForm.tsx";
 
 type BotsData = NonNullable<ReturnType<typeof useBots>["data"]>;
 type BotSummary = BotsData["bots"][number];
 type BotChannel = BotSummary["channels"][number];
-type BotConversation = BotSummary["conversations"][number];
 type BotUser = BotSummary["users"][number];
 type DiscoveredChannel = BotsData["discoveredChannels"][number];
 
 type DetailTab = "conversations" | "channels" | "people";
 type ConversationFilter = "all" | "busy";
+type BotConversation = BotSummary["conversations"][number];
+
+const CONVERSATION_FILTER_TAB_DEFS: FilterTabDefinition<BotConversation, ConversationFilter>[] = [
+  { id: "all", label: "All" },
+  { id: "busy", label: "Busy", predicate: c => c.busy },
+];
 
 /** Everything a bot addresses is `service:id`, people included. */
 const TARGET_PATTERN = /^[^:]+:.+/;
@@ -70,43 +85,35 @@ const CONFIG_EXAMPLE = `bot:
         engineering:
           target: slack:C0123ABCD`;
 
-function SummaryStat({ label, value, icon, accentClass }: { label: string; value: string; icon: ReactNode; accentClass: string }) {
-  return (
-    <div className="bg-secondary border border-primary rounded-xl px-4 py-3 shadow-sm">
-      <div className="flex items-center gap-2 mb-1">
-        <span className={accentClass}>{icon}</span>
-        <span className="text-xs font-bold text-muted uppercase tracking-widest">{label}</span>
-      </div>
-      <p className="text-lg font-semibold text-primary tabular-nums">{value}</p>
-    </div>
-  );
-}
+const ROLE_BADGES: Record<BotUser["role"], StatusBadgeDefinition> = {
+  admin: {
+    label: "Admin",
+    icon: <Shield className="w-3 h-3" />,
+    colorClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
+  },
+  user: {
+    label: "User",
+    icon: <User className="w-3 h-3" />,
+    colorClass: "bg-tertiary text-muted border-primary",
+  },
+};
 
 function ServicePill({ service, connected }: { service: string; connected: boolean }) {
+  const brand = getServiceBrand(service);
+  const label = brand.displayName;
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border",
-        connected ? "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30" : "bg-tertiary text-muted border-primary line-through decoration-1",
-      )}
-      title={connected ? `${service} is connected` : `${service} is not connected`}
-    >
-      {connected ? <PlugZap className="w-3 h-3" /> : <Plug className="w-3 h-3" />}
-      {service}
-    </span>
+    <StatusBadge
+      label={label}
+      icon={connected ? <PlugZap className="w-3 h-3" /> : <Plug className="w-3 h-3" />}
+      colorClass={connected ? cn(brand.solidBg, brand.solidText, brand.solidBorder) : "bg-tertiary text-muted border-primary"}
+      className={connected ? undefined : "line-through decoration-1"}
+      title={connected ? `${label} is connected` : `${label} is not connected`}
+    />
   );
 }
 
 function RolePill({ role }: { role: BotUser["role"] }) {
-  return role === "admin" ? (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-      <Shield className="w-3 h-3" /> Admin
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-tertiary text-muted border border-primary">
-      <User className="w-3 h-3" /> User
-    </span>
-  );
+  return <StatusBadge status={role} statuses={ROLE_BADGES} />;
 }
 
 function SetupStep({ step, title, done, action }: { step: number; title: string; done: boolean; action?: ReactNode }) {
@@ -126,37 +133,23 @@ function SetupStep({ step, title, done, action }: { step: number; title: string;
   );
 }
 
-function EmptyPanel({ icon, title, hint }: { icon: ReactNode; title: string; hint: string }) {
-  return (
-    <div className="px-6 py-10 text-center">
-      {icon}
-      <p className="text-sm font-medium text-primary mb-1">{title}</p>
-      <p className="text-xs text-muted max-w-sm mx-auto">{hint}</p>
-    </div>
-  );
-}
-
 export default function BotsDashboard() {
   const navigate = useNavigate();
   const { botId: routeBotId } = useParams<{ botId?: string }>();
   const bots = useBots();
+  const streamStatus = useLiveStreamStatusFromSWR(bots);
   const configSchema = useConfigSchema();
 
   // URL is the source of truth for which bot is open (params are already decoded).
   const selectedBotName = routeBotId ?? null;
 
-  const [tab, setTab] = useState<DetailTab>("conversations");
   const [conversationFilter, setConversationFilter] = useState<ConversationFilter>("all");
-  const [listQuery, setListQuery] = useState("");
   const [showSendForm, setShowSendForm] = useState(false);
   const [sendTarget, setSendTarget] = useState<string | undefined>(undefined);
-  const [confirmReset, setConfirmReset] = useState<{ bot: string; conversationKey: string } | null>(null);
-  const [confirmLeave, setConfirmLeave] = useState<{ bot: string; target: string; name: string } | null>(null);
-  const [confirmDeleteBot, setConfirmDeleteBot] = useState<string | null>(null);
+  const { openConfirm, Dialog: ConfirmDialog } = useConfirmDialog();
   const [showCreateBot, setShowCreateBot] = useState(false);
   const [connectPlatform, setConnectPlatform] = useState<ConnectablePlatform | "any" | null>(null);
-  const [busyAction, setBusyAction] = useState<string | null>(null);
-  const [, setTick] = useState(0);
+  const { activeKey: busyAction, execute: executeBusy } = useAsyncActionGuard();
 
   const data = bots.data;
   const botList = useMemo(() => data?.bots ?? [], [data]);
@@ -195,12 +188,10 @@ export default function BotsDashboard() {
   }, [botList, selectedBotName, routeBotId, bots.isLoading, navigate, openBot]);
 
   // Live-tick relative timestamps while conversations exist
-  useEffect(() => {
-    const hasConversations = botList.some(bot => bot.conversations.length > 0);
-    if (!hasConversations) return;
-    const id = setInterval(() => setTick(t => t + 1), 30_000);
-    return () => clearInterval(id);
-  }, [botList]);
+  useTick(
+    30_000,
+    botList.some(bot => bot.conversations.length > 0),
+  );
 
   const selectedBot = useMemo(() => botList.find(bot => bot.name === selectedBotName), [botList, selectedBotName]);
 
@@ -250,39 +241,54 @@ export default function BotsDashboard() {
     return options.filter((option, index) => options.findIndex(other => other.target === option.target) === index);
   }, [botList, groups]);
 
-  const filteredConversations = useMemo(() => {
-    if (!selectedBot) return [];
-    const query = listQuery.trim().toLowerCase();
-    return selectedBot.conversations.filter(conversation => {
-      if (conversationFilter === "busy" && !conversation.busy) return false;
-      if (!query) return true;
-      const haystack = [conversation.key, conversation.conversationId, conversation.channelName, conversation.agentType, conversation.service]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [selectedBot, conversationFilter, listQuery]);
+  // Per-tab search so typing in one list does not surprise-filter another after a tab switch.
+  const {
+    query: conversationsQuery,
+    setQuery: setConversationsQuery,
+    filtered: filteredConversations,
+  } = useSearchFilter({
+    items: selectedBot?.conversations ?? [],
+    searchFields: conversation =>
+      [conversation.key, conversation.conversationId, conversation.channelName, conversation.agentType, conversation.service].filter(Boolean).join(" "),
+    predicate: conversation => conversationFilter !== "busy" || conversation.busy,
+  });
 
-  const filteredChannels = useMemo(() => {
-    if (!selectedBot) return [];
-    const query = listQuery.trim().toLowerCase();
-    if (!query) return selectedBot.channels;
-    return selectedBot.channels.filter(channel => {
-      const haystack = [channel.name, channel.target, channel.service, channel.agentType, ...channel.allowedUsers].join(" ").toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [selectedBot, listQuery]);
+  const {
+    query: channelsQuery,
+    setQuery: setChannelsQuery,
+    filtered: filteredChannels,
+  } = useSearchFilter({
+    items: selectedBot?.channels ?? [],
+    searchFields: channel => [channel.name, channel.target, channel.service, channel.agentType, ...channel.allowedUsers].join(" "),
+  });
 
-  const filteredUsers = useMemo(() => {
-    if (!selectedBot) return [];
-    const query = listQuery.trim().toLowerCase();
-    if (!query) return selectedBot.users;
-    return selectedBot.users.filter(user => {
-      const haystack = [user.target, user.userId, user.service, user.role].join(" ").toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [selectedBot, listQuery]);
+  const {
+    query: usersQuery,
+    setQuery: setUsersQuery,
+    filtered: filteredUsers,
+  } = useSearchFilter({
+    items: selectedBot?.users ?? [],
+    searchFields: user => [user.target, user.userId, user.service, user.role].join(" "),
+  });
+
+  const clearListState = useCallback(() => {
+    setConversationFilter("all");
+    setConversationsQuery("");
+    setChannelsQuery("");
+    setUsersQuery("");
+  }, [setConversationsQuery, setChannelsQuery, setUsersQuery]);
+
+  const {
+    activeTab: tab,
+    setActiveTab: setTab,
+    resetTab,
+  } = useTabState<DetailTab>(["conversations", "channels", "people"], {
+    defaultTab: "conversations",
+    onTabChange: clearListState,
+  });
+
+  const listQuery = tab === "conversations" ? conversationsQuery : tab === "channels" ? channelsQuery : usersQuery;
+  const setListQuery = tab === "conversations" ? setConversationsQuery : tab === "channels" ? setChannelsQuery : setUsersQuery;
 
   const tabs = useMemo<FilterTabOption<DetailTab>[]>(
     () => [
@@ -293,13 +299,7 @@ export default function BotsDashboard() {
     [selectedBot],
   );
 
-  const conversationFilterTabs = useMemo<FilterTabOption<ConversationFilter>[]>(
-    () => [
-      { id: "all", label: "All", count: selectedBot?.conversations.length ?? 0 },
-      { id: "busy", label: "Busy", count: selectedBot?.conversations.filter(c => c.busy).length ?? 0 },
-    ],
-    [selectedBot],
-  );
+  const { tabs: conversationFilterTabs } = useFilterTabs(selectedBot?.conversations ?? [], CONVERSATION_FILTER_TAB_DEFS);
 
   const refresh = () => void bots.mutate();
 
@@ -308,150 +308,177 @@ export default function BotsDashboard() {
     setShowSendForm(true);
   };
 
-  const handleReset = async () => {
-    if (!confirmReset) return;
-    const { bot, conversationKey } = confirmReset;
-    setConfirmReset(null);
-    setBusyAction(`reset:${conversationKey}`);
-    try {
-      const result = await botRPCClient.resetConversation({ bot, conversationKey });
-      if (result.status === "botNotFound") {
-        toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
-      } else if (result.status === "conversationNotFound") {
-        toastManager.warning("That conversation has already ended", { duration: 3000 });
-      } else {
-        toastManager.success(`Conversation ${conversationKey} reset`, { duration: 2500 });
+  const handleReset = async (bot: string, conversationKey: string) => {
+    const confirmed = await openConfirm({
+      title: "Reset conversation?",
+      message: `The agent behind ${conversationKey} will be deleted. The next message there starts a fresh conversation with no history.`,
+      confirmText: "Reset",
+      variant: "warning",
+    });
+    if (!confirmed) return;
+    await executeBusy(`reset:${conversationKey}`, async () => {
+      try {
+        const result = await botRPCClient.resetConversation({ bot, conversationKey });
+        if (result.status === "botNotFound") {
+          toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
+        } else if (result.status === "conversationNotFound") {
+          toastManager.warning("That conversation has already ended", { duration: 3000 });
+        } else {
+          toastManager.success(`Conversation ${conversationKey} reset`, { duration: 2500 });
+        }
+        await bots.mutate();
+      } catch (err) {
+        toastManager.error(formatError(err), { duration: 5000 });
       }
-      await bots.mutate();
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
-    }
+    });
   };
 
-  const handleDeleteBot = async () => {
-    const name = confirmDeleteBot;
-    if (!name) return;
-    setConfirmDeleteBot(null);
-    setBusyAction(`deleteBot:${name}`);
-    try {
-      const result = await botRPCClient.deleteBot({ name });
-      if (result.status === "botNotFound") {
-        toastManager.warning(`Bot "${name}" is already gone`, { duration: 3000 });
-      } else if (result.status === "definedElsewhere") {
-        toastManager.warning(`"${name}" is defined in a configuration file below this one and is still running. Remove it there to delete it.`, {
-          duration: 7000,
-        });
-      } else if (result.status === "configRejected") {
-        toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
-      } else {
-        toastManager.success(`Bot "${name}" deleted`, { duration: 2500 });
+  const handleDeleteBot = async (name: string) => {
+    const confirmed = await openConfirm({
+      title: "Delete this bot?",
+      message: `"${name}" stops answering everywhere and its live conversations end. The channels it sat in are unaffected on Slack and Telegram — it simply stops listening.`,
+      confirmText: "Delete",
+      variant: "danger",
+    });
+    if (!confirmed) return;
+    await executeBusy(`deleteBot:${name}`, async () => {
+      try {
+        const result = await botRPCClient.deleteBot({ name });
+        if (result.status === "botNotFound") {
+          toastManager.warning(`Bot "${name}" is already gone`, { duration: 3000 });
+        } else if (result.status === "definedElsewhere") {
+          toastManager.warning(`"${name}" is defined in a configuration file below this one and is still running. Remove it there to delete it.`, {
+            duration: 7000,
+          });
+        } else if (result.status === "configRejected") {
+          toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
+        } else {
+          toastManager.success(`Bot "${name}" deleted`, { duration: 2500 });
+        }
+        await bots.mutate();
+      } catch (err) {
+        toastManager.error(formatError(err), { duration: 5000 });
       }
-      await bots.mutate();
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
-    }
+    });
   };
 
-  const handleSetUserRole = async (bot: string, target: string, role: BotUser["role"]): Promise<boolean> => {
-    setBusyAction(`user:${target}`);
-    try {
-      const result = await botRPCClient.setUserRole({ bot, target, role });
-      if (result.status === "botNotFound") {
-        toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
-        return false;
-      }
-      if (result.status === "configRejected") {
-        toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
-        return false;
-      }
-      toastManager.success(`${target} is now ${role === "admin" ? "an admin" : "a user"} of "${bot}"`, { duration: 2500 });
-      await bots.mutate();
-      return true;
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-      return false;
-    } finally {
-      setBusyAction(null);
-    }
-  };
-
-  const handleRemoveUser = async (bot: string, target: string) => {
-    setBusyAction(`user:${target}`);
-    try {
-      const result = await botRPCClient.removeUser({ bot, target });
-      if (result.status === "botNotFound") {
-        toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
-      } else if (result.status === "definedElsewhere") {
-        toastManager.warning(`${target} is listed in a configuration file below this one and still has access. Remove them there.`, { duration: 7000 });
-      } else if (result.status === "configRejected") {
-        toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
-      } else {
-        toastManager.success(`${target} removed from "${bot}"`, { duration: 2500 });
-      }
-      await bots.mutate();
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
-    }
-  };
-
-  const handleJoin = async (bot: string, target: string, name?: string) => {
-    setBusyAction(`join:${target}`);
-    try {
-      const result = await botRPCClient.joinChannel({
-        bot,
-        target,
-        ...(name?.trim() ? { name: name.trim() } : {}),
+  const handleSetUserRole = useCallback(
+    async (bot: string, target: string, role: BotUser["role"]): Promise<boolean> => {
+      // `bot` is captured by the caller at click time so a mid-flight sidebar
+      // switch cannot retarget the RPC or the success toast.
+      const ok = await executeBusy(`user:${target}`, async () => {
+        try {
+          const result = await botRPCClient.setUserRole({ bot, target, role });
+          if (result.status === "botNotFound") {
+            toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
+            return false;
+          }
+          if (result.status === "configRejected") {
+            toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
+            return false;
+          }
+          toastManager.success(`${target} is now ${role === "admin" ? "an admin" : "a user"} of "${bot}"`, { duration: 2500 });
+          await bots.mutate();
+          return true;
+        } catch (err) {
+          toastManager.error(formatError(err), { duration: 5000 });
+          return false;
+        }
       });
-      if (result.status === "botNotFound") {
-        toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
-      } else if (result.status === "providerNotFound") {
-        toastManager.error(`No messaging service is connected for ${target}`, { duration: 4000 });
-      } else if (result.status === "configRejected") {
-        toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
-      } else {
-        toastManager.success(`"${bot}" joined ${name?.trim() || target}`, { duration: 2500 });
+      return ok ?? false;
+    },
+    [bots, executeBusy],
+  );
+
+  const handleRemoveUser = useCallback(
+    async (bot: string, target: string) => {
+      await executeBusy(`user:${target}`, async () => {
+        try {
+          const result = await botRPCClient.removeUser({ bot, target });
+          if (result.status === "botNotFound") {
+            toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
+          } else if (result.status === "definedElsewhere") {
+            toastManager.warning(`${target} is listed in a configuration file below this one and still has access. Remove them there.`, { duration: 7000 });
+          } else if (result.status === "configRejected") {
+            toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
+          } else {
+            toastManager.success(`${target} removed from "${bot}"`, { duration: 2500 });
+          }
+          await bots.mutate();
+        } catch (err) {
+          toastManager.error(formatError(err), { duration: 5000 });
+        }
+      });
+    },
+    [bots, executeBusy],
+  );
+
+  const handleJoin = useCallback(
+    async (bot: string, target: string, name?: string) => {
+      await executeBusy(`join:${target}`, async () => {
+        try {
+          const result = await botRPCClient.joinChannel({
+            bot,
+            target,
+            ...(name?.trim() ? { name: name.trim() } : {}),
+          });
+          if (result.status === "botNotFound") {
+            toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
+          } else if (result.status === "providerNotFound") {
+            toastManager.error(`No messaging service is connected for ${target}`, { duration: 4000 });
+          } else if (result.status === "configRejected") {
+            toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
+          } else {
+            toastManager.success(`"${bot}" joined ${name?.trim() || target}`, { duration: 2500 });
+          }
+          await bots.mutate();
+        } catch (err) {
+          toastManager.error(formatError(err), { duration: 5000 });
+        }
+      });
+    },
+    [bots, executeBusy],
+  );
+
+  /** Join a discovered channel into the bot currently selected in the sidebar. */
+  const joinDiscoveredChannel = useCallback(
+    (channel: DiscoveredChannel) => {
+      if (!selectedBotName) return;
+      void handleJoin(selectedBotName, channel.target, channel.title);
+    },
+    [selectedBotName, handleJoin],
+  );
+
+  const handleLeave = async (bot: string, target: string, name: string) => {
+    const confirmed = await openConfirm({
+      title: "Leave this channel?",
+      message: `"${bot}" will stop answering in ${name} (${target}). It stays a member of the room on the platform — remove it there if you want it gone entirely.`,
+      confirmText: "Leave",
+      variant: "warning",
+    });
+    if (!confirmed) return;
+    await executeBusy(`leave:${target}`, async () => {
+      try {
+        const result = await botRPCClient.leaveChannel({ bot, target });
+        if (result.status === "botNotFound") {
+          toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
+        } else if (result.status === "definedElsewhere") {
+          toastManager.warning(`This channel is configured in a file below this layer, so "${bot}" is still answering there. Remove it there to leave.`, {
+            duration: 7000,
+          });
+        } else if (result.status === "configRejected") {
+          toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
+        } else {
+          toastManager.success(`"${bot}" left ${target}`, { duration: 2500 });
+        }
+        await bots.mutate();
+      } catch (err) {
+        toastManager.error(formatError(err), { duration: 5000 });
       }
-      await bots.mutate();
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
-    }
+    });
   };
 
-  const handleLeave = async () => {
-    if (!confirmLeave) return;
-    const { bot, target } = confirmLeave;
-    setConfirmLeave(null);
-    setBusyAction(`leave:${target}`);
-    try {
-      const result = await botRPCClient.leaveChannel({ bot, target });
-      if (result.status === "botNotFound") {
-        toastManager.error(`Bot "${bot}" no longer exists`, { duration: 4000 });
-      } else if (result.status === "definedElsewhere") {
-        toastManager.warning(`This channel is configured in a file below this layer, so "${bot}" is still answering there. Remove it there to leave.`, {
-          duration: 7000,
-        });
-      } else if (result.status === "configRejected") {
-        toastManager.error(formatConfigIssues(result.issues), { duration: 6000 });
-      } else {
-        toastManager.success(`"${bot}" left ${target}`, { duration: 2500 });
-      }
-      await bots.mutate();
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
-    }
-  };
-
-  const isLoading = bots.isLoading && !data;
+  const isLoading = bots.isLoading && streamStatus.isInitial;
   const canSend = services.length > 0 || groups.length > 0;
 
   return (
@@ -552,9 +579,8 @@ export default function BotsDashboard() {
                     type="button"
                     onClick={() => {
                       openBot(bot.name);
-                      setTab("conversations");
-                      setConversationFilter("all");
-                      setListQuery("");
+                      resetTab();
+                      clearListState();
                     }}
                     aria-current={active ? "page" : undefined}
                     className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left focus-ring ${active ? "bg-active text-primary" : "text-secondary hover:text-primary hover:bg-hover"}`}
@@ -583,7 +609,7 @@ export default function BotsDashboard() {
               <div className="flex justify-center py-20">
                 <Loader2 className="w-7 h-7 text-muted animate-spin" />
               </div>
-            ) : bots.error && !data ? (
+            ) : streamStatus.status === "error" ? (
               <ErrorState title="Unable to load bots" error={bots.error} onRetry={refresh} variant="page" />
             ) : (
               <>
@@ -740,9 +766,8 @@ export default function BotsDashboard() {
                             type="button"
                             onClick={() => {
                               openBot(bot.name);
-                              setTab("conversations");
-                              setConversationFilter("all");
-                              setListQuery("");
+                              resetTab();
+                              clearListState();
                             }}
                             className={cn(
                               "text-left bg-secondary border rounded-xl p-4 shadow-sm transition-colors focus-ring cursor-pointer",
@@ -771,9 +796,7 @@ export default function BotsDashboard() {
                               </div>
                             </div>
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-tertiary text-muted border border-primary">
-                                <Cpu className="w-3 h-3" /> {bot.agentType}
-                              </span>
+                              <StatusBadge label={bot.agentType} icon={<Cpu className="w-3 h-3" />} colorClass="bg-tertiary text-muted border-primary" />
                               {[...new Set(bot.channels.map(channel => channel.service))].map(service => (
                                 <ServicePill key={service} service={service} connected={connectedServices.has(service)} />
                               ))}
@@ -811,13 +834,13 @@ export default function BotsDashboard() {
                             </p>
                           </div>
                           {selectedBot.requireMention ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-tertiary text-muted border border-primary">
-                              <AtSign className="w-3 h-3" /> Mention required
-                            </span>
+                            <StatusBadge label="Mention required" icon={<AtSign className="w-3 h-3" />} colorClass="bg-tertiary text-muted border-primary" />
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
-                              <MessageSquare className="w-3 h-3" /> Answers everything
-                            </span>
+                            <StatusBadge
+                              label="Answers everything"
+                              icon={<MessageSquare className="w-3 h-3" />}
+                              colorClass="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30"
+                            />
                           )}
                           <Link
                             to={BOT_CONFIG_HREF}
@@ -828,7 +851,7 @@ export default function BotsDashboard() {
                           </Link>
                           <button
                             type="button"
-                            onClick={() => setConfirmDeleteBot(selectedBot.name)}
+                            onClick={() => void handleDeleteBot(selectedBot.name)}
                             disabled={busyAction === `deleteBot:${selectedBot.name}`}
                             className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-rose-500 border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Delete this bot"
@@ -838,16 +861,7 @@ export default function BotsDashboard() {
                           </button>
                         </div>
 
-                        <FilterTabs
-                          tabs={tabs}
-                          value={tab}
-                          onChange={next => {
-                            setTab(next);
-                            setListQuery("");
-                            setConversationFilter("all");
-                          }}
-                          showZeroCounts
-                        />
+                        <FilterTabs tabs={tabs} value={tab} onChange={setTab} showZeroCounts />
 
                         {(tab === "conversations" && selectedBot.conversations.length > 0) ||
                         (tab === "channels" && selectedBot.channels.length > 0) ||
@@ -888,14 +902,14 @@ export default function BotsDashboard() {
 
                         {tab === "conversations" ? (
                           selectedBot.conversations.length === 0 ? (
-                            <EmptyPanel
-                              icon={<MessagesSquare className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                            <EmptyState
+                              icon={MessagesSquare}
                               title="No live conversations"
                               hint="A conversation starts — with an agent of its own — the first time someone messages this bot in a channel or a DM."
                             />
                           ) : filteredConversations.length === 0 ? (
-                            <EmptyPanel
-                              icon={<Search className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                            <EmptyState
+                              icon={Search}
                               title="No matching conversations"
                               hint={conversationFilter === "busy" ? "Nothing is busy right now." : "Try a different filter or search."}
                             />
@@ -909,7 +923,7 @@ export default function BotsDashboard() {
                                   busyAction={busyAction}
                                   onOpenAgent={() => void navigate(`/agent/${conversation.agentId}`)}
                                   onMessage={() => openSendForm(conversation.key)}
-                                  onReset={() => setConfirmReset({ bot: selectedBot.name, conversationKey: conversation.key })}
+                                  onReset={() => void handleReset(selectedBot.name, conversation.key)}
                                 />
                               ))}
                             </div>
@@ -918,17 +932,13 @@ export default function BotsDashboard() {
 
                         {tab === "channels" ? (
                           selectedBot.channels.length === 0 ? (
-                            <EmptyPanel
-                              icon={<Hash className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                            <EmptyState
+                              icon={Hash}
                               title="Not in any channels"
                               hint="Invite the bot to a Slack channel or Telegram group and join it from the Discovered channels panel below, or add one under this bot's `channels` config."
                             />
                           ) : filteredChannels.length === 0 ? (
-                            <EmptyPanel
-                              icon={<Search className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
-                              title="No matching channels"
-                              hint="Try a different search."
-                            />
+                            <EmptyState icon={Search} title="No matching channels" hint="Try a different search." />
                           ) : (
                             <div className="divide-y divide-primary">
                               {filteredChannels.map(channel => (
@@ -937,7 +947,7 @@ export default function BotsDashboard() {
                                   channel={channel}
                                   busyAction={busyAction}
                                   onMessage={() => openSendForm(channel.target)}
-                                  onLeave={() => setConfirmLeave({ bot: selectedBot.name, target: channel.target, name: channel.name })}
+                                  onLeave={() => void handleLeave(selectedBot.name, channel.target, channel.name)}
                                 />
                               ))}
                             </div>
@@ -950,11 +960,14 @@ export default function BotsDashboard() {
                               services={services.map(service => service.name)}
                               existingTargets={selectedBot.users.map(user => user.target)}
                               busy={busyAction?.startsWith("user:") ?? false}
-                              onAdd={(target, role) => handleSetUserRole(selectedBot.name, target, role)}
+                              onAdd={async (target, role) => {
+                                const botName = selectedBot.name;
+                                return handleSetUserRole(botName, target, role);
+                              }}
                             />
                             {selectedBot.users.length === 0 ? (
-                              <EmptyPanel
-                                icon={<Users className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                              <EmptyState
+                                icon={Users}
                                 title="Nobody listed"
                                 hint={
                                   selectedBot.directMessages === "anyone"
@@ -965,22 +978,19 @@ export default function BotsDashboard() {
                                 }
                               />
                             ) : filteredUsers.length === 0 ? (
-                              <EmptyPanel
-                                icon={<Search className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
-                                title="No matching people"
-                                hint="Try a different search."
-                              />
+                              <EmptyState icon={Search} title="No matching people" hint="Try a different search." />
                             ) : (
                               <div className="divide-y divide-primary">
                                 {filteredUsers.map(user => (
                                   <UserRow
                                     key={user.target}
                                     user={user}
+                                    botName={selectedBot.name}
                                     connected={connectedServices.has(user.service)}
                                     busyAction={busyAction}
                                     onMessage={() => openSendForm(user.target)}
-                                    onChangeRole={role => void handleSetUserRole(selectedBot.name, user.target, role)}
-                                    onRemove={() => void handleRemoveUser(selectedBot.name, user.target)}
+                                    onChangeRole={(botName, role) => void handleSetUserRole(botName, user.target, role)}
+                                    onRemove={botName => void handleRemoveUser(botName, user.target)}
                                   />
                                 ))}
                               </div>
@@ -1111,9 +1121,9 @@ export default function BotsDashboard() {
                         <DiscoveredChannelRow
                           key={channel.target}
                           channel={channel}
-                          botName={selectedBot?.name}
+                          botName={selectedBotName ?? undefined}
                           busyAction={busyAction}
-                          onJoin={() => void (selectedBot && handleJoin(selectedBot.name, channel.target, channel.title))}
+                          onJoin={() => joinDiscoveredChannel(channel)}
                         />
                       ))}
                     </div>
@@ -1125,119 +1135,7 @@ export default function BotsDashboard() {
         </div>
       </WorkspaceShell>
 
-      {confirmDeleteBot ? (
-        <ConfirmDialog
-          title="Delete this bot?"
-          message={`"${confirmDeleteBot}" stops answering everywhere and its live conversations end. The channels it sat in are unaffected on Slack and Telegram — it simply stops listening.`}
-          confirmText="Delete"
-          variant="danger"
-          onConfirm={() => void handleDeleteBot()}
-          onCancel={() => setConfirmDeleteBot(null)}
-        />
-      ) : null}
-
-      {confirmLeave ? (
-        <ConfirmDialog
-          title="Leave this channel?"
-          message={`"${confirmLeave.bot}" will stop answering in ${confirmLeave.name} (${confirmLeave.target}). It stays a member of the room on the platform — remove it there if you want it gone entirely.`}
-          confirmText="Leave"
-          variant="warning"
-          onConfirm={() => void handleLeave()}
-          onCancel={() => setConfirmLeave(null)}
-        />
-      ) : null}
-
-      {confirmReset ? (
-        <ConfirmDialog
-          title="Reset conversation?"
-          message={`The agent behind ${confirmReset.conversationKey} will be deleted. The next message there starts a fresh conversation with no history.`}
-          confirmText="Reset"
-          variant="warning"
-          onConfirm={() => void handleReset()}
-          onCancel={() => setConfirmReset(null)}
-        />
-      ) : null}
-    </div>
-  );
-}
-
-function ConversationRow({
-  conversation,
-  connected,
-  busyAction,
-  onOpenAgent,
-  onMessage,
-  onReset,
-}: {
-  conversation: BotConversation;
-  connected: boolean;
-  busyAction: string | null;
-  onOpenAgent: () => void;
-  onMessage: () => void;
-  onReset: () => void;
-}) {
-  const resetting = busyAction === `reset:${conversation.key}`;
-
-  return (
-    <div className="px-4 py-3 hover:bg-hover/30 transition-colors">
-      <div className="flex items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-0.5">
-            <span className="text-sm font-medium text-primary truncate">{conversation.channelName ?? conversation.conversationId}</span>
-            {conversation.channelName ? (
-              <span className="inline-flex items-center gap-1 text-xs text-muted">
-                <Hash className="w-3 h-3" /> {conversation.conversationId}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-xs text-muted">
-                <User className="w-3 h-3" /> Direct
-              </span>
-            )}
-            {conversation.busy ? (
-              <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                <Activity className="w-3 h-3 animate-pulse" /> Working
-              </span>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-            <ServicePill service={conversation.service} connected={connected} />
-            <span className="inline-flex items-center gap-1">
-              <Cpu className="w-3 h-3" /> {conversation.agentType}
-            </span>
-            <span title={formatTimestamp(conversation.lastActivityAt)}>Active {formatRelativeTime(conversation.lastActivityAt)}</span>
-            <span title={formatTimestamp(conversation.startedAt)}>Started {formatRelativeTime(conversation.startedAt)}</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={onOpenAgent}
-            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
-            title="Open the agent handling this conversation"
-          >
-            <Cpu className="w-3 h-3" /> Agent
-          </button>
-          <button
-            type="button"
-            onClick={onMessage}
-            disabled={!connected}
-            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title={connected ? "Send a message here" : "Service is offline"}
-          >
-            <Send className="w-3 h-3" /> Message
-          </button>
-          <button
-            type="button"
-            onClick={onReset}
-            disabled={resetting}
-            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-error border border-primary hover:bg-error/5 rounded-md focus-ring cursor-pointer transition-colors"
-            title="Delete this conversation's agent"
-          >
-            {resetting ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />} Reset
-          </button>
-        </div>
-      </div>
+      <ConfirmDialog />
     </div>
   );
 }
@@ -1334,6 +1232,7 @@ function DiscoveredChannelRow({
 
 function UserRow({
   user,
+  botName,
   connected,
   busyAction,
   onMessage,
@@ -1341,11 +1240,13 @@ function UserRow({
   onRemove,
 }: {
   user: BotUser;
+  /** Bot this row belongs to — captured at click so a sidebar switch mid-flight cannot retarget the action. */
+  botName: string;
   connected: boolean;
   busyAction: string | null;
   onMessage: () => void;
-  onChangeRole: (role: BotUser["role"]) => void;
-  onRemove: () => void;
+  onChangeRole: (botName: string, role: BotUser["role"]) => void;
+  onRemove: (botName: string) => void;
 }) {
   const busy = busyAction === `user:${user.target}`;
 
@@ -1361,7 +1262,10 @@ function UserRow({
       </div>
       <button
         type="button"
-        onClick={() => onChangeRole(user.role === "admin" ? "user" : "admin")}
+        onClick={() => {
+          const bot = botName;
+          onChangeRole(bot, user.role === "admin" ? "user" : "admin");
+        }}
         disabled={busy}
         className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         title={user.role === "admin" ? "Take away command access" : "Let them run slash commands"}
@@ -1380,7 +1284,10 @@ function UserRow({
       </button>
       <button
         type="button"
-        onClick={onRemove}
+        onClick={() => {
+          const bot = botName;
+          onRemove(bot);
+        }}
         disabled={busy}
         className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-rose-500 border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         title="Remove this person from the bot"

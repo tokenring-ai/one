@@ -1,11 +1,13 @@
 import type { EmailMessage } from "@tokenring-ai/email";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Inbox, Loader2, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import NavigationSidebarHeader from "../../../components/layout/NavigationSidebarHeader.tsx";
 import ErrorState from "../../../components/ui/ErrorState.tsx";
 import FilterTabs from "../../../components/ui/FilterTabs.tsx";
 import { toastManager } from "../../../components/ui/toast.tsx";
+import { usePaginatedList } from "../../../hooks/usePaginatedList.ts";
+import { useRefSync } from "../../../hooks/useRefSync.ts";
 import { emailRPCClient, useEmailMessages, useEmailSearch } from "../../../rpc.ts";
 import { MESSAGE_FILTERS, PAGE_SIZE } from "../constants.ts";
 import type { MessageFilter } from "../types.ts";
@@ -32,6 +34,7 @@ export default function MessageListPane({
   refreshKey?: number;
 }) {
   const unreadOnly = messageFilter === "unread";
+  // Both hooks always run (Rules of Hooks); inactive one gets a null SWR key and does not fetch.
   const listing = useEmailMessages(searchQuery ? undefined : (provider ?? undefined), {
     box,
     limit: PAGE_SIZE,
@@ -43,39 +46,39 @@ export default function MessageListPane({
     unreadOnly,
   });
   const result = searchQuery ? search : listing;
+  // Keep latest result for refresh so mutate targets the active query after mode switches.
+  const resultRef = useRefSync(result);
 
-  const [extraMessages, setExtraMessages] = useState<EmailMessage[]>([]);
-  const [nextPageToken, setNextPageToken] = useState<string | undefined>();
-  const [loadingMore, setLoadingMore] = useState(false);
+  const fetchNextPage = useCallback(
+    async (pageToken: string) => {
+      const page = await emailRPCClient.getMessages({
+        provider: provider!,
+        box,
+        limit: PAGE_SIZE,
+        unreadOnly,
+        pageToken,
+      });
+      return { items: page.messages as EmailMessage[], nextPageToken: page.nextPageToken };
+    },
+    [box, provider, unreadOnly],
+  );
 
-  // Reset accumulated pages when the mailbox query changes
-  useEffect(() => {
-    setExtraMessages([]);
-    setNextPageToken(undefined);
-  }, [provider, box, searchQuery, messageFilter]);
-
-  // Sync next-page token from the first page only while we have not loaded more
-  // (search endpoint has no pagination; only listing does)
-  useEffect(() => {
-    if (searchQuery || extraMessages.length > 0) return;
-    setNextPageToken(listing.data?.nextPageToken);
-  }, [listing.data?.nextPageToken, searchQuery, extraMessages.length]);
-
-  // Parent starts at 0; only revalidate when bumped after send/etc. (avoids double-fetch on mount)
-  useEffect(() => {
-    if (refreshKey === undefined || refreshKey === 0) return;
-    setExtraMessages([]);
-    setNextPageToken(undefined);
-    void result.mutate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only revalidate when refreshKey bumps
-  }, [refreshKey]);
-
-  const baseMessages = (result.data?.messages ?? []) as EmailMessage[];
-  const messages = useMemo(() => {
-    if (extraMessages.length === 0) return baseMessages;
-    const seen = new Set(baseMessages.map(m => m.id));
-    return [...baseMessages, ...extraMessages.filter(m => !seen.has(m.id))];
-  }, [baseMessages, extraMessages]);
+  const {
+    items: messages,
+    loadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+  } = usePaginatedList<EmailMessage>({
+    firstPage: result.data?.messages as EmailMessage[] | undefined,
+    firstPageToken: listing.data?.nextPageToken,
+    resetKeys: [provider, box, searchQuery, messageFilter],
+    refreshKey,
+    mutate: () => resultRef.current.mutate(),
+    fetchNextPage,
+    paginationDisabled: !!searchQuery || !provider,
+    onError: err => toastManager.error(formatError(err), { duration: 4000 }),
+  });
 
   const filteredMessages = useMemo(
     () =>
@@ -88,16 +91,19 @@ export default function MessageListPane({
     [messageFilter, messages],
   );
 
+  const baseCount = result.data?.messages.length ?? 0;
+  const hasLoadedMore = messages.length > baseCount;
+
   const countLabel = useMemo(() => {
     if (!result.data) return "";
     const n = filteredMessages.length;
-    if (messageFilter === "all" && !extraMessages.length) {
+    if (messageFilter === "all" && !hasLoadedMore) {
       return searchQuery ? `${result.data.count} results` : `${result.data.count} messages`;
     }
     const suffix = searchQuery ? "results" : "messages";
     const filterLabel = messageFilter === "all" ? "" : `${messageFilter} `;
     return `${n} ${filterLabel}${suffix}`.replace("  ", " ");
-  }, [extraMessages.length, filteredMessages.length, messageFilter, result.data, searchQuery]);
+  }, [filteredMessages.length, hasLoadedMore, messageFilter, result.data, searchQuery]);
 
   const emptyMessage = searchQuery
     ? `No ${messageFilter === "all" ? "emails" : messageFilter} emails found for "${searchQuery}"`
@@ -106,30 +112,6 @@ export default function MessageListPane({
       : messageFilter === "read"
         ? `No read messages in ${box}`
         : `${box} is empty`;
-
-  const handleLoadMore = useCallback(async () => {
-    if (!provider || !nextPageToken || searchQuery) return;
-    setLoadingMore(true);
-    try {
-      const page = await emailRPCClient.getMessages({
-        provider,
-        box,
-        limit: PAGE_SIZE,
-        unreadOnly,
-        pageToken: nextPageToken,
-      });
-      setExtraMessages(prev => {
-        const seen = new Set(prev.map(m => m.id));
-        const additions = page.messages.filter(m => !seen.has(m.id));
-        return [...prev, ...additions];
-      });
-      setNextPageToken(page.nextPageToken);
-    } catch (err) {
-      toastManager.error(formatError(err), { duration: 4000 });
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [box, nextPageToken, provider, searchQuery, unreadOnly]);
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -141,11 +123,7 @@ export default function MessageListPane({
             icon: <RefreshCw className={result.isValidating ? "w-3 h-3 animate-spin" : "w-3 h-3"} />,
             label: "Refresh messages",
             title: "Refresh",
-            onClick: () => {
-              setExtraMessages([]);
-              setNextPageToken(undefined);
-              void result.mutate();
-            },
+            onClick: () => refresh(),
           },
         ]}
       />
@@ -175,11 +153,11 @@ export default function MessageListPane({
             {filteredMessages.map(msg => (
               <MessageListItem key={msg.id} msg={msg} selected={msg.id === selectedId} onClick={() => onSelect(msg.id)} />
             ))}
-            {nextPageToken && !searchQuery && (
+            {hasMore && (
               <div className="p-3 flex justify-center">
                 <button
                   type="button"
-                  onClick={() => void handleLoadMore()}
+                  onClick={() => void loadMore()}
                   disabled={loadingMore}
                   className="px-3 py-1.5 text-xs font-medium text-muted hover:text-primary border border-primary rounded-lg focus-ring cursor-pointer disabled:opacity-50 transition-colors"
                 >

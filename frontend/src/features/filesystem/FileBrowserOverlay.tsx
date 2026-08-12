@@ -1,12 +1,17 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { FocusTrap } from "focus-trap-react";
-import { Check, ChevronRight, Download, Edit, Eye, EyeOff, File, Folder, Plus, Save, Search, Trash2, X } from "lucide-react";
+import { Check, ChevronRight, Download, Edit, Eye, EyeOff, File, Folder, Plus, Save, Trash2, X } from "lucide-react";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import CodeEditor from "../../components/editor/CodeEditor.tsx";
 import MarkdownEditor from "../../components/editor/MarkdownEditor.tsx";
+import SearchInput from "../../components/ui/SearchInput.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useDebounce } from "../../hooks/useDebounce.ts";
+import { useEventListener } from "../../hooks/useEventListener.ts";
+import { useFileUpload } from "../../hooks/useFileUpload.ts";
 import { cn } from "../../lib/utils.ts";
 import { filesystemRPCClient, useDirectoryListing, useFileContents, useFilesystemState } from "../../rpc.ts";
+import { downloadWorkspaceFile } from "./downloadFile.ts";
 import { getBasename, getFileIcon } from "./fsUtils.ts";
 
 interface FileBrowserOverlayProps {
@@ -20,13 +25,11 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showHiddenFiles, setShowHiddenFiles] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [previewHeight, setPreviewHeight] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
   const [editorContent, setEditorContent] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const initialFocusRef = useRef<HTMLDivElement>(null);
   const fileTableRef = useRef<HTMLTableElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -36,6 +39,30 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
   const provider = fsStateData?.provider ?? null;
   const directoryListing = useDirectoryListing(provider ? { path, showHidden: showHiddenFiles, provider } : undefined);
   const fileContent = useFileContents(selectedFile ?? undefined, provider ?? undefined);
+
+  const upload = useFileUpload({
+    encoding: "base64",
+    maxSize: 5 * 1024 * 1024,
+    maxSizeLabel: "5 MB",
+    uploadFile: async ({ filePath, content, encoding }) => {
+      if (!provider) throw new Error("No filesystem provider");
+      const targetPath = path === "." ? filePath : `${path}/${filePath}`;
+      await filesystemRPCClient.writeFile({ path: targetPath, content, encoding, provider });
+    },
+    askOverwrite: false,
+    onSkip: ({ fileName, reason, detail }) => {
+      if (reason === "size") {
+        toastManager.error(detail ?? `File "${fileName}" is too large. Maximum size is 5MB.`, { duration: 3000 });
+      }
+    },
+    onError: ({ fileName, error }) => {
+      console.error("Failed to upload file:", error);
+      toastManager.error(`Failed to upload "${fileName}"`, { duration: 3000 });
+    },
+    onComplete: async () => {
+      await directoryListing.mutate();
+    },
+  });
 
   React.useEffect(() => {
     if (isOpen && initialFocusRef.current) {
@@ -60,10 +87,9 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
     });
   }, [directoryListing.data?.files, debouncedSearch]);
 
-  React.useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
+  useEventListener(
+    "keydown",
+    e => {
       if (!fileTableRef.current) return;
 
       const rows = Array.from(fileTableRef.current.querySelectorAll<HTMLTableRowElement>("tbody tr"));
@@ -117,28 +143,21 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
           }
           break;
       }
-    };
+    },
+    { target: document, enabled: isOpen },
+  );
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+  useEventListener(
+    "keydown",
+    e => {
       if (e.key === "Escape" && document.activeElement === searchInputRef.current && searchQuery) {
         e.preventDefault();
         e.stopPropagation();
         setSearchQuery("");
       }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [searchQuery]);
+    },
+    { target: document },
+  );
 
   const handleSaveFile = async () => {
     if (!selectedFile) return;
@@ -161,32 +180,25 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
     e.preventDefault();
   }, []);
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (!isResizing) return;
+  useEventListener(
+    "mousemove",
+    e => {
       const container = document.querySelector(".file-browser-container");
       if (!container) return;
       const rect = container.getBoundingClientRect();
       const newHeight = rect.bottom - e.clientY;
       setPreviewHeight(Math.max(200, Math.min(newHeight, rect.height - 200)));
     },
-    [isResizing],
+    { target: document, enabled: isResizing },
   );
 
-  const handleMouseUp = useCallback(() => {
-    setIsResizing(false);
-  }, []);
-
-  React.useEffect(() => {
-    if (isResizing) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      return () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
-  }, [isResizing, handleMouseMove, handleMouseUp]);
+  useEventListener(
+    "mouseup",
+    () => {
+      setIsResizing(false);
+    },
+    { target: document, enabled: isResizing },
+  );
 
   if (!isOpen) return null;
 
@@ -239,46 +251,10 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
     const cleanFile = file.endsWith("/") ? file.slice(0, -1) : file;
     try {
       if (!provider) return;
-      const result = await filesystemRPCClient.readTextFile({ path: cleanFile, provider });
-      const blob = new Blob([result.content ?? ""], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = cleanFile.split("/").pop() || "download";
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadWorkspaceFile(cleanFile, provider);
     } catch (error: unknown) {
       toastManager.error(`Failed to download "${getBasename(cleanFile)}": ${formatError(error)}`, { duration: 5000 });
     }
-  };
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const MAX_FILE_SIZE = 5 * 1024 * 1024;
-    const fileNames = Array.from(files).map(f => f.name);
-    setUploadingFiles(fileNames);
-
-    for (const file of Array.from(files)) {
-      if (file.size > MAX_FILE_SIZE) {
-        toastManager.error(`File "${file.name}" is too large. Maximum size is 5MB.`, { duration: 3000 });
-        continue;
-      }
-      try {
-        const content = await file.text();
-        const targetPath = path === "." ? file.name : `${path}/${file.name}`;
-        if (!provider) throw new Error("No filesystem provider");
-        await filesystemRPCClient.writeFile({ path: targetPath, content, provider });
-      } catch (error: unknown) {
-        console.error("Failed to upload file:", error);
-        toastManager.error(`Failed to upload "${file.name}"`, { duration: 3000 });
-      }
-    }
-
-    setUploadingFiles([]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    await directoryListing.mutate();
   };
 
   const breadcrumbs = path === "." ? [] : path.split("/");
@@ -299,30 +275,15 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="relative group">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" size={14} />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="Search files..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="bg-input border border-primary rounded-md py-1.5 pl-8 pr-8 text-xs text-primary placeholder-muted focus-accent w-48 transition-all focus-ring"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={e => {
-                      e.stopPropagation();
-                      setSearchQuery("");
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors p-0.5 rounded focus-ring"
-                    aria-label="Clear search (or press Escape)"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search files..."
+                aria-label="Search files"
+                clearAriaLabel="Clear search (or press Escape)"
+                className="w-48"
+                inputRef={searchInputRef}
+              />
               <button type="button" onClick={onClose} className="text-muted hover:text-primary transition-colors focus-ring" aria-label="Close file browser">
                 <X size={20} />
               </button>
@@ -386,14 +347,14 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
                 </div>
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={upload.trigger}
                   className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-hover text-muted text-xs transition-colors focus-ring"
                   aria-label="Upload files"
                 >
                   <Plus size={14} />
                   Upload
                 </button>
-                <input ref={fileInputRef} type="file" multiple onChange={handleUpload} className="hidden" />
+                <input ref={upload.inputRef} type="file" multiple onChange={e => void upload.onChange(e)} className="hidden" />
               </div>
 
               <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
@@ -458,8 +419,8 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
                               className={cn("flex items-center gap-2 font-medium", isSelected ? "text-accent-soft" : isDir ? "text-primary" : "text-primary")}
                             >
                               {getFileIcon(file, isDir, 16, "overlay")}
-                              <span className={cn(uploadingFiles.includes(displayName) && "text-accent-soft")}>{displayName}</span>
-                              {uploadingFiles.includes(displayName) && (
+                              <span className={cn(upload.uploadingFiles.includes(displayName) && "text-accent-soft")}>{displayName}</span>
+                              {upload.uploadingFiles.includes(displayName) && (
                                 <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin ml-1" title="Uploading...">
                                   <span className="sr-only">Uploading</span>
                                 </div>
@@ -467,10 +428,10 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
                             </div>
                           </td>
                           <td className="px-2 py-2 text-muted hidden sm:table-cell">
-                            {isDir ? "-" : uploadingFiles.includes(displayName) ? "Uploading..." : "---"}
+                            {isDir ? "-" : upload.uploadingFiles.includes(displayName) ? "Uploading..." : "---"}
                           </td>
                           <td className="px-2 py-2 text-muted hidden sm:table-cell">
-                            {uploadingFiles.includes(displayName) ? (
+                            {upload.uploadingFiles.includes(displayName) ? (
                               <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin" title="Uploading...">
                                   <span className="sr-only">Uploading</span>
@@ -528,12 +489,12 @@ export default function FileBrowserOverlay({ agentId, isOpen, onClose }: FileBro
                 <span className="text-xs text-muted">{fsStateData?.selectedFiles.length ?? 0} items in chat</span>
               </div>
 
-              {uploadingFiles.length > 0 && (
+              {upload.uploadingFiles.length > 0 && (
                 <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-50">
                   <div className="bg-secondary border border-primary rounded-lg p-4 flex items-center gap-3 shadow-lg">
                     <div className="w-5 h-5 border-2 border-muted border-t-accent rounded-full animate-spin" />
                     <span className="text-sm text-primary">
-                      Uploading {uploadingFiles.length} file{uploadingFiles.length > 1 ? "s" : ""}...
+                      Uploading {upload.uploadingFiles.length} file{upload.uploadingFiles.length > 1 ? "s" : ""}...
                     </span>
                   </div>
                 </div>

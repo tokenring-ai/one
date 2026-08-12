@@ -1,29 +1,19 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import {
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Cpu,
-  Flame,
-  Loader2,
-  Plug,
-  Power,
-  PowerOff,
-  RefreshCw,
-  ScrollText,
-  Search,
-  User,
-  Wrench,
-  X,
-  Zap,
-} from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Cpu, Flame, Loader2, Plug, RefreshCw, ScrollText, User, Wrench, X, Zap } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import EnableToggle from "../../components/ui/EnableToggle.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
+import SearchInput from "../../components/ui/SearchInput.tsx";
+import StatusBadge from "../../components/ui/StatusBadge.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useAsyncActionGuard } from "../../hooks/useAsyncActionGuard.ts";
+import { useExpandedSet } from "../../hooks/useExpandedSet.ts";
+import { type FilterTabDefinition, useFilterTabs } from "../../hooks/useFilterTabs.ts";
+import { resolveProviderBrand } from "../../lib/providerBrand.ts";
 import { cn } from "../../lib/utils.ts";
 import {
   chatRPCClient,
@@ -40,6 +30,14 @@ import {
 type Tab = "tools" | "models" | "hooks" | "logs";
 type ModelFilter = "all" | "available" | "unavailable" | "hot";
 type LogLevelFilter = "all" | "info" | "error";
+type ModelInfo = { status: string; available: boolean; hot: boolean };
+
+const MODEL_FILTER_TAB_DEFS: FilterTabDefinition<ModelInfo, ModelFilter>[] = [
+  { id: "all", label: "All" },
+  { id: "available", label: "Available", predicate: m => m.available },
+  { id: "unavailable", label: "Unavailable", predicate: m => !m.available },
+  { id: "hot", label: "Hot", predicate: m => m.hot },
+];
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "tools", label: "Tools", icon: <Wrench className="w-3.5 h-3.5" /> },
@@ -54,42 +52,6 @@ function categoryFromDisplayName(displayName: string): { category: string; short
     return { category: match[1] || "Other", shortName: match[2] || displayName };
   }
   return { category: "Other", shortName: displayName };
-}
-
-function SearchField({
-  value,
-  onChange,
-  placeholder,
-  "aria-label": ariaLabel,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  "aria-label": string;
-}) {
-  return (
-    <div className="relative w-full max-w-xs">
-      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
-      <input
-        type="search"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        aria-label={ariaLabel}
-        className="w-full bg-input border border-primary rounded-md py-1.5 pl-8 pr-8 text-xs text-primary placeholder-muted focus-ring"
-      />
-      {value ? (
-        <button
-          type="button"
-          onClick={() => onChange("")}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted hover:text-primary focus-ring"
-          aria-label="Clear search"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      ) : null}
-    </div>
-  );
 }
 
 function AgentContextBar({
@@ -159,11 +121,7 @@ function AgentContextBar({
           </button>
         ) : null}
       </div>
-      {enabledLabel ? (
-        <span className="text-xs px-2 py-0.5 bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/30 rounded-full">
-          {enabledLabel}
-        </span>
-      ) : null}
+      {enabledLabel ? <StatusBadge label={enabledLabel} colorClass="bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/30" /> : null}
     </div>
   );
 }
@@ -175,7 +133,7 @@ export default function ServicesDashboard() {
   const [modelFilter, setModelFilter] = useState<ModelFilter>("all");
   const [logLevelFilter, setLogLevelFilter] = useState<LogLevelFilter>("all");
   const [autoScrollLogs, setAutoScrollLogs] = useState(true);
-  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const { activeKey: busyAction, execute: executeBusy } = useAsyncActionGuard();
 
   const agents = useAgentList();
   const availableTools = useAvailableTools();
@@ -245,42 +203,47 @@ export default function ServicesDashboard() {
       toastManager.warning("Select an agent to enable or disable tools", { duration: 3000 });
       return;
     }
-    setBusyAction(`tool:${toolName}`);
-    try {
-      const isEnabled = enabledToolNames.has(toolName);
-      const result = isEnabled
-        ? await chatRPCClient.disableTools({ agentId: selectedAgentId, tools: [toolName] })
-        : await chatRPCClient.enableTools({ agentId: selectedAgentId, tools: [toolName] });
-      if (result.status === "agentNotFound") {
-        await handleAgentGone();
-        return;
+    await executeBusy(`tool:${toolName}`, async () => {
+      try {
+        const isEnabled = enabledToolNames.has(toolName);
+        const result = isEnabled
+          ? await chatRPCClient.disableTools({ agentId: selectedAgentId, tools: [toolName] })
+          : await chatRPCClient.enableTools({ agentId: selectedAgentId, tools: [toolName] });
+        if (result.status === "agentNotFound") {
+          await handleAgentGone();
+          return;
+        }
+        await enabledTools.mutate();
+      } catch (error: unknown) {
+        toastManager.error(formatError(error), { duration: 5000 });
       }
-      await enabledTools.mutate();
-    } catch (error: unknown) {
-      toastManager.error(formatError(error), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
-    }
+    });
   };
 
   const handleToggleCategoryTools = async (toolNames: string[]) => {
-    if (!selectedAgentId || toolNames.length === 0) return;
-    setBusyAction(`cat:${toolNames[0]}`);
-    try {
-      const allEnabled = toolNames.every(n => enabledToolNames.has(n));
-      const result = allEnabled
-        ? await chatRPCClient.disableTools({ agentId: selectedAgentId, tools: toolNames })
-        : await chatRPCClient.enableTools({ agentId: selectedAgentId, tools: toolNames });
-      if (result.status === "agentNotFound") {
-        await handleAgentGone();
-        return;
-      }
-      await enabledTools.mutate();
-    } catch (error: unknown) {
-      toastManager.error(formatError(error), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
+    if (!selectedAgentId) {
+      toastManager.warning("Select an agent to enable or disable tools", { duration: 3000 });
+      return;
     }
+    if (toolNames.length === 0) {
+      toastManager.info("No tools to toggle in this category", { duration: 3000 });
+      return;
+    }
+    await executeBusy(`cat:${toolNames[0]}`, async () => {
+      try {
+        const allEnabled = toolNames.every(n => enabledToolNames.has(n));
+        const result = allEnabled
+          ? await chatRPCClient.disableTools({ agentId: selectedAgentId, tools: toolNames })
+          : await chatRPCClient.enableTools({ agentId: selectedAgentId, tools: toolNames });
+        if (result.status === "agentNotFound") {
+          await handleAgentGone();
+          return;
+        }
+        await enabledTools.mutate();
+      } catch (error: unknown) {
+        toastManager.error(formatError(error), { duration: 5000 });
+      }
+    });
   };
 
   const handleToggleHook = async (hookName: string) => {
@@ -288,44 +251,48 @@ export default function ServicesDashboard() {
       toastManager.warning("Select an agent to enable or disable hooks", { duration: 3000 });
       return;
     }
-    setBusyAction(`hook:${hookName}`);
-    try {
-      const isEnabled = enabledHookNames.has(hookName);
-      const result = isEnabled
-        ? await lifecycleRPCClient.disableHooks({ agentId: selectedAgentId, hooks: [hookName] })
-        : await lifecycleRPCClient.enableHooks({ agentId: selectedAgentId, hooks: [hookName] });
-      if (result.status === "agentNotFound") {
-        await handleAgentGone();
-        return;
+    await executeBusy(`hook:${hookName}`, async () => {
+      try {
+        const isEnabled = enabledHookNames.has(hookName);
+        const result = isEnabled
+          ? await lifecycleRPCClient.disableHooks({ agentId: selectedAgentId, hooks: [hookName] })
+          : await lifecycleRPCClient.enableHooks({ agentId: selectedAgentId, hooks: [hookName] });
+        if (result.status === "agentNotFound") {
+          await handleAgentGone();
+          return;
+        }
+        await enabledHooks.mutate();
+      } catch (error: unknown) {
+        toastManager.error(formatError(error), { duration: 5000 });
       }
-      await enabledHooks.mutate();
-    } catch (error: unknown) {
-      toastManager.error(formatError(error), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
-    }
+    });
   };
 
   const handleToggleAllHooks = async () => {
-    if (!selectedAgentId) return;
-    const allNames = Object.keys(availableHooks.data?.hooks ?? {});
-    if (allNames.length === 0) return;
-    setBusyAction("hooks:all");
-    try {
-      const allEnabled = allNames.every(n => enabledHookNames.has(n));
-      const result = allEnabled
-        ? await lifecycleRPCClient.disableHooks({ agentId: selectedAgentId, hooks: allNames })
-        : await lifecycleRPCClient.enableHooks({ agentId: selectedAgentId, hooks: allNames });
-      if (result.status === "agentNotFound") {
-        await handleAgentGone();
-        return;
-      }
-      await enabledHooks.mutate();
-    } catch (error: unknown) {
-      toastManager.error(formatError(error), { duration: 5000 });
-    } finally {
-      setBusyAction(null);
+    if (!selectedAgentId) {
+      toastManager.warning("Select an agent to enable or disable hooks", { duration: 3000 });
+      return;
     }
+    const allNames = Object.keys(availableHooks.data?.hooks ?? {});
+    if (allNames.length === 0) {
+      toastManager.info("No hooks available to toggle", { duration: 3000 });
+      return;
+    }
+    await executeBusy("hooks:all", async () => {
+      try {
+        const allEnabled = allNames.every(n => enabledHookNames.has(n));
+        const result = allEnabled
+          ? await lifecycleRPCClient.disableHooks({ agentId: selectedAgentId, hooks: allNames })
+          : await lifecycleRPCClient.enableHooks({ agentId: selectedAgentId, hooks: allNames });
+        if (result.status === "agentNotFound") {
+          await handleAgentGone();
+          return;
+        }
+        await enabledHooks.mutate();
+      } catch (error: unknown) {
+        toastManager.error(formatError(error), { duration: 5000 });
+      }
+    });
   };
 
   return (
@@ -446,7 +413,7 @@ function ToolsTab({
   onToggleTool: (name: string) => void;
   onToggleCategory: (names: string[]) => void;
 }) {
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const { isExpanded, toggle: toggleExpand, expandAll } = useExpandedSet();
   // Only auto-expand on agent/search/catalog changes — not when the user toggles enable state.
   const autoExpandKeyRef = useRef<string>("");
 
@@ -488,7 +455,7 @@ function ToolsTab({
     if (categories.length === 0) return;
 
     if (searchQuery.trim()) {
-      setExpanded(new Set(categories));
+      expandAll(categories);
       autoExpandKeyRef.current = `search:${searchQuery}:${categories.join("\0")}`;
       return;
     }
@@ -498,7 +465,7 @@ function ToolsTab({
       const loadingKey = `loading|${selectedAgentId ?? "none"}|${categories.join("\0")}`;
       if (autoExpandKeyRef.current !== loadingKey) {
         autoExpandKeyRef.current = loadingKey;
-        setExpanded(new Set(categories.slice(0, 3)));
+        expandAll(categories.slice(0, 3));
       }
       return;
     }
@@ -508,15 +475,15 @@ function ToolsTab({
     autoExpandKeyRef.current = key;
 
     if (!selectedAgentId || enabledSet.size === 0) {
-      setExpanded(new Set(categories.slice(0, 3)));
+      expandAll(categories.slice(0, 3));
       return;
     }
-    const withEnabled = new Set<string>();
+    const withEnabled: string[] = [];
     for (const [cat, items] of Object.entries(grouped)) {
-      if (items.some(i => enabledSet.has(i.toolName))) withEnabled.add(cat);
+      if (items.some(i => enabledSet.has(i.toolName))) withEnabled.push(cat);
     }
-    setExpanded(withEnabled.size > 0 ? withEnabled : new Set(categories.slice(0, 3)));
-  }, [searchQuery, categories, selectedAgentId, enabledSet, grouped, enabledLoading]);
+    expandAll(withEnabled.length > 0 ? withEnabled : categories.slice(0, 3));
+  }, [searchQuery, categories, selectedAgentId, enabledSet, grouped, enabledLoading, expandAll]);
 
   if (tools.isLoading && !toolRecord) {
     return <LoadingState message="Loading tools…" className="py-16" />;
@@ -536,15 +503,6 @@ function ToolsTab({
     );
   }
 
-  const toggleExpand = (cat: string) => {
-    setExpanded(prev => {
-      const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat);
-      else next.add(cat);
-      return next;
-    });
-  };
-
   return (
     <div className="space-y-4">
       <AgentContextBar
@@ -559,7 +517,7 @@ function ToolsTab({
           {total} tools across {totalPackages} {totalPackages === 1 ? "package" : "packages"}
           {searchQuery.trim() ? ` · ${filteredEntries.length} ${filteredEntries.length === 1 ? "match" : "matches"}` : ""}
         </p>
-        <SearchField value={searchQuery} onChange={onSearchChange} placeholder="Filter tools…" aria-label="Filter tools" />
+        <SearchInput value={searchQuery} onChange={onSearchChange} placeholder="Filter tools…" aria-label="Filter tools" className="w-full max-w-xs" />
       </div>
 
       {filteredEntries.length === 0 ? (
@@ -570,7 +528,7 @@ function ToolsTab({
         <div className="space-y-2">
           {categories.map(category => {
             const items = grouped[category] ?? [];
-            const isOpen = expanded.has(category);
+            const isOpen = isExpanded(category);
             const catEnabled = items.filter(i => enabledSet.has(i.toolName)).length;
             const allCatEnabled = items.length > 0 && catEnabled === items.length;
             return (
@@ -618,28 +576,13 @@ function ToolsTab({
                             </div>
                           </div>
                           {selectedAgentId ? (
-                            <button
-                              type="button"
-                              onClick={() => onToggleTool(toolName)}
-                              disabled={isBusy || busyAction !== null}
-                              className={cn(
-                                "inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors focus-ring disabled:opacity-50",
-                                isEnabled
-                                  ? "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/30 hover:bg-violet-500/20"
-                                  : "bg-tertiary text-muted border-primary hover:text-primary hover:bg-hover",
-                              )}
-                              aria-pressed={isEnabled}
-                              aria-label={isEnabled ? `Disable ${shortName}` : `Enable ${shortName}`}
-                            >
-                              {isBusy ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : isEnabled ? (
-                                <Power className="w-3 h-3" />
-                              ) : (
-                                <PowerOff className="w-3 h-3" />
-                              )}
-                              {isEnabled ? "On" : "Off"}
-                            </button>
+                            <EnableToggle
+                              enabled={isEnabled}
+                              onToggle={() => onToggleTool(toolName)}
+                              loading={isBusy}
+                              disabled={busyAction !== null}
+                              itemName={shortName}
+                            />
                           ) : null}
                         </div>
                       );
@@ -670,23 +613,21 @@ function ModelsTab({
 }) {
   const providerMap = models.data?.modelsByProvider;
 
-  const stats = useMemo(() => {
-    let total = 0;
-    let available = 0;
-    let hot = 0;
+  const allModels = useMemo(() => {
+    const list: ModelInfo[] = [];
     for (const record of Object.values(providerMap ?? {})) {
       for (const info of Object.values(record)) {
-        total += 1;
-        if (info.available) available += 1;
-        if (info.hot) hot += 1;
+        list.push(info);
       }
     }
-    return { total, available, hot, unavailable: total - available };
+    return list;
   }, [providerMap]);
+
+  const { tabs: filterOptions } = useFilterTabs(allModels, MODEL_FILTER_TAB_DEFS);
 
   const filteredProviders = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    const result: { provider: string; models: [string, { status: string; available: boolean; hot: boolean }][] }[] = [];
+    const result: { provider: string; models: [string, ModelInfo][] }[] = [];
     for (const [provider, record] of Object.entries(providerMap ?? {})) {
       const modelsList = Object.entries(record)
         .filter(([modelId, info]) => {
@@ -713,7 +654,7 @@ function ModelsTab({
     return <ErrorState title="Failed to load models" error={models.error} onRetry={() => void models.mutate()} variant="inline" className="py-6" />;
   }
 
-  if (!providerMap || stats.total === 0) {
+  if (!providerMap || allModels.length === 0) {
     return (
       <div className="px-6 py-12 bg-secondary border border-primary border-dashed rounded-xl text-center">
         <Cpu className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />
@@ -722,13 +663,6 @@ function ModelsTab({
       </div>
     );
   }
-
-  const filterOptions: { id: ModelFilter; label: string; count: number }[] = [
-    { id: "all", label: "All", count: stats.total },
-    { id: "available", label: "Available", count: stats.available },
-    { id: "unavailable", label: "Unavailable", count: stats.unavailable },
-    { id: "hot", label: "Hot", count: stats.hot },
-  ];
 
   return (
     <div className="space-y-4">
@@ -751,7 +685,7 @@ function ModelsTab({
             </button>
           ))}
         </div>
-        <SearchField value={searchQuery} onChange={onSearchChange} placeholder="Filter models…" aria-label="Filter models" />
+        <SearchInput value={searchQuery} onChange={onSearchChange} placeholder="Filter models…" aria-label="Filter models" className="w-full max-w-xs" />
       </div>
 
       {filteredProviders.length === 0 ? (
@@ -760,31 +694,40 @@ function ModelsTab({
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredProviders.map(({ provider, models: modelList }) => (
-            <div key={provider} className="bg-secondary border border-primary rounded-xl overflow-hidden">
-              <div className="px-4 py-2.5 bg-tertiary/50 border-b border-primary flex items-center justify-between">
-                <span className="text-xs font-semibold text-primary capitalize">{provider}</span>
-                <span className="text-xs text-muted">{modelList.length} models</span>
-              </div>
-              <div className="p-2 space-y-0.5">
-                {modelList.map(([modelId, modelInfo]) => (
-                  <div key={modelId} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover transition-colors">
-                    <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", modelInfo.available ? "bg-emerald-500/70" : "bg-muted/50")} />
-                    <span className="text-xs font-mono text-primary truncate" title={modelId}>
-                      {modelId.split("/").pop()}
+          {filteredProviders.map(({ provider, models: modelList }) => {
+            const brand = resolveProviderBrand(provider, modelList[0]?.[0]);
+            const ProviderIcon = brand.icon;
+            return (
+              <div key={provider} className="bg-secondary border border-primary rounded-xl overflow-hidden">
+                <div className="px-4 py-2.5 bg-tertiary/50 border-b border-primary flex items-center justify-between">
+                  <span className="text-xs font-semibold text-primary flex items-center gap-1.5 capitalize">
+                    <span className={brand.color}>
+                      <ProviderIcon className="w-3.5 h-3.5" />
                     </span>
-                    {modelInfo.hot ? (
-                      <span className="inline-flex items-center gap-0.5 text-xs text-amber-600 dark:text-amber-400 shrink-0" title="Hot model">
-                        <Flame className="w-3 h-3" />
-                        hot
+                    {provider}
+                  </span>
+                  <span className="text-xs text-muted">{modelList.length} models</span>
+                </div>
+                <div className="p-2 space-y-0.5">
+                  {modelList.map(([modelId, modelInfo]) => (
+                    <div key={modelId} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover transition-colors">
+                      <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", modelInfo.available ? "bg-emerald-500/70" : "bg-muted/50")} />
+                      <span className="text-xs font-mono text-primary truncate" title={modelId}>
+                        {modelId.split("/").pop()}
                       </span>
-                    ) : null}
-                    <span className="text-xs text-muted ml-auto shrink-0">{modelInfo.status}</span>
-                  </div>
-                ))}
+                      {modelInfo.hot ? (
+                        <span className="inline-flex items-center gap-0.5 text-xs text-amber-600 dark:text-amber-400 shrink-0" title="Hot model">
+                          <Flame className="w-3 h-3" />
+                          hot
+                        </span>
+                      ) : null}
+                      <span className="text-xs text-muted ml-auto shrink-0">{modelInfo.status}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -875,7 +818,7 @@ function HooksTab({
             </button>
           ) : null}
         </div>
-        <SearchField value={searchQuery} onChange={onSearchChange} placeholder="Filter hooks…" aria-label="Filter hooks" />
+        <SearchInput value={searchQuery} onChange={onSearchChange} placeholder="Filter hooks…" aria-label="Filter hooks" className="w-full max-w-xs" />
       </div>
 
       {filtered.length === 0 ? (
@@ -901,22 +844,16 @@ function HooksTab({
                   </div>
                 </div>
                 {selectedAgentId ? (
-                  <button
-                    type="button"
-                    onClick={() => onToggleHook(hookName)}
-                    disabled={isBusy || busyAction !== null}
-                    className={cn(
-                      "inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors focus-ring disabled:opacity-50 shrink-0 mt-0.5",
-                      isEnabled
-                        ? "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/30 hover:bg-violet-500/20"
-                        : "bg-tertiary text-muted border-primary hover:text-primary hover:bg-hover",
-                    )}
-                    aria-pressed={isEnabled}
-                    aria-label={isEnabled ? `Disable ${hookInfo.displayName || hookName}` : `Enable ${hookInfo.displayName || hookName}`}
-                  >
-                    {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : isEnabled ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                    {isEnabled ? "On" : "Off"}
-                  </button>
+                  <EnableToggle
+                    enabled={isEnabled}
+                    onToggle={() => onToggleHook(hookName)}
+                    loading={isBusy}
+                    disabled={busyAction !== null}
+                    itemName={hookInfo.displayName || hookName}
+                    enabledIcon={Check}
+                    disabledIcon={X}
+                    className="shrink-0 mt-0.5"
+                  />
                 ) : null}
               </div>
             );
@@ -946,6 +883,9 @@ function LogsTab({
 }) {
   const listRef = useRef<HTMLDivElement>(null);
   const entries = logs.data?.logs ?? [];
+  // Track raw entry count so auto-scroll fires on new logs, not filter/search changes.
+  const rawCountRef = useRef(0);
+  const prevAutoScrollRef = useRef(autoScroll);
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -959,12 +899,22 @@ function LogsTab({
   const errorCount = useMemo(() => entries.filter(e => e.level === "error").length, [entries]);
 
   // Scroll only the log list container — scrollIntoView can jump the whole page.
+  // Depend on entries.length (not filtered.length) so filter/search changes don't yank the viewport.
   useEffect(() => {
-    if (!autoScroll) return;
-    const el = listRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  }, [filtered.length, autoScroll]);
+    const autoScrollJustEnabled = autoScroll && !prevAutoScrollRef.current;
+    prevAutoScrollRef.current = autoScroll;
+
+    if (!autoScroll) {
+      rawCountRef.current = entries.length;
+      return;
+    }
+
+    if (entries.length > rawCountRef.current || autoScrollJustEnabled) {
+      const el = listRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    }
+    rawCountRef.current = entries.length;
+  }, [entries.length, autoScroll]);
 
   if (logs.isLoading && entries.length === 0) {
     return <LoadingState message="Connecting to app logs…" className="py-16" />;
@@ -1014,7 +964,7 @@ function LogsTab({
             {autoScroll ? "Live scroll on" : "Live scroll off"}
           </button>
         </div>
-        <SearchField value={searchQuery} onChange={onSearchChange} placeholder="Filter log messages…" aria-label="Filter logs" />
+        <SearchInput value={searchQuery} onChange={onSearchChange} placeholder="Filter log messages…" aria-label="Filter logs" className="w-full max-w-xs" />
       </div>
 
       <p className="text-xs text-muted px-1">
@@ -1028,9 +978,9 @@ function LogsTab({
           {filtered.length === 0 ? (
             <p className="text-muted text-center py-8">{entries.length === 0 ? "No log entries yet" : "No logs match the current filters"}</p>
           ) : (
-            filtered.map((entry, i) => (
+            filtered.map(entry => (
               <div
-                key={`${entry.timestamp}-${i}`}
+                key={entry.id}
                 className={cn("flex gap-3 px-3 py-1.5", entry.level === "error" ? "bg-red-500/5 text-red-400" : "text-muted hover:text-primary")}
               >
                 <span className="shrink-0 text-muted/60 tabular-nums">{new Date(entry.timestamp).toLocaleTimeString()}</span>

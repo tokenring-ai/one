@@ -1,4 +1,3 @@
-import type { AudioIndexEntry, ImageIndexEntry, VideoIndexEntry } from "@tokenring-ai/media-library/rpc/schema";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { ImageIcon, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -6,84 +5,110 @@ import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import FilterTabs, { type FilterTabOption } from "../../components/ui/FilterTabs.tsx";
+import PanelToolbar from "../../components/ui/PanelToolbar.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useDebounce } from "../../hooks/useDebounce.ts";
 import { useHeadlessAgent } from "../../hooks/useHeadlessAgent.ts";
-import { agentRPCClient, mediaLibraryRPCClient, useAudios, useImages, useVideos } from "../../rpc.ts";
+import { useRefSync } from "../../hooks/useRefSync.ts";
+import { cleanupAgent } from "../../lib/agentCleanup.ts";
+import { toastOnReject } from "../../lib/toastOnReject.ts";
+import { agentRPCClient, mediaLibraryRPCClient, useMedia, useMediaLibraryConfiguration } from "../../rpc.ts";
 import GallerySidebar from "./components/GallerySidebar.tsx";
 import RightPanel from "./components/RightPanel.tsx";
 import { AGENT_TYPE_PREFERENCES, MEDIA_AGENT_TYPES } from "./constants.ts";
 import type { MediaEntry, MediaKind } from "./types.ts";
+import { useMediaServeDirectory } from "./useMediaPaths.ts";
 import { workOnMediaMessage } from "./utils.ts";
 
 const SEARCH_DEBOUNCE_MS = 300;
+/** Clear auto-select pending state if the generated file never appears in the stream. */
+const PENDING_SELECT_TIMEOUT_MS = 30_000;
+/** Match prior per-kind cap (200 × 3) when streaming all kinds together. */
+const MEDIA_STREAM_LIMIT = 600;
 
 export default function MediaApp() {
+  const configuration = useMediaLibraryConfiguration();
+  const serveDirectory = useMediaServeDirectory();
+  // Fallback matches MediaLibraryServiceConfigSchema.agentTypes default so headless
+  // agent init can resolve a preferred type before the configuration RPC returns.
+  const allowedAgentTypes = configuration.data?.agentTypes ?? [...MEDIA_AGENT_TYPES];
+  const defaultAgentType = allowedAgentTypes[0] ?? "media";
+  const allowedAgentTypesRef = useRefSync(allowedAgentTypes);
+
   const {
     agentId,
     initialising,
     error: initError,
   } = useHeadlessAgent({
     appName: "Media app",
-    preferredTypes: [...MEDIA_AGENT_TYPES],
+    preferredTypes: allowedAgentTypes,
     noTypesMessage: "No agent types available.",
   });
   const [chatAgentId, setChatAgentId] = useState<string | null>(null);
   const [kind, setKind] = useState<MediaKind>("image");
   const [selected, setSelected] = useState<MediaEntry | null>(null);
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debouncedSearch = useDebounce(search.trim(), SEARCH_DEBOUNCE_MS);
   const [pendingSelect, setPendingSelect] = useState<string | null>(null);
   const [workingOn, setWorkingOn] = useState(false);
-
-  useEffect(() => {
-    const trimmed = search.trim();
-    const handle = setTimeout(() => setDebouncedSearch(trimmed), SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(handle);
-  }, [search]);
 
   // Keep the chat agent’s selected media in sync so addSelectedMedia can tag the filename.
   useEffect(() => {
     if (!chatAgentId) return;
     if (selected) {
-      mediaLibraryRPCClient
-        .updateMediaLibraryState({
+      toastOnReject(
+        mediaLibraryRPCClient.updateMediaLibraryState({
           agentId: chatAgentId,
           selectedFilename: selected.filename,
           selectedKind: selected.kind,
-        })
-        .catch(() => {});
+        }),
+      );
       return;
     }
-    mediaLibraryRPCClient.updateMediaLibraryState({ agentId: chatAgentId, clearSelection: true }).catch(() => {});
+    toastOnReject(mediaLibraryRPCClient.updateMediaLibraryState({ agentId: chatAgentId, clearSelection: true }));
   }, [chatAgentId, selected]);
 
-  const imageSearch = kind === "image" && debouncedSearch ? debouncedSearch : undefined;
-  const videoSearch = kind === "video" && debouncedSearch ? debouncedSearch : undefined;
-  const audioSearch = kind === "audio" && debouncedSearch ? debouncedSearch : undefined;
+  // One stream for all kinds so tab badges stay populated without three sockets.
+  // Search is applied client-side to the active tab only (also cleared on tab change).
+  const mediaData = useMedia({ limit: MEDIA_STREAM_LIMIT });
 
-  const imagesData = useImages(imageSearch);
-  const videosData = useVideos(videoSearch);
-  const audiosData = useAudios(audioSearch);
+  const media = mediaData.data?.media ?? [];
 
-  const images: ImageIndexEntry[] = imagesData.data?.images ?? [];
-  const videos: VideoIndexEntry[] = videosData.data?.videos ?? [];
-  const audios: AudioIndexEntry[] = audiosData.data?.audios ?? [];
+  const { images, videos, audios } = useMemo(() => {
+    const images: MediaEntry[] = [];
+    const videos: MediaEntry[] = [];
+    const audios: MediaEntry[] = [];
+    for (const entry of media) {
+      if (entry.kind === "image") images.push(entry);
+      else if (entry.kind === "video") videos.push(entry);
+      else audios.push(entry);
+    }
+    return { images, videos, audios };
+  }, [media]);
 
-  // Prefer server-reported counts (pre-limit) so badges stay accurate past the stream limit.
-  const imageCount = imagesData.data?.count ?? images.length;
-  const videoCount = videosData.data?.count ?? videos.length;
-  const audioCount = audiosData.data?.count ?? audios.length;
+  const galleryEntries = useMemo(() => {
+    const pool = kind === "image" ? images : kind === "video" ? videos : audios;
+    if (!debouncedSearch) return pool;
+    const q = debouncedSearch.toLowerCase();
+    return pool.filter(
+      entry =>
+        entry.filename.toLowerCase().includes(q) ||
+        entry.prompt?.toLowerCase().includes(q) ||
+        entry.keywords.some(keyword => keyword.toLowerCase().includes(q)),
+    );
+  }, [kind, images, videos, audios, debouncedSearch]);
 
   const tabs: FilterTabOption<MediaKind>[] = [
-    { id: "image", label: "Images", count: imageCount },
-    { id: "video", label: "Videos", count: videoCount },
-    { id: "audio", label: "Audio", count: audioCount },
+    { id: "image", label: "Images", count: images.length },
+    { id: "video", label: "Videos", count: videos.length },
+    { id: "audio", label: "Audio", count: audios.length },
   ];
 
-  // Auto-select a just-generated file once it appears in the active stream.
+  // Auto-select a just-generated file once it appears in the active kind pool
+  // (use the unfiltered partition so a still-debouncing search clear cannot block it).
   useEffect(() => {
     if (!pendingSelect) return;
-    const pool: MediaEntry[] = kind === "image" ? images : kind === "video" ? videos : audios;
+    const pool = kind === "image" ? images : kind === "video" ? videos : audios;
     const match = pool.find(entry => entry.filename === pendingSelect);
     if (match) {
       setSelected(match);
@@ -91,16 +116,26 @@ export default function MediaApp() {
     }
   }, [pendingSelect, kind, images, videos, audios]);
 
-  const streamError = useMemo(() => {
-    const err = kind === "image" ? imagesData.error : kind === "video" ? videosData.error : audiosData.error;
-    return err?.message ?? null;
-  }, [kind, imagesData.error, videosData.error, audiosData.error]);
+  // Drop pending auto-select if the generated file never shows up (failed indexing, etc.).
+  useEffect(() => {
+    if (!pendingSelect) return;
+    const handle = setTimeout(() => {
+      setPendingSelect(current => {
+        if (current) {
+          toastManager.warning(`Generated file "${current}" did not appear in the library`, { duration: 4000 });
+        }
+        return null;
+      });
+    }, PENDING_SELECT_TIMEOUT_MS);
+    return () => clearTimeout(handle);
+  }, [pendingSelect]);
+
+  const streamError = mediaData.error?.message ?? null;
 
   const handleKindChange = (next: MediaKind) => {
     setKind(next);
     setSelected(null);
     setSearch("");
-    setDebouncedSearch("");
     setPendingSelect(null);
   };
 
@@ -118,30 +153,41 @@ export default function MediaApp() {
 
   const handleWorkOnSelection = async () => {
     if (!selected || workingOn) return;
-    setWorkingOn(true);
+    let createdAgentId: string | null = null;
     try {
+      const allowed = allowedAgentTypesRef.current;
       const types = await agentRPCClient.getAgentTypes({});
       const prefs = AGENT_TYPE_PREFERENCES[selected.kind];
-      const preferred = types.find(t => prefs.includes(t.type)) ?? types[0];
+      // Prefer kind-specific types that are also configured for the media library.
+      const preferred = types.find(t => allowed.includes(t.type) && prefs.includes(t.type)) ?? types.find(t => allowed.includes(t.type));
       if (!preferred) {
         toastManager.error("No agent type available for this media", { duration: 4000 });
         return;
       }
+      setWorkingOn(true);
       const { id } = await agentRPCClient.createAgent({ agentType: preferred.type, headless: false });
+      createdAgentId = id;
       try {
         await syncSelectionToAgent(id, selected);
-      } catch {
-        // Non-fatal — agent still usable
+      } catch (error: unknown) {
+        // Non-fatal — agent still usable, but tools may lack the selection.
+        toastManager.warning(`Agent started, but media selection could not be synced: ${formatError(error)}`, {
+          duration: 4000,
+        });
       }
       await agentRPCClient.sendInput({
         agentId: id,
         input: {
           from: "Media app",
-          message: workOnMediaMessage(selected.kind, selected.filename, selected.keywords),
+          message: workOnMediaMessage(selected.kind, selected.filename, selected.keywords, { directory: serveDirectory }),
         },
       });
       setChatAgentId(id);
+      createdAgentId = null; // ownership transferred to chat dock
     } catch (err) {
+      if (createdAgentId) {
+        cleanupAgent(createdAgentId, "Media app work-on-selection failed");
+      }
       toastManager.error(formatError(err), { duration: 4000 });
     } finally {
       setWorkingOn(false);
@@ -150,24 +196,19 @@ export default function MediaApp() {
 
   const handleGenerated = (filename?: string) => {
     // Clear search so the newly generated item is not filtered out of the gallery stream.
+    // debouncedSearch follows via useDebounce within SEARCH_DEBOUNCE_MS.
     if (search || debouncedSearch) {
       setSearch("");
-      setDebouncedSearch("");
     }
-    if (kind === "image") void imagesData.mutate();
-    else if (kind === "video") void videosData.mutate();
-    else void audiosData.mutate();
+    void mediaData.mutate();
+    // Only auto-select on success; leave the user's current selection alone on failure.
     if (filename) {
       setPendingSelect(filename);
-    } else {
-      setSelected(null);
     }
   };
 
   const handleRefresh = () => {
-    if (kind === "image") void imagesData.mutate();
-    else if (kind === "video") void videosData.mutate();
-    else void audiosData.mutate();
+    void mediaData.mutate();
   };
 
   if (initError) {
@@ -198,8 +239,6 @@ export default function MediaApp() {
     );
   }
 
-  const loading = kind === "image" ? imagesData.isLoading : kind === "video" ? videosData.isLoading : audiosData.isLoading;
-
   const body = (
     <div className="flex flex-col h-full min-h-0">
       <FilterTabs tabs={tabs} value={kind} onChange={handleKindChange} showZeroCounts />
@@ -214,12 +253,10 @@ export default function MediaApp() {
             <GallerySidebar
               kind={kind}
               search={search}
-              loading={loading}
+              loading={mediaData.isLoading}
               error={streamError}
               selectedFilename={selected?.filename ?? null}
-              images={images}
-              videos={videos}
-              audios={audios}
+              entries={galleryEntries}
               onSearch={setSearch}
               onSelect={entry => {
                 setPendingSelect(null);
@@ -250,25 +287,23 @@ export default function MediaApp() {
 
   return (
     <div className="w-full h-full flex flex-col bg-primary">
-      <div className="shrink-0 h-11 border-b border-primary bg-secondary flex items-center gap-2 px-3">
-        <div className="w-7 h-7 rounded-lg bg-linear-to-br from-pink-500 to-rose-600 flex items-center justify-center shadow-sm shrink-0">
-          <ImageIcon className="w-4 h-4 text-white" />
-        </div>
-        <span className="text-sm font-semibold text-primary">Media</span>
-
-        <div className="flex-1" />
-
-        <div className="w-px h-5 bg-primary/70 mx-0.5 shrink-0" aria-hidden="true" />
-        <AgentLauncherBar
-          defaultAgentType="media"
-          buttonLabel="Open Agent"
-          buttonClassName="bg-accent hover:bg-accent-hover text-white shadow-button-primary"
-          onLaunch={id => {
-            void syncSelectionToAgent(id, selected).catch(() => {});
-            setChatAgentId(id);
-          }}
-        />
-      </div>
+      <PanelToolbar
+        icon={ImageIcon}
+        iconGradient="from-pink-500 to-rose-600"
+        title="Media"
+        actions={
+          <AgentLauncherBar
+            defaultAgentType={defaultAgentType}
+            allowedAgentTypes={allowedAgentTypes}
+            buttonLabel="Open Agent"
+            buttonClassName="bg-accent hover:bg-accent-hover text-white shadow-button-primary"
+            onLaunch={id => {
+              toastOnReject(syncSelectionToAgent(id, selected));
+              setChatAgentId(id);
+            }}
+          />
+        }
+      />
 
       <div className="flex-1 min-h-0">
         <ChatDock agentId={chatAgentId} storageKey="media" initialRatio={0.6} headerTitle="Media Agent">

@@ -16,6 +16,7 @@ import FileSystemRpcSchema from "@tokenring-ai/filesystem/rpc/schema";
 import ImageGenerationRpcSchema from "@tokenring-ai/image/rpc/schema";
 import LifecycleRpcSchema from "@tokenring-ai/lifecycle/rpc/schema";
 import MediaLibraryRpcSchema from "@tokenring-ai/media-library/rpc/schema";
+import MemoryRpcSchema from "@tokenring-ai/memory/rpc/schema";
 import MetricsRpcSchema from "@tokenring-ai/metrics/rpc/schema";
 import NewsRPMRpcSchema from "@tokenring-ai/newsrpm/rpc/schema";
 import type { IndexedDataSearch } from "@tokenring-ai/newsrpm/schema";
@@ -33,7 +34,7 @@ import VideoRpcSchema from "@tokenring-ai/video/rpc/schema";
 import WebDesignRpcSchema from "@tokenring-ai/web-design/rpc/schema";
 import createWsRPCClient from "@tokenring-ai/web-host/createWsRPCClient";
 import WorkflowRpcSchema from "@tokenring-ai/workflow/rpc/schema";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import useSWR, { type Fetcher, type Key, type SWRConfiguration, type SWRResponse } from "swr";
 import { useAgentStatusStream, useRPCStreamSWR } from "./hooks/useRPCStreamSWR.ts";
 import { rpcAuth } from "./rpcAuth.ts";
@@ -76,6 +77,7 @@ export const queueRPCClient = createWsRPCClient(baseURL, QueueRpcSchema, rpcAuth
 export const skillsRPCClient = createWsRPCClient(baseURL, SkillsRpcSchema, rpcAuth);
 export const todoRPCClient = createWsRPCClient(baseURL, TodoRpcSchema, rpcAuth);
 export const researchRPCClient = createWsRPCClient(baseURL, ResearchRpcSchema, rpcAuth);
+export const memoryRPCClient = createWsRPCClient(baseURL, MemoryRpcSchema, rpcAuth);
 export const configRPCClient = createWsRPCClient(baseURL, ConfigRpcSchema, rpcAuth);
 export const databaseRPCClient = createWsRPCClient(baseURL, DatabaseRpcSchema, rpcAuth);
 
@@ -148,6 +150,37 @@ export function useWorkflowRuns() {
   return useRPCStreamSWR({
     key: "workflow-runs",
     subscribe: signal => workflowRPCClient.streamWorkflowRuns({}, signal),
+  });
+}
+
+export function useTaskConfiguration() {
+  return useTypedSWR("/tasks/getTaskConfiguration", () => tasksRPCClient.getTaskConfiguration({}));
+}
+
+export function useTaskLists() {
+  return useRPCStreamSWR({
+    key: "task-lists",
+    subscribe: signal => tasksRPCClient.streamTaskLists({}, signal),
+  });
+}
+
+/** Tasks in one list, or across every list when `list` is null. */
+export function useTasks(list: string | null) {
+  return useRPCStreamSWR({
+    key: list ? `tasks:${list}` : "tasks:all",
+    subscribe: signal => tasksRPCClient.streamTasks(list ? { list } : {}, signal),
+  });
+}
+
+export function useTask(list: string | undefined, name: string | undefined) {
+  return useTypedSWR(list && name ? `/tasks/getTask/${list}/${name}` : null, () => tasksRPCClient.getTask({ list: list!, name: name! }));
+}
+
+/** Live view of every tracked task run and the batches they belong to. */
+export function useTaskRuns() {
+  return useRPCStreamSWR({
+    key: "task-runs",
+    subscribe: signal => tasksRPCClient.streamTaskRuns({}, signal),
   });
 }
 
@@ -241,8 +274,8 @@ export function useSkills(agentId?: string) {
   );
 }
 
-export function useEnabledSkills(agentId: string) {
-  return useAgentStatusStream(agentId ? `enabled-skills:${agentId}` : null, signal => skillsRPCClient.streamEnabledSkills({ agentId }, signal));
+export function useEnabledSkills(agentId: string | undefined) {
+  return useAgentStatusStream(agentId ? `enabled-skills:${agentId}` : null, signal => skillsRPCClient.streamEnabledSkills({ agentId: agentId! }, signal));
 }
 
 export function useStockQuote(symbols: string[]) {
@@ -305,8 +338,8 @@ export function useConfigValues() {
 
 // ─── Database ─────────────────────────────────────────────────────────────────
 
-export function useDatasources() {
-  return useTypedSWR("/database/getDatasources", () => databaseRPCClient.getDatasources({}));
+export function useDatabaseConfiguration() {
+  return useTypedSWR("/database/getDatabaseConfiguration", () => databaseRPCClient.getDatabaseConfiguration({}));
 }
 
 export function useDatabaseTables(datasource: string | undefined) {
@@ -338,23 +371,41 @@ export function useDatabaseState(agentId: string | undefined) {
   return useTypedSWR(agentId ? `/database/getDatabaseState/${agentId}` : null, () => databaseRPCClient.getDatabaseState({ agentId: agentId! }));
 }
 
+/** Cap client-side log buffer to avoid unbounded memory growth during long sessions. */
+const MAX_APP_LOG_ENTRIES = 2000;
+
+export type AppLogEntry = {
+  /** Stable id derived from server log position (index into the server log buffer). */
+  id: number;
+  timestamp: number;
+  level: "info" | "error";
+  message: string;
+};
+
 export function useAppLogs(options?: { enabled?: boolean }) {
   const enabled = options?.enabled !== false;
   const positionRef = useRef(0);
 
-  useEffect(() => {
-    if (enabled) {
-      positionRef.current = 0;
-    }
-  }, [enabled]);
-
+  // Keep a stable key so disabling the stream (e.g. leaving the Logs tab) preserves
+  // accumulated logs and the resume position; only pause the subscription.
   return useRPCStreamSWR({
-    key: enabled ? "app-logs" : null,
-    initialData: () => ({ logs: [] as Array<{ timestamp: number; level: "info" | "error"; message: string }> }),
+    key: "app-logs",
+    enabled,
+    initialData: () => ({ logs: [] as AppLogEntry[] }),
     subscribe: signal => appRPCClient.streamLogs({ fromPosition: positionRef.current }, signal),
     reduce: (prev, chunk) => {
+      // Server position is the exclusive end index of this chunk in the server buffer.
+      const startIndex = chunk.position - chunk.logs.length;
       positionRef.current = chunk.position;
-      return { logs: [...(prev?.logs ?? []), ...chunk.logs] };
+      const newLogs: AppLogEntry[] = chunk.logs.map((log, i) => ({
+        ...log,
+        id: startIndex + i,
+      }));
+      const merged = [...(prev?.logs ?? []), ...newLogs];
+      if (merged.length > MAX_APP_LOG_ENTRIES) {
+        return { logs: merged.slice(merged.length - MAX_APP_LOG_ENTRIES) };
+      }
+      return { logs: merged };
     },
   });
 }
@@ -362,8 +413,13 @@ export function useAppLogs(options?: { enabled?: boolean }) {
 export function useCheckpointList() {
   return useRPCStreamSWR({
     key: "checkpoints",
-    subscribe: signal => checkpointRPCClient.streamCheckpoints({}, signal),
+    // Request a large page so the browser can group/filter client-side until true pagination is wired in the UI.
+    subscribe: signal => checkpointRPCClient.streamCheckpoints({ limit: 500 }, signal),
   });
+}
+
+export function useBlogConfiguration() {
+  return useTypedSWR("/blog/getBlogConfiguration", () => blogRPCClient.getBlogConfiguration({}));
 }
 
 export function useBlogPosts(provider: string | undefined, status: "all" | "draft" | "published" = "all", limit = 50) {
@@ -392,8 +448,8 @@ export function useCalendarEvents(provider: string | undefined, from: string, to
   );
 }
 
-export function useEmailProviders() {
-  return useTypedSWR("/email/getEmailProviders", () => emailRPCClient.getEmailProviders({}));
+export function useEmailConfiguration() {
+  return useTypedSWR("/email/getEmailConfiguration", () => emailRPCClient.getEmailConfiguration({}));
 }
 
 export function useEmailBoxes(provider: string | undefined) {
@@ -494,7 +550,10 @@ export function useSchedulerHistory(agentId: string | undefined, taskName?: stri
 }
 
 export function useBots() {
-  return useTypedSWR("/bot/listBots", () => botRPCClient.listBots({}), { refreshInterval: 5000 });
+  return useRPCStreamSWR({
+    key: "bots",
+    subscribe: signal => botRPCClient.streamBots({}, signal),
+  });
 }
 
 export function useQueues() {
@@ -504,11 +563,20 @@ export function useQueues() {
   });
 }
 
-export function useImages(search?: string, limit?: number) {
-  const key = search ? `images:${search}:${limit ?? 200}` : `images:${limit ?? 200}`;
+export function useMediaLibraryConfiguration() {
+  return useTypedSWR("/media-library/getMediaLibraryConfiguration", () => mediaLibraryRPCClient.getMediaLibraryConfiguration({}));
+}
+
+/** Stream media library entries (optionally filtered by kind and search). */
+export function useMedia(opts?: { search?: string; kind?: ("image" | "video" | "audio")[]; limit?: number }) {
+  const search = opts?.search;
+  const kind = opts?.kind;
+  const limit = opts?.limit;
+  const kindKey = kind?.length ? [...kind].sort().join(",") : "all";
+  const key = `media:${kindKey}:${search ?? ""}:${limit ?? 200}`;
   return useRPCStreamSWR({
     key,
-    subscribe: signal => mediaLibraryRPCClient.streamImages(stripUndefinedKeys({ search, limit }), signal),
+    subscribe: signal => mediaLibraryRPCClient.streamMedia(stripUndefinedKeys({ search, kind, limit }), signal),
   });
 }
 
@@ -516,28 +584,16 @@ export function useImageGenerationModels() {
   return useTypedSWR("/ai-client/listImageGenerationModels", () => aiRPCClient.listImageGenerationModels({}));
 }
 
-export function useVideos(search?: string, limit?: number) {
-  const key = search ? `videos:${search}:${limit ?? 200}` : `videos:${limit ?? 200}`;
-  return useRPCStreamSWR({
-    key,
-    subscribe: signal => mediaLibraryRPCClient.streamVideos(stripUndefinedKeys({ search, limit }), signal),
-  });
-}
-
 export function useVideoGenerationModels() {
   return useTypedSWR("/ai-client/listVideoGenerationModels", () => aiRPCClient.listVideoGenerationModels({}));
 }
 
-export function useAudios(search?: string, limit?: number) {
-  const key = search ? `audios:${search}:${limit ?? 200}` : `audios:${limit ?? 200}`;
-  return useRPCStreamSWR({
-    key,
-    subscribe: signal => mediaLibraryRPCClient.streamAudios(stripUndefinedKeys({ search, limit }), signal),
-  });
-}
-
 export function useSpeechModels() {
   return useTypedSWR("/ai-client/listSpeechModels", () => aiRPCClient.listSpeechModels({}));
+}
+
+export function useWebDesignConfiguration() {
+  return useTypedSWR("/web-design/getWebDesignConfiguration", () => webDesignRPCClient.getWebDesignConfiguration({}));
 }
 
 export function useFlows() {
@@ -554,6 +610,10 @@ export function useDesigns(flowName: string | null) {
   });
 }
 
+export function useResearchConfiguration() {
+  return useTypedSWR("/research/getResearchConfiguration", () => researchRPCClient.getResearchConfiguration({}));
+}
+
 export function useTopics() {
   return useRPCStreamSWR({
     key: "research-topics",
@@ -565,5 +625,23 @@ export function useItems(topicName: string | null) {
   return useRPCStreamSWR({
     key: topicName ? `research-items:${topicName}` : null,
     subscribe: signal => researchRPCClient.streamItems({ topicName: topicName! }, signal),
+  });
+}
+
+export function useMemoryConfiguration() {
+  return useTypedSWR("/memory/getMemoryConfiguration", () => memoryRPCClient.getMemoryConfiguration({}));
+}
+
+export function useMemoryCategories() {
+  return useRPCStreamSWR({
+    key: "memory-categories",
+    subscribe: signal => memoryRPCClient.streamCategories({}, signal),
+  });
+}
+
+export function useMemories(category: string | null) {
+  return useRPCStreamSWR({
+    key: category ? `memory-memories:${category}` : null,
+    subscribe: signal => memoryRPCClient.streamMemories({ category: category! }, signal),
   });
 }

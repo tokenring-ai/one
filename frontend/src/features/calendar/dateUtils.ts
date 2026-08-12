@@ -113,3 +113,87 @@ export function addOneHour(time: string): string {
   const m = total % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
+
+/** Minutes since midnight for an "HH:MM" string; 0 if invalid. */
+export function timeToMinutes(time: string): number {
+  const parts = parseTime(time);
+  if (!parts) return 0;
+  return parts.h * 60 + parts.m;
+}
+
+export type EventLayoutSlot = {
+  /** 0-based column index within the overlapping cluster */
+  col: number;
+  /** Total concurrent columns in this cluster */
+  totalCols: number;
+};
+
+/**
+ * Assign horizontal columns for timed events that overlap within a single day.
+ * Non-overlapping clusters get independent column counts so events can use full width.
+ */
+export function layoutOverlappingEvents(events: Array<{ id: string; startTime?: string; endTime?: string }>): Map<string, EventLayoutSlot> {
+  const timed = events.filter((e): e is { id: string; startTime: string; endTime?: string } => Boolean(e.startTime));
+  const getEnd = (ev: { startTime: string; endTime?: string }) => {
+    const start = timeToMinutes(ev.startTime);
+    if (!ev.endTime) return start + 60;
+    const end = timeToMinutes(ev.endTime);
+    // Overnight or zero-length: treat as at least 1 minute so packing still works
+    return end > start ? end : start + 1;
+  };
+
+  const sorted = [...timed].sort((a, b) => {
+    const aStart = timeToMinutes(a.startTime);
+    const bStart = timeToMinutes(b.startTime);
+    if (aStart !== bStart) return aStart - bStart;
+    // Longer events first for more stable packing
+    return getEnd(b) - getEnd(a);
+  });
+
+  // Group into clusters where consecutive events overlap (transitive)
+  const clusters: (typeof timed)[] = [];
+  let current: (typeof timed)[number][] = [];
+  let clusterEnd = -1;
+
+  for (const ev of sorted) {
+    const start = timeToMinutes(ev.startTime);
+    const end = getEnd(ev);
+    if (current.length === 0 || start < clusterEnd) {
+      current.push(ev);
+      clusterEnd = Math.max(clusterEnd, end);
+    } else {
+      clusters.push(current);
+      current = [ev];
+      clusterEnd = end;
+    }
+  }
+  if (current.length > 0) clusters.push(current);
+
+  const layout = new Map<string, EventLayoutSlot>();
+
+  for (const cluster of clusters) {
+    // Greedy: place each event in the first free column
+    const colEnds: number[] = [];
+    const colById = new Map<string, number>();
+
+    for (const ev of cluster) {
+      const start = timeToMinutes(ev.startTime);
+      const end = getEnd(ev);
+      let col = colEnds.findIndex(ce => ce <= start);
+      if (col === -1) {
+        col = colEnds.length;
+        colEnds.push(end);
+      } else {
+        colEnds[col] = end;
+      }
+      colById.set(ev.id, col);
+    }
+
+    const totalCols = Math.max(colEnds.length, 1);
+    for (const [id, col] of colById) {
+      layout.set(id, { col, totalCols });
+    }
+  }
+
+  return layout;
+}

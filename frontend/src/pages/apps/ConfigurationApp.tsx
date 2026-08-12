@@ -12,6 +12,9 @@ import ErrorState from "../../components/ui/ErrorState.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
 import ConfigForm, { nodeHasSensitiveFields } from "../../features/config/ConfigForm.tsx";
 import type { ConfigIssue } from "../../features/config/ConfigNodeRenderer.tsx";
+import { useMultiSourceLoading } from "../../hooks/useMultiSourceLoading.ts";
+import { useSearchFilter } from "../../hooks/useSearchFilter.ts";
+import { useStaleRouteRedirect } from "../../hooks/useStaleRouteRedirect.ts";
 import { cn } from "../../lib/utils.ts";
 import { configRPCClient, useConfigSchema, useConfigValues } from "../../rpc.ts";
 
@@ -24,17 +27,24 @@ const SCOPE_META: Record<ConfigScope, { label: string; icon: typeof User; blurb:
 
 const isScope = (value: string | null): value is ConfigScope => configScopes.includes(value as ConfigScope);
 
+/** Clone a scope's overrides object; missing keys become `{}` so drafts never land as `undefined`. */
+const cloneScopeOverrides = (overrides: Record<string, unknown> | undefined | null): Record<string, unknown> =>
+  deepClone(overrides ?? {}) as Record<string, unknown>;
+
 export default function ConfigurationApp() {
   const navigate = useNavigate();
   const { plugin: routePlugin } = useParams<{ plugin?: string }>();
   const schema = useConfigSchema();
   const values = useConfigValues();
+  const loading = useMultiSourceLoading([
+    { source: schema, label: "schema" },
+    { source: values, label: "values" },
+  ]);
   const [searchParams, setSearchParams] = useSearchParams();
 
   // URL path is the source of truth for which plugin is open (params are already decoded).
   const selectedName = routePlugin ?? null;
 
-  const [search, setSearch] = useState("");
   const [drafts, setDrafts] = useState<Drafts>({ global: null, workspace: null });
   const [issues, setIssues] = useState<ConfigIssue[]>([]);
   const [saving, setSaving] = useState(false);
@@ -51,9 +61,10 @@ export default function ConfigurationApp() {
   const scopeOverrides = serverOverrides?.[scope];
   const draft = drafts[scope];
 
-  const needsDraftSeed = configScopes.some(candidate => drafts[candidate] === null);
+  // Seed when a scope draft is null or undefined (undefined can appear from a bad deepClone of a missing key).
+  const needsDraftSeed = configScopes.some(candidate => drafts[candidate] == null);
 
-  // Seed / reseed each scope's draft whenever it is null and server overrides are available.
+  // Seed / reseed each scope's draft whenever it is unset and server overrides are available.
   // Depends on needsDraftSeed so a post-save null draft reseeds even if the server snapshot is unchanged.
   useEffect(() => {
     if (!serverOverrides || !needsDraftSeed) return;
@@ -61,10 +72,10 @@ export default function ConfigurationApp() {
       const next = { ...current };
       let changed = false;
       for (const candidate of configScopes) {
-        if (next[candidate] === null) {
+        if (next[candidate] == null) {
           // Always seed an object — a missing scope key must not leave draft as undefined
           // (which is not null, so it would skip reseeding and break dirty checks).
-          next[candidate] = deepClone(serverOverrides[candidate]);
+          next[candidate] = cloneScopeOverrides(serverOverrides[candidate]);
           changed = true;
         }
       }
@@ -77,20 +88,43 @@ export default function ConfigurationApp() {
     return [...list].sort((a, b) => a.displayName.localeCompare(b.displayName));
   }, [schema.data]);
 
-  const filteredPlugins = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return plugins;
-    return plugins.filter(
-      plugin =>
-        plugin.displayName.toLowerCase().includes(query) || plugin.pluginName.toLowerCase().includes(query) || plugin.description.toLowerCase().includes(query),
-    );
-  }, [plugins, search]);
+  const {
+    query: search,
+    setQuery: setSearch,
+    filtered: filteredPlugins,
+  } = useSearchFilter({
+    items: plugins,
+    searchFields: plugin => `${plugin.displayName} ${plugin.pluginName} ${plugin.description}`,
+  });
 
-  const selectedPlugin: ConfigUIPluginSchema | undefined = plugins.find(plugin => plugin.pluginName === selectedName) ?? filteredPlugins[0];
+  // Selection comes only from the URL — never from search-filtered fallback (that would switch
+  // the form as the user types, and leave the path out of sync with the detail pane).
+  const selectedPlugin: ConfigUIPluginSchema | null = selectedName ? (plugins.find(plugin => plugin.pluginName === selectedName) ?? null) : null;
+
+  // Bad deep-link / removed plugin: clear the route rather than silently showing another plugin.
+  // Wait until the schema has plugins so an empty initial payload does not flash a not-found toast.
+  const configurationFallbackPath = useMemo(() => {
+    const params = new URLSearchParams(searchParams);
+    params.delete("plugin");
+    const qs = params.toString();
+    return `/configuration${qs ? `?${qs}` : ""}`;
+  }, [searchParams]);
+
+  useStaleRouteRedirect({
+    routeParam: selectedName,
+    entity: selectedPlugin,
+    isLoading: schema.isLoading || plugins.length === 0,
+    hasError: !!schema.error,
+    navigate,
+    fallbackPath: configurationFallbackPath,
+    entityLabel: "Plugin",
+    deps: [searchParams],
+  });
 
   const isScopeDirty = (candidate: ConfigScope) => {
     const candidateDraft = drafts[candidate];
-    if (candidateDraft === null) return false;
+    // Treat null/undefined as "not yet seeded" so a bad seed cannot false-flag dirty.
+    if (candidateDraft == null) return false;
     const candidateServer = serverOverrides?.[candidate] ?? {};
     return !deepEqual(candidateDraft, candidateServer);
   };
@@ -106,7 +140,7 @@ export default function ConfigurationApp() {
   const issuesOnOtherPlugins = issues.filter(issue => issue.path.length === 0 || !selectedSliceKeys.has(String(issue.path[0])));
 
   /** Slices of the selected plugin that a higher-precedence scope also sets. */
-  const shadowedByProject = scope === "global" && selectedPlugin !== undefined && pluginHasOverrides(selectedPlugin, "workspace");
+  const shadowedByWorkspace = scope === "global" && selectedPlugin !== null && pluginHasOverrides(selectedPlugin, "workspace");
 
   /** Clears server validation / save feedback so the user can keep editing cleanly. */
   const clearValidationFeedback = () => {
@@ -155,7 +189,7 @@ export default function ConfigurationApp() {
             ? (freshValues as { overrides: Record<ConfigScope, Record<string, unknown>> }).overrides
             : undefined;
         if (freshOverrides) {
-          setDrafts(current => ({ ...current, [saveScope]: deepClone(freshOverrides[saveScope]) }));
+          setDrafts(current => ({ ...current, [saveScope]: cloneScopeOverrides(freshOverrides[saveScope]) }));
         } else {
           setDrafts(current => ({ ...current, [saveScope]: null }));
         }
@@ -173,13 +207,13 @@ export default function ConfigurationApp() {
   };
 
   const discard = () => {
-    setDrafts(current => ({ ...current, [scope]: deepClone(scopeOverrides ?? {}) }));
+    setDrafts(current => ({ ...current, [scope]: cloneScopeOverrides(scopeOverrides) }));
     clearValidationFeedback();
     setFormGeneration(generation => generation + 1);
   };
 
-  const isLoading = schema.isLoading || values.isLoading;
-  const loadError = schema.error ?? values.error;
+  const isLoading = loading.isLoading;
+  const loadError = loading.hasHardError ? loading.hardError : undefined;
   const overridesFile = schema.data?.overridesFiles[scope];
   const pluginNavigation = (
     <div className="h-full flex flex-col min-h-0 bg-sidebar">
@@ -285,16 +319,7 @@ export default function ConfigurationApp() {
       {isLoading ? (
         <LoadingState message="Loading configuration…" className="py-16" />
       ) : loadError ? (
-        <ErrorState
-          title="Failed to load configuration"
-          error={loadError}
-          onRetry={() => {
-            void schema.mutate();
-            void values.mutate();
-          }}
-          variant="inline"
-          className="py-6"
-        />
+        <ErrorState title="Failed to load configuration" error={loadError} onRetry={loading.refresh} variant="inline" className="py-6" />
       ) : (
         <WorkspaceShell
           appId="configuration"
@@ -306,7 +331,7 @@ export default function ConfigurationApp() {
         >
           {/* Detail pane */}
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
-            {selectedPlugin && draft !== null ? (
+            {selectedPlugin && draft != null ? (
               <>
                 <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
                   <div className="max-w-2xl">
@@ -320,12 +345,12 @@ export default function ConfigurationApp() {
                       </p>
                     </div>
 
-                    {shadowedByProject && (
+                    {shadowedByWorkspace && (
                       <div className="mb-4 flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 text-xs">
                         <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
                         <span>
-                          This plugin is also configured at the project level, which takes precedence. Values you set here may not take effect until the project
-                          override is removed.
+                          This plugin is also configured at the workspace level, which takes precedence. Values you set here may not take effect until the
+                          workspace override is removed.
                         </span>
                       </div>
                     )}

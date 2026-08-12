@@ -3,7 +3,8 @@ import { FocusTrap } from "focus-trap-react";
 import { Lock } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { hasRpcAuth, rpcAuth, setRpcAuth } from "../../rpcAuth.ts";
+import { hasRpcAuth, primeFilesystemHttpAuth, rpcAuth, setRpcAuth } from "../../rpcAuth.ts";
+import PasswordInput from "../ui/PasswordInput.tsx";
 
 /**
  * Full-page login overlay shown whenever the RPC client fails to authenticate
@@ -36,14 +37,20 @@ export default function LoginOverlay() {
         setSubmitting(false);
         setErrorMessage(null);
         setPassword("");
+        // Session cookie for authenticated /api/fs media, previews, and downloads.
+        void primeFilesystemHttpAuth();
       },
     });
+    // Restore filesystem HTTP session if credentials are already in sessionStorage (page reload).
+    if (hasRpcAuth()) {
+      void primeFilesystemHttpAuth();
+    }
     return () => setWsRPCAuthHandler(null);
   }, []);
 
   if (!visible) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
     if (submitting || !username.trim()) return;
     setSubmitting(true);
@@ -93,13 +100,7 @@ export default function LoginOverlay() {
             </label>
             <label className="block space-y-1">
               <span className="text-xs font-medium text-secondary">Password</span>
-              <input
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full bg-input border border-primary rounded-lg py-1.5 px-3 text-sm text-primary placeholder-muted focus-accent"
-              />
+              <PasswordInput autoComplete="current-password" value={password} onChange={setPassword} inputClassName="text-sm font-sans py-1.5" />
             </label>
           </div>
           <div className="px-4 pb-4">

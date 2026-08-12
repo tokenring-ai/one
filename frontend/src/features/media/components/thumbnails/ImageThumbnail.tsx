@@ -1,11 +1,13 @@
 import type { ImageIndexEntry } from "@tokenring-ai/media-library/rpc/schema";
-import { ImageIcon, Loader2 } from "lucide-react";
+import { ImageIcon } from "lucide-react";
 import { useState } from "react";
-import { mediaUrl } from "../../utils.ts";
+import CenteredLoadingSpinner from "../../../../components/ui/CenteredLoadingSpinner.tsx";
+import { useMediaFileUrl } from "../../useMediaPaths.ts";
 
 export default function ImageThumbnail({ image, selected, onClick }: { image: ImageIndexEntry; selected: boolean; onClick: () => void }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const src = useMediaFileUrl(image.filename);
 
   return (
     <button
@@ -17,13 +19,9 @@ export default function ImageThumbnail({ image, selected, onClick }: { image: Im
     >
       {!error ? (
         <>
-          {!loaded && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-4 h-4 text-muted animate-spin" />
-            </div>
-          )}
+          {!loaded && <CenteredLoadingSpinner size="sm" className="absolute inset-0" />}
           <img
-            src={mediaUrl(image.filename)}
+            src={src}
             alt={image.keywords.join(", ") || image.filename}
             className={`w-full h-full object-cover transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`}
             onLoad={() => setLoaded(true)}

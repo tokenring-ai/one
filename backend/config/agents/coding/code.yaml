@@ -26,9 +26,7 @@ agents:
         - terminal_*
         - coding_explore
         - queue_*
-    tasks:
-      allowedSubAgents:
-        - coding_explore
+        - memory_*
     filesystem:
       selectedFiles:
         - .tokenring/knowledge/code.md

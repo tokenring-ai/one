@@ -15,8 +15,8 @@ describe("coerceScalar", () => {
     expect(coerceScalar("3.5", "decimal(10,2)")).toBe(3.5);
   });
 
-  it("leaves non-numeric text as string even for numeric columns", () => {
-    expect(coerceScalar("abc", "int")).toBe("abc");
+  it("returns null for non-numeric text on numeric columns", () => {
+    expect(coerceScalar("abc", "int")).toBeNull();
   });
 
   it("coerces boolean-ish values", () => {
@@ -65,5 +65,13 @@ describe("draftFiltersToQuery", () => {
 
   it("coerces boolean eq filters", () => {
     expect(draftFiltersToQuery([{ id: "1", column: "active", op: "eq", value: "true" }], columns)).toEqual([{ column: "active", op: "eq", value: true }]);
+  });
+
+  it("skips filters with invalid numeric values", () => {
+    expect(draftFiltersToQuery([{ id: "1", column: "id", op: "eq", value: "abc" }], columns)).toEqual([]);
+  });
+
+  it("drops invalid tokens from in-list filters on numeric columns", () => {
+    expect(draftFiltersToQuery([{ id: "1", column: "id", op: "in", value: "1, abc, 3" }], columns)).toEqual([{ column: "id", op: "in", value: [1, 3] }]);
   });
 });

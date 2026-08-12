@@ -63,7 +63,7 @@ const leaveChannel = mock(async (_input: Json): Promise<Status> => ({ status: "s
 const getConfigValues = mock(
   async (_input: Json): Promise<{ effective: Json; overrides: Record<string, Json> }> => ({
     effective: {},
-    overrides: { user: {}, project: {} },
+    overrides: { global: {}, workspace: {} },
   }),
 );
 const applyConfig = mock(async (_input: { scope: string; overrides: Json }) => ({ ok: true as const }));
@@ -168,7 +168,7 @@ describe("BotsDashboard", () => {
 
       await waitFor(() => expect(applyConfig).toHaveBeenCalledTimes(1));
       expect(applyConfig.mock.calls[0]![0]).toEqual({
-        scope: "user",
+        scope: "global",
         overrides: { telegram: { accounts: { telegram: { botToken: "123:secret" } } } },
       });
     });
@@ -177,8 +177,8 @@ describe("BotsDashboard", () => {
       getConfigValues.mockResolvedValueOnce({
         effective: {},
         overrides: {
-          user: { telegram: { accounts: { other: { botToken: "keep-me" } } }, filesystem: { root: "/tmp" } },
-          project: {},
+          global: { telegram: { accounts: { other: { botToken: "keep-me" } } }, filesystem: { root: "/tmp" } },
+          workspace: {},
         },
       } as never);
 
@@ -192,7 +192,7 @@ describe("BotsDashboard", () => {
 
       await waitFor(() => expect(applyConfig).toHaveBeenCalledTimes(1));
       expect(applyConfig.mock.calls[0]![0]).toEqual({
-        scope: "user",
+        scope: "global",
         overrides: {
           filesystem: { root: "/tmp" },
           telegram: { accounts: { other: { botToken: "keep-me" }, telegram: { botToken: "123:secret" } } },

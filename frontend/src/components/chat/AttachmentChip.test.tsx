@@ -47,6 +47,17 @@ describe("AttachmentChip", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("closes the preview overlay on Escape", async () => {
+    const user = userEvent.setup();
+    render(<AttachmentChip attachment={textAttachment} />);
+
+    await user.click(screen.getByLabelText("Preview notes.txt"));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("shows a toast when clipboard copy fails", async () => {
     const user = userEvent.setup();
     const writeTextSpy = spyOn(navigator.clipboard, "writeText").mockRejectedValueOnce(new Error("Clipboard denied"));

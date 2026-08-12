@@ -2,10 +2,10 @@ import formatError from "@tokenring-ai/utility/error/formatError";
 import { Mic } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { useMemo, useState } from "react";
+import GenerateButton from "../../../../components/ui/GenerateButton.tsx";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { audioRPCClient, useSpeechModels } from "../../../../rpc.ts";
 import { keywordsFromPrompt } from "../../utils.ts";
-import GenerateButton from "./GenerateButton.tsx";
 import GeneratePanelShell from "./GeneratePanelShell.tsx";
 import ModelSelectField from "./ModelSelectField.tsx";
 
@@ -115,13 +115,24 @@ export default function SpeechGeneratePanel({ agentId, onGenerated }: { agentId:
             min={0.25}
             max={4}
             value={speed}
-            onChange={e => setSpeed(Number(e.target.value) || 1)}
+            onChange={e => {
+              const raw = Number(e.target.value);
+              if (!Number.isFinite(raw) || raw <= 0) {
+                setSpeed(1);
+                return;
+              }
+              setSpeed(Math.min(4, Math.max(0.25, raw)));
+            }}
             className="w-full bg-input border border-primary rounded-lg py-2 px-3 text-sm text-primary focus-accent transition-all"
           />
         </div>
       </div>
       <ModelSelectField label="Model" value={selectedModel} onChange={setModel} options={availableModels} />
-      <GenerateButton onClick={() => void handleGenerate()} disabled={generating || !agentId || !text.trim()} loading={generating}>
+      <GenerateButton
+        onClick={() => void handleGenerate()}
+        disabled={generating || !agentId || !text.trim() || (modelsData != null && availableModels.length === 0)}
+        loading={generating}
+      >
         Generate Speech
       </GenerateButton>
     </GeneratePanelShell>

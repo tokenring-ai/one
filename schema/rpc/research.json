@@ -7,6 +7,52 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
+      "title": "getResearchConfiguration request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/research.getResearchConfiguration"
+        },
+        "params": {
+          "$ref": "#/$defs/getResearchConfigurationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getResearchConfiguration response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getResearchConfigurationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "listTopics request",
       "type": "object",
       "properties": {
@@ -646,6 +692,25 @@
       ],
       "additionalProperties": false
     },
+    "getResearchConfigurationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getResearchConfigurationResult": {
+      "type": "object",
+      "properties": {
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "agentTypes"
+      ],
+      "additionalProperties": false
+    },
     "listTopicsParams": {
       "type": "object",
       "properties": {}
@@ -1211,6 +1276,11 @@
     "path": "/rpc/research",
     "source": "plugin/research/rpc/schema.ts",
     "methods": {
+      "getResearchConfiguration": {
+        "type": "query",
+        "params": "#/$defs/getResearchConfigurationParams",
+        "result": "#/$defs/getResearchConfigurationResult"
+      },
       "listTopics": {
         "type": "query",
         "params": "#/$defs/listTopicsParams",

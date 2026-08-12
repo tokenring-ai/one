@@ -99,6 +99,52 @@
       "additionalProperties": false
     },
     {
+      "title": "readFileBase64 request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/filesystem.readFileBase64"
+        },
+        "params": {
+          "$ref": "#/$defs/readFileBase64Params"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "readFileBase64 response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/readFileBase64Result"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "exists request",
       "type": "object",
       "properties": {
@@ -904,6 +950,40 @@
       ],
       "additionalProperties": false
     },
+    "readFileBase64Params": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "path"
+      ]
+    },
+    "readFileBase64Result": {
+      "type": "object",
+      "properties": {
+        "contentBase64": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "contentBase64"
+      ],
+      "additionalProperties": false
+    },
     "existsParams": {
       "type": "object",
       "properties": {
@@ -1136,6 +1216,14 @@
         },
         "content": {
           "type": "string"
+        },
+        "encoding": {
+          "default": "utf8",
+          "type": "string",
+          "enum": [
+            "utf8",
+            "base64"
+          ]
         }
       },
       "required": [
@@ -1564,6 +1652,11 @@
         "type": "query",
         "params": "#/$defs/readTextFileParams",
         "result": "#/$defs/readTextFileResult"
+      },
+      "readFileBase64": {
+        "type": "query",
+        "params": "#/$defs/readFileBase64Params",
+        "result": "#/$defs/readFileBase64Result"
       },
       "exists": {
         "type": "query",

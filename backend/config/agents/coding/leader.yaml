@@ -24,9 +24,7 @@ agents:
         - file_*
         - shell_*
         - queue_*
-    tasks:
-      allowedSubAgents:
-        - "*"
+        - memory_*
 commands:
   leader:
     agentType: leader

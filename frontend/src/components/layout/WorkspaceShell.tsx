@@ -2,6 +2,7 @@ import { Menu, PanelLeftOpen, X } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useLocalStorageState } from "../../hooks/useLocalStorageState.ts";
 import { WorkspaceNavigationProvider } from "./WorkspaceNavigationContext.tsx";
 
 const MIN_NAVIGATION_WIDTH = 220;
@@ -10,32 +11,6 @@ const DEFAULT_NAVIGATION_WIDTH = 280;
 
 function clampWidth(width: number): number {
   return Math.min(MAX_NAVIGATION_WIDTH, Math.max(MIN_NAVIGATION_WIDTH, width));
-}
-
-function readBoolean(key: string, fallback: boolean): boolean {
-  try {
-    const value = localStorage.getItem(key);
-    return value === null ? fallback : value === "true";
-  } catch {
-    return fallback;
-  }
-}
-
-function readWidth(key: string): number {
-  try {
-    const value = Number(localStorage.getItem(key));
-    return Number.isFinite(value) && value > 0 ? clampWidth(value) : DEFAULT_NAVIGATION_WIDTH;
-  } catch {
-    return DEFAULT_NAVIGATION_WIDTH;
-  }
-}
-
-function writePreference(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Layout remains usable when storage is blocked.
-  }
 }
 
 export interface WorkspaceShellProps {
@@ -65,8 +40,20 @@ export default function WorkspaceShell({
   const location = useLocation();
   const openKey = `tokenring-workspace-navigation-open:${appId}`;
   const widthKey = `tokenring-workspace-navigation-width:${appId}`;
-  const [desktopOpen, setDesktopOpen] = useState(() => readBoolean(openKey, true));
-  const [navigationWidth, setNavigationWidth] = useState(() => readWidth(widthKey));
+
+  const [desktopOpen, setDesktopOpen] = useLocalStorageState(openKey, true, {
+    serialize: String,
+    deserialize: raw => raw === "true",
+  });
+
+  const [navigationWidth, setNavigationWidth] = useLocalStorageState(widthKey, DEFAULT_NAVIGATION_WIDTH, {
+    serialize: String,
+    deserialize: raw => {
+      const value = Number(raw);
+      return Number.isFinite(value) && value > 0 ? clampWidth(value) : DEFAULT_NAVIGATION_WIDTH;
+    },
+  });
+
   const [mobileOpen, setMobileOpen] = useState(() => !hasSelection);
   const previousPath = useRef(location.pathname);
 
@@ -84,9 +71,8 @@ export default function WorkspaceShell({
   const setDesktopNavigationOpen = useCallback(
     (open: boolean) => {
       setDesktopOpen(open);
-      writePreference(openKey, String(open));
     },
-    [openKey],
+    [setDesktopOpen],
   );
 
   const collapseDesktopNavigation = useCallback(() => {
@@ -103,13 +89,9 @@ export default function WorkspaceShell({
 
   const resizeBy = useCallback(
     (delta: number) => {
-      setNavigationWidth(current => {
-        const next = clampWidth(current + delta);
-        writePreference(widthKey, String(next));
-        return next;
-      });
+      setNavigationWidth(current => clampWidth(current + delta));
     },
-    [widthKey],
+    [setNavigationWidth],
   );
 
   const beginResize = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -118,9 +100,7 @@ export default function WorkspaceShell({
     const startWidth = navigationWidth;
     const onMove = (moveEvent: PointerEvent) => setNavigationWidth(clampWidth(startWidth + moveEvent.clientX - startX));
     const onUp = (upEvent: PointerEvent) => {
-      const next = clampWidth(startWidth + upEvent.clientX - startX);
-      setNavigationWidth(next);
-      writePreference(widthKey, String(next));
+      setNavigationWidth(clampWidth(startWidth + upEvent.clientX - startX));
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
     };
@@ -164,7 +144,6 @@ export default function WorkspaceShell({
             onPointerDown={beginResize}
             onDoubleClick={() => {
               setNavigationWidth(DEFAULT_NAVIGATION_WIDTH);
-              writePreference(widthKey, String(DEFAULT_NAVIGATION_WIDTH));
             }}
             onKeyDown={event => {
               if (event.key === "ArrowLeft") {
@@ -176,11 +155,9 @@ export default function WorkspaceShell({
               } else if (event.key === "Home") {
                 event.preventDefault();
                 setNavigationWidth(MIN_NAVIGATION_WIDTH);
-                writePreference(widthKey, String(MIN_NAVIGATION_WIDTH));
               } else if (event.key === "End") {
                 event.preventDefault();
                 setNavigationWidth(MAX_NAVIGATION_WIDTH);
-                writePreference(widthKey, String(MAX_NAVIGATION_WIDTH));
               }
             }}
             className="group hidden lg:flex w-1 shrink-0 cursor-col-resize touch-none items-center justify-center -ml-1 z-10 focus:outline-none"

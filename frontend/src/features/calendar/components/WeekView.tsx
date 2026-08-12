@@ -2,7 +2,7 @@ import { Bot, Calendar, GitBranch } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { cn } from "../../../lib/utils.ts";
 import { HOUR_H, HOURS, WEEKDAYS_LETTER } from "../constants.ts";
-import { addDays, eventDurationHours, toDateKey } from "../dateUtils.ts";
+import { addDays, eventDurationHours, layoutOverlappingEvents, toDateKey } from "../dateUtils.ts";
 import type { CalendarEvent } from "../types.ts";
 import EventChip from "./EventChip.tsx";
 
@@ -29,23 +29,29 @@ export default function WeekView({
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to 8am on mount
+  // Scroll to 8am when the week changes
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 8 * HOUR_H - 20;
     }
-  }, []);
+  }, [weekStart]);
 
-  const byDateHour = useMemo(() => {
+  const timedByDate = useMemo(() => {
     const m: Record<string, CalendarEvent[]> = {};
     for (const ev of events) {
       if (!ev.startTime) continue;
-      const hour = parseInt(ev.startTime.split(":")[0]!, 10);
-      const k = `${ev.date}:${hour}`;
-      (m[k] ??= []).push(ev);
+      (m[ev.date] ??= []).push(ev);
     }
     return m;
   }, [events]);
+
+  const layoutByDate = useMemo(() => {
+    const m: Record<string, ReturnType<typeof layoutOverlappingEvents>> = {};
+    for (const [date, evs] of Object.entries(timedByDate)) {
+      m[date] = layoutOverlappingEvents(evs);
+    }
+    return m;
+  }, [timedByDate]);
 
   const allDayByDate = useMemo(() => {
     const m: Record<string, CalendarEvent[]> = {};
@@ -102,6 +108,8 @@ export default function WeekView({
           {/* Day columns */}
           {days.map(day => {
             const dayKey = toDateKey(day);
+            const dayEvents = timedByDate[dayKey] ?? [];
+            const layout = layoutByDate[dayKey];
             return (
               <div key={dayKey} className="flex-1 relative border-l border-primary">
                 {HOURS.map(h => (
@@ -112,36 +120,41 @@ export default function WeekView({
                     style={{ top: `${h * HOUR_H}px`, height: `${HOUR_H}px` }}
                   />
                 ))}
-                {/* Events */}
-                {Object.entries(byDateHour)
-                  .filter(([k]) => k.startsWith(dayKey))
-                  .flatMap(([, evs]) => evs)
-                  .map(ev => {
-                    const [h, min] = ev.startTime!.split(":").map(Number) as [number, number];
-                    const top = (h + min / 60) * HOUR_H;
-                    const height = Math.max(eventDurationHours(ev.startTime!, ev.endTime) * HOUR_H, 20);
-                    return (
-                      <button
-                        type="button"
-                        key={ev.id}
-                        onClick={e => {
-                          e.stopPropagation();
-                          onEventClick(ev);
-                        }}
-                        className={cn(
-                          "absolute left-1 right-1 rounded px-1.5 py-0.5 text-white text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity text-left overflow-hidden",
-                          ev.color,
-                        )}
-                        style={{ top: `${top}px`, height: `${height}px` }}
-                      >
-                        <div className="flex items-center gap-1 truncate">
-                          {eventTypeIcon(ev.type, 8)}
-                          {ev.title}
-                        </div>
-                        {ev.startTime && <div className="text-white/70">{ev.startTime}</div>}
-                      </button>
-                    );
-                  })}
+                {/* Events — side-by-side when overlapping */}
+                {dayEvents.map(ev => {
+                  const [h, min] = ev.startTime!.split(":").map(Number) as [number, number];
+                  const top = (h + min / 60) * HOUR_H;
+                  const height = Math.max(eventDurationHours(ev.startTime!, ev.endTime) * HOUR_H, 20);
+                  const slot = layout?.get(ev.id) ?? { col: 0, totalCols: 1 };
+                  const widthPct = 100 / slot.totalCols;
+                  const leftPct = slot.col * widthPct;
+                  return (
+                    <button
+                      type="button"
+                      key={ev.id}
+                      onClick={e => {
+                        e.stopPropagation();
+                        onEventClick(ev);
+                      }}
+                      className={cn(
+                        "absolute rounded px-1.5 py-0.5 text-white text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity text-left overflow-hidden",
+                        ev.color,
+                      )}
+                      style={{
+                        top: `${top}px`,
+                        height: `${height}px`,
+                        left: `calc(${leftPct}% + 2px)`,
+                        width: `calc(${widthPct}% - 4px)`,
+                      }}
+                    >
+                      <div className="flex items-center gap-1 truncate">
+                        {eventTypeIcon(ev.type, 8)}
+                        {ev.title}
+                      </div>
+                      {ev.startTime && <div className="text-white/70">{ev.startTime}</div>}
+                    </button>
+                  );
+                })}
               </div>
             );
           })}

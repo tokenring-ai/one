@@ -1,7 +1,10 @@
 import { Building2, Loader2, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import ChangeIndicator from "../../../components/ui/ChangeIndicator.tsx";
+import { useClickOutside } from "../../../hooks/useClickOutside.ts";
+import { useDebounce } from "../../../hooks/useDebounce.ts";
 import { useFindStock } from "../../../rpc.ts";
-import { changeSign, fmt, fmtPrice } from "../formatters.ts";
+import { fmt, fmtPrice } from "../formatters.ts";
 import type { StockQuote } from "../types.ts";
 
 interface SymbolSearchBoxProps {
@@ -12,24 +15,13 @@ interface SymbolSearchBoxProps {
 
 export default function SymbolSearchBox({ value, onChange, onSelect }: SymbolSearchBoxProps) {
   const [open, setOpen] = useState(false);
-  const [debounced, setDebounced] = useState(value);
+  const debounced = useDebounce(value.trim(), 200);
   const wrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value.trim()), 200);
-    return () => clearTimeout(t);
-  }, [value]);
 
   const search = useFindStock(debounced && debounced.length >= 1 ? debounced : undefined, 8);
   const results = useMemo(() => (search.data?.rows ?? []).filter(Boolean) as StockQuote[], [search.data]);
 
-  useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
+  useClickOutside(wrapRef, () => setOpen(false), { enabled: open });
 
   const handlePick = (sym: string) => {
     setOpen(false);
@@ -51,7 +43,9 @@ export default function SymbolSearchBox({ value, onChange, onSelect }: SymbolSea
           if (e.key === "Enter") {
             e.preventDefault();
             const typed = value.trim().toUpperCase();
-            if (results[0]?.Symbol) {
+            // Only trust search results when the debounce has caught up to the current input
+            const resultsAreFresh = debounced.toUpperCase() === typed;
+            if (resultsAreFresh && results[0]?.Symbol) {
               handlePick(results[0].Symbol);
             } else if (typed) {
               // Allow jumping straight to a known ticker even if search is empty/slow
@@ -82,9 +76,6 @@ export default function SymbolSearchBox({ value, onChange, onSelect }: SymbolSea
             const sym = r.Symbol ?? "";
             if (!sym) return null;
             const logo = (r as { CLIconBright128?: string }).CLIconBright128;
-            const change = Number(r.Change ?? 0);
-            const isUp = change > 0;
-            const isDown = change < 0;
             return (
               <button
                 type="button"
@@ -105,10 +96,7 @@ export default function SymbolSearchBox({ value, onChange, onSelect }: SymbolSea
                 {r.Price != null && (
                   <div className="text-right shrink-0">
                     <div className="text-sm font-medium text-primary">${fmtPrice(r.Price)}</div>
-                    <div className={`text-xs font-medium ${isUp ? "text-emerald-500" : isDown ? "text-red-500" : "text-muted"}`}>
-                      {changeSign(r.ChangePercent)}
-                      {fmt(r.ChangePercent)}%
-                    </div>
+                    <ChangeIndicator change={r.ChangePercent} showIcon={false} formatChange={v => `${fmt(v)}%`} className="text-xs font-medium" align="right" />
                   </div>
                 )}
               </button>

@@ -44,12 +44,16 @@ const spawnTerminal = mock(async (_args: Record<string, unknown>) => ({
   status: "success" as const,
   terminalName: "term-new",
 }));
-const terminateTerminal = mock(async (_args: { terminalName: string }) => ({ status: "success" as const }));
+const terminateTerminal = mock(
+  async (_args: { terminalName: string }): Promise<{ status: "success" } | { status: "terminalNotInteractive" } | { status: "terminalNotFound" }> => ({
+    status: "success" as const,
+  }),
+);
 const sendInput = mock(async (_args: { terminalName: string; input: string }) => ({ status: "success" as const }));
 const resizeTerminal = mock(async (_args: { terminalName: string; cols: number; rows: number }) => ({
   status: "success" as const,
 }));
-const mutateTerminals = mock(async () => undefined);
+const mutateTerminals = mock(async (): Promise<void> => {});
 
 let terminalList: TerminalSummary[] = [];
 let terminalsLoading = false;
@@ -260,6 +264,47 @@ describe("TerminalApp", () => {
     });
     expect(screen.queryByRole("tab", { name: /ls -la/ })).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /echo hi/ })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("removes a terminal locally when the server reports terminalNotInteractive", async () => {
+    const user = userEvent.setup();
+    terminateTerminal.mockImplementationOnce(async () => ({ status: "terminalNotInteractive" as const }));
+    terminalList = [termB];
+    outputByTerminal["term-b"] = { output: "done", position: 4, complete: true };
+
+    renderApp("/terminal/term-b");
+
+    await user.click(screen.getByRole("button", { name: /Close terminal echo hi/i }));
+
+    await waitFor(() => expect(terminateTerminal).toHaveBeenCalledWith({ terminalName: "term-b" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("tab", { name: /echo hi/ })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("No terminals")).toBeInTheDocument();
+  });
+
+  it("navigates to a spawned terminal without waiting for list mutate", async () => {
+    const user = userEvent.setup();
+    let resolveMutate: (() => void) | undefined;
+    mutateTerminals.mockImplementationOnce(
+      () =>
+        new Promise<void>(resolve => {
+          resolveMutate = resolve;
+        }),
+    );
+
+    renderApp();
+
+    await user.click(screen.getAllByRole("button", { name: /New Terminal/i })[0]!);
+
+    await waitFor(() => expect(spawnTerminal).toHaveBeenCalledTimes(1));
+    // Pending-open spinner appears even while mutate is still in flight.
+    await waitFor(() => {
+      expect(screen.queryByText("Terminal not found")).not.toBeInTheDocument();
+      expect(screen.queryByText("No terminals")).not.toBeInTheDocument();
+    });
+
+    resolveMutate?.();
   });
 
   it("shows a not-found state for a stale terminal URL", () => {

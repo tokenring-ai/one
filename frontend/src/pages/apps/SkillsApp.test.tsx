@@ -87,10 +87,15 @@ const resetSkill = mock(async (args: { agentId: string; name: string }) => ({
   status: "success" as const,
   skill: { ...sampleSkills.find(s => s.name === args.name)!, enabled: true },
 }));
-const sendInput = mock(async (_args: { agentId: string; input: { from: string; message: string } }) => ({
-  status: "success" as const,
-  requestId: "req-1",
-}));
+const sendInput = mock(
+  async (_args: {
+    agentId: string;
+    input: { from: string; message: string };
+  }): Promise<{ status: "success"; requestId: string } | { status: "agentNotFound" }> => ({
+    status: "success" as const,
+    requestId: "req-1",
+  }),
+);
 const getAgentTypes = mock(async () => [codeAgentType]);
 
 let agentList: (typeof runningAgent)[] = [runningAgent];
@@ -278,6 +283,21 @@ describe("SkillsApp", () => {
       }),
     );
     expect(screen.getByText("Agent page")).toBeInTheDocument();
+  });
+
+  it("shows an error when try skill sendInput reports agentNotFound", async () => {
+    sendInput.mockImplementationOnce(async () => ({ status: "agentNotFound" as const }));
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getByRole("button", { name: "Try code-review" }));
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Run skill" }));
+
+    await waitFor(() => expect(sendInput).toHaveBeenCalled());
+    await waitFor(() => expect(errorToast).toHaveBeenCalledWith("Agent no longer exists", { duration: 4000 }));
+    expect(screen.queryByText("Agent page")).not.toBeInTheDocument();
+    expect(successToast).not.toHaveBeenCalled();
   });
 
   it("creates an agent when none exist and installing", async () => {

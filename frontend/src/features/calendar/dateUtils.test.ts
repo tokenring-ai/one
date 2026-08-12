@@ -1,5 +1,17 @@
 import { describe, expect, test } from "bun:test";
-import { addDays, addOneHour, eventDurationHours, eventRangeToIso, isValidDateKey, parseTime, startOfWeek, toDateKey, toUtcDateKey } from "./dateUtils.ts";
+import {
+  addDays,
+  addOneHour,
+  eventDurationHours,
+  eventRangeToIso,
+  isValidDateKey,
+  layoutOverlappingEvents,
+  parseTime,
+  startOfWeek,
+  timeToMinutes,
+  toDateKey,
+  toUtcDateKey,
+} from "./dateUtils.ts";
 
 describe("dateUtils", () => {
   test("toDateKey formats local date", () => {
@@ -91,5 +103,48 @@ describe("dateUtils", () => {
     expect(eventDurationHours("09:00", "10:30")).toBe(1.5);
     expect(eventDurationHours("22:00", "01:00")).toBe(2); // until midnight
     expect(eventDurationHours("09:00")).toBe(1);
+  });
+
+  test("timeToMinutes", () => {
+    expect(timeToMinutes("09:30")).toBe(9 * 60 + 30);
+    expect(timeToMinutes("00:00")).toBe(0);
+    expect(timeToMinutes("bad")).toBe(0);
+  });
+
+  test("layoutOverlappingEvents places non-overlapping events in one column", () => {
+    const layout = layoutOverlappingEvents([
+      { id: "a", startTime: "09:00", endTime: "10:00" },
+      { id: "b", startTime: "10:00", endTime: "11:00" },
+    ]);
+    expect(layout.get("a")).toEqual({ col: 0, totalCols: 1 });
+    expect(layout.get("b")).toEqual({ col: 0, totalCols: 1 });
+  });
+
+  test("layoutOverlappingEvents stacks concurrent events side-by-side", () => {
+    const layout = layoutOverlappingEvents([
+      { id: "a", startTime: "09:00", endTime: "10:00" },
+      { id: "b", startTime: "09:30", endTime: "10:30" },
+    ]);
+    expect(layout.get("a")?.totalCols).toBe(2);
+    expect(layout.get("b")?.totalCols).toBe(2);
+    expect(layout.get("a")?.col).not.toBe(layout.get("b")?.col);
+  });
+
+  test("layoutOverlappingEvents reuses columns after an event ends", () => {
+    const layout = layoutOverlappingEvents([
+      { id: "a", startTime: "09:00", endTime: "10:00" },
+      { id: "b", startTime: "09:00", endTime: "09:30" },
+      { id: "c", startTime: "09:30", endTime: "10:00" },
+    ]);
+    // a and b overlap → 2 cols; c starts when b ends so can reuse b's column
+    expect(layout.get("a")?.totalCols).toBe(2);
+    expect(layout.get("c")?.totalCols).toBe(2);
+    expect(layout.get("c")?.col).toBe(layout.get("b")?.col);
+  });
+
+  test("layoutOverlappingEvents ignores events without startTime", () => {
+    const layout = layoutOverlappingEvents([{ id: "allday" }, { id: "timed", startTime: "12:00", endTime: "13:00" }]);
+    expect(layout.has("allday")).toBe(false);
+    expect(layout.get("timed")).toEqual({ col: 0, totalCols: 1 });
   });
 });

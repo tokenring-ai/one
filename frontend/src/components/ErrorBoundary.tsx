@@ -1,6 +1,7 @@
 import { AlertTriangle, Check, ChevronDown, Copy, Loader2 } from "lucide-react";
 import type React from "react";
 import { Component, type ReactNode, useState } from "react";
+import { useCopyToClipboard } from "../hooks/useCopyToClipboard.ts";
 
 interface Props {
   children: ReactNode;
@@ -88,7 +89,7 @@ function ResetButton({ onReset }: { onReset: () => void }) {
 
 function ErrorDetails({ error, errorInfo }: { error?: Error | undefined; errorInfo?: React.ErrorInfo | undefined }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copy, copied } = useCopyToClipboard();
 
   const handleCopy = async () => {
     if (!error) return;
@@ -97,13 +98,7 @@ function ErrorDetails({ error, errorInfo }: { error?: Error | undefined; errorIn
       ? `${error.message}\n\nStack:\n${error.stack}\n\nComponent Stack:\n${errorInfo.componentStack}`
       : `${error.message}\n\nStack:\n${error.stack}`;
 
-    try {
-      await navigator.clipboard.writeText(errorText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy error details:", err);
-    }
+    await copy(errorText);
   };
 
   if (!error) return null;

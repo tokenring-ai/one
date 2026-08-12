@@ -1,7 +1,8 @@
 import { ChevronDown, Grid2X2, Loader2, Pause, Settings, WifiOff } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useClickOutside } from "../hooks/useClickOutside.ts";
 import { useConnectionStatus } from "../hooks/useConnectionStatus.ts";
 import type { useAgentList } from "../rpc.ts";
 import Logo from "../tokenring-logo-small.webp";
@@ -28,13 +29,7 @@ export default function TopBar({ currentAgentId, agents, agentControls }: TopBar
   const agentList = agents.data || [];
   const currentAgent = agentList.find(a => a.id === currentAgentId);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  useClickOutside(ref, () => setOpen(false), { enabled: open });
 
   return (
     <header className="h-14 border-b border-primary bg-secondary flex items-center px-2 gap-2 sm:gap-3 shrink-0 z-50">

@@ -1,4 +1,6 @@
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
+import { useLocalStorageState } from "../../hooks/useLocalStorageState.ts";
+import { useRefSync } from "../../hooks/useRefSync.ts";
 import { APP_REGISTRY, DEFAULT_PINNED_APP_IDS } from "./AppRegistry.ts";
 
 interface AppShellContextType {
@@ -32,17 +34,6 @@ function sanitizeAppIds(value: unknown, limit: number, excludeSettings = false):
   return [...new Set(sanitized)].slice(0, limit);
 }
 
-function readPinnedApps(): string[] {
-  if (typeof window === "undefined") return [...DEFAULT_PINNED_APP_IDS];
-  try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(PINNED_APPS_STORAGE_KEY) ?? "null");
-    if (!Array.isArray(parsed)) return [...DEFAULT_PINNED_APP_IDS];
-    return sanitizeAppIds(parsed, MAX_PINNED_APPS);
-  } catch {
-    return [...DEFAULT_PINNED_APP_IDS];
-  }
-}
-
 function sanitizeRecentApps(value: unknown): RecentAppEntry[] {
   if (!Array.isArray(value)) return [];
   const validIds = new Set(APP_REGISTRY.filter(app => app.id !== "settings").map(app => app.id));
@@ -71,10 +62,19 @@ function sanitizeRecentApps(value: unknown): RecentAppEntry[] {
   return entries;
 }
 
-function readRecentApps(): RecentAppEntry[] {
-  if (typeof window === "undefined") return [];
+function deserializePinnedApps(raw: string): string[] {
   try {
-    return sanitizeRecentApps(JSON.parse(localStorage.getItem(RECENT_APPS_STORAGE_KEY) ?? "[]"));
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [...DEFAULT_PINNED_APP_IDS];
+    return sanitizeAppIds(parsed, MAX_PINNED_APPS);
+  } catch {
+    return [...DEFAULT_PINNED_APP_IDS];
+  }
+}
+
+function deserializeRecentApps(raw: string): RecentAppEntry[] {
+  try {
+    return sanitizeRecentApps(JSON.parse(raw));
   } catch {
     return [];
   }
@@ -94,25 +94,33 @@ function canUseLocalStorage(): boolean {
 
 export function AppShellProvider({ children }: { children: ReactNode }) {
   const [isAppSwitcherOpen, setAppSwitcherOpen] = useState(false);
-  const [pinnedAppIds, setPinnedAppIdsState] = useState<string[]>(readPinnedApps);
-  const [recentApps, setRecentApps] = useState<RecentAppEntry[]>(() => readRecentApps().filter(entry => !pinnedAppIds.includes(entry.id)));
   const [localStorageAvailable, setLocalStorageAvailable] = useState(canUseLocalStorage);
-  const pinnedAppIdsRef = useRef(pinnedAppIds);
-  pinnedAppIdsRef.current = pinnedAppIds;
+
+  const markStorageUnavailable = useCallback(() => {
+    setLocalStorageAvailable(false);
+  }, []);
+
+  const [pinnedAppIds, setPinnedAppIdsState] = useLocalStorageState<string[]>(PINNED_APPS_STORAGE_KEY, [...DEFAULT_PINNED_APP_IDS], {
+    deserialize: deserializePinnedApps,
+    onError: markStorageUnavailable,
+  });
+
+  const [recentApps, setRecentApps] = useLocalStorageState<RecentAppEntry[]>(RECENT_APPS_STORAGE_KEY, [], {
+    deserialize: raw => deserializeRecentApps(raw).filter(entry => !pinnedAppIds.includes(entry.id)),
+    onError: markStorageUnavailable,
+  });
+
+  // On first mount, drop recent entries that are already pinned (matches prior init filter).
+  // The deserialize above only runs when reading storage; functional updates still need the filter in setters.
+  const pinnedAppIdsRef = useRefSync(pinnedAppIds);
 
   const setPinnedAppIds = useCallback(
     (nextIds: string[]) => {
       const validIds = new Set(APP_REGISTRY.map(app => app.id));
       const sanitized = [...new Set(nextIds.filter(id => validIds.has(id)))].slice(0, MAX_PINNED_APPS);
       setPinnedAppIdsState(sanitized);
-      if (!localStorageAvailable) return;
-      try {
-        localStorage.setItem(PINNED_APPS_STORAGE_KEY, JSON.stringify(sanitized));
-      } catch {
-        setLocalStorageAvailable(false);
-      }
     },
-    [localStorageAvailable],
+    [setPinnedAppIdsState],
   );
 
   const togglePinnedApp = useCallback(
@@ -123,20 +131,10 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
       }
       if (pinnedAppIds.length >= MAX_PINNED_APPS) return false;
       setPinnedAppIds([...pinnedAppIds, id]);
-      setRecentApps(current => {
-        const next = current.filter(entry => entry.id !== id);
-        if (next.length !== current.length && localStorageAvailable) {
-          try {
-            localStorage.setItem(RECENT_APPS_STORAGE_KEY, JSON.stringify(next));
-          } catch {
-            setLocalStorageAvailable(false);
-          }
-        }
-        return next;
-      });
+      setRecentApps(current => current.filter(entry => entry.id !== id));
       return true;
     },
-    [localStorageAvailable, pinnedAppIds, setPinnedAppIds],
+    [pinnedAppIds, setPinnedAppIds, setRecentApps],
   );
 
   const recordRecentApp = useCallback(
@@ -156,32 +154,18 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
           }
           next.push({ id, lastVisitedAt });
         }
-        if (localStorageAvailable) {
-          try {
-            localStorage.setItem(RECENT_APPS_STORAGE_KEY, JSON.stringify(next));
-          } catch {
-            setLocalStorageAvailable(false);
-          }
-        }
         return next;
       });
     },
-    [localStorageAvailable],
+    [setRecentApps],
   );
 
   const toggleAppSwitcher = useCallback(() => setAppSwitcherOpen(open => !open), []);
   const resetToDefaults = useCallback(() => {
     setPinnedAppIds([...DEFAULT_PINNED_APP_IDS]);
     setRecentApps([]);
-    if (localStorageAvailable) {
-      try {
-        localStorage.setItem(RECENT_APPS_STORAGE_KEY, "[]");
-      } catch {
-        setLocalStorageAvailable(false);
-      }
-    }
     setAppSwitcherOpen(false);
-  }, [localStorageAvailable, setPinnedAppIds]);
+  }, [setPinnedAppIds, setRecentApps]);
 
   const value = useMemo<AppShellContextType>(
     () => ({

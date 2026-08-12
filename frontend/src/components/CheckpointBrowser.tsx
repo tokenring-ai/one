@@ -3,10 +3,14 @@ import { formatTime } from "@tokenring-ai/utility/date/formatTime";
 import { formatTimeAgo } from "@tokenring-ai/utility/date/formatTimeAgo";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, ChevronRight, History, Loader2, RotateCcw, Search, X } from "lucide-react";
+import { ChevronDown, ChevronRight, History, RotateCcw, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useEventListener } from "../hooks/useEventListener.ts";
+import { useSearchFilter } from "../hooks/useSearchFilter.ts";
 import { checkpointRPCClient, type useAgentList, useCheckpointList } from "../rpc.ts";
+import LaunchButton from "./ui/LaunchButton.tsx";
+import SearchInput from "./ui/SearchInput.tsx";
 import { toastManager } from "./ui/toast.tsx";
 
 type CheckpointItem = { id: number; name: string; agentId: string; createdAt: number };
@@ -21,7 +25,6 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
   const [launchingId, setLaunchingId] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -34,13 +37,19 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
     }
   }, [isOpen]);
 
-  const sorted: CheckpointItem[] = useMemo(() => [...(checkpoints.data || [])].sort((a, b) => b.createdAt - a.createdAt), [checkpoints.data]);
+  const sorted: CheckpointItem[] = useMemo(() => {
+    const items = checkpoints.data?.items ?? [];
+    return [...items].sort((a, b) => b.createdAt - a.createdAt);
+  }, [checkpoints.data]);
 
-  const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return sorted;
-    const q = searchQuery.toLowerCase();
-    return sorted.filter(cp => cp.name.toLowerCase().includes(q));
-  }, [sorted, searchQuery]);
+  const {
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    filtered,
+  } = useSearchFilter({
+    items: sorted,
+    searchFields: cp => cp.name,
+  });
 
   const grouped = useMemo(() => {
     const groups: Record<string, CheckpointItem[]> = {};
@@ -52,10 +61,9 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
   }, [filtered]);
 
   // Keyboard navigation handler
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
+  useEventListener(
+    "keydown",
+    e => {
       const allCheckpoints = Object.values(grouped).flat();
 
       switch (e.key) {
@@ -83,11 +91,9 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
           setHighlightedIndex(-1);
           break;
       }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, grouped, highlightedIndex]);
+    },
+    { target: document, enabled: isOpen },
+  );
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -135,7 +141,7 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
 
   const selected = selectedId ? (sorted.find(cp => cp.id === selectedId) ?? null) : null;
 
-  if (!checkpoints.data?.length) return null;
+  if (!checkpoints.data?.items.length) return null;
 
   return (
     <div className="space-y-2">
@@ -143,7 +149,7 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
         <span className="text-xs font-bold text-emerald-600 dark:text-emerald-500/90 uppercase tracking-widest flex items-center gap-1.5">
           <History className="w-3.5 h-3.5" /> Resume from Checkpoint
         </span>
-        <span className="text-xs text-muted">{checkpoints.data.length} saved</span>
+        <span className="text-xs text-muted">{checkpoints.data.total} saved</span>
       </div>
 
       <div className="bg-secondary border border-primary rounded-lg shadow-md overflow-hidden">
@@ -183,27 +189,13 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
               <div className="border-t border-primary">
                 {/* Search */}
                 <div className="px-3 py-2 border-b border-primary">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
-                    <input
-                      ref={searchRef}
-                      type="text"
-                      placeholder="Filter checkpoints..."
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      className="w-full bg-input border border-primary rounded-md py-1.5 pl-8 pr-8 text-xs text-primary placeholder-muted focus-accent transition-all"
-                    />
-                    {searchQuery && (
-                      <button
-                        type="button"
-                        onClick={() => setSearchQuery("")}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted hover:bg-hover hover:text-primary cursor-pointer focus-ring"
-                        aria-label="Clear search"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
+                  <SearchInput
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Filter checkpoints..."
+                    aria-label="Filter checkpoints"
+                    inputRef={searchRef}
+                  />
                   {/* Keyboard hint */}
                   <div className="flex items-center gap-2 px-1 pt-1.5">
                     <span className="text-xs text-muted">Use</span>
@@ -316,16 +308,14 @@ export default function CheckpointBrowser({ agents }: CheckpointBrowserProps) {
                 <X className="w-3 h-3" />
                 Clear
               </button>
-              <button
-                type="button"
+              <LaunchButton
+                loading={launchingId === selected.id}
                 onClick={() => launchFromCheckpoint(selected.id)}
-                disabled={launchingId === selected.id}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-md transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-ring shadow-button-primary"
+                icon={RotateCcw}
+                loadingLabel="Launch"
                 aria-label={`Launch agent from checkpoint: ${selected.name}`}
-              >
-                {launchingId === selected.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
-                Launch
-              </button>
+                className="px-3 font-medium rounded-md shadow-button-primary"
+              />
             </div>
           </div>
         )}

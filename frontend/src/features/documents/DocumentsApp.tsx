@@ -1,30 +1,37 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { AlertTriangle, Eye, FilePlus, FileText, FolderOpen, Loader2, PanelRight, Save, Sparkles, X } from "lucide-react";
+import { Eye, FilePlus, FileText, FolderOpen, Loader2, PanelRight, Save, Sparkles, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
-import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import ErrorBanner from "../../components/ui/ErrorBanner.tsx";
+import FileBrowserModal from "../../components/ui/FileBrowserModal.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useDirtyState } from "../../hooks/useDirtyState.tsx";
 import { useHeadlessAgent } from "../../hooks/useHeadlessAgent.ts";
+import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts.ts";
+import { useNavigationStatePayload } from "../../hooks/useNavigationStatePayload.ts";
 import { cn } from "../../lib/utils.ts";
 import { filesystemRPCClient, useFilesystemProviders } from "../../rpc.ts";
 import AIEditPanel from "./components/AIEditPanel.tsx";
 import MarkdownPreview from "./components/MarkdownPreview.tsx";
-import OpenDocumentModal from "./components/OpenDocumentModal.tsx";
 import SaveAsModal from "./components/SaveAsModal.tsx";
 import { INITIAL_CONTENT } from "./constants.ts";
 import { useAIEdit } from "./hooks/useAIEdit.ts";
 import type { RightPanel, TextSelection } from "./types.ts";
-
-type PendingAction = { type: "new" } | { type: "open" };
 
 function titleFromPath(path: string): string {
   const name = path.split("/").pop() || path;
   return name.replace(/\.md$/i, "") || "Untitled Document";
 }
 
+const DISCARD_DIALOG = {
+  dialog: {
+    title: "Unsaved changes",
+    message: "You have unsaved changes. Discard them and continue?",
+    confirmLabel: "Discard",
+  },
+} as const;
+
 export default function DocumentsApp() {
-  const location = useLocation();
   const fsProviders = useFilesystemProviders();
   const {
     agentId,
@@ -58,11 +65,12 @@ export default function DocumentsApp() {
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveAs, setShowSaveAs] = useState(false);
   const [showOpen, setShowOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
-  const isDirty = content !== savedContent;
+  const { isDirty, DirtyDot, confirmDiscard, DiscardDialog } = useDirtyState({
+    current: content,
+    saved: savedContent,
+  });
   const providers = fsProviders.data?.providers ?? [];
-  const appliedNavKey = useRef<string | null>(null);
 
   const loadDocument = useCallback(
     (opts: { content: string; path: string | null; provider: string | null; title?: string | undefined }) => {
@@ -80,29 +88,17 @@ export default function DocumentsApp() {
   );
 
   // Load file from FilesApp navigation state only when a file payload is present
-  useEffect(() => {
-    const state = location.state as { filePath?: string; fileContent?: string; title?: string; provider?: string } | null;
-    if (state?.fileContent === undefined) return;
-    if (appliedNavKey.current === location.key) return;
-    appliedNavKey.current = location.key;
-    loadDocument({
-      content: state.fileContent,
-      path: state.filePath ?? null,
-      provider: state.provider ?? null,
-      title: state.title,
-    });
-  }, [location.key, location.state, loadDocument]);
-
-  // Warn on browser close / refresh with unsaved changes
-  useEffect(() => {
-    if (!isDirty) return;
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [isDirty]);
+  useNavigationStatePayload<{ filePath?: string; fileContent?: string; title?: string; provider?: string }>({
+    onPayload: state => {
+      if (state.fileContent === undefined) return;
+      loadDocument({
+        content: state.fileContent,
+        path: state.filePath ?? null,
+        provider: state.provider ?? null,
+        title: state.title,
+      });
+    },
+  });
 
   const handleSave = useCallback(async () => {
     if (!currentFilePath || !currentProvider) {
@@ -123,13 +119,19 @@ export default function DocumentsApp() {
 
   const handleSaveAs = useCallback(
     async (path: string, provider: string) => {
-      await filesystemRPCClient.writeFile({ path, content, provider });
-      setCurrentFilePath(path);
-      setCurrentProvider(provider);
-      setSavedContent(content);
-      setShowSaveAs(false);
-      setTitle(titleFromPath(path));
-      toastManager.success("Saved", { duration: 2000 });
+      try {
+        await filesystemRPCClient.writeFile({ path, content, provider });
+        setCurrentFilePath(path);
+        setCurrentProvider(provider);
+        setSavedContent(content);
+        setShowSaveAs(false);
+        setTitle(titleFromPath(path));
+        toastManager.success("Saved", { duration: 2000 });
+      } catch (e: unknown) {
+        toastManager.error(formatError(e), { duration: 4000 });
+        // Re-throw so SaveAsModal can keep its form-level error state.
+        throw e;
+      }
     },
     [content],
   );
@@ -139,20 +141,18 @@ export default function DocumentsApp() {
   }, [loadDocument]);
 
   const requestNew = useCallback(() => {
-    if (isDirty) {
-      setPendingAction({ type: "new" });
-      return;
-    }
-    resetToNew();
-  }, [isDirty, resetToNew]);
+    void (async () => {
+      if (!(await confirmDiscard(DISCARD_DIALOG))) return;
+      resetToNew();
+    })();
+  }, [confirmDiscard, resetToNew]);
 
   const requestOpen = useCallback(() => {
-    if (isDirty) {
-      setPendingAction({ type: "open" });
-      return;
-    }
-    setShowOpen(true);
-  }, [isDirty]);
+    void (async () => {
+      if (!(await confirmDiscard(DISCARD_DIALOG))) return;
+      setShowOpen(true);
+    })();
+  }, [confirmDiscard]);
 
   const handleOpenDocument = useCallback(
     (path: string, fileContent: string, provider: string) => {
@@ -163,37 +163,12 @@ export default function DocumentsApp() {
     [loadDocument],
   );
 
-  const confirmPending = useCallback(() => {
-    const action = pendingAction;
-    setPendingAction(null);
-    if (!action) return;
-    if (action.type === "new") {
-      resetToNew();
-      return;
-    }
-    setShowOpen(true);
-  }, [pendingAction, resetToNew]);
-
   // Ctrl/Cmd+S save, Ctrl/Cmd+O open, Ctrl/Cmd+N new (disabled while modals/dialogs are open)
-  useEffect(() => {
-    if (showSaveAs || showOpen || pendingAction) return;
-    const handler = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey)) return;
-      const key = e.key.toLowerCase();
-      if (key === "s") {
-        e.preventDefault();
-        void handleSave();
-      } else if (key === "o") {
-        e.preventDefault();
-        requestOpen();
-      } else if (key === "n") {
-        e.preventDefault();
-        requestNew();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [handleSave, requestOpen, requestNew, showSaveAs, showOpen, pendingAction]);
+  useKeyboardShortcuts([
+    { key: "s", handler: () => void handleSave(), enabled: !showSaveAs && !showOpen },
+    { key: "o", handler: () => requestOpen(), enabled: !showSaveAs && !showOpen },
+    { key: "n", handler: () => requestNew(), enabled: !showSaveAs && !showOpen },
+  ]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -306,29 +281,22 @@ export default function DocumentsApp() {
         />
       )}
 
-      {showOpen && <OpenDocumentModal providers={providers} initialProvider={currentProvider} onOpen={handleOpenDocument} onClose={() => setShowOpen(false)} />}
-
-      {pendingAction && (
-        <ConfirmDialog
-          title="Unsaved changes"
-          message="You have unsaved changes. Discard them and continue?"
-          confirmText="Discard"
-          cancelText="Cancel"
-          variant="warning"
-          onConfirm={confirmPending}
-          onCancel={() => setPendingAction(null)}
+      {showOpen && (
+        <FileBrowserModal
+          providers={providers}
+          initialProvider={currentProvider}
+          extensionFilter=".md"
+          title="Open Document"
+          searchPlaceholder="Search markdown files…"
+          emptyMessage="No markdown files or folders here"
+          onOpen={handleOpenDocument}
+          onClose={() => setShowOpen(false)}
         />
       )}
 
-      {initError && !initialising && (
-        <div role="alert" className="shrink-0 px-4 py-2.5 bg-warning/10 border-b border-warning/30 flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-primary">AI editing is disabled</p>
-            <p className="text-xs text-muted">{initError}</p>
-          </div>
-        </div>
-      )}
+      <DiscardDialog />
+
+      {initError && !initialising && <ErrorBanner title="AI editing is disabled" message={initError} variant="warning" />}
 
       <AppPageHeader
         size="compact"
@@ -377,7 +345,7 @@ export default function DocumentsApp() {
           <div className="w-px h-5 bg-primary/70 mx-0.5 shrink-0 hidden sm:block" aria-hidden="true" />
 
           <div className="flex items-center gap-1">
-            {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Unsaved changes" />}
+            <DirtyDot />
             <button
               type="button"
               onClick={() => void handleSave()}

@@ -1,6 +1,6 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Bot, Loader2, X } from "lucide-react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import { useMemo, useState } from "react";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { formatConfigIssues } from "../../lib/configWrites.ts";
@@ -46,7 +46,7 @@ export default function CreateBotForm({ existingNames, services, onCreated, onCa
         : null;
   const adminError = trimmedAdmin && !TARGET_PATTERN.test(trimmedAdmin) ? "Looks like service:userId, e.g. slack:U123ABC" : null;
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault();
     if (!trimmedName || nameError || adminError || !effectiveAgentType) return;
 

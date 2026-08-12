@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { cleanupAgent } from "../lib/agentCleanup.ts";
 import { agentRPCClient } from "../rpc.ts";
 import { type AgentTypeInfo, resolvePreferredAgentType } from "./agentTypeUtils.ts";
+import { useRefSync } from "./useRefSync.ts";
 
 export type { AgentTypeInfo } from "./agentTypeUtils.ts";
 export { resolvePreferredAgentType } from "./agentTypeUtils.ts";
@@ -25,8 +26,7 @@ export interface UseHeadlessAgentResult {
 
 /** Creates a headless agent on mount and cleans it up on unmount. */
 export function useHeadlessAgent(options: UseHeadlessAgentOptions): UseHeadlessAgentResult {
-  const optionsRef = useRef(options);
-  optionsRef.current = options;
+  const optionsRef = useRefSync(options);
 
   const [agentId, setAgentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

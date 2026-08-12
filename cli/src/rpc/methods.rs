@@ -330,6 +330,52 @@ pub fn get_agent_types(client: &RpcClient) -> Result<Vec<AgentTypeEntry>> {
     decode_response(result, "getAgentTypes")
 }
 
+/// A single workflow step from `/rpc/workflow.listWorkflows`.
+///
+/// Matches the backend `WorkflowStepSchema`: a plain string is a chat message,
+/// and an object is a structured agent command (`/command …`).
+#[derive(Clone, Debug, Deserialize)]
+#[serde(untagged)]
+pub enum WorkflowStep {
+    Message(String),
+    Command {
+        command: String,
+        #[serde(default)]
+        arguments: serde_json::Map<String, Value>,
+        #[serde(default)]
+        remainder: String,
+    },
+}
+
+impl WorkflowStep {
+    /// Short label for UI lists and previews (mirrors `formatWorkflowStepLabel`).
+    pub fn label(&self) -> String {
+        match self {
+            WorkflowStep::Message(text) => text.clone(),
+            WorkflowStep::Command {
+                command,
+                arguments,
+                remainder,
+            } => {
+                let mut parts = vec![format!("/{command}")];
+                for (name, value) in arguments {
+                    match value {
+                        Value::Bool(true) => parts.push(format!("--{name}")),
+                        Value::Bool(false) | Value::Null => {}
+                        Value::String(s) if s.is_empty() => {}
+                        other => parts.push(format!("--{name} {other}")),
+                    }
+                }
+                let remainder = remainder.trim();
+                if !remainder.is_empty() {
+                    parts.push(remainder.to_string());
+                }
+                parts.join(" ")
+            }
+        }
+    }
+}
+
 /// A workflow entry (from `/rpc/workflow.listWorkflows`).
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -339,7 +385,7 @@ pub struct WorkflowEntry {
     pub display_name: String,
     pub description: String,
     pub agent_type: String,
-    pub steps: Vec<String>,
+    pub steps: Vec<WorkflowStep>,
 }
 
 pub fn list_workflows(client: &RpcClient) -> Result<Vec<WorkflowEntry>> {
@@ -739,6 +785,48 @@ mod tests {
         };
 
         assert!(error.contains("decode createAgent response"));
+    }
+
+    #[test]
+    fn list_workflows_accepts_string_and_command_steps() {
+        let workflows: Vec<WorkflowEntry> = decode_response(
+            json!([{
+                "name": "bugHunter",
+                "displayName": "Bug Hunter",
+                "category": "Code Review",
+                "description": "find bugs",
+                "agentType": "leader",
+                "updatedAt": "2026-01-01T00:00:00.000Z",
+                "steps": [
+                    "look around",
+                    {
+                        "command": "for",
+                        "arguments": {},
+                        "remainder": "$pkg in @packages { /eval fix $pkg }"
+                    },
+                    {
+                        "command": "agent run",
+                        "arguments": { "type": "code", "neverFail": true },
+                        "remainder": "fix it"
+                    }
+                ],
+                "subAgent": { "timeout": 0 }
+            }]),
+            "listWorkflows",
+        )
+        .unwrap();
+
+        assert_eq!(workflows.len(), 1);
+        assert_eq!(workflows[0].name, "bugHunter");
+        assert_eq!(workflows[0].agent_type, "leader");
+        assert_eq!(workflows[0].steps.len(), 3);
+        assert_eq!(workflows[0].steps[0].label(), "look around");
+        assert_eq!(
+            workflows[0].steps[1].label(),
+            "/for $pkg in @packages { /eval fix $pkg }"
+        );
+        assert!(workflows[0].steps[2].label().starts_with("/agent run"));
+        assert!(workflows[0].steps[2].label().contains("fix it"));
     }
 
     #[test]

@@ -27,6 +27,13 @@ describe("parseEmailAddresses", () => {
     ]);
   });
 
+  it("parses quoted names that contain commas", () => {
+    expect(parseEmailAddresses('"Smith, John" <john@example.com>, alice@example.com')).toEqual([
+      { email: "john@example.com", name: "Smith, John" },
+      { email: "alice@example.com" },
+    ]);
+  });
+
   it("returns empty for blank input", () => {
     expect(parseEmailAddresses("  ")).toEqual([]);
   });
@@ -40,6 +47,7 @@ describe("isValidEmailList", () => {
   it("accepts valid lists", () => {
     expect(isValidEmailList("a@b.com")).toBe(true);
     expect(isValidEmailList("Alice <a@b.com>, bob@c.com")).toBe(true);
+    expect(isValidEmailList('"Smith, John" <john@example.com>, alice@example.com')).toBe(true);
   });
 
   it("rejects empty or invalid", () => {
@@ -62,6 +70,10 @@ describe("senderName", () => {
 describe("formatAddress", () => {
   it("includes name when present", () => {
     expect(formatAddress({ email: "a@b.com", name: "A" })).toBe("A <a@b.com>");
+  });
+
+  it("quotes names that contain commas", () => {
+    expect(formatAddress({ email: "john@example.com", name: "Smith, John" })).toBe('"Smith, John" <john@example.com>');
   });
 });
 
@@ -100,6 +112,13 @@ describe("draftFromMessage", () => {
     expect(draft.cc).toContain("carol@example.com");
     expect(draft.cc).toContain("Dave <dave@example.com>");
     expect(draft.cc).not.toContain("alice@example.com");
+  });
+
+  it("excludes the current user from reply-all cc", () => {
+    const draft = draftFromMessage(sampleMessage, "replyAll", { currentEmail: "bob@example.com" });
+    expect(draft.cc).not.toContain("bob@example.com");
+    expect(draft.cc).toContain("carol@example.com");
+    expect(draft.cc).toContain("Dave <dave@example.com>");
   });
 
   it("builds a forward draft", () => {

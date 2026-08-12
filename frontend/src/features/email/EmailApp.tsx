@@ -1,11 +1,14 @@
+import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2, Mail, PenSquare, Search, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AgentLauncherBar from "../../components/AgentLauncherBar.tsx";
 import ChatDock from "../../components/chat/ChatDock.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
+import PanelToolbar from "../../components/ui/PanelToolbar.tsx";
 import { useLazyAgent } from "../../hooks/useLazyAgent.ts";
-import { agentRPCClient, emailRPCClient, useEmailBoxes, useEmailProviders } from "../../rpc.ts";
+import { toastOnReject } from "../../lib/toastOnReject.ts";
+import { agentRPCClient, emailRPCClient, useEmailBoxes, useEmailConfiguration } from "../../rpc.ts";
 import EmailPreview from "./components/EmailPreview.tsx";
 import MailboxDropdown from "./components/MailboxDropdown.tsx";
 import MessageListPane from "./components/MessageListPane.tsx";
@@ -26,6 +29,8 @@ function EmailBrowserPane({
   ensureAgent,
   agentId,
   onAgentLaunched,
+  allowedAgentTypes,
+  defaultAgentType,
 }: {
   provider: string | null;
   availableProviders: string[];
@@ -39,6 +44,8 @@ function EmailBrowserPane({
   ensureAgent: () => string | Promise<string | null>;
   agentId: string | null;
   onAgentLaunched: (agentId: string) => void;
+  allowedAgentTypes: readonly string[];
+  defaultAgentType: string;
 }) {
   const [selectedFolder, setSelectedFolder] = useState("inbox");
   const [searchInput, setSearchInput] = useState("");
@@ -167,59 +174,62 @@ function EmailBrowserPane({
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* ── Title bar: mailbox dropdown + search + controls ── */}
-      <div className="shrink-0 h-11 border-b border-primary bg-secondary flex items-center gap-2 px-3">
-        <div className="w-7 h-7 rounded-lg bg-linear-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-sm shrink-0">
-          <Mail className="w-4 h-4 text-white" />
-        </div>
+      <PanelToolbar
+        icon={Mail}
+        iconGradient="from-red-500 to-rose-600"
+        middle={
+          <>
+            <MailboxDropdown boxes={boxes} selected={selectedFolder} onSelect={handleFolderSelect} />
 
-        <MailboxDropdown boxes={boxes} selected={selectedFolder} onSelect={handleFolderSelect} />
+            <form onSubmit={handleSearch} className="flex-1 flex items-center gap-1.5 min-w-0 ml-2">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search emails…"
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
+                  className="w-full bg-input border border-primary rounded-lg py-1.5 pl-8 pr-3 text-xs text-primary placeholder-muted focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 transition-all"
+                />
+              </div>
+              {activeSearch && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveSearch(null);
+                    setSearchInput("");
+                  }}
+                  className="px-2 text-xs text-muted hover:text-primary transition-colors cursor-pointer shrink-0"
+                >
+                  Clear
+                </button>
+              )}
+            </form>
 
-        <form onSubmit={handleSearch} className="flex-1 flex items-center gap-1.5 min-w-0 ml-2">
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search emails…"
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              className="w-full bg-input border border-primary rounded-lg py-1.5 pl-8 pr-3 text-xs text-primary placeholder-muted focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 transition-all"
-            />
-          </div>
-          {activeSearch && (
+            <ProviderSelector provider={provider} availableProviders={availableProviders} loading={providersLoading} onProviderChange={onProviderChange} />
+          </>
+        }
+        actions={
+          <>
             <button
               type="button"
-              onClick={() => {
-                setActiveSearch(null);
-                setSearchInput("");
-              }}
-              className="px-2 text-xs text-muted hover:text-primary transition-colors cursor-pointer shrink-0"
+              onClick={openCompose}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-medium rounded-lg shadow-button-primary focus-ring cursor-pointer transition-colors shrink-0"
             >
-              Clear
+              <PenSquare className="w-3.5 h-3.5" />
+              Compose
             </button>
-          )}
-        </form>
 
-        <ProviderSelector provider={provider} availableProviders={availableProviders} loading={providersLoading} onProviderChange={onProviderChange} />
-
-        <div className="w-px h-5 bg-primary/70 mx-0.5 shrink-0" aria-hidden="true" />
-
-        <button
-          type="button"
-          onClick={openCompose}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-medium rounded-lg shadow-button-primary focus-ring cursor-pointer transition-colors shrink-0"
-        >
-          <PenSquare className="w-3.5 h-3.5" />
-          Compose
-        </button>
-
-        <AgentLauncherBar
-          buttonLabel="AI Agent"
-          buttonClassName="bg-secondary border border-primary text-primary hover:bg-hover shadow-sm"
-          defaultAgentType="email"
-          onLaunch={onAgentLaunched}
-        />
-      </div>
+            <AgentLauncherBar
+              buttonLabel="AI Agent"
+              buttonClassName="bg-secondary border border-primary text-primary hover:bg-hover shadow-sm"
+              defaultAgentType={defaultAgentType}
+              allowedAgentTypes={allowedAgentTypes}
+              onLaunch={onAgentLaunched}
+            />
+          </>
+        }
+      />
 
       {/* Shared collection navigation becomes master/detail on mobile. */}
       <WorkspaceShell
@@ -277,7 +287,9 @@ export default function EmailApp() {
   // URL is the source of truth for which provider is open (params are already decoded).
   const provider = routeProvider ?? null;
 
-  const providers = useEmailProviders();
+  const configuration = useEmailConfiguration();
+  const allowedAgentTypes = configuration.data?.agentTypes ?? ["email"];
+  const defaultAgentType = allowedAgentTypes[0] ?? "email";
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const {
     agentId,
@@ -285,7 +297,7 @@ export default function EmailApp() {
     assignAgent: handleAgentLaunched,
   } = useLazyAgent({
     appName: "Email app",
-    agentType: "email",
+    agentType: defaultAgentType,
     headless: false,
   });
 
@@ -298,8 +310,8 @@ export default function EmailApp() {
   );
 
   useEffect(() => {
-    if (providers.isLoading) return;
-    const availableProviders = providers.data?.providers ?? [];
+    if (configuration.isLoading) return;
+    const availableProviders = configuration.data?.providers ?? [];
     if (!availableProviders.length) {
       if (routeProvider) {
         openProvider(null, { replace: true });
@@ -312,24 +324,27 @@ export default function EmailApp() {
       openProvider(availableProviders[0]!, { replace: true });
       setSelectedMessageId(null);
     }
-  }, [providers.data, providers.isLoading, provider, routeProvider, openProvider]);
+  }, [configuration.data, configuration.isLoading, provider, routeProvider, openProvider]);
 
   useEffect(() => {
     if (!agentId || (!provider && !selectedMessageId)) return;
-    emailRPCClient
-      .updateEmailState({
+    toastOnReject(
+      emailRPCClient.updateEmailState({
         agentId,
         ...(provider !== null && { selectedProvider: provider }),
         ...(selectedMessageId !== null && { selectedMessageId }),
-      })
-      .catch(() => {});
+      }),
+    );
   }, [agentId, provider, selectedMessageId]);
 
   const handleSendToAgent = useCallback(
     async (message: string) => {
       const id = await ensureAgent();
+      // ensureAgent already toasts on create failure
       if (!id) return;
-      await agentRPCClient.sendInput({ agentId: id, input: { from: "Email App", message } });
+      toastOnReject(agentRPCClient.sendInput({ agentId: id, input: { from: "Email App", message } }), {
+        message: err => `Failed to send to agent: ${formatError(err)}`,
+      });
     },
     [ensureAgent],
   );
@@ -338,10 +353,10 @@ export default function EmailApp() {
     <div className="w-full h-full flex flex-col overflow-hidden bg-primary">
       <EmailBrowserPane
         provider={provider}
-        availableProviders={providers.data?.providers ?? []}
-        providersLoading={providers.isLoading}
-        providersError={providers.error}
-        onProvidersRetry={() => void providers.mutate()}
+        availableProviders={configuration.data?.providers ?? []}
+        providersLoading={configuration.isLoading}
+        providersError={configuration.error}
+        onProvidersRetry={() => void configuration.mutate()}
         selectedMessageId={selectedMessageId}
         onSelectMessage={setSelectedMessageId}
         onProviderChange={p => {
@@ -352,6 +367,8 @@ export default function EmailApp() {
         ensureAgent={ensureAgent}
         agentId={agentId}
         onAgentLaunched={handleAgentLaunched}
+        allowedAgentTypes={allowedAgentTypes}
+        defaultAgentType={defaultAgentType}
       />
     </div>
   );

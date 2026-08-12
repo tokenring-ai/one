@@ -3,10 +3,11 @@ import formatError from "@tokenring-ai/utility/error/formatError";
 import { Download, Loader2, Music, Pause, Play, Sparkles, Type, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toastManager } from "../../../../components/ui/toast.tsx";
+import ViewerHeader from "../../../../components/ui/ViewerHeader.tsx";
 import { audioRPCClient } from "../../../../rpc.ts";
-import { downloadMedia, formatDuration, mediaUrl } from "../../utils.ts";
+import { useMediaFileUrl, useMediaServeDirectory } from "../../useMediaPaths.ts";
+import { downloadMedia, formatDuration } from "../../utils.ts";
 import ActionButton from "./ActionButton.tsx";
-import ViewerHeader from "./ViewerHeader.tsx";
 
 export default function AudioViewer({
   audio,
@@ -26,6 +27,8 @@ export default function AudioViewer({
   const [transcript, setTranscript] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
+  const src = useMediaFileUrl(audio.filename);
+  const serveDirectory = useMediaServeDirectory();
 
   // Reset per-clip UI when selection changes so transcript/playback don't leak across files.
   useEffect(() => {
@@ -68,14 +71,17 @@ export default function AudioViewer({
     const el = audioRef.current;
     if (!el) return;
     if (el.paused) {
-      void el.play();
+      void el.play().catch(() => {
+        setPlaying(false);
+        toastManager.error("Unable to play audio", { duration: 3000 });
+      });
     } else {
       el.pause();
     }
   };
 
   const handleDownload = () => {
-    void downloadMedia(audio.filename).catch(() => {
+    void downloadMedia(audio.filename, { directory: serveDirectory }).catch(() => {
       toastManager.error("Download failed", { duration: 3000 });
     });
   };
@@ -127,7 +133,7 @@ export default function AudioViewer({
           <audio
             key={audio.filename}
             ref={audioRef}
-            src={mediaUrl(audio.filename)}
+            src={src}
             controls
             className="w-full"
             onPlay={() => setPlaying(true)}

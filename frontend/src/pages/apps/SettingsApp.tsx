@@ -1,22 +1,15 @@
 import { Check, ChevronRight, Monitor, Moon, Package, RotateCcw, Settings, SlidersHorizontal, Sun, Trash2 } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import packageJSON from "../../../package.json" with { type: "json" };
-import { useAppShell } from "../../components/layout/AppShellContext.tsx";
-import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
+import { MAX_PINNED_APPS, useAppShell } from "../../components/layout/AppShellContext.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import EnableToggle from "../../components/ui/EnableToggle.tsx";
 import { notificationManager } from "../../components/ui/toast.tsx";
+import { useConfirmDialog } from "../../hooks/useConfirmDialog.tsx";
+import { useLocalStorageState } from "../../hooks/useLocalStorageState.ts";
 import { type ThemePreference, useTheme } from "../../hooks/useTheme.ts";
-
-/** Client-side keys owned by the frontend UI (not user content like calendar events). */
-const CLIENT_PREFERENCE_KEYS = [
-  "theme",
-  "tokenring-sidebar-expanded",
-  "tokenring-mobile-open",
-  "tokenring-pinned-apps",
-  "tokenring-recent-apps",
-  "tokenring-chat-inputs",
-] as const;
+import { CLIENT_PREFERENCE_KEYS, CONFIRM_AGENT_DELETE_KEY, DEFAULT_CONFIRM_AGENT_DELETE } from "../../lib/uiPreferences.ts";
 
 function SegmentedControl<T extends string>({
   value,
@@ -82,8 +75,8 @@ function NavRow({ to, title, description, icon, border = true }: { to: string; t
 export default function SettingsApp() {
   const [resolvedTheme, setTheme, preference] = useTheme();
   const { pinnedAppIds, toggleAppSwitcher, resetToDefaults, localStorageAvailable } = useAppShell();
-  const [confirmClear, setConfirmClear] = useState(false);
-  const [confirmResetLayout, setConfirmResetLayout] = useState(false);
+  const { openConfirm, Dialog: ConfirmDialog } = useConfirmDialog();
+  const [confirmAgentDelete, setConfirmAgentDelete] = useLocalStorageState(CONFIRM_AGENT_DELETE_KEY, DEFAULT_CONFIRM_AGENT_DELETE);
 
   const themeOptions = useMemo(
     () =>
@@ -95,15 +88,31 @@ export default function SettingsApp() {
     [],
   );
 
-  const handleResetLayout = () => {
+  const handleResetLayout = useCallback(async () => {
+    const confirmed = await openConfirm({
+      title: "Reset layout?",
+      message: "Pinned apps and recent apps will return to defaults on this device.",
+      confirmText: "Reset",
+      cancelText: "Cancel",
+      variant: "info",
+    });
+    if (!confirmed) return;
     resetToDefaults();
-    setConfirmResetLayout(false);
     notificationManager.success("Layout reset to defaults");
-  };
+  }, [openConfirm, resetToDefaults]);
 
-  const handleClearPreferences = () => {
+  const handleClearPreferences = useCallback(async () => {
+    const confirmed = await openConfirm({
+      title: "Clear local preferences?",
+      message:
+        "This removes theme, layout, confirmation prompts, and chat draft data stored in this browser. Server configuration and account data are not affected. The page will reload.",
+      confirmText: "Clear preferences",
+      cancelText: "Cancel",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     // Remove known client keys only — do not call setTheme/resetToDefaults first,
-    // which would re-write theme/sidebar into storage before reload.
+    // which would re-write theme/layout into storage before reload.
     for (const key of CLIENT_PREFERENCE_KEYS) {
       try {
         localStorage.removeItem(key);
@@ -119,13 +128,12 @@ export default function SettingsApp() {
     } catch {
       // ignore storage errors
     }
-    setConfirmClear(false);
     notificationManager.success("Local preferences cleared");
-    // Reload so theme, sidebar, and chat draft modules re-initialize from empty storage
+    // Reload so theme, layout, and chat draft modules re-initialize from empty storage
     window.setTimeout(() => {
       window.location.reload();
     }, 400);
-  };
+  }, [openConfirm]);
 
   const runtimeLabel = useMemo(() => {
     if (typeof navigator === "undefined") return "Unknown";
@@ -172,7 +180,7 @@ export default function SettingsApp() {
           <section className="space-y-3">
             <h2 className="text-xs font-bold text-muted uppercase tracking-widest px-1">Layout</h2>
             <div className="bg-secondary border border-primary rounded-xl overflow-hidden">
-              <SettingsRow title="Pinned apps" description={`${pinnedAppIds.length} of 7 shortcuts shown in the compact app rail`}>
+              <SettingsRow title="Pinned apps" description={`${pinnedAppIds.length} of ${MAX_PINNED_APPS} shortcuts shown in the compact app rail`}>
                 <button
                   type="button"
                   onClick={toggleAppSwitcher}
@@ -181,15 +189,36 @@ export default function SettingsApp() {
                   Manage
                 </button>
               </SettingsRow>
-              <SettingsRow title="Reset layout" description="Restore sidebar defaults for this device" border={false}>
+              <SettingsRow title="Reset layout" description="Restore pinned apps and recent apps to defaults" border={false}>
                 <button
                   type="button"
-                  onClick={() => setConfirmResetLayout(true)}
+                  onClick={() => void handleResetLayout()}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-tertiary text-primary hover:bg-hover border border-primary transition-colors focus-ring cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                   Reset
                 </button>
+              </SettingsRow>
+            </div>
+          </section>
+
+          {/* Confirmations */}
+          <section className="space-y-3">
+            <h2 className="text-xs font-bold text-muted uppercase tracking-widest px-1">Confirmations</h2>
+            <div className="bg-secondary border border-primary rounded-xl overflow-hidden">
+              <SettingsRow
+                title="Confirm agent deletion"
+                description={
+                  confirmAgentDelete ? "Ask before deleting agents in the Agents app" : "Agents delete immediately — re-enable to restore the prompt"
+                }
+                border={false}
+              >
+                <EnableToggle
+                  enabled={confirmAgentDelete}
+                  onToggle={() => setConfirmAgentDelete(value => !value)}
+                  itemName="agent deletion confirmation"
+                  size="sm"
+                />
               </SettingsRow>
             </div>
           </section>
@@ -238,10 +267,14 @@ export default function SettingsApp() {
                   )}
                 </span>
               </SettingsRow>
-              <SettingsRow title="Clear local preferences" description="Remove theme, layout, and chat draft data from this browser" border={false}>
+              <SettingsRow
+                title="Clear local preferences"
+                description="Remove theme, layout, confirmation prompts, and chat draft data from this browser"
+                border={false}
+              >
                 <button
                   type="button"
-                  onClick={() => setConfirmClear(true)}
+                  onClick={() => void handleClearPreferences()}
                   disabled={!localStorageAvailable}
                   title={!localStorageAvailable ? "Browser storage is unavailable — nothing to clear" : undefined}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors focus-ring cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -304,29 +337,7 @@ export default function SettingsApp() {
         </div>
       </div>
 
-      {confirmResetLayout && (
-        <ConfirmDialog
-          title="Reset layout?"
-          message="The sidebar will expand and mobile drawer state will return to defaults on this device."
-          confirmText="Reset"
-          cancelText="Cancel"
-          variant="info"
-          onConfirm={handleResetLayout}
-          onCancel={() => setConfirmResetLayout(false)}
-        />
-      )}
-
-      {confirmClear && (
-        <ConfirmDialog
-          title="Clear local preferences?"
-          message="This removes theme, sidebar, and chat draft data stored in this browser. Server configuration and account data are not affected. The page will reload."
-          confirmText="Clear preferences"
-          cancelText="Cancel"
-          variant="danger"
-          onConfirm={handleClearPreferences}
-          onCancel={() => setConfirmClear(false)}
-        />
-      )}
+      <ConfirmDialog />
     </div>
   );
 }

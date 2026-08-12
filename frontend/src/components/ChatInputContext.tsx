@@ -1,4 +1,5 @@
-import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useState } from "react";
+import { useLocalStorageState } from "../hooks/useLocalStorageState.ts";
 
 interface ChatInputState {
   [agentId: string]: string;
@@ -16,45 +17,47 @@ interface ChatInputContextType {
 const ChatInputContext = createContext<ChatInputContextType | undefined>(undefined);
 
 const STORAGE_KEY = "tokenring-chat-inputs";
+const STORAGE_ERROR_MESSAGE = "Chat input history disabled (localStorage unavailable). Your typed messages won't be saved between sessions.";
 
 export function ChatInputProvider({ children }: { children: ReactNode }) {
-  const [inputs, setInputs] = useState<ChatInputState>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : {};
-    } catch {
-      return {};
-    }
-  });
-
   const [storageError, setStorageError] = useState<string | null>(null);
   const [errorDismissed, setErrorDismissed] = useState(false);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(inputs));
-      setStorageError(null);
-      setErrorDismissed(false);
-    } catch (e) {
-      // User-friendly error message with actionable guidance
-      setStorageError("Chat input history disabled (localStorage unavailable). Your typed messages won't be saved between sessions.");
-      console.error("Failed to persist chat inputs:", e);
-    }
-  }, [inputs]);
+  const [inputs, setInputs] = useLocalStorageState<ChatInputState>(
+    STORAGE_KEY,
+    {},
+    {
+      onError: e => {
+        setStorageError(STORAGE_ERROR_MESSAGE);
+        console.error("Failed to persist chat inputs:", e);
+      },
+    },
+  );
 
   const getInput = (agentId: string) => inputs[agentId] || "";
 
-  const setInput = (agentId: string, value: string) => {
-    setInputs(prev => ({ ...prev, [agentId]: value }));
-  };
+  const setInput = useCallback(
+    (agentId: string, value: string) => {
+      // Optimistic clear — onError re-sets the banner if the write fails.
+      setStorageError(null);
+      setErrorDismissed(false);
+      setInputs(prev => ({ ...prev, [agentId]: value }));
+    },
+    [setInputs],
+  );
 
-  const clearInput = (agentId: string) => {
-    setInputs(prev => {
-      const next = { ...prev };
-      delete next[agentId];
-      return next;
-    });
-  };
+  const clearInput = useCallback(
+    (agentId: string) => {
+      setStorageError(null);
+      setErrorDismissed(false);
+      setInputs(prev => {
+        const next = { ...prev };
+        delete next[agentId];
+        return next;
+      });
+    },
+    [setInputs],
+  );
 
   const getStorageError = () => (errorDismissed ? null : storageError);
 

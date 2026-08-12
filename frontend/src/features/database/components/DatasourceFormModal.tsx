@@ -2,6 +2,7 @@ import type { ConfigScope } from "@tokenring-ai/app";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { AlertTriangle, CheckCircle2, Database, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import PasswordInput from "../../../components/ui/PasswordInput.tsx";
 import { toastManager } from "../../../components/ui/toast.tsx";
 import { formatConfigIssues, SENSITIVE_KEEP, updateConfigLayer } from "../../../lib/configWrites.ts";
 import { configRPCClient, databaseRPCClient } from "../../../rpc.ts";
@@ -9,7 +10,25 @@ import { CONNECTION_STRING_PLACEHOLDER } from "../constants.ts";
 import type { DatasourceSummary } from "../types.ts";
 
 /**
- * Creates or edits one entry under the `database` config key.
+ * Datasource map from either modern `{ datasources: {…} }` or legacy flat
+ * `{ mydb: { url, allowWrites } }` database config.
+ */
+function datasourcesMapFromConfig(database: Record<string, unknown> | undefined): Record<string, unknown> {
+  if (!database) return {};
+  const nested = database.datasources;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    return { ...(nested as Record<string, unknown>) };
+  }
+  const { agentTypes: _agentTypes, datasources: _datasources, ...legacy } = database;
+  return { ...legacy };
+}
+
+function configHasDatasource(database: Record<string, unknown> | undefined, name: string): boolean {
+  return name in datasourcesMapFromConfig(database);
+}
+
+/**
+ * Creates or edits one entry under the `database.datasources` config key.
  *
  * Writes go through the shared config layer rather than a database-specific RPC:
  * that persists to disk and live-reconfigures the running plugin in one step,
@@ -48,8 +67,8 @@ export default function DatasourceFormModal({
         if (signal.aborted) return;
         const projectDb = values.overrides.workspace.database as Record<string, unknown> | undefined;
         const userDb = values.overrides.global.database as Record<string, unknown> | undefined;
-        if (projectDb && existing.name in projectDb) setScope("workspace");
-        else if (userDb && existing.name in userDb) setScope("global");
+        if (configHasDatasource(projectDb, existing.name)) setScope("workspace");
+        else if (configHasDatasource(userDb, existing.name)) setScope("global");
       } catch {
         // Leave the default — the user can still pick a scope manually.
       }
@@ -64,16 +83,23 @@ export default function DatasourceFormModal({
 
   const writeConfig = async (): Promise<boolean> => {
     const result = await updateConfigLayer(scope, overrides => {
-      const database = { ...(overrides.database as Record<string, unknown> | undefined) };
+      const previousDatabase = (overrides.database as Record<string, unknown> | undefined) ?? {};
+      const datasources = datasourcesMapFromConfig(previousDatabase);
       // A rename is a move, not a copy.
-      if (isEdit && existing.name !== trimmedName) delete database[existing.name];
+      if (isEdit && existing.name !== trimmedName) delete datasources[existing.name];
 
-      const previous = (database[trimmedName] ?? {}) as Record<string, unknown>;
-      database[trimmedName] = {
+      const previous = (datasources[trimmedName] ?? {}) as Record<string, unknown>;
+      datasources[trimmedName] = {
         ...previous,
         url: trimmedUrl !== "" ? trimmedUrl : SENSITIVE_KEEP,
         allowWrites,
       };
+
+      // Always persist the modern shape so agentTypes and datasources coexist cleanly.
+      const database: Record<string, unknown> = { datasources };
+      if (Array.isArray(previousDatabase.agentTypes)) {
+        database.agentTypes = previousDatabase.agentTypes;
+      }
       return { ...overrides, database };
     });
 
@@ -162,15 +188,14 @@ export default function DatasourceFormModal({
             <label htmlFor="datasource-url" className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1">
               Connection String
             </label>
-            <input
+            <PasswordInput
               id="datasource-url"
-              type="password"
               value={url}
-              onChange={e => setUrl(e.target.value)}
+              onChange={setUrl}
               placeholder={isEdit ? "•••••••• (leave blank to keep current)" : CONNECTION_STRING_PLACEHOLDER}
               autoComplete="off"
               spellCheck={false}
-              className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-sm text-primary placeholder-muted font-mono focus-accent"
+              inputClassName="py-2 text-sm"
             />
             <p className="text-xs text-muted mt-1">
               {isEdit
@@ -204,8 +229,8 @@ export default function DatasourceFormModal({
               onChange={e => setScope(e.target.value as ConfigScope)}
               className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-sm text-primary focus-accent cursor-pointer"
             >
-              <option value="project">Project configuration — everyone on this project</option>
-              <option value="user">User configuration — only you</option>
+              <option value="workspace">Project configuration — everyone on this project</option>
+              <option value="global">User configuration — only you</option>
             </select>
           </div>
 

@@ -269,7 +269,8 @@ pub(super) fn build_workflow_entries(data: &SelectionData) -> Vec<SelectionEntry
             preview_lines: {
                 let mut lines = vec![wf.description.clone()];
                 if !wf.steps.is_empty() {
-                    lines.push(format!("Steps: {}", wf.steps.join(" → ")));
+                    let labels: Vec<String> = wf.steps.iter().map(|s| s.label()).collect();
+                    lines.push(format!("Steps: {}", labels.join(" → ")));
                 }
                 lines
             },

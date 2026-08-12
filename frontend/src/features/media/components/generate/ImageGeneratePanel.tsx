@@ -2,10 +2,10 @@ import formatError from "@tokenring-ai/utility/error/formatError";
 import { WandSparkles } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { useMemo, useState } from "react";
+import GenerateButton from "../../../../components/ui/GenerateButton.tsx";
 import { toastManager } from "../../../../components/ui/toast.tsx";
 import { imageGenerationRPCClient, useImageGenerationModels } from "../../../../rpc.ts";
 import { keywordsFromPrompt } from "../../utils.ts";
-import GenerateButton from "./GenerateButton.tsx";
 import GeneratePanelShell from "./GeneratePanelShell.tsx";
 import ImageQualityField, { type ImageQuality } from "./ImageQualityField.tsx";
 import ImageShapeField, { type ImageShape } from "./ImageShapeField.tsx";
@@ -88,7 +88,11 @@ export default function ImageGeneratePanel({ agentId, onGenerated }: { agentId: 
       <ImageShapeField value={shape} onChange={setShape} />
       <ImageQualityField value={quality} onChange={setQuality} />
       <ModelSelectField label="Model" value={selectedModel} onChange={setModel} options={availableModels} />
-      <GenerateButton onClick={() => void handleGenerate()} disabled={generating || !agentId || !prompt.trim()} loading={generating}>
+      <GenerateButton
+        onClick={() => void handleGenerate()}
+        disabled={generating || !agentId || !prompt.trim() || (modelsData != null && availableModels.length === 0)}
+        loading={generating}
+      >
         Generate Image
       </GenerateButton>
     </GeneratePanelShell>

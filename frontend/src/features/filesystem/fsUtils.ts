@@ -1,3 +1,4 @@
+import { formatBytes } from "@tokenring-ai/utility/number/formatBytes";
 import { Code, FileText, Folder, Image as ImageIcon } from "lucide-react";
 import { createElement } from "react";
 
@@ -46,12 +47,55 @@ export const isLikelyTextFile = (p: string) => {
   return true;
 };
 
+/** Best-effort MIME type for browser downloads (download attribute still uses basename). */
+export function guessMimeType(path: string): string {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".json")) return "application/json";
+  if (lower.endsWith(".md") || lower.endsWith(".markdown")) return "text/markdown";
+  if (lower.endsWith(".html") || lower.endsWith(".htm")) return "text/html";
+  if (lower.endsWith(".css")) return "text/css";
+  if (lower.endsWith(".js") || lower.endsWith(".mjs") || lower.endsWith(".cjs")) return "text/javascript";
+  if (lower.endsWith(".ts") || lower.endsWith(".tsx")) return "text/plain";
+  if (lower.endsWith(".svg")) return "image/svg+xml";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".ico")) return "image/x-icon";
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".zip")) return "application/zip";
+  if (lower.endsWith(".gz") || lower.endsWith(".tgz")) return "application/gzip";
+  if (lower.endsWith(".mp3")) return "audio/mpeg";
+  if (lower.endsWith(".wav")) return "audio/wav";
+  if (lower.endsWith(".mp4")) return "video/mp4";
+  if (lower.endsWith(".webm")) return "video/webm";
+  if (isLikelyTextFile(path)) return "text/plain";
+  return "application/octet-stream";
+}
+
+/** Decode base64 into bytes for Blob construction (binary-safe downloads). */
+export function base64ToUint8Array(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+/** Trigger a browser download from an in-memory Blob. */
+export function triggerBrowserDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function formatFileSize(bytes: number | undefined | null): string {
   if (bytes == null || Number.isNaN(bytes)) return "—";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  return formatBytes(bytes);
 }
 
 export function formatFileDate(iso: string | undefined | null): string {

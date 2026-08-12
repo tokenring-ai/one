@@ -10,6 +10,8 @@ keys
 # debug
 *.log
 
+BUGS.md
+
 /awscliv2.sig
 /.idea/
 /.claude/

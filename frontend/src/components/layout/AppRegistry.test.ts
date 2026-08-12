@@ -2,10 +2,10 @@ import { describe, expect, it } from "bun:test";
 import { APP_GROUPS, APP_REGISTRY, DEFAULT_PINNED_APP_IDS, getActiveApp } from "./AppRegistry.ts";
 
 describe("AppRegistry", () => {
-  it("contains one unique definition for all 26 applications", () => {
-    expect(APP_REGISTRY).toHaveLength(26);
-    expect(new Set(APP_REGISTRY.map(app => app.id)).size).toBe(26);
-    expect(new Set(APP_REGISTRY.map(app => app.path)).size).toBe(26);
+  it("contains one unique definition for all 28 applications", () => {
+    expect(APP_REGISTRY).toHaveLength(28);
+    expect(new Set(APP_REGISTRY.map(app => app.id)).size).toBe(28);
+    expect(new Set(APP_REGISTRY.map(app => app.path)).size).toBe(28);
     expect(new Set(APP_REGISTRY.map(app => app.group))).toEqual(new Set(APP_GROUPS));
   });
 

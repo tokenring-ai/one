@@ -6,8 +6,20 @@ import DeletedAgentRestorePanel from "./DeletedAgentRestorePanel.tsx";
 
 const launchMock = mock();
 const agentsMutateMock = mock(() => Promise.resolve());
+type CheckpointListData = {
+  items: Array<{ id: number; name: string; agentId: string; createdAt: number }>;
+  total: number;
+  hasMore: boolean;
+  limit: number;
+  offset: number;
+};
+
+function paginated(items: CheckpointListData["items"]): CheckpointListData {
+  return { items, total: items.length, hasMore: false, limit: 500, offset: 0 };
+}
+
 const useCheckpointListMock = mock(() => ({
-  data: [] as Array<{ id: number; name: string; agentId: string; createdAt: number }>,
+  data: paginated([]),
   isLoading: false,
 }));
 
@@ -39,12 +51,12 @@ function renderPanel(agentId = "agent-1") {
 describe("DeletedAgentRestorePanel", () => {
   beforeEach(() => {
     mock.clearAllMocks();
-    useCheckpointListMock.mockReturnValue({ data: [], isLoading: false });
+    useCheckpointListMock.mockReturnValue({ data: paginated([]), isLoading: false });
   });
 
   it("renders nothing when there are no checkpoints for the agent", () => {
     useCheckpointListMock.mockReturnValue({
-      data: [{ id: 1, name: "Other", agentId: "other-agent", createdAt: 1000 }],
+      data: paginated([{ id: 1, name: "Other", agentId: "other-agent", createdAt: 1000 }]),
       isLoading: false,
     });
 
@@ -61,11 +73,11 @@ describe("DeletedAgentRestorePanel", () => {
 
   it("pre-selects the most recent checkpoint for the agent", () => {
     useCheckpointListMock.mockReturnValue({
-      data: [
+      data: paginated([
         { id: 1, name: "Older checkpoint", agentId: "agent-1", createdAt: 1000 },
         { id: 2, name: "Newer checkpoint", agentId: "agent-1", createdAt: 2000 },
         { id: 3, name: "Other agent", agentId: "other", createdAt: 3000 },
-      ],
+      ]),
       isLoading: false,
     });
 
@@ -80,7 +92,7 @@ describe("DeletedAgentRestorePanel", () => {
   it("restores the selected checkpoint and navigates to the new agent", async () => {
     const user = userEvent.setup();
     useCheckpointListMock.mockReturnValue({
-      data: [{ id: 10, name: "Final state", agentId: "agent-1", createdAt: 5000 }],
+      data: paginated([{ id: 10, name: "Final state", agentId: "agent-1", createdAt: 5000 }]),
       isLoading: false,
     });
     launchMock.mockResolvedValueOnce({ status: "success", agentId: "restored-agent", agentName: "Restored" });

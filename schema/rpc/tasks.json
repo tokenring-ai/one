@@ -7,7 +7,7 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
-      "title": "getAvailableSubAgents request",
+      "title": "getTaskConfiguration request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -17,10 +17,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/tasks.getAvailableSubAgents"
+          "const": "/rpc/tasks.getTaskConfiguration"
         },
         "params": {
-          "$ref": "#/$defs/getAvailableSubAgentsParams"
+          "$ref": "#/$defs/getTaskConfigurationParams"
         }
       },
       "required": [
@@ -32,7 +32,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getAvailableSubAgents response",
+      "title": "getTaskConfiguration response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -42,7 +42,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getAvailableSubAgentsResult"
+          "$ref": "#/$defs/getTaskConfigurationResult"
         }
       },
       "required": [
@@ -53,7 +53,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getEnabledSubAgents request",
+      "title": "listTaskLists request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -63,10 +63,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/tasks.getEnabledSubAgents"
+          "const": "/rpc/tasks.listTaskLists"
         },
         "params": {
-          "$ref": "#/$defs/getEnabledSubAgentsParams"
+          "$ref": "#/$defs/listTaskListsParams"
         }
       },
       "required": [
@@ -78,7 +78,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getEnabledSubAgents response",
+      "title": "listTaskLists response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -88,7 +88,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getEnabledSubAgentsResult"
+          "$ref": "#/$defs/listTaskListsResult"
         }
       },
       "required": [
@@ -99,7 +99,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamEnabledSubAgents request",
+      "title": "streamTaskLists request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -109,10 +109,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/tasks.streamEnabledSubAgents"
+          "const": "/rpc/tasks.streamTaskLists"
         },
         "params": {
-          "$ref": "#/$defs/streamEnabledSubAgentsParams"
+          "$ref": "#/$defs/streamTaskListsParams"
         }
       },
       "required": [
@@ -124,7 +124,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamEnabledSubAgents response",
+      "title": "streamTaskLists response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -134,7 +134,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/streamEnabledSubAgentsResult"
+          "$ref": "#/$defs/streamTaskListsResult"
         }
       },
       "required": [
@@ -145,7 +145,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamEnabledSubAgents stream end response",
+      "title": "streamTaskLists stream end response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -170,7 +170,7 @@
       "additionalProperties": false
     },
     {
-      "title": "enableSubAgents request",
+      "title": "listTasks request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -180,10 +180,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/tasks.enableSubAgents"
+          "const": "/rpc/tasks.listTasks"
         },
         "params": {
-          "$ref": "#/$defs/enableSubAgentsParams"
+          "$ref": "#/$defs/listTasksParams"
         }
       },
       "required": [
@@ -195,7 +195,7 @@
       "additionalProperties": false
     },
     {
-      "title": "enableSubAgents response",
+      "title": "listTasks response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -205,7 +205,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/enableSubAgentsResult"
+          "$ref": "#/$defs/listTasksResult"
         }
       },
       "required": [
@@ -216,7 +216,7 @@
       "additionalProperties": false
     },
     {
-      "title": "disableSubAgents request",
+      "title": "streamTasks request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -226,10 +226,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/tasks.disableSubAgents"
+          "const": "/rpc/tasks.streamTasks"
         },
         "params": {
-          "$ref": "#/$defs/disableSubAgentsParams"
+          "$ref": "#/$defs/streamTasksParams"
         }
       },
       "required": [
@@ -241,7 +241,7 @@
       "additionalProperties": false
     },
     {
-      "title": "disableSubAgents response",
+      "title": "streamTasks response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -251,7 +251,747 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/disableSubAgentsResult"
+          "$ref": "#/$defs/streamTasksResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTasks stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getTask request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.getTask"
+        },
+        "params": {
+          "$ref": "#/$defs/getTaskParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getTask response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getTaskResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchTasks request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.searchTasks"
+        },
+        "params": {
+          "$ref": "#/$defs/searchTasksParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchTasks response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/searchTasksResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createTaskList request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.createTaskList"
+        },
+        "params": {
+          "$ref": "#/$defs/createTaskListParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createTaskList response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createTaskListResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteTaskList request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.deleteTaskList"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteTaskListParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteTaskList response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteTaskListResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createTask request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.createTask"
+        },
+        "params": {
+          "$ref": "#/$defs/createTaskParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createTask response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createTaskResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateTask request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.updateTask"
+        },
+        "params": {
+          "$ref": "#/$defs/updateTaskParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateTask response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateTaskResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setTaskStatus request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.setTaskStatus"
+        },
+        "params": {
+          "$ref": "#/$defs/setTaskStatusParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setTaskStatus response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/setTaskStatusResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "moveTask request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.moveTask"
+        },
+        "params": {
+          "$ref": "#/$defs/moveTaskParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "moveTask response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/moveTaskResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteTask request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.deleteTask"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteTaskParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteTask response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteTaskResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getRuns request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.getRuns"
+        },
+        "params": {
+          "$ref": "#/$defs/getRunsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getRuns response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getRunsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTaskRuns request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.streamTaskRuns"
+        },
+        "params": {
+          "$ref": "#/$defs/streamTaskRunsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTaskRuns response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamTaskRunsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTaskRuns stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "runTask request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.runTask"
+        },
+        "params": {
+          "$ref": "#/$defs/runTaskParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "runTask response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/runTaskResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "runTasks request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.runTasks"
+        },
+        "params": {
+          "$ref": "#/$defs/runTasksParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "runTasks response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/runTasksResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelRun request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.cancelRun"
+        },
+        "params": {
+          "$ref": "#/$defs/cancelRunParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelRun response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/cancelRunResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelBatch request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.cancelBatch"
+        },
+        "params": {
+          "$ref": "#/$defs/cancelBatchParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelBatch response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/cancelBatchResult"
         }
       },
       "required": [
@@ -299,281 +1039,2794 @@
       ],
       "additionalProperties": false
     },
-    "getAvailableSubAgentsParams": {
+    "getTaskConfigurationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getTaskConfigurationResult": {
       "type": "object",
       "properties": {
-        "agentId": {
+        "directory": {
           "type": "string"
+        },
+        "defaultList": {
+          "type": "string"
+        },
+        "defaultAgentType": {
+          "type": "string"
+        },
+        "parallel": {
+          "type": "number"
+        },
+        "statuses": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in-progress",
+              "blocked",
+              "done",
+              "cancelled"
+            ]
+          }
+        },
+        "priorities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "low",
+              "normal",
+              "high",
+              "urgent"
+            ]
+          }
+        },
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "displayName",
+              "description"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [
-        "agentId"
-      ]
+        "directory",
+        "defaultList",
+        "defaultAgentType",
+        "parallel",
+        "statuses",
+        "priorities",
+        "agentTypes"
+      ],
+      "additionalProperties": false
     },
-    "getAvailableSubAgentsResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
-            },
-            "agents": {
-              "type": "array",
-              "items": {
+    "listTaskListsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listTaskListsResult": {
+      "type": "object",
+      "properties": {
+        "lists": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "taskCount": {
+                "type": "number"
+              },
+              "statusCounts": {
                 "type": "object",
                 "properties": {
-                  "type": {
-                    "type": "string"
+                  "pending": {
+                    "type": "number"
                   },
-                  "displayName": {
-                    "type": "string"
+                  "in-progress": {
+                    "type": "number"
                   },
-                  "description": {
-                    "type": "string"
+                  "blocked": {
+                    "type": "number"
                   },
-                  "category": {
-                    "type": "string"
+                  "done": {
+                    "type": "number"
                   },
-                  "enabledTools": {
-                    "default": [],
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                  "cancelled": {
+                    "type": "number"
                   }
                 },
                 "required": [
-                  "type",
-                  "displayName",
-                  "description",
-                  "enabledTools"
+                  "pending",
+                  "in-progress",
+                  "blocked",
+                  "done",
+                  "cancelled"
                 ],
                 "additionalProperties": false
-              }
-            }
-          },
-          "required": [
-            "status",
-            "agents"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
-    },
-    "getEnabledSubAgentsParams": {
-      "type": "object",
-      "properties": {
-        "agentId": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "agentId"
-      ]
-    },
-    "getEnabledSubAgentsResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
-            },
-            "agents": {
-              "type": "array",
-              "items": {
+              },
+              "updatedAt": {
                 "type": "string"
               }
-            }
-          },
-          "required": [
-            "status",
-            "agents"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
-    },
-    "streamEnabledSubAgentsParams": {
-      "type": "object",
-      "properties": {
-        "agentId": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "agentId"
-      ]
-    },
-    "streamEnabledSubAgentsResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
             },
-            "agents": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
-          "required": [
-            "status",
-            "agents"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
-    },
-    "enableSubAgentsParams": {
-      "type": "object",
-      "properties": {
-        "agentId": {
-          "type": "string"
-        },
-        "agents": {
-          "type": "array",
-          "items": {
-            "type": "string"
+            "required": [
+              "name",
+              "taskCount",
+              "statusCounts",
+              "updatedAt"
+            ],
+            "additionalProperties": false
           }
         }
       },
       "required": [
-        "agentId",
-        "agents"
-      ]
+        "lists"
+      ],
+      "additionalProperties": false
     },
-    "enableSubAgentsResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
-            },
-            "success": {
-              "type": "boolean"
-            }
-          },
-          "required": [
-            "status",
-            "success"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
+    "streamTaskListsParams": {
+      "type": "object",
+      "properties": {}
     },
-    "disableSubAgentsParams": {
+    "streamTaskListsResult": {
       "type": "object",
       "properties": {
-        "agentId": {
-          "type": "string"
-        },
-        "agents": {
+        "lists": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "taskCount": {
+                "type": "number"
+              },
+              "statusCounts": {
+                "type": "object",
+                "properties": {
+                  "pending": {
+                    "type": "number"
+                  },
+                  "in-progress": {
+                    "type": "number"
+                  },
+                  "blocked": {
+                    "type": "number"
+                  },
+                  "done": {
+                    "type": "number"
+                  },
+                  "cancelled": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "pending",
+                  "in-progress",
+                  "blocked",
+                  "done",
+                  "cancelled"
+                ],
+                "additionalProperties": false
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "taskCount",
+              "statusCounts",
+              "updatedAt"
+            ],
+            "additionalProperties": false
           }
         }
       },
       "required": [
-        "agentId",
-        "agents"
+        "lists"
+      ],
+      "additionalProperties": false
+    },
+    "listTasksParams": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "in-progress",
+            "blocked",
+            "done",
+            "cancelled"
+          ]
+        },
+        "tag": {
+          "type": "string"
+        }
+      }
+    },
+    "listTasksResult": {
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "list": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "in-progress",
+                  "blocked",
+                  "done",
+                  "cancelled"
+                ]
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "normal",
+                  "high",
+                  "urgent"
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "stepCount": {
+                "type": "number"
+              },
+              "dependsOn": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "lastRunAt": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lastRunStatus": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "starting",
+                      "running",
+                      "completed",
+                      "failed",
+                      "cancelled"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lastRunId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "size": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "list",
+              "name",
+              "title",
+              "description",
+              "agentType",
+              "status",
+              "priority",
+              "tags",
+              "stepCount",
+              "dependsOn",
+              "lastRunAt",
+              "lastRunStatus",
+              "lastRunId",
+              "size",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "tasks"
+      ],
+      "additionalProperties": false
+    },
+    "streamTasksParams": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "string"
+        }
+      }
+    },
+    "streamTasksResult": {
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "list": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "in-progress",
+                  "blocked",
+                  "done",
+                  "cancelled"
+                ]
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "normal",
+                  "high",
+                  "urgent"
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "stepCount": {
+                "type": "number"
+              },
+              "dependsOn": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "lastRunAt": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lastRunStatus": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "starting",
+                      "running",
+                      "completed",
+                      "failed",
+                      "cancelled"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lastRunId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "size": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "list",
+              "name",
+              "title",
+              "description",
+              "agentType",
+              "status",
+              "priority",
+              "tags",
+              "stepCount",
+              "dependsOn",
+              "lastRunAt",
+              "lastRunStatus",
+              "lastRunId",
+              "size",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "tasks"
+      ],
+      "additionalProperties": false
+    },
+    "getTaskParams": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "list",
+        "name"
       ]
     },
-    "disableSubAgentsResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
+    "getTaskResult": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "list": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "agentType": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "in-progress",
+                    "blocked",
+                    "done",
+                    "cancelled"
+                  ]
+                },
+                "priority": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "normal",
+                    "high",
+                    "urgent"
+                  ]
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "stepCount": {
+                  "type": "number"
+                },
+                "dependsOn": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "lastRunAt": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastRunStatus": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "starting",
+                        "running",
+                        "completed",
+                        "failed",
+                        "cancelled"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastRunId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "size": {
+                  "type": "number"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "string"
+                },
+                "steps": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "lastResult": {
+                  "type": "string"
+                },
+                "frontmatter": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "description": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "agentType": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "status": {
+                      "default": "pending",
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "in-progress",
+                        "blocked",
+                        "done",
+                        "cancelled"
+                      ]
+                    },
+                    "priority": {
+                      "default": "normal",
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "normal",
+                        "high",
+                        "urgent"
+                      ]
+                    },
+                    "tags": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "steps": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "dependsOn": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "createdAt": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "lastRunAt": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lastRunStatus": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "starting",
+                            "running",
+                            "completed",
+                            "failed",
+                            "cancelled"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lastRunId": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lastResult": {
+                      "default": "",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "title",
+                    "description",
+                    "agentType",
+                    "status",
+                    "priority",
+                    "tags",
+                    "steps",
+                    "dependsOn",
+                    "createdAt",
+                    "lastRunAt",
+                    "lastRunStatus",
+                    "lastRunId",
+                    "lastResult"
+                  ],
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "list",
+                "name",
+                "title",
+                "description",
+                "agentType",
+                "status",
+                "priority",
+                "tags",
+                "stepCount",
+                "dependsOn",
+                "lastRunAt",
+                "lastRunStatus",
+                "lastRunId",
+                "size",
+                "updatedAt",
+                "body",
+                "steps",
+                "lastResult",
+                "frontmatter"
+              ],
+              "additionalProperties": false
             },
-            "success": {
-              "type": "boolean"
+            {
+              "type": "null"
             }
-          },
-          "required": [
-            "status",
-            "success"
-          ],
-          "additionalProperties": false
+          ]
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "additionalProperties": false
+    },
+    "searchTasksParams": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string"
         },
-        {
+        "list": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "in-progress",
+            "blocked",
+            "done",
+            "cancelled"
+          ]
+        },
+        "limit": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "query"
+      ]
+    },
+    "searchTasksResult": {
+      "type": "object",
+      "properties": {
+        "matches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "list": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "in-progress",
+                  "blocked",
+                  "done",
+                  "cancelled"
+                ]
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "normal",
+                  "high",
+                  "urgent"
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "stepCount": {
+                "type": "number"
+              },
+              "dependsOn": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "lastRunAt": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lastRunStatus": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "starting",
+                      "running",
+                      "completed",
+                      "failed",
+                      "cancelled"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lastRunId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "size": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "string"
+              },
+              "score": {
+                "type": "number"
+              },
+              "matchType": {
+                "type": "string",
+                "enum": [
+                  "name",
+                  "content",
+                  "both"
+                ]
+              },
+              "lineMatches": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "line": {
+                      "type": "number"
+                    },
+                    "content": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "line",
+                    "content"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "list",
+              "name",
+              "title",
+              "description",
+              "agentType",
+              "status",
+              "priority",
+              "tags",
+              "stepCount",
+              "dependsOn",
+              "lastRunAt",
+              "lastRunStatus",
+              "lastRunId",
+              "size",
+              "updatedAt",
+              "score",
+              "matchType",
+              "lineMatches"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "matches"
+      ],
+      "additionalProperties": false
+    },
+    "createTaskListParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "createTaskListResult": {
+      "type": "object",
+      "properties": {
+        "list": {
           "type": "object",
           "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
+            "name": {
+              "type": "string"
+            },
+            "taskCount": {
+              "type": "number"
+            },
+            "statusCounts": {
+              "type": "object",
+              "properties": {
+                "pending": {
+                  "type": "number"
+                },
+                "in-progress": {
+                  "type": "number"
+                },
+                "blocked": {
+                  "type": "number"
+                },
+                "done": {
+                  "type": "number"
+                },
+                "cancelled": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "pending",
+                "in-progress",
+                "blocked",
+                "done",
+                "cancelled"
+              ],
+              "additionalProperties": false
+            },
+            "updatedAt": {
+              "type": "string"
             }
           },
           "required": [
-            "status"
+            "name",
+            "taskCount",
+            "statusCounts",
+            "updatedAt"
           ],
           "additionalProperties": false
         }
+      },
+      "required": [
+        "list"
+      ],
+      "additionalProperties": false
+    },
+    "deleteTaskListParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
       ]
+    },
+    "deleteTaskListResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
+      ],
+      "additionalProperties": false
+    },
+    "createTaskParams": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "task": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "in-progress",
+                "blocked",
+                "done",
+                "cancelled"
+              ]
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "low",
+                "normal",
+                "high",
+                "urgent"
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "dependsOn": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "body": {
+              "default": "",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "list",
+        "name",
+        "task"
+      ]
+    },
+    "createTaskResult": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "type": "object",
+          "properties": {
+            "list": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "in-progress",
+                "blocked",
+                "done",
+                "cancelled"
+              ]
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "low",
+                "normal",
+                "high",
+                "urgent"
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "stepCount": {
+              "type": "number"
+            },
+            "dependsOn": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "lastRunAt": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastRunStatus": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "starting",
+                    "running",
+                    "completed",
+                    "failed",
+                    "cancelled"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastRunId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "size": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "lastResult": {
+              "type": "string"
+            },
+            "frontmatter": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "default": "",
+                  "type": "string"
+                },
+                "description": {
+                  "default": "",
+                  "type": "string"
+                },
+                "agentType": {
+                  "default": "",
+                  "type": "string"
+                },
+                "status": {
+                  "default": "pending",
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "in-progress",
+                    "blocked",
+                    "done",
+                    "cancelled"
+                  ]
+                },
+                "priority": {
+                  "default": "normal",
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "normal",
+                    "high",
+                    "urgent"
+                  ]
+                },
+                "tags": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "steps": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "dependsOn": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "createdAt": {
+                  "default": "",
+                  "type": "string"
+                },
+                "lastRunAt": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastRunStatus": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "starting",
+                        "running",
+                        "completed",
+                        "failed",
+                        "cancelled"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastRunId": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastResult": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title",
+                "description",
+                "agentType",
+                "status",
+                "priority",
+                "tags",
+                "steps",
+                "dependsOn",
+                "createdAt",
+                "lastRunAt",
+                "lastRunStatus",
+                "lastRunId",
+                "lastResult"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "list",
+            "name",
+            "title",
+            "description",
+            "agentType",
+            "status",
+            "priority",
+            "tags",
+            "stepCount",
+            "dependsOn",
+            "lastRunAt",
+            "lastRunStatus",
+            "lastRunId",
+            "size",
+            "updatedAt",
+            "body",
+            "steps",
+            "lastResult",
+            "frontmatter"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "additionalProperties": false
+    },
+    "updateTaskParams": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "task": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "in-progress",
+                "blocked",
+                "done",
+                "cancelled"
+              ]
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "low",
+                "normal",
+                "high",
+                "urgent"
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "dependsOn": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "body": {
+              "default": "",
+              "type": "string"
+            }
+          }
+        },
+        "expectedUpdatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "list",
+        "name",
+        "task"
+      ]
+    },
+    "updateTaskResult": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "type": "object",
+          "properties": {
+            "list": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "in-progress",
+                "blocked",
+                "done",
+                "cancelled"
+              ]
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "low",
+                "normal",
+                "high",
+                "urgent"
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "stepCount": {
+              "type": "number"
+            },
+            "dependsOn": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "lastRunAt": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastRunStatus": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "starting",
+                    "running",
+                    "completed",
+                    "failed",
+                    "cancelled"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastRunId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "size": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "lastResult": {
+              "type": "string"
+            },
+            "frontmatter": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "default": "",
+                  "type": "string"
+                },
+                "description": {
+                  "default": "",
+                  "type": "string"
+                },
+                "agentType": {
+                  "default": "",
+                  "type": "string"
+                },
+                "status": {
+                  "default": "pending",
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "in-progress",
+                    "blocked",
+                    "done",
+                    "cancelled"
+                  ]
+                },
+                "priority": {
+                  "default": "normal",
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "normal",
+                    "high",
+                    "urgent"
+                  ]
+                },
+                "tags": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "steps": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "dependsOn": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "createdAt": {
+                  "default": "",
+                  "type": "string"
+                },
+                "lastRunAt": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastRunStatus": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "starting",
+                        "running",
+                        "completed",
+                        "failed",
+                        "cancelled"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastRunId": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastResult": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title",
+                "description",
+                "agentType",
+                "status",
+                "priority",
+                "tags",
+                "steps",
+                "dependsOn",
+                "createdAt",
+                "lastRunAt",
+                "lastRunStatus",
+                "lastRunId",
+                "lastResult"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "list",
+            "name",
+            "title",
+            "description",
+            "agentType",
+            "status",
+            "priority",
+            "tags",
+            "stepCount",
+            "dependsOn",
+            "lastRunAt",
+            "lastRunStatus",
+            "lastRunId",
+            "size",
+            "updatedAt",
+            "body",
+            "steps",
+            "lastResult",
+            "frontmatter"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "additionalProperties": false
+    },
+    "setTaskStatusParams": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "in-progress",
+            "blocked",
+            "done",
+            "cancelled"
+          ]
+        }
+      },
+      "required": [
+        "list",
+        "name",
+        "status"
+      ]
+    },
+    "setTaskStatusResult": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "type": "object",
+          "properties": {
+            "list": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "in-progress",
+                "blocked",
+                "done",
+                "cancelled"
+              ]
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "low",
+                "normal",
+                "high",
+                "urgent"
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "stepCount": {
+              "type": "number"
+            },
+            "dependsOn": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "lastRunAt": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastRunStatus": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "starting",
+                    "running",
+                    "completed",
+                    "failed",
+                    "cancelled"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastRunId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "size": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "lastResult": {
+              "type": "string"
+            },
+            "frontmatter": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "default": "",
+                  "type": "string"
+                },
+                "description": {
+                  "default": "",
+                  "type": "string"
+                },
+                "agentType": {
+                  "default": "",
+                  "type": "string"
+                },
+                "status": {
+                  "default": "pending",
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "in-progress",
+                    "blocked",
+                    "done",
+                    "cancelled"
+                  ]
+                },
+                "priority": {
+                  "default": "normal",
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "normal",
+                    "high",
+                    "urgent"
+                  ]
+                },
+                "tags": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "steps": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "dependsOn": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "createdAt": {
+                  "default": "",
+                  "type": "string"
+                },
+                "lastRunAt": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastRunStatus": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "starting",
+                        "running",
+                        "completed",
+                        "failed",
+                        "cancelled"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastRunId": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastResult": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title",
+                "description",
+                "agentType",
+                "status",
+                "priority",
+                "tags",
+                "steps",
+                "dependsOn",
+                "createdAt",
+                "lastRunAt",
+                "lastRunStatus",
+                "lastRunId",
+                "lastResult"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "list",
+            "name",
+            "title",
+            "description",
+            "agentType",
+            "status",
+            "priority",
+            "tags",
+            "stepCount",
+            "dependsOn",
+            "lastRunAt",
+            "lastRunStatus",
+            "lastRunId",
+            "size",
+            "updatedAt",
+            "body",
+            "steps",
+            "lastResult",
+            "frontmatter"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "additionalProperties": false
+    },
+    "moveTaskParams": {
+      "type": "object",
+      "properties": {
+        "fromList": {
+          "type": "string"
+        },
+        "fromName": {
+          "type": "string"
+        },
+        "toList": {
+          "type": "string"
+        },
+        "toName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "fromList",
+        "fromName",
+        "toList",
+        "toName"
+      ]
+    },
+    "moveTaskResult": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "type": "object",
+          "properties": {
+            "list": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "in-progress",
+                "blocked",
+                "done",
+                "cancelled"
+              ]
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "low",
+                "normal",
+                "high",
+                "urgent"
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "stepCount": {
+              "type": "number"
+            },
+            "dependsOn": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "lastRunAt": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastRunStatus": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "starting",
+                    "running",
+                    "completed",
+                    "failed",
+                    "cancelled"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastRunId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "size": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "lastResult": {
+              "type": "string"
+            },
+            "frontmatter": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "default": "",
+                  "type": "string"
+                },
+                "description": {
+                  "default": "",
+                  "type": "string"
+                },
+                "agentType": {
+                  "default": "",
+                  "type": "string"
+                },
+                "status": {
+                  "default": "pending",
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "in-progress",
+                    "blocked",
+                    "done",
+                    "cancelled"
+                  ]
+                },
+                "priority": {
+                  "default": "normal",
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "normal",
+                    "high",
+                    "urgent"
+                  ]
+                },
+                "tags": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "steps": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "dependsOn": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "createdAt": {
+                  "default": "",
+                  "type": "string"
+                },
+                "lastRunAt": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastRunStatus": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "starting",
+                        "running",
+                        "completed",
+                        "failed",
+                        "cancelled"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastRunId": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastResult": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title",
+                "description",
+                "agentType",
+                "status",
+                "priority",
+                "tags",
+                "steps",
+                "dependsOn",
+                "createdAt",
+                "lastRunAt",
+                "lastRunStatus",
+                "lastRunId",
+                "lastResult"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "list",
+            "name",
+            "title",
+            "description",
+            "agentType",
+            "status",
+            "priority",
+            "tags",
+            "stepCount",
+            "dependsOn",
+            "lastRunAt",
+            "lastRunStatus",
+            "lastRunId",
+            "size",
+            "updatedAt",
+            "body",
+            "steps",
+            "lastResult",
+            "frontmatter"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "additionalProperties": false
+    },
+    "deleteTaskParams": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "list",
+        "name"
+      ]
+    },
+    "deleteTaskResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
+      ],
+      "additionalProperties": false
+    },
+    "getRunsParams": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string"
+        }
+      }
+    },
+    "getRunsResult": {
+      "type": "object",
+      "properties": {
+        "runs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "batchId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "list": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "agentId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "messages": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "currentStep": {
+                "type": "number"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "starting",
+                  "running",
+                  "completed",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "startedAt": {
+                "type": "number"
+              },
+              "finishedAt": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "batchId",
+              "list",
+              "name",
+              "title",
+              "agentType",
+              "agentId",
+              "messages",
+              "currentStep",
+              "status",
+              "message",
+              "startedAt",
+              "finishedAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "batches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "list": {
+                "type": "string"
+              },
+              "parallel": {
+                "type": "number"
+              },
+              "runIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "startedAt": {
+                "type": "number"
+              },
+              "finishedAt": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "list",
+              "parallel",
+              "runIds",
+              "startedAt",
+              "finishedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "runs",
+        "batches"
+      ],
+      "additionalProperties": false
+    },
+    "streamTaskRunsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamTaskRunsResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "success"
+        },
+        "runs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "batchId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "list": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "agentId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "messages": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "currentStep": {
+                "type": "number"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "starting",
+                  "running",
+                  "completed",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "startedAt": {
+                "type": "number"
+              },
+              "finishedAt": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "batchId",
+              "list",
+              "name",
+              "title",
+              "agentType",
+              "agentId",
+              "messages",
+              "currentStep",
+              "status",
+              "message",
+              "startedAt",
+              "finishedAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "batches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "list": {
+                "type": "string"
+              },
+              "parallel": {
+                "type": "number"
+              },
+              "runIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "startedAt": {
+                "type": "number"
+              },
+              "finishedAt": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "list",
+              "parallel",
+              "runIds",
+              "startedAt",
+              "finishedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "status",
+        "runs",
+        "batches"
+      ],
+      "additionalProperties": false
+    },
+    "runTaskParams": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "headless": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "list",
+        "name"
+      ]
+    },
+    "runTaskResult": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "agentId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "runId",
+        "agentId"
+      ],
+      "additionalProperties": false
+    },
+    "runTasksParams": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "string"
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "parallel": {
+          "type": "number"
+        },
+        "label": {
+          "type": "string"
+        },
+        "headless": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "list",
+        "names"
+      ]
+    },
+    "runTasksResult": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "batchId"
+      ],
+      "additionalProperties": false
+    },
+    "cancelRunParams": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "runId"
+      ]
+    },
+    "cancelRunResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
+      ],
+      "additionalProperties": false
+    },
+    "cancelBatchParams": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "batchId"
+      ]
+    },
+    "cancelBatchResult": {
+      "type": "object",
+      "properties": {
+        "cancelled": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "cancelled"
+      ],
+      "additionalProperties": false
     }
   },
   "x-tokenring-rpc": {
@@ -581,30 +3834,105 @@
     "path": "/rpc/tasks",
     "source": "plugin/tasks/rpc/schema.ts",
     "methods": {
-      "getAvailableSubAgents": {
+      "getTaskConfiguration": {
         "type": "query",
-        "params": "#/$defs/getAvailableSubAgentsParams",
-        "result": "#/$defs/getAvailableSubAgentsResult"
+        "params": "#/$defs/getTaskConfigurationParams",
+        "result": "#/$defs/getTaskConfigurationResult"
       },
-      "getEnabledSubAgents": {
+      "listTaskLists": {
         "type": "query",
-        "params": "#/$defs/getEnabledSubAgentsParams",
-        "result": "#/$defs/getEnabledSubAgentsResult"
+        "params": "#/$defs/listTaskListsParams",
+        "result": "#/$defs/listTaskListsResult"
       },
-      "streamEnabledSubAgents": {
+      "streamTaskLists": {
         "type": "stream",
-        "params": "#/$defs/streamEnabledSubAgentsParams",
-        "result": "#/$defs/streamEnabledSubAgentsResult"
+        "params": "#/$defs/streamTaskListsParams",
+        "result": "#/$defs/streamTaskListsResult"
       },
-      "enableSubAgents": {
-        "type": "mutation",
-        "params": "#/$defs/enableSubAgentsParams",
-        "result": "#/$defs/enableSubAgentsResult"
+      "listTasks": {
+        "type": "query",
+        "params": "#/$defs/listTasksParams",
+        "result": "#/$defs/listTasksResult"
       },
-      "disableSubAgents": {
+      "streamTasks": {
+        "type": "stream",
+        "params": "#/$defs/streamTasksParams",
+        "result": "#/$defs/streamTasksResult"
+      },
+      "getTask": {
+        "type": "query",
+        "params": "#/$defs/getTaskParams",
+        "result": "#/$defs/getTaskResult"
+      },
+      "searchTasks": {
+        "type": "query",
+        "params": "#/$defs/searchTasksParams",
+        "result": "#/$defs/searchTasksResult"
+      },
+      "createTaskList": {
         "type": "mutation",
-        "params": "#/$defs/disableSubAgentsParams",
-        "result": "#/$defs/disableSubAgentsResult"
+        "params": "#/$defs/createTaskListParams",
+        "result": "#/$defs/createTaskListResult"
+      },
+      "deleteTaskList": {
+        "type": "mutation",
+        "params": "#/$defs/deleteTaskListParams",
+        "result": "#/$defs/deleteTaskListResult"
+      },
+      "createTask": {
+        "type": "mutation",
+        "params": "#/$defs/createTaskParams",
+        "result": "#/$defs/createTaskResult"
+      },
+      "updateTask": {
+        "type": "mutation",
+        "params": "#/$defs/updateTaskParams",
+        "result": "#/$defs/updateTaskResult"
+      },
+      "setTaskStatus": {
+        "type": "mutation",
+        "params": "#/$defs/setTaskStatusParams",
+        "result": "#/$defs/setTaskStatusResult"
+      },
+      "moveTask": {
+        "type": "mutation",
+        "params": "#/$defs/moveTaskParams",
+        "result": "#/$defs/moveTaskResult"
+      },
+      "deleteTask": {
+        "type": "mutation",
+        "params": "#/$defs/deleteTaskParams",
+        "result": "#/$defs/deleteTaskResult"
+      },
+      "getRuns": {
+        "type": "query",
+        "params": "#/$defs/getRunsParams",
+        "result": "#/$defs/getRunsResult"
+      },
+      "streamTaskRuns": {
+        "type": "stream",
+        "params": "#/$defs/streamTaskRunsParams",
+        "result": "#/$defs/streamTaskRunsResult"
+      },
+      "runTask": {
+        "type": "mutation",
+        "params": "#/$defs/runTaskParams",
+        "result": "#/$defs/runTaskResult"
+      },
+      "runTasks": {
+        "type": "mutation",
+        "params": "#/$defs/runTasksParams",
+        "result": "#/$defs/runTasksResult"
+      },
+      "cancelRun": {
+        "type": "mutation",
+        "params": "#/$defs/cancelRunParams",
+        "result": "#/$defs/cancelRunResult"
+      },
+      "cancelBatch": {
+        "type": "mutation",
+        "params": "#/$defs/cancelBatchParams",
+        "result": "#/$defs/cancelBatchResult"
       }
     }
   }

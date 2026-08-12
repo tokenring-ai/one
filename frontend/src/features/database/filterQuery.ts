@@ -7,16 +7,23 @@ export type QueryFilter = {
   value?: string | number | boolean | null | (string | number)[];
 };
 
-/** Coerce a typed filter string into the value shape the selectRows RPC accepts. */
-export function coerceScalar(raw: string, dataType: string | undefined): string | number | boolean {
+/**
+ * Coerce a typed filter string into the value shape the selectRows RPC accepts.
+ * Returns `null` when the input cannot be coerced for a numeric column so callers
+ * can skip invalid filters instead of sending strings that MySQL may coerce to 0.
+ */
+export function coerceScalar(raw: string, dataType: string | undefined): string | number | boolean | null {
   const trimmed = raw.trim();
   if (dataType && /^(bool|boolean|bit\(1\))/i.test(dataType)) {
     const lower = trimmed.toLowerCase();
     if (lower === "true" || lower === "1" || lower === "yes") return true;
     if (lower === "false" || lower === "0" || lower === "no") return false;
   }
-  if (dataType && isNumericType(dataType) && trimmed !== "" && !Number.isNaN(Number(trimmed))) {
-    return Number(trimmed);
+  if (dataType && isNumericType(dataType)) {
+    if (trimmed === "") return raw;
+    const num = Number(trimmed);
+    if (Number.isNaN(num)) return null;
+    return num;
   }
   return raw;
 }
@@ -49,14 +56,18 @@ export function draftFiltersToQuery(drafts: DraftFilter[], columns: ColumnDef[])
         .map(part => part.trim())
         .filter(part => part.length > 0);
       if (parts.length === 0) continue;
+      const values: (string | number)[] = [];
+      for (const part of parts) {
+        const coerced = coerceScalar(part, dataType);
+        if (coerced === null) continue; // skip invalid numeric tokens
+        // RowFilter `in` accepts string | number only, not boolean.
+        values.push(typeof coerced === "boolean" ? String(coerced) : coerced);
+      }
+      if (values.length === 0) continue;
       out.push({
         column: draft.column,
         op: draft.op,
-        value: parts.map(part => {
-          const coerced = coerceScalar(part, dataType);
-          // RowFilter `in` accepts string | number only, not boolean.
-          return typeof coerced === "boolean" ? String(coerced) : coerced;
-        }),
+        value: values,
       });
       continue;
     }
@@ -68,7 +79,9 @@ export function draftFiltersToQuery(drafts: DraftFilter[], columns: ColumnDef[])
       continue;
     }
 
-    out.push({ column: draft.column, op: draft.op, value: coerceScalar(raw, dataType) });
+    const coerced = coerceScalar(raw, dataType);
+    if (coerced === null) continue; // skip invalid numeric filters
+    out.push({ column: draft.column, op: draft.op, value: coerced });
   }
 
   return out;

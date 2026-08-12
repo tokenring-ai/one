@@ -1,6 +1,8 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { Loader2, Send, X } from "lucide-react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { Send, X } from "lucide-react";
+import { type SubmitEvent, useEffect, useRef, useState } from "react";
+import FormActionBar from "../../../components/ui/FormActionBar.tsx";
+import { KeyValueRow } from "../../../components/ui/KeyValueMetadata.tsx";
 import { toastManager } from "../../../components/ui/toast.tsx";
 import { cn } from "../../../lib/utils.ts";
 import { emailRPCClient } from "../../../rpc.ts";
@@ -62,7 +64,7 @@ export default function ComposeForm({
     });
   }, [initial]);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault();
     if (!isValidEmailList(to)) {
       toastManager.error("Enter at least one valid recipient in To", { duration: 3500 });
@@ -80,10 +82,8 @@ export default function ComposeForm({
     setSending(true);
     try {
       const agentId = await ensureAgent();
-      if (!agentId) {
-        toastManager.error("Could not start an email agent to send", { duration: 4000 });
-        return;
-      }
+      // ensureAgent already toasts on create failure
+      if (!agentId) return;
 
       await emailRPCClient.updateEmailState({ agentId, selectedProvider: provider });
 
@@ -147,19 +147,27 @@ export default function ComposeForm({
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
-        <label className="flex items-center gap-2">
-          <span className="text-xs font-medium text-muted w-10 shrink-0">To</span>
-          <input
-            ref={toRef}
-            type="text"
-            value={to}
-            onChange={e => setTo(e.target.value)}
-            placeholder="recipient@example.com"
-            className={inputClass}
-            required
-            autoComplete="off"
-          />
-        </label>
+        <KeyValueRow
+          as="label"
+          label="To"
+          labelWidth="w-10"
+          align="center"
+          truncate={false}
+          labelClassName="text-xs text-muted"
+          valueClassName="text-inherit"
+          value={
+            <input
+              ref={toRef}
+              type="text"
+              value={to}
+              onChange={e => setTo(e.target.value)}
+              placeholder="recipient@example.com"
+              className={inputClass}
+              required
+              autoComplete="off"
+            />
+          }
+        />
 
         {!showCcBcc ? (
           <button type="button" onClick={() => setShowCcBcc(true)} className="text-xs text-muted hover:text-primary transition-colors cursor-pointer ml-12">
@@ -167,21 +175,41 @@ export default function ComposeForm({
           </button>
         ) : (
           <>
-            <label className="flex items-center gap-2">
-              <span className="text-xs font-medium text-muted w-10 shrink-0">Cc</span>
-              <input type="text" value={cc} onChange={e => setCc(e.target.value)} placeholder="optional" className={inputClass} autoComplete="off" />
-            </label>
-            <label className="flex items-center gap-2">
-              <span className="text-xs font-medium text-muted w-10 shrink-0">Bcc</span>
-              <input type="text" value={bcc} onChange={e => setBcc(e.target.value)} placeholder="optional" className={inputClass} autoComplete="off" />
-            </label>
+            <KeyValueRow
+              as="label"
+              label="Cc"
+              labelWidth="w-10"
+              align="center"
+              truncate={false}
+              labelClassName="text-xs text-muted"
+              valueClassName="text-inherit"
+              value={<input type="text" value={cc} onChange={e => setCc(e.target.value)} placeholder="optional" className={inputClass} autoComplete="off" />}
+            />
+            <KeyValueRow
+              as="label"
+              label="Bcc"
+              labelWidth="w-10"
+              align="center"
+              truncate={false}
+              labelClassName="text-xs text-muted"
+              valueClassName="text-inherit"
+              value={<input type="text" value={bcc} onChange={e => setBcc(e.target.value)} placeholder="optional" className={inputClass} autoComplete="off" />}
+            />
           </>
         )}
 
-        <label className="flex items-center gap-2">
-          <span className="text-xs font-medium text-muted w-10 shrink-0">Subject</span>
-          <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Subject" className={inputClass} autoComplete="off" />
-        </label>
+        <KeyValueRow
+          as="label"
+          label="Subject"
+          labelWidth="w-10"
+          align="center"
+          truncate={false}
+          labelClassName="text-xs text-muted"
+          valueClassName="text-inherit"
+          value={
+            <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Subject" className={inputClass} autoComplete="off" />
+          }
+        />
 
         <textarea
           ref={bodyRef}
@@ -193,24 +221,7 @@ export default function ComposeForm({
         />
       </div>
 
-      <div className="shrink-0 flex items-center justify-end gap-2 px-4 py-3 border-t border-primary bg-secondary">
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={sending}
-          className="px-3 py-1.5 text-xs text-muted hover:text-primary border border-primary rounded-lg focus-ring cursor-pointer transition-colors disabled:opacity-50"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={sending}
-          className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-500 disabled:opacity-60 text-white rounded-lg focus-ring cursor-pointer shadow-button-primary"
-        >
-          {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-          Send
-        </button>
-      </div>
+      <FormActionBar onCancel={onClose} submitLabel="Send" submitIcon={Send} loading={sending} variant="red" separated size="md" />
     </form>
   );
 }

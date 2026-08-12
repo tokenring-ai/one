@@ -1,6 +1,7 @@
 import { Bot, Calendar, Clock, GitBranch, Loader2, MapPin, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toastManager } from "../../../components/ui/toast.tsx";
+import { useBusyAction } from "../../../hooks/useBusyAction.ts";
 import { cn } from "../../../lib/utils.ts";
 import { useAgentTypes, useWorkflows } from "../../../rpc.ts";
 import { EVENT_COLORS } from "../constants.ts";
@@ -43,7 +44,7 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
   const [color, setColor] = useState(event?.color ?? EVENT_COLORS[0]!.value);
   const [description, setDescription] = useState(event?.description ?? "");
   const [location, setLocation] = useState(event?.location ?? "");
-  const [busy, setBusy] = useState(false);
+  const { busy, execute } = useBusyAction();
 
   const titleRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -75,7 +76,12 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
     }
 
     // Existing RPC events stay on the provider; new calendar events go to provider when available
-    const useRpc = isRpc || (isNew && type === "calendar" && Boolean(provider));
+    const resolvedProvider = event?.provider || provider || null;
+    const useRpc = isRpc || (isNew && type === "calendar" && Boolean(resolvedProvider));
+    if (useRpc && !resolvedProvider) {
+      toastManager.error("No calendar provider selected");
+      return;
+    }
     const next: CalendarEvent = {
       id: event?.id ?? crypto.randomUUID(),
       title: title.trim(),
@@ -86,31 +92,25 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
       type,
       color,
       source: useRpc ? "rpc" : "local",
-      ...(useRpc && { provider: event?.provider ?? provider! }),
+      ...(useRpc && resolvedProvider && { provider: resolvedProvider }),
       ...(type === "agent" && { agentType }),
       ...(type === "workflow" && { workflowKey }),
       ...(description.trim() && { description: description.trim() }),
       ...(location.trim() && { location: location.trim() }),
     };
 
-    setBusy(true);
-    try {
+    await execute(async () => {
       await onSave(next);
-    } finally {
-      setBusy(false);
-    }
+    });
   };
 
   const handleDelete = async () => {
     if (!event) return;
     const ok = window.confirm(`Delete “${event.title}”? This cannot be undone.`);
     if (!ok) return;
-    setBusy(true);
-    try {
+    await execute(async () => {
       await onDelete(event);
-    } finally {
-      setBusy(false);
-    }
+    });
   };
 
   const showRun = !isNew && !isRpc && (type === "workflow" || type === "agent");
@@ -163,7 +163,21 @@ export default function EventModal({ event, defaultDate, defaultHour, provider, 
               />
             </div>
             <label className="flex items-center gap-2 mt-4 cursor-pointer select-none">
-              <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)} disabled={disabled} className="rounded accent-sky-500" />
+              <input
+                type="checkbox"
+                checked={allDay}
+                onChange={e => {
+                  const checked = e.target.checked;
+                  setAllDay(checked);
+                  // When switching to timed, ensure sensible defaults if times are empty
+                  if (!checked) {
+                    if (!startTime) setStartTime("09:00");
+                    if (!endTime) setEndTime(startTime ? addOneHour(startTime) : "10:00");
+                  }
+                }}
+                disabled={disabled}
+                className="rounded accent-sky-500"
+              />
               <span className="text-xs text-primary">All day</span>
             </label>
           </div>

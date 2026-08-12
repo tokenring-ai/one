@@ -1,8 +1,9 @@
 import type { ConfigScope } from "@tokenring-ai/app";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { Loader2, PlugZap, X } from "lucide-react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import { useMemo, useState } from "react";
+import PasswordInput from "../../components/ui/PasswordInput.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
 import { formatConfigIssues, updateConfigLayer } from "../../lib/configWrites.ts";
 import { cn } from "../../lib/utils.ts";
@@ -115,7 +116,7 @@ export default function ConnectServiceForm({ available, initialPlatform, existin
   const overwriting = useMemo(() => existingAccounts.includes(trimmedName), [existingAccounts, trimmedName]);
   const missingRequired = spec.fields.some(field => field.required && !credentials[field.key]?.trim());
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault();
     if (!trimmedName) {
       toastManager.error("The account needs a name — it is what bots address, as in telegram:123456789", { duration: 4000 });
@@ -204,8 +205,8 @@ export default function ConnectServiceForm({ available, initialPlatform, existin
         <label className="block space-y-1">
           <span className="text-xs font-medium text-muted">Save to</span>
           <select value={scope} onChange={e => setScope(e.target.value as ConfigScope)} className={inputClass}>
-            <option value="user">User configuration — only you</option>
-            <option value="project">Project configuration — everyone on this project</option>
+            <option value="global">Global configuration — all workspaces</option>
+            <option value="workspace">Workspace configuration — this workspace only</option>
           </select>
         </label>
       </div>
@@ -216,12 +217,11 @@ export default function ConnectServiceForm({ available, initialPlatform, existin
             {field.label}
             {field.required ? "" : " (optional)"}
           </span>
-          <input
-            type="password"
+          <PasswordInput
             value={credentials[field.key] ?? ""}
-            onChange={e => setCredentials(current => ({ ...current, [field.key]: e.target.value }))}
+            onChange={next => setCredentials(current => ({ ...current, [field.key]: next }))}
             placeholder={field.placeholder}
-            className={cn(inputClass, "font-mono")}
+            inputClassName="py-2 text-xs transition-all"
             spellCheck={false}
             autoComplete="off"
           />

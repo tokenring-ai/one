@@ -1,7 +1,8 @@
-import { ArrowDownRight, ArrowUpRight, Loader2, TrendingDown, TrendingUp, Zap } from "lucide-react";
+import { Loader2, TrendingDown, TrendingUp, Zap } from "lucide-react";
 import { useState } from "react";
+import ChangeIndicator from "../../../components/ui/ChangeIndicator.tsx";
 import { useStockLeaders } from "../../../rpc.ts";
-import { changeSign, fmt, fmtPrice, fmtVol } from "../formatters.ts";
+import { fmt, fmtPrice, fmtVol } from "../formatters.ts";
 import type { StockQuote } from "../types.ts";
 
 interface LeadersSectionProps {
@@ -62,12 +63,7 @@ export default function LeadersSection({ onSymbolSelect }: LeadersSectionProps) 
                 const sym = row.Symbol ?? "";
                 const name = row.Name ?? "";
                 const price = row.Price ?? "";
-                const change = row.Change ?? "";
-                const changePct = row.ChangePercent ?? "";
                 const vol = row.Volume ?? "";
-                const changeNum = Number(change);
-                const isUp = changeNum > 0;
-                const isDown = changeNum < 0;
                 return (
                   <tr
                     key={sym || i}
@@ -77,13 +73,8 @@ export default function LeadersSection({ onSymbolSelect }: LeadersSectionProps) 
                     <td className="px-3 py-2 font-bold text-accent-soft">{sym}</td>
                     <td className="px-3 py-2 text-secondary truncate max-w-40">{name}</td>
                     <td className="px-3 py-2 text-right font-medium text-primary">{price === "" ? "-" : `$${fmtPrice(price)}`}</td>
-                    <td className={`px-3 py-2 text-right font-medium ${isUp ? "text-emerald-500" : isDown ? "text-red-500" : "text-muted"}`}>
-                      <span className="flex items-center justify-end gap-0.5">
-                        {isUp ? <ArrowUpRight className="w-3 h-3" /> : isDown ? <ArrowDownRight className="w-3 h-3" /> : null}
-                        {changeSign(change)}
-                        {fmt(change)} ({changeSign(changePct)}
-                        {fmt(changePct)}%)
-                      </span>
+                    <td className="px-3 py-2 text-right font-medium">
+                      <ChangeIndicator change={row.Change} changePercent={row.ChangePercent} formatChange={fmt} formatPercent={fmt} size="sm" align="right" />
                     </td>
                     <td className="px-3 py-2 text-right text-muted">{fmtVol(vol)}</td>
                   </tr>

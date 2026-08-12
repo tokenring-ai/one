@@ -11,6 +11,52 @@ export function formatUsd(amount: number): string {
   return amount < 0 ? `-$${body}` : `$${body}`;
 }
 
+/** Compact token/count formatting (1.2k, 3.4M). */
+export function formatCount(n: number): string {
+  if (!Number.isFinite(n) || n === 0) return "0";
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (abs >= 1_000_000) {
+    const millions = abs / 1_000_000;
+    return `${sign}${millions >= 10 ? millions.toFixed(0) : millions.toFixed(1)}M`;
+  }
+  if (abs >= 1_000) {
+    const thousands = abs / 1_000;
+    // Keep one decimal under 100k so 12.5k doesn't round away; whole numbers drop trailing .0
+    const body = thousands >= 100 ? thousands.toFixed(0) : thousands.toFixed(1).replace(/\.0$/, "");
+    return `${sign}${body}k`;
+  }
+  return `${sign}${Math.round(abs).toLocaleString("en-US")}`;
+}
+
+/** Format milliseconds as ms or seconds. */
+export function formatMs(ms: number | undefined): string {
+  if (ms === undefined || !Number.isFinite(ms) || ms <= 0) return "—";
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  return `${(ms / 1000).toFixed(ms < 10_000 ? 2 : 1)}s`;
+}
+
+/** Format tokens/sec throughput. */
+export function formatTps(tps: number | undefined): string {
+  if (tps === undefined || !Number.isFinite(tps) || tps <= 0) return "—";
+  return `${tps >= 100 ? Math.round(tps) : tps.toFixed(1)} tk/s`;
+}
+
+/** Sum values in a string→number record. */
+export function sumRecord(record: Record<string, number> | undefined): number {
+  if (!record) return 0;
+  return Object.values(record).reduce((a, b) => a + b, 0);
+}
+
+/** Top N entries from a string→number record, sorted by value descending. */
+export function topRecordEntries(record: Record<string, number> | undefined, limit = 5): Array<{ key: string; value: number }> {
+  if (!record) return [];
+  return Object.entries(record)
+    .map(([key, value]) => ({ key, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
 /** Format a 0–1 share as a percentage string. */
 export function formatPercent(share: number, digits = 0): string {
   if (!Number.isFinite(share)) return "0%";

@@ -7,7 +7,7 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
-      "title": "getEmailProviders request",
+      "title": "getEmailConfiguration request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -17,10 +17,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/email.getEmailProviders"
+          "const": "/rpc/email.getEmailConfiguration"
         },
         "params": {
-          "$ref": "#/$defs/getEmailProvidersParams"
+          "$ref": "#/$defs/getEmailConfigurationParams"
         }
       },
       "required": [
@@ -32,7 +32,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getEmailProviders response",
+      "title": "getEmailConfiguration response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -42,7 +42,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getEmailProvidersResult"
+          "$ref": "#/$defs/getEmailConfigurationResult"
         }
       },
       "required": [
@@ -504,11 +504,11 @@
       ],
       "additionalProperties": false
     },
-    "getEmailProvidersParams": {
+    "getEmailConfigurationParams": {
       "type": "object",
       "properties": {}
     },
-    "getEmailProvidersResult": {
+    "getEmailConfigurationResult": {
       "type": "object",
       "properties": {
         "providers": {
@@ -516,10 +516,17 @@
           "items": {
             "type": "string"
           }
+        },
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
-        "providers"
+        "providers",
+        "agentTypes"
       ],
       "additionalProperties": false
     },
@@ -1736,10 +1743,10 @@
     "path": "/rpc/email",
     "source": "plugin/email/rpc/schema.ts",
     "methods": {
-      "getEmailProviders": {
+      "getEmailConfiguration": {
         "type": "query",
-        "params": "#/$defs/getEmailProvidersParams",
-        "result": "#/$defs/getEmailProvidersResult"
+        "params": "#/$defs/getEmailConfigurationParams",
+        "result": "#/$defs/getEmailConfigurationResult"
       },
       "getEmailBoxes": {
         "type": "query",

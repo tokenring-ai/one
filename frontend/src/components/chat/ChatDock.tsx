@@ -1,6 +1,7 @@
 import { MessageSquare } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocalStorageState } from "../../hooks/useLocalStorageState.ts";
 import ResizableSplit from "../ui/ResizableSplit.tsx";
 import type { ChatDockMode } from "./ChatDockControls.tsx";
 import ChatPanel from "./ChatPanel.tsx";
@@ -37,25 +38,6 @@ function storageId(storageKey: string) {
   return `chatDock:${storageKey}`;
 }
 
-function readStored<T>(key: string, isValid: (value: unknown) => value is T): T | null {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    return isValid(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStored(key: string, value: unknown) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Private browsing / quota — dock preferences are not worth failing over.
-  }
-}
-
 const isMode = (value: unknown): value is ChatDockMode => value === "bottom" || value === "right" || value === "float" || value === "closed";
 
 const isRect = (value: unknown): value is FloatRect =>
@@ -78,10 +60,29 @@ export default function ChatDock({ agentId, storageKey, defaultMode = "bottom", 
   const modeKey = `${storageId(storageKey)}:mode`;
   const rectKey = `${storageId(storageKey)}:float`;
 
-  const [mode, setModeState] = useState<ChatDockMode>(() => readStored(modeKey, isMode) ?? defaultMode);
+  const [mode, setModeState] = useLocalStorageState<ChatDockMode>(modeKey, defaultMode, {
+    deserialize: raw => {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        return isMode(parsed) ? parsed : defaultMode;
+      } catch {
+        return defaultMode;
+      }
+    },
+  });
+
   const [mobileViewport, setMobileViewport] = useState(isMobileViewport);
   const [compactViewport, setCompactViewport] = useState(isCompactViewport);
-  const [floatRect, setFloatRect] = useState<FloatRect | null>(() => readStored(rectKey, isRect));
+  const [floatRect, setFloatRect] = useLocalStorageState<FloatRect | null>(rectKey, null, {
+    deserialize: raw => {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        return isRect(parsed) ? parsed : null;
+      } catch {
+        return null;
+      }
+    },
+  });
   const containerRef = useRef<HTMLDivElement>(null);
   // Placement to restore when the panel is reopened after being closed.
   const lastOpenModeRef = useRef<Exclude<ChatDockMode, "closed">>(mode === "closed" ? (defaultMode === "closed" ? "bottom" : defaultMode) : mode);
@@ -107,9 +108,8 @@ export default function ChatDock({ agentId, storageKey, defaultMode = "bottom", 
     (next: ChatDockMode) => {
       if (next !== "closed") lastOpenModeRef.current = next;
       setModeState(next);
-      writeStored(modeKey, next);
     },
-    [modeKey],
+    [setModeState],
   );
 
   const handleClose = useCallback(() => {
@@ -130,7 +130,7 @@ export default function ChatDock({ agentId, storageKey, defaultMode = "bottom", 
       width,
       height,
     });
-  }, [mode, floatRect]);
+  }, [mode, floatRect, setFloatRect]);
 
   const startFloatGesture = useCallback(
     (event: React.PointerEvent, kind: "move" | "resize") => {
@@ -158,7 +158,7 @@ export default function ChatDock({ agentId, storageKey, defaultMode = "bottom", 
           setFloatRect({
             ...start,
             width: Math.max(FLOAT_MIN_WIDTH, Math.min(bounds.width - start.x, start.width + dx)),
-            height: Math.max(FLOAT_MIN_HEIGHT, Math.min(bounds.height - start.y, start.height + dy)),
+            height: Math.max(FLOAT_MIN_HEIGHT, Math.min(bounds.height - start.height, start.height + dy)),
           });
         }
       };
@@ -167,17 +167,14 @@ export default function ChatDock({ agentId, storageKey, defaultMode = "bottom", 
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
         document.body.style.userSelect = "";
-        setFloatRect(current => {
-          if (current) writeStored(rectKey, current);
-          return current;
-        });
+        // Final write is already handled by setFloatRect during the gesture.
       };
 
       document.body.style.userSelect = "none";
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     },
-    [floatRect, rectKey],
+    [floatRect, setFloatRect],
   );
 
   if (!agentId) return <>{children}</>;
@@ -186,6 +183,8 @@ export default function ChatDock({ agentId, storageKey, defaultMode = "bottom", 
 
   const panel = (onHeaderPointerDown?: (event: React.PointerEvent) => void) => (
     <ChatPanel
+      // Remount on agent switch so the composer picks up that agent's saved draft.
+      key={agentId}
       agentId={agentId}
       dockMode={effectiveMode}
       onDockModeChange={setMode}

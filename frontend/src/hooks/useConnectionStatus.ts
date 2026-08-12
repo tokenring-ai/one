@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRefSync } from "./useRefSync.ts";
 
 export function useConnectionStatus(staleThresholdMs = 30000) {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [isStale, setIsStale] = useState(false);
-  const lastActivityRef = useRef(lastActivity);
-  lastActivityRef.current = lastActivity;
+  const lastActivityRef = useRefSync(lastActivity);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);

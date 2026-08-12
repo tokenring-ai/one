@@ -1,6 +1,7 @@
-import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import type React from "react";
 import { Fragment, useMemo, useState } from "react";
+import SearchInput from "../ui/SearchInput.tsx";
 
 export interface SidebarCategoryAccordionSearch<T> {
   placeholder?: string;
@@ -110,27 +111,13 @@ export default function SidebarCategoryAccordion<T>({
 
       {search && items.length > 0 && (
         <div className="px-2 pb-2">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted pointer-events-none" />
-            <input
-              type="search"
-              value={filter}
-              onChange={e => setFilter(e.target.value)}
-              placeholder={search.placeholder ?? "Filter…"}
-              className="w-full bg-input border border-primary rounded-md py-1.5 pl-7 pr-7 text-xs text-primary placeholder-muted focus-accent transition-all"
-              aria-label={search.ariaLabel ?? "Filter list"}
-            />
-            {filter && (
-              <button
-                type="button"
-                onClick={() => setFilter("")}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted hover:text-primary cursor-pointer focus-ring"
-                aria-label={search.clearAriaLabel ?? "Clear filter"}
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
+          <SearchInput
+            value={filter}
+            onChange={setFilter}
+            placeholder={search.placeholder ?? "Filter…"}
+            aria-label={search.ariaLabel ?? "Filter list"}
+            clearAriaLabel={search.clearAriaLabel ?? "Clear filter"}
+          />
         </div>
       )}
 

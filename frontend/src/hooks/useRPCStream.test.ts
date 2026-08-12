@@ -168,7 +168,11 @@ describe("useRPCStream", () => {
   });
 
   it("manualReconnect restarts the subscription", async () => {
-    const subscribe = mock((signal: AbortSignal) => createGenerator([{ value: 1 }], signal));
+    let call = 0;
+    const subscribe = mock((signal: AbortSignal) => {
+      call += 1;
+      return createGenerator([{ value: call }], signal);
+    });
 
     const { result } = renderHook(() =>
       useRPCStream({
@@ -181,15 +185,63 @@ describe("useRPCStream", () => {
       expect(result.current.data).toEqual({ value: 1 });
     });
 
+    let reconnectPromise!: Promise<unknown>;
     act(() => {
-      result.current.manualReconnect();
+      reconnectPromise = result.current.manualReconnect();
     });
 
     await waitFor(() => {
       expect(subscribe).toHaveBeenCalledTimes(2);
     });
+    await expect(reconnectPromise).resolves.toEqual({ value: 2 });
     expect(result.current.error).toBeNull();
     expect(result.current.reconnectAttempts).toBe(0);
+  });
+
+  it("manualReconnect settles with last known data when the restarted stream errors", async () => {
+    let call = 0;
+    const subscribe = mock((signal: AbortSignal) => {
+      call += 1;
+      if (call === 1) {
+        return createGenerator([{ value: 1 }], signal);
+      }
+      return createGenerator([{ value: 2 }], signal, { throwAfter: 0, hangAfterLast: false });
+    });
+
+    const { result } = renderHook(() =>
+      useRPCStream({
+        key: "manual-error",
+        subscribe,
+        reconnect: false,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual({ value: 1 });
+    });
+
+    let reconnectPromise!: Promise<unknown>;
+    act(() => {
+      reconnectPromise = result.current.manualReconnect();
+    });
+
+    // Does not hang and does not throw — fire-and-forget `void mutate()` callers stay safe.
+    await expect(reconnectPromise).resolves.toEqual({ value: 1 });
+    await waitFor(() => {
+      expect(result.current.error).toContain("stream failed");
+    });
+  });
+
+  it("manualReconnect resolves immediately when key is null", async () => {
+    const { result } = renderHook(() =>
+      useRPCStream({
+        key: null,
+        initialData: { value: 0 },
+        subscribe: signal => createGenerator([{ value: 1 }], signal),
+      }),
+    );
+
+    await expect(result.current.manualReconnect()).resolves.toEqual({ value: 0 });
   });
 
   it("resets data when key changes", async () => {

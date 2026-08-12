@@ -1,8 +1,9 @@
-import { ArrowDownRight, ArrowUpRight, BarChart2, BotMessageSquare, Clock, Loader2, Newspaper, TrendingUp } from "lucide-react";
+import { BarChart2, BotMessageSquare, Clock, Loader2, Newspaper, TrendingUp } from "lucide-react";
 import type React from "react";
 import { useMemo, useState } from "react";
+import ChangeIndicator from "../../../components/ui/ChangeIndicator.tsx";
 import { useStockPriceHistory, useStockPriceTicks, useStockQuote } from "../../../rpc.ts";
-import { changeSign, fmt, fmtPrice, fmtTs, historyRange } from "../formatters.ts";
+import { fmt, fmtPrice, fmtTs, historyRange } from "../formatters.ts";
 import type { Tab } from "../types.ts";
 import AskAIModal from "./AskAIModal.tsx";
 import ChartTab from "./ChartTab.tsx";
@@ -31,9 +32,7 @@ export default function StockDetail({ symbol, onClear }: StockDetailProps) {
   const change = quoteRow?.Change;
   const changePct = quoteRow?.ChangePercent;
   const companyName = quoteRow?.Name ?? symbol;
-  const isUp = Number(change) > 0;
-  const isDown = Number(change) < 0;
-  const isFlat = !(isUp || isDown);
+  const isFlat = !(Number(change) > 0 || Number(change) < 0);
 
   const logo =
     (quoteRow as { CLLogoBright128?: string; CLIconBright128?: string } | null)?.CLLogoBright128 ??
@@ -72,12 +71,7 @@ export default function StockDetail({ symbol, onClear }: StockDetailProps) {
                 <>
                   <span className="text-3xl font-bold text-primary">${fmtPrice(price)}</span>
                   {!isFlat && (
-                    <span className={`flex items-center gap-0.5 text-sm font-medium ${isUp ? "text-emerald-500" : "text-red-500"}`}>
-                      {isUp ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                      {changeSign(change)}
-                      {fmt(change)} ({changeSign(changePct)}
-                      {fmt(changePct)}%)
-                    </span>
+                    <ChangeIndicator change={change} changePercent={changePct} formatChange={fmt} formatPercent={fmt} className="text-sm font-medium" />
                   )}
                   {quoteRow?.LastTradeTime && <span className="text-xs text-muted">· {fmtTs(quoteRow.LastTradeTime, "datetime")}</span>}
                 </>

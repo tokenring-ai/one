@@ -1,14 +1,16 @@
+import { formatDurationMs } from "@tokenring-ai/utility/date/formatDuration";
+import { formatRelativeTime } from "@tokenring-ai/utility/date/formatRelativeTime";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   Circle,
+  Copy,
   ExternalLink,
   GitBranch,
   History,
   Loader2,
-  Play,
   Plus,
   RotateCcw,
   Save,
@@ -18,18 +20,28 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import NavigationSidebarHeader from "../../components/layout/NavigationSidebarHeader.tsx";
 import SidebarCategoryAccordion from "../../components/layout/SidebarCategoryAccordion.tsx";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import ConfirmModal from "../../components/ui/ConfirmModal.tsx";
+import EmptyState from "../../components/ui/EmptyState.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
+import HistoryRunRow, { type HistoryRunStatus } from "../../components/ui/HistoryRunRow.tsx";
+import LaunchButton from "../../components/ui/LaunchButton.tsx";
+import ListItemWithActions from "../../components/ui/ListItemWithActions.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
+import StatusBadge, { type StatusBadgeDefinition } from "../../components/ui/StatusBadge.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import AutoResizeTextarea from "../../features/workflows/AutoResizeTextarea.tsx";
 import type { AvailableAgentCommand, WorkflowStep } from "../../features/workflows/commandStep.ts";
 import { formatStepLabel, isStepFilled, normalizeSteps } from "../../features/workflows/commandStep.ts";
 import StepEditor from "../../features/workflows/StepEditor.tsx";
+import { useEntityDelete } from "../../hooks/useEntityDelete.ts";
+import { useStaleRouteRedirect } from "../../hooks/useStaleRouteRedirect.ts";
+import { toastOnReject } from "../../lib/toastOnReject.ts";
 import { useAgentList, useAgentTypes, useAvailableCommands, useTypedSWR, useWorkflowRuns, useWorkflows, workflowRPCClient } from "../../rpc.ts";
 
 const NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
@@ -103,73 +115,46 @@ function sortRunsNewestFirst(runs: WorkflowRun[]): WorkflowRun[] {
   });
 }
 
-function formatRelativeTime(ts: number, now = Date.now()): string {
-  const delta = ts - now;
-  const abs = Math.abs(delta);
-  const minutes = Math.round(abs / 60_000);
-  const hours = Math.round(abs / 3_600_000);
-  const days = Math.round(abs / 86_400_000);
-
-  let unit: string;
-  if (minutes < 1) unit = "just now";
-  else if (minutes < 60) unit = `${minutes}m`;
-  else if (hours < 48) unit = `${hours}h`;
-  else unit = `${days}d`;
-
-  if (unit === "just now") return unit;
-  return delta >= 0 ? `in ${unit}` : `${unit} ago`;
-}
-
-function formatDurationMs(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  const seconds = Math.round(ms / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  const rem = seconds % 60;
-  if (minutes < 60) return rem ? `${minutes}m ${rem}s` : `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const remMin = minutes % 60;
-  return remMin ? `${hours}h ${remMin}m` : `${hours}h`;
-}
-
 function runDurationLabel(run: WorkflowRun): string | null {
   if (run.finishedAt == null) return null;
   return formatDurationMs(Math.max(0, run.finishedAt - run.startedAt));
 }
 
+function toHistoryRunStatus(status: WorkflowRunStatus): HistoryRunStatus {
+  if (status === "completed" || status === "failed" || status === "cancelled") return status;
+  return "custom";
+}
+
+const RUN_STATUS_BADGES: Record<WorkflowRunStatus, StatusBadgeDefinition> = {
+  starting: {
+    label: "Starting",
+    icon: <Loader2 className="w-3 h-3 animate-spin" />,
+    colorClass: "text-amber-600 dark:text-amber-400",
+  },
+  running: {
+    label: "Running",
+    icon: <Loader2 className="w-3 h-3 animate-spin" />,
+    colorClass: "text-amber-600 dark:text-amber-400",
+  },
+  completed: {
+    label: "Completed",
+    icon: <CheckCircle2 className="w-3 h-3" />,
+    colorClass: "text-emerald-600 dark:text-emerald-400",
+  },
+  failed: {
+    label: "Failed",
+    icon: <XCircle className="w-3 h-3" />,
+    colorClass: "text-red-600 dark:text-red-400",
+  },
+  cancelled: {
+    label: "Cancelled",
+    icon: <X className="w-3 h-3" />,
+    colorClass: "text-muted",
+  },
+};
+
 function RunStatusBadge({ status }: { status: WorkflowRunStatus }) {
-  switch (status) {
-    case "starting":
-      return (
-        <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 shrink-0">
-          <Loader2 className="w-3 h-3 animate-spin" /> Starting
-        </span>
-      );
-    case "running":
-      return (
-        <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 shrink-0">
-          <Loader2 className="w-3 h-3 animate-spin" /> Running
-        </span>
-      );
-    case "completed":
-      return (
-        <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 shrink-0">
-          <CheckCircle2 className="w-3 h-3" /> Completed
-        </span>
-      );
-    case "failed":
-      return (
-        <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 shrink-0">
-          <XCircle className="w-3 h-3" /> Failed
-        </span>
-      );
-    case "cancelled":
-      return (
-        <span className="inline-flex items-center gap-1 text-xs text-muted shrink-0">
-          <X className="w-3 h-3" /> Cancelled
-        </span>
-      );
-  }
+  return <StatusBadge status={status} statuses={RUN_STATUS_BADGES} variant="inline" />;
 }
 
 const DEFAULT_SUB_AGENT: SubAgentSettings = {
@@ -221,6 +206,28 @@ function toDraft(workflow: Workflow): WorkflowDraft {
   };
 }
 
+/** Deep-ish copy of a draft so the clone can be edited independently of the source. */
+function cloneDraft(draft: WorkflowDraft): WorkflowDraft {
+  return {
+    displayName: draft.displayName,
+    category: draft.category,
+    description: draft.description,
+    agentType: draft.agentType,
+    steps: draft.steps.map(step => (typeof step === "string" ? step : { command: step.command, arguments: { ...step.arguments }, remainder: step.remainder })),
+    subAgent: { ...draft.subAgent },
+  };
+}
+
+/** Picks a free file name for a clone of `baseName` (e.g. bugHunter → bugHunter-copy). */
+function uniqueCloneName(baseName: string, existingNames: Iterable<string>): string {
+  const taken = new Set(existingNames);
+  const candidate = `${baseName}-copy`;
+  if (!taken.has(candidate)) return candidate;
+  let n = 2;
+  while (taken.has(`${baseName}-copy${n}`)) n += 1;
+  return `${baseName}-copy${n}`;
+}
+
 /** Drops blank steps so a stray editor row is never persisted, and fills in an empty category. */
 function normalizeDraft(draft: WorkflowDraft): WorkflowDraft {
   return {
@@ -234,48 +241,6 @@ function normalizeDraft(draft: WorkflowDraft): WorkflowDraft {
 
 function isSameDraft(a: WorkflowDraft, b: WorkflowDraft): boolean {
   return JSON.stringify(normalizeDraft(a)) === JSON.stringify(normalizeDraft(b));
-}
-
-// ─── ConfirmModal ──────────────────────────────────────────────────────────────
-
-function ConfirmModal({ title, message, onConfirm, onClose }: { title: string; message: string; onConfirm: () => Promise<void>; onClose: () => void }) {
-  const [confirming, setConfirming] = useState(false);
-
-  const handleConfirm = async () => {
-    setConfirming(true);
-    try {
-      await onConfirm();
-    } finally {
-      setConfirming(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-secondary border border-primary rounded-xl p-5 w-80 shadow-xl">
-        <h2 className="text-sm font-semibold text-primary mb-2">{title}</h2>
-        <p className="text-xs text-muted mb-4">{message}</p>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-2 border border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors focus-ring cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={confirming}
-            className="flex-1 flex items-center justify-center gap-2 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold rounded-lg transition-colors focus-ring cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {confirming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function matchesWorkflowFilter(workflow: Workflow, query: string): boolean {
@@ -443,37 +408,32 @@ function WorkflowSidebar({
             const isLaunching = launchingName === workflow.name;
             const hasActiveRun = activeRuns.some(run => run.workflowName === workflow.name);
             return (
-              <div
-                className={`group flex items-center gap-0.5 pl-5 pr-1.5 py-1 transition-colors ${
-                  isSelected ? "bg-accent-muted text-accent" : "hover:bg-hover text-primary"
-                }`}
+              <ListItemWithActions
+                id={workflow.name}
+                selected={isSelected}
+                onPrimary={() => onSelect(workflow.name)}
+                alwaysShowAction={isSelected}
+                primaryProps={{ title: workflow.displayName }}
+                className={`gap-0.5 pl-5 pr-1.5 py-1 rounded-none ${isSelected ? "bg-accent-muted text-accent" : "text-primary"}`}
+                action={
+                  <LaunchButton
+                    loading={isLaunching}
+                    onClick={() => onRun(workflow.name)}
+                    variant="icon"
+                    iconSize="sm"
+                    title={`Run ${workflow.displayName || workflow.name}`}
+                    aria-label={`Run ${workflow.displayName || workflow.name}`}
+                    bgClassName={isSelected ? "text-accent hover:bg-accent/15" : "text-muted hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-500/10"}
+                  />
+                }
               >
-                <button
-                  type="button"
-                  onClick={() => onSelect(workflow.name)}
-                  className="min-w-0 flex-1 flex items-center gap-1.5 py-0.5 text-left cursor-pointer focus-ring rounded"
-                  title={workflow.displayName}
-                >
+                <span className="flex items-center gap-1.5 py-0.5 min-w-0">
                   <GitBranch className="w-3 h-3 shrink-0 opacity-70" />
                   <span className="flex-1 min-w-0 truncate text-xs">{workflow.displayName || workflow.name}</span>
                   {hasActiveRun && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" title="Running" />}
                   {dirtyNames.has(workflow.name) && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" title="Unsaved changes" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onRun(workflow.name)}
-                  disabled={isLaunching}
-                  title={`Run ${workflow.displayName || workflow.name}`}
-                  aria-label={`Run ${workflow.displayName || workflow.name}`}
-                  className={`p-1 rounded transition-colors cursor-pointer focus-ring disabled:cursor-not-allowed shrink-0 ${
-                    isSelected
-                      ? "text-accent hover:bg-accent/15 disabled:opacity-50"
-                      : "text-muted opacity-0 group-hover:opacity-100 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-500/10 focus-visible:opacity-100 disabled:opacity-50"
-                  }`}
-                >
-                  {isLaunching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 fill-current" />}
-                </button>
-              </div>
+                </span>
+              </ListItemWithActions>
             );
           }}
         />
@@ -582,7 +542,10 @@ function ActiveRunPanel({ run, onOpenAgent }: { run: WorkflowRun; onOpenAgent: (
       <ol className="px-3 py-2 space-y-1.5">
         {run.steps.map((step, index) => {
           let state: "done" | "current" | "pending" | "failed" | "cancelled" = "pending";
-          if (run.status === "completed" || (isRunActive(run) && index < run.currentStep) || (isRunFinished(run) && index < run.currentStep)) {
+          // During "starting" the agent is still spawning — no step has begun yet.
+          if (run.status === "starting") {
+            state = "pending";
+          } else if (run.status === "completed" || (isRunActive(run) && index < run.currentStep) || (isRunFinished(run) && index < run.currentStep)) {
             state = "done";
           } else if (isRunActive(run) && index === run.currentStep) {
             state = "current";
@@ -658,75 +621,71 @@ function WorkflowRunHistory({
         const when = run.finishedAt ?? run.startedAt;
         const duration = runDurationLabel(run);
         return (
-          <div key={run.id} className="flex items-start gap-2 px-3 py-2.5">
-            <div className="min-w-0 flex-1 space-y-0.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <RunStatusBadge status={run.status} />
-                <span className="text-xs text-muted" title={new Date(when).toLocaleString()}>
-                  {formatRelativeTime(when)}
-                  {duration ? ` · ${duration}` : ""}
-                </span>
-              </div>
-              {run.message && (
-                <p className="text-xs text-muted truncate" title={run.message}>
-                  {run.message}
-                </p>
-              )}
-              {isRunActive(run) && run.steps.length > 0 && (
-                <p className="text-xs text-muted truncate">
-                  {run.status === "starting"
-                    ? "Starting agent…"
-                    : `Step ${run.currentStep + 1}/${run.steps.length}: ${run.steps[run.currentStep] != null ? formatStepLabel(run.steps[run.currentStep]!) : ""}`}
-                </p>
-              )}
-            </div>
-            {run.agentId && (
-              <button
-                type="button"
-                onClick={() => onOpenAgent(run.agentId!)}
-                className="p-1 text-muted hover:text-cyan-600 dark:hover:text-cyan-400 rounded transition-colors cursor-pointer focus-ring shrink-0"
-                title="Open agent"
-                aria-label="Open agent for this run"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          <HistoryRunRow
+            key={run.id}
+            id={run.id}
+            status={toHistoryRunStatus(run.status)}
+            statusLabel={run.status}
+            statusBadge={<RunStatusBadge status={run.status} />}
+            startTime={when}
+            endTime={run.finishedAt ?? undefined}
+            duration={duration ?? undefined}
+            message={run.message}
+            showIcon={false}
+            showTimestamp={false}
+            className="px-3 py-2.5"
+            action={
+              run.agentId ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenAgent(run.agentId!)}
+                  className="p-1 text-muted hover:text-cyan-600 dark:hover:text-cyan-400 rounded transition-colors cursor-pointer focus-ring shrink-0"
+                  title="Open agent"
+                  aria-label="Open agent for this run"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              ) : undefined
+            }
+          >
+            {isRunActive(run) && run.steps.length > 0 ? (
+              <p className="text-xs text-muted truncate">
+                {run.status === "starting"
+                  ? "Starting agent…"
+                  : `Step ${run.currentStep + 1}/${run.steps.length}: ${run.steps[run.currentStep] != null ? formatStepLabel(run.steps[run.currentStep]!) : ""}`}
+              </p>
+            ) : null}
+          </HistoryRunRow>
         );
       })}
     </div>
   );
 }
 
-// ─── EmptyState ────────────────────────────────────────────────────────────────
+// ─── WorkflowsEmptyState ───────────────────────────────────────────────────────
 
-function EmptyState({ hasWorkflows, directory, onNew }: { hasWorkflows: boolean; directory: string | undefined; onNew: () => void }) {
+function WorkflowsEmptyState({ hasWorkflows, directory, onNew }: { hasWorkflows: boolean; directory: string | undefined; onNew: () => void }) {
   return (
-    <div className="h-full flex flex-col items-center justify-center gap-5 p-8 bg-primary text-center">
-      <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
-        <GitBranch className="w-7 h-7 text-white" />
-      </div>
-      <div className="max-w-md space-y-2">
-        <h2 className="text-base font-semibold text-primary">{hasWorkflows ? "Select a workflow" : "No workflows yet"}</h2>
-        <p className="text-sm text-muted leading-relaxed">
-          {hasWorkflows
-            ? "Pick a workflow from the list to view its steps and settings, edit it, or launch it on a new agent."
-            : "Workflows are ordered lists of commands run by an agent. Create one to get started."}
+    <EmptyState
+      variant="page"
+      className="bg-primary"
+      icon={GitBranch}
+      iconBadgeClassName="bg-linear-to-br from-cyan-500 to-blue-600"
+      title={hasWorkflows ? "Select a workflow" : "No workflows yet"}
+      hint={
+        hasWorkflows
+          ? "Pick a workflow from the list to view its steps and settings, edit it, or launch it on a new agent."
+          : "Workflows are ordered lists of commands run by an agent. Create one to get started."
+      }
+      ctaLabel="New workflow"
+      onCta={onNew}
+    >
+      {directory && (
+        <p className="text-xs text-muted mt-2">
+          Stored as YAML files in <code className="font-mono text-secondary">{directory}</code>
         </p>
-        {directory && (
-          <p className="text-xs text-muted">
-            Stored as YAML files in <code className="font-mono text-secondary">{directory}</code>
-          </p>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={onNew}
-        className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-xl transition-colors cursor-pointer focus-ring shadow-button-primary"
-      >
-        <Plus className="w-4 h-4" /> New workflow
-      </button>
-    </div>
+      )}
+    </EmptyState>
   );
 }
 
@@ -751,6 +710,7 @@ function WorkflowEditor({
   onSave,
   onRevert,
   onDelete,
+  onClone,
   onLaunch,
   onCancelCreate,
   onOpenAgent,
@@ -774,6 +734,7 @@ function WorkflowEditor({
   onSave: () => void;
   onRevert: () => void;
   onDelete: () => void;
+  onClone: () => void;
   onLaunch: () => void;
   onCancelCreate: () => void;
   onOpenAgent: (id: string) => void;
@@ -835,15 +796,14 @@ function WorkflowEditor({
                 <ExternalLink className="w-3.5 h-3.5" /> Open agent
               </button>
             )}
+            <LaunchButton loading={launching} onClick={onLaunch} title="Run this workflow on a new agent" bgClassName="bg-cyan-600 hover:bg-cyan-500" />
             <button
               type="button"
-              onClick={onLaunch}
-              disabled={launching}
-              title="Run this workflow on a new agent"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={onClone}
+              title="Clone this workflow as a new draft"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
             >
-              {launching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-              {launching ? "Launching…" : "Launch"}
+              <Copy className="w-3.5 h-3.5" /> Clone
             </button>
             <button
               type="button"
@@ -972,13 +932,14 @@ function WorkflowEditor({
             <label htmlFor="workflow-description" className="text-xs font-semibold text-muted uppercase tracking-wide">
               Description
             </label>
-            <textarea
+            <AutoResizeTextarea
               id="workflow-description"
               value={draft.description}
               onChange={e => onDraftChange({ ...draft, description: e.target.value })}
-              rows={2}
+              minRows={2}
+              maxRows={20}
               placeholder="What this workflow does"
-              className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary placeholder-muted focus-accent resize-y"
+              className="w-full bg-input border border-primary rounded-lg px-3 py-2 text-xs text-primary placeholder-muted focus-accent"
             />
           </div>
 
@@ -1044,12 +1005,15 @@ export default function WorkflowsApp() {
   }, [drafts, workflowList]);
 
   // A route pointing at a workflow that no longer exists (deleted elsewhere, bad deep-link) resets to the empty state.
-  useEffect(() => {
-    if (routeWorkflowName && !workflows.isLoading && !workflows.error && !selectedWorkflow) {
-      toastManager.error(`Workflow "${routeWorkflowName}" not found`, { duration: 4000 });
-      void navigate("/workflows", { replace: true });
-    }
-  }, [routeWorkflowName, selectedWorkflow, workflows.isLoading, workflows.error, navigate]);
+  useStaleRouteRedirect({
+    routeParam: routeWorkflowName,
+    entity: selectedWorkflow,
+    isLoading: workflows.isLoading,
+    hasError: !!workflows.error,
+    navigate,
+    fallbackPath: "/workflows",
+    entityLabel: "Workflow",
+  });
 
   const draftKey = creating ? NEW_DRAFT_KEY : (selectedWorkflow?.name ?? null);
   const savedDraft = useMemo(() => (creating ? emptyDraft() : selectedWorkflow ? toDraft(selectedWorkflow) : null), [creating, selectedWorkflow]);
@@ -1090,7 +1054,40 @@ export default function WorkflowsApp() {
     setCreating(false);
     clearDraft(NEW_DRAFT_KEY);
     setNewName("");
-  }, [clearDraft]);
+    void navigate("/workflows", { replace: true });
+  }, [clearDraft, navigate]);
+
+  /** Opens the create form pre-filled from the currently viewed workflow (including unsaved edits). */
+  const handleClone = useCallback(() => {
+    if (!draft || !selectedWorkflow) return;
+    const cloned = cloneDraft(draft);
+    const baseDisplay = cloned.displayName.trim();
+    cloned.displayName = baseDisplay ? `${baseDisplay} (copy)` : "";
+    const name = uniqueCloneName(
+      selectedWorkflow.name,
+      workflowList.map(workflow => workflow.name),
+    );
+    setDrafts(prev => ({ ...prev, [NEW_DRAFT_KEY]: cloned }));
+    setNewName(name);
+    setCreating(true);
+    void navigate("/workflows");
+  }, [draft, navigate, selectedWorkflow, workflowList]);
+
+  const refreshWorkflows = useCallback(() => {
+    // List refresh is best-effort; a failed revalidate must not undo a successful save/delete.
+    toastOnReject(Promise.resolve(workflows.mutate()), {
+      message: err => `Failed to refresh workflow list: ${formatError(err)}`,
+      duration: 4000,
+    });
+  }, [workflows]);
+
+  const entityDelete = useEntityDelete({
+    currentRouteId: routeWorkflowName ?? null,
+    navigateToOverview: () => void navigate("/workflows"),
+    refreshList: refreshWorkflows,
+    clearLocalState: clearDraft,
+    successMessage: name => `Workflow "${name}" deleted`,
+  });
 
   const handleSave = useCallback(async () => {
     if (!draft) return;
@@ -1110,7 +1107,7 @@ export default function WorkflowsApp() {
       } else {
         await workflowRPCClient.updateWorkflow({ name, workflow: payload });
       }
-      await workflows.mutate();
+      // RPC succeeded — clear draft and navigate before revalidating the list.
       clearDraft(creating ? NEW_DRAFT_KEY : name);
       if (creating) {
         setCreating(false);
@@ -1118,29 +1115,23 @@ export default function WorkflowsApp() {
         void navigate(`/workflows/${encodeURIComponent(name)}`);
       }
       toastManager.success(`Workflow "${name}" saved`, { duration: 3000 });
+      refreshWorkflows();
     } catch (error) {
       toastManager.error(formatError(error), { duration: 5000 });
     } finally {
       setSaving(false);
     }
-  }, [clearDraft, creating, draft, navigate, newName, selectedWorkflow, workflowList, workflows]);
+  }, [clearDraft, creating, draft, navigate, newName, refreshWorkflows, selectedWorkflow, workflowList]);
 
   const handleDelete = useCallback(
     async (name: string) => {
-      try {
+      setDeleteTarget(null);
+      await entityDelete.deleteEntity(name, name, async () => {
         const { success } = await workflowRPCClient.deleteWorkflow({ name });
         if (!success) throw new Error(`Workflow "${name}" could not be deleted`);
-        clearDraft(name);
-        setDeleteTarget(null);
-        // Leave the route before refreshing the list, so the deleted workflow never looks "not found".
-        void navigate("/workflows");
-        await workflows.mutate();
-        toastManager.success(`Workflow "${name}" deleted`, { duration: 3000 });
-      } catch (error) {
-        toastManager.error(formatError(error), { duration: 5000 });
-      }
+      });
     },
-    [clearDraft, navigate, workflows],
+    [entityDelete],
   );
 
   const handleLaunch = useCallback(
@@ -1148,7 +1139,11 @@ export default function WorkflowsApp() {
       setLaunching(name);
       try {
         const { id } = await workflowRPCClient.spawnWorkflow({ name, headless: false });
-        await agents.mutate();
+        // Refresh the agent list in the background; don't block navigation if reconnect is slow.
+        toastOnReject(Promise.resolve(agents.mutate()), {
+          message: err => `Failed to refresh agent list: ${formatError(err)}`,
+          duration: 4000,
+        });
         void navigate(`/agent/${id}`);
       } catch (error) {
         toastManager.error(formatError(error), { duration: 5000 });
@@ -1214,6 +1209,7 @@ export default function WorkflowsApp() {
             onSave={() => void handleSave()}
             onRevert={() => draftKey !== null && clearDraft(draftKey)}
             onDelete={() => selectedWorkflow && setDeleteTarget(selectedWorkflow.name)}
+            onClone={handleClone}
             onLaunch={() => selectedWorkflow && void handleLaunch(selectedWorkflow.name)}
             onCancelCreate={handleCancelCreate}
             onOpenAgent={openAgent}
@@ -1225,7 +1221,7 @@ export default function WorkflowsApp() {
         ) : workflows.error && workflowList.length === 0 ? (
           <ErrorState title="Unable to load workflows" error={workflows.error} onRetry={() => void workflows.mutate()} variant="page" />
         ) : (
-          <EmptyState hasWorkflows={workflowList.length > 0} directory={workflowDirectory.data?.directory} onNew={handleNew} />
+          <WorkflowsEmptyState hasWorkflows={workflowList.length > 0} directory={workflowDirectory.data?.directory} onNew={handleNew} />
         )}
       </WorkspaceShell>
 
@@ -1235,6 +1231,7 @@ export default function WorkflowsApp() {
           message={`Delete "${deleteTarget}"? Its YAML file will be removed from disk.`}
           onConfirm={() => handleDelete(deleteTarget)}
           onClose={() => setDeleteTarget(null)}
+          closeOnBackdrop
         />
       )}
     </div>

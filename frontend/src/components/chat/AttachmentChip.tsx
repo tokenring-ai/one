@@ -18,8 +18,11 @@ import {
   Mail,
   X,
 } from "lucide-react";
-import { type MouseEvent, useEffect, useMemo, useState } from "react";
+import { type MouseEvent, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useCopyToClipboard } from "../../hooks/useCopyToClipboard.ts";
+import { useLightbox } from "../../hooks/useLightbox.ts";
+import { copyToClipboard } from "../../lib/clipboard.ts";
 import { toastManager } from "../ui/toast.tsx";
 
 interface AttachmentChipProps {
@@ -142,17 +145,6 @@ function AttachmentPreviewOverlay({ attachment, onClose }: { attachment: ChatAtt
   const mimeTypeClassification = useMemo(() => getMimeTypeClassification(attachment.mimeType), [attachment]);
   const previewText = useMemo(() => (mimeTypeClassification === "text" ? formatPreviewText(attachment) : ""), [attachment]);
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-
   return (
     <FocusTrap
       focusTrapOptions={{
@@ -221,10 +213,17 @@ function AttachmentPreviewOverlay({ attachment, onClose }: { attachment: ChatAtt
 export default function AttachmentChip({ attachment, onRemove, showRemove = false }: AttachmentChipProps) {
   const Icon = getAttachmentIcon(attachment.mimeType);
   const imageSrc = useMemo(() => getImagePreviewSrc(attachment), [attachment]);
-  const [copied, setCopied] = useState(false);
+  const { copied, markCopied } = useCopyToClipboard();
   const [downloading, setDownloading] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  // Auto-close preview if this chip is reused for a different attachment
+  const {
+    isOpen: previewOpen,
+    open: openPreview,
+    close: closePreview,
+  } = useLightbox({
+    itemKey: `${attachment.name}\0${attachment.mimeType}\0${attachment.encoding}`,
+  });
 
   const showImageThumb = Boolean(imageSrc && !imageError);
 
@@ -243,27 +242,33 @@ export default function AttachmentChip({ attachment, onRemove, showRemove = fals
   const handleCopy = async (e: MouseEvent) => {
     e.stopPropagation();
     const mimeTypeClassification = getMimeTypeClassification(attachment.mimeType);
+    const reportCopyError = (error: unknown) => {
+      toastManager.error(`Failed to copy "${attachment.name}" to clipboard: ${formatError(error)}`, { duration: 5000 });
+    };
+
     try {
-      if (attachment.encoding === "href") {
-        await navigator.clipboard.writeText(attachment.body);
-      } else if (mimeTypeClassification === "text") {
-        await navigator.clipboard.writeText(decodeAttachmentText(attachment));
-      } else if (mimeTypeClassification === "image" && attachment.encoding === "base64" && typeof ClipboardItem !== "undefined") {
+      // Image blobs use ClipboardItem — not covered by the text copy utility
+      if (mimeTypeClassification === "image" && attachment.encoding === "base64" && typeof ClipboardItem !== "undefined") {
         const blob = new Blob([base64ToArrayBuffer(attachment.body)], { type: attachment.mimeType });
         await navigator.clipboard.write([new ClipboardItem({ [attachment.mimeType]: blob })]);
-      } else {
-        await navigator.clipboard.writeText(attachment.body);
+        markCopied();
+        return;
       }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+
+      const text = attachment.encoding === "href" || mimeTypeClassification !== "text" ? attachment.body : decodeAttachmentText(attachment);
+      await copyToClipboard(text, {
+        silent: true,
+        onSuccess: () => markCopied(),
+        onError: reportCopyError,
+      });
     } catch (error: unknown) {
-      toastManager.error(`Failed to copy "${attachment.name}" to clipboard: ${formatError(error)}`, { duration: 5000 });
+      reportCopyError(error);
     }
   };
 
   const handlePreview = (e: MouseEvent) => {
     e.stopPropagation();
-    setPreviewOpen(true);
+    openPreview();
   };
 
   const handleRemove = (e: MouseEvent) => {
@@ -334,7 +339,7 @@ export default function AttachmentChip({ attachment, onRemove, showRemove = fals
         )}
       </div>
 
-      {previewOpen && createPortal(<AttachmentPreviewOverlay attachment={attachment} onClose={() => setPreviewOpen(false)} />, document.body)}
+      {previewOpen && createPortal(<AttachmentPreviewOverlay attachment={attachment} onClose={closePreview} />, document.body)}
     </div>
   );
 }

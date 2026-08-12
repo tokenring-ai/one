@@ -5,9 +5,7 @@ import {
   Activity,
   ArrowRight,
   Bot,
-  Cpu,
   ExternalLink,
-  Hash,
   Inbox,
   Loader2,
   Mail,
@@ -19,20 +17,28 @@ import {
   Send,
   Settings,
   Sparkles,
-  User,
   WifiOff,
 } from "lucide-react";
-import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import ChannelStatusCard from "../../components/ui/ChannelStatusCard.tsx";
+import ConversationRow from "../../components/ui/ConversationRow.tsx";
+import EmptyState from "../../components/ui/EmptyState.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import FilterTabs, { type FilterTabOption } from "../../components/ui/FilterTabs.tsx";
+import QuickLink from "../../components/ui/QuickLink.tsx";
+import StatusBadge from "../../components/ui/StatusBadge.tsx";
+import SummaryStat from "../../components/ui/SummaryStat.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useMultiSourceLoading } from "../../hooks/useMultiSourceLoading.ts";
+import { useTabState } from "../../hooks/useTabState.ts";
+import { getServiceBrand } from "../../lib/serviceGradient.ts";
+import { toastOnReject } from "../../lib/toastOnReject.ts";
 import { cn } from "../../lib/utils.ts";
-import { agentRPCClient, useAgentList, useAgentTypes, useBots, useEmailMessages, useEmailProviders } from "../../rpc.ts";
+import { agentRPCClient, useAgentList, useAgentTypes, useBots, useEmailConfiguration, useEmailMessages } from "../../rpc.ts";
 import SendMessageForm, { type MessageTargetOption } from "../bots/SendMessageForm.tsx";
-import { formatRelativeTime, formatServiceName, formatTimestamp, serviceGradient } from "./formatters.ts";
+import { formatRelativeTime, formatServiceName, formatTimestamp } from "./formatters.ts";
 
 type BotsData = NonNullable<ReturnType<typeof useBots>["data"]>;
 type BotSummary = BotsData["bots"][number];
@@ -46,41 +52,16 @@ type LiveConversation = BotConversation & {
   botDisplayName: string;
 };
 
-function SummaryStat({ label, value, icon, accentClass }: { label: string; value: string; icon: ReactNode; accentClass: string }) {
-  return (
-    <div className="bg-secondary border border-primary rounded-xl px-4 py-3 shadow-sm">
-      <div className="flex items-center gap-2 mb-1">
-        <span className={accentClass}>{icon}</span>
-        <span className="text-xs font-bold text-muted uppercase tracking-widest">{label}</span>
-      </div>
-      <p className="text-lg font-semibold text-primary tabular-nums">{value}</p>
-    </div>
-  );
-}
-
 function ServicePill({ service, connected }: { service: string; connected: boolean }) {
+  const brand = getServiceBrand(service);
+  const label = brand.displayName;
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border",
-        connected ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" : "bg-tertiary text-muted border-primary",
-      )}
-      title={connected ? `${formatServiceName(service)} is connected` : `${formatServiceName(service)} is not connected`}
-    >
-      {connected ? <PlugZap className="w-3 h-3" /> : <Plug className="w-3 h-3" />}
-      {formatServiceName(service)}
-    </span>
-  );
-}
-
-function EmptyPanel({ icon, title, hint, action }: { icon: ReactNode; title: string; hint: string; action?: ReactNode }) {
-  return (
-    <div className="px-6 py-10 text-center">
-      {icon}
-      <p className="text-sm font-medium text-primary mb-1">{title}</p>
-      <p className="text-xs text-muted max-w-sm mx-auto">{hint}</p>
-      {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
-    </div>
+    <StatusBadge
+      label={label}
+      icon={connected ? <PlugZap className="w-3 h-3" /> : <Plug className="w-3 h-3" />}
+      colorClass={connected ? cn(brand.solidBg, brand.solidText, brand.solidBorder) : "bg-tertiary text-muted border-primary"}
+      title={connected ? `${label} is connected` : `${label} is not connected`}
+    />
   );
 }
 
@@ -91,11 +72,13 @@ function senderName(msg: EmailMessage): string {
 export default function MessagingDashboard() {
   const navigate = useNavigate();
   const bots = useBots();
-  const emailProviders = useEmailProviders();
+  const emailConfiguration = useEmailConfiguration();
   const agents = useAgentList();
   const agentTypes = useAgentTypes();
 
-  const [tab, setTab] = useState<HubTab>("overview");
+  const { activeTab: tab, setActiveTab: setTab } = useTabState<HubTab>(["overview", "conversations", "email", "channels"], {
+    defaultTab: "overview",
+  });
   const [showSendForm, setShowSendForm] = useState(false);
   const [sendTarget, setSendTarget] = useState<string | undefined>(undefined);
   const [creatingAgent, setCreatingAgent] = useState(false);
@@ -105,9 +88,17 @@ export default function MessagingDashboard() {
   const groups = useMemo(() => bots.data?.groups ?? [], [bots.data]);
   const connectedServiceNames = useMemo(() => new Set(services.map(service => service.name)), [services]);
 
-  const providers = emailProviders.data?.providers ?? [];
+  const providers = emailConfiguration.data?.providers ?? [];
   const primaryEmailProvider = providers[0];
   const emailInbox = useEmailMessages(primaryEmailProvider, { box: "inbox", limit: 12 });
+
+  // Bots are the primary (fatal) payload; email/agents soft-fail so the hub can render partial data.
+  const loading = useMultiSourceLoading([
+    { source: bots, label: "bots" },
+    { source: emailConfiguration, label: "email providers", isFatal: false },
+    { source: emailInbox, label: "email inbox", isFatal: false },
+    { source: agents, label: "agents", isFatal: false },
+  ]);
 
   const liveConversations = useMemo<LiveConversation[]>(() => {
     const rows: LiveConversation[] = [];
@@ -134,7 +125,7 @@ export default function MessagingDashboard() {
   }, [botList]);
 
   const busyConversations = useMemo(() => liveConversations.filter(c => c.busy).length, [liveConversations]);
-  const emailMessages = (emailInbox.data?.messages ?? []) as EmailMessage[];
+  const emailMessages: EmailMessage[] = emailInbox.data?.messages ?? [];
   const unreadEmailCount = useMemo(() => emailMessages.filter(m => !m.isRead).length, [emailMessages]);
 
   const messagingAgents = useMemo(() => {
@@ -163,8 +154,8 @@ export default function MessagingDashboard() {
     return options.filter((option, index) => options.findIndex(other => other.target === option.target) === index);
   }, [botList, groups]);
 
-  const emailProvidersLoading = emailProviders.isLoading && !emailProviders.data;
-  const emailProvidersFailed = Boolean(emailProviders.error && !emailProviders.data);
+  const emailProvidersLoading = emailConfiguration.isLoading && !emailConfiguration.data;
+  const emailProvidersFailed = loading.isSourceHardError("email providers");
 
   /** Channel cards: messaging services from bots + email providers. */
   const channelCards = useMemo(() => {
@@ -258,11 +249,23 @@ export default function MessagingDashboard() {
     [liveConversations.length, emailMessages.length, connectedCount],
   );
 
+  const revalidate = (promise: PromiseLike<unknown>, label: string) => {
+    toastOnReject(Promise.resolve(promise), {
+      message: err => `Failed to refresh ${label}: ${formatError(err)}`,
+      duration: 4000,
+    });
+  };
+
   const refresh = () => {
-    void bots.mutate();
-    void emailProviders.mutate();
-    void emailInbox.mutate();
-    void agents.mutate();
+    revalidate(bots.mutate(), "bots");
+    revalidate(emailConfiguration.mutate(), "email providers");
+    revalidate(emailInbox.mutate(), "email inbox");
+    revalidate(agents.mutate(), "agents");
+  };
+
+  const refreshEmail = () => {
+    revalidate(emailConfiguration.mutate(), "email providers");
+    revalidate(emailInbox.mutate(), "email inbox");
   };
 
   const openSendForm = (target?: string) => {
@@ -296,14 +299,14 @@ export default function MessagingDashboard() {
     }
   };
 
-  // Bots are the primary payload; email providers can stream in after first paint.
+  // Gate the page spinner on bots only so email/agents can stream in after first paint.
   const isLoading = bots.isLoading && !bots.data;
-  const botsFailed = Boolean(bots.error && !bots.data);
+  const botsFailed = loading.hasHardError;
   const canSend = services.length > 0 || targetOptions.length > 0;
 
   const emailStatValue = (() => {
     if (emailProvidersFailed) return "Unavailable";
-    if (emailProviders.isLoading && !emailProviders.data) return "…";
+    if (emailConfiguration.isLoading && !emailConfiguration.data) return "…";
     if (providers.length === 0) return "None";
     if (emailInbox.error && !emailInbox.data) return "Error";
     if (unreadEmailCount > 0) return `${unreadEmailCount} unread`;
@@ -343,7 +346,7 @@ export default function MessagingDashboard() {
           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted hover:text-primary border border-primary rounded-lg transition-colors focus-ring cursor-pointer"
           title="Refresh"
         >
-          <RefreshCw className={cn("w-3.5 h-3.5", (bots.isValidating || emailInbox.isValidating || emailProviders.isValidating) && "animate-spin")} />
+          <RefreshCw className={cn("w-3.5 h-3.5", loading.isRefreshing && "animate-spin")} />
           Refresh
         </button>
       </AppPageHeader>
@@ -355,7 +358,7 @@ export default function MessagingDashboard() {
               <Loader2 className="w-7 h-7 text-muted animate-spin" />
             </div>
           ) : botsFailed ? (
-            <ErrorState title="Unable to load messaging data" error={bots.error} onRetry={refresh} variant="page" />
+            <ErrorState title="Unable to load messaging data" error={loading.hardError} onRetry={refresh} variant="page" />
           ) : (
             <>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -381,7 +384,7 @@ export default function MessagingDashboard() {
                   initialTarget={sendTarget}
                   onSent={() => {
                     setShowSendForm(false);
-                    void bots.mutate();
+                    revalidate(bots.mutate(), "bots after send");
                   }}
                   onCancel={() => setShowSendForm(false)}
                 />
@@ -397,7 +400,7 @@ export default function MessagingDashboard() {
                     emailMessages={emailMessages}
                     emailProvider={primaryEmailProvider}
                     emailLoading={!!primaryEmailProvider && emailInbox.isLoading && !emailInbox.data}
-                    emailError={emailProvidersFailed ? emailProviders.error : emailInbox.error}
+                    emailError={emailProvidersFailed ? emailConfiguration.error : emailInbox.error}
                     emailProvidersFailed={emailProvidersFailed}
                     emailProvidersLoading={emailProvidersLoading}
                     messagingAgents={messagingAgents}
@@ -413,18 +416,15 @@ export default function MessagingDashboard() {
                     onOpenConfig={() => void navigate("/configuration")}
                     onOpenAgent={id => void navigate(`/agent/${id}`)}
                     onLaunchAgent={() => void launchMessagingAgent()}
-                    onRetryEmail={() => {
-                      void emailProviders.mutate();
-                      void emailInbox.mutate();
-                    }}
+                    onRetryEmail={refreshEmail}
                     creatingAgent={creatingAgent}
                   />
                 ) : null}
 
                 {tab === "conversations" ? (
                   liveConversations.length === 0 ? (
-                    <EmptyPanel
-                      icon={<MessagesSquare className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+                    <EmptyState
+                      icon={MessagesSquare}
                       title="No live bot conversations"
                       hint="Conversations appear here when someone messages a bot on Slack, Telegram, or another connected service."
                       action={
@@ -442,7 +442,17 @@ export default function MessagingDashboard() {
                       {liveConversations.map(conversation => (
                         <ConversationRow
                           key={`${conversation.botName}:${conversation.key}`}
-                          conversation={conversation}
+                          conversation={{
+                            key: conversation.key,
+                            channelName: conversation.channelName,
+                            conversationId: conversation.conversationId,
+                            service: conversation.service,
+                            busy: conversation.busy,
+                            lastActivityAt: conversation.lastActivityAt,
+                            agentId: conversation.agentId,
+                            agentType: conversation.agentType,
+                            botDisplayName: conversation.botDisplayName,
+                          }}
                           connected={connectedServiceNames.has(conversation.service)}
                           onOpenAgent={() => void navigate(`/agent/${conversation.agentId}`)}
                           onMessage={() => openSendForm(conversation.key)}
@@ -457,22 +467,27 @@ export default function MessagingDashboard() {
                     provider={primaryEmailProvider}
                     providers={providers}
                     messages={emailMessages}
-                    loading={(emailProviders.isLoading && !emailProviders.data) || (!!primaryEmailProvider && emailInbox.isLoading && !emailInbox.data)}
-                    providersError={emailProvidersFailed ? emailProviders.error : undefined}
+                    loading={(emailConfiguration.isLoading && !emailConfiguration.data) || (!!primaryEmailProvider && emailInbox.isLoading && !emailInbox.data)}
+                    providersError={emailProvidersFailed ? emailConfiguration.error : undefined}
                     error={emailInbox.error}
                     onOpenEmail={() => void navigate("/email")}
                     onOpenConfig={() => void navigate("/configuration")}
-                    onRetry={() => {
-                      void emailProviders.mutate();
-                      void emailInbox.mutate();
-                    }}
+                    onRetry={refreshEmail}
                   />
                 ) : null}
 
                 {tab === "channels" ? (
                   <div className="p-4 grid gap-3 sm:grid-cols-2">
                     {channelCards.map(card => (
-                      <ChannelStatusCard key={card.id} card={card} onOpen={() => void navigate(card.href)} />
+                      <ChannelStatusCard
+                        key={card.id}
+                        id={card.id}
+                        name={card.name}
+                        kind={card.kind}
+                        connected={card.connected}
+                        detail={card.detail}
+                        onOpen={() => void navigate(card.href)}
+                      />
                     ))}
                   </div>
                 ) : null}
@@ -608,7 +623,11 @@ function OverviewPanel({
           {channelCards.slice(0, 6).map(card => (
             <ChannelStatusCard
               key={card.id}
-              card={card}
+              id={card.id}
+              name={card.name}
+              kind={card.kind}
+              connected={card.connected}
+              detail={card.detail}
               compact
               onOpen={() => (card.kind === "email" ? onOpenEmail() : card.connected ? onOpenBots() : onOpenConfig())}
             />
@@ -764,73 +783,6 @@ function OverviewPanel({
   );
 }
 
-function ConversationRow({
-  conversation,
-  connected,
-  onOpenAgent,
-  onMessage,
-}: {
-  conversation: LiveConversation;
-  connected: boolean;
-  onOpenAgent: () => void;
-  onMessage: () => void;
-}) {
-  return (
-    <div className="px-4 py-3 hover:bg-hover/30 transition-colors">
-      <div className="flex items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-0.5">
-            <span className="text-sm font-medium text-primary truncate">{conversation.channelName ?? conversation.conversationId}</span>
-            {conversation.channelName ? (
-              <span className="inline-flex items-center gap-1 text-xs text-muted">
-                <Hash className="w-3 h-3" /> {conversation.conversationId}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-xs text-muted">
-                <User className="w-3 h-3" /> Direct
-              </span>
-            )}
-            {conversation.busy ? (
-              <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                <Activity className="w-3 h-3 animate-pulse" /> Working
-              </span>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-            <ServicePill service={conversation.service} connected={connected} />
-            <span className="inline-flex items-center gap-1">
-              <Bot className="w-3 h-3" /> {conversation.botDisplayName}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Cpu className="w-3 h-3" /> {conversation.agentType}
-            </span>
-            <span title={formatTimestamp(conversation.lastActivityAt)}>Active {formatRelativeTime(conversation.lastActivityAt)}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={onOpenAgent}
-            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors"
-            title="Open the agent handling this conversation"
-          >
-            <Cpu className="w-3 h-3" /> Agent
-          </button>
-          <button
-            type="button"
-            onClick={onMessage}
-            disabled={!connected}
-            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary border border-primary rounded-md focus-ring cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title={connected ? "Send a message here" : "Service is offline"}
-          >
-            <Send className="w-3 h-3" /> Message
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function EmailPanel({
   provider,
   providers,
@@ -866,8 +818,8 @@ function EmailPanel({
 
   if (providers.length === 0) {
     return (
-      <EmptyPanel
-        icon={<WifiOff className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+      <EmptyState
+        icon={WifiOff}
         title="No email providers configured"
         hint="Add an email provider in configuration, then open the Email app for the full inbox experience."
         action={
@@ -890,8 +842,8 @@ function EmailPanel({
 
   if (messages.length === 0) {
     return (
-      <EmptyPanel
-        icon={<Inbox className="w-8 h-8 text-muted mx-auto mb-3 opacity-50" />}
+      <EmptyState
+        icon={Inbox}
         title="Inbox is empty"
         hint={`No recent messages from ${provider ?? "your provider"}.`}
         action={
@@ -940,77 +892,5 @@ function EmailPanel({
         ))}
       </div>
     </div>
-  );
-}
-
-function ChannelStatusCard({
-  card,
-  onOpen,
-  compact,
-}: {
-  card: { id: string; name: string; kind: "messaging" | "email"; connected: boolean; detail: string; href: string };
-  onOpen: () => void;
-  compact?: boolean;
-}) {
-  const gradient = card.kind === "email" ? serviceGradient("email") : serviceGradient(card.name);
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className={cn(
-        "flex items-center gap-3 bg-primary border border-primary rounded-xl text-left hover:bg-hover/40 transition-colors focus-ring cursor-pointer shadow-sm",
-        compact ? "px-3 py-2.5" : "px-4 py-3",
-      )}
-    >
-      <div className={cn("rounded-lg bg-linear-to-br flex items-center justify-center shrink-0", compact ? "w-8 h-8" : "w-9 h-9", gradient)}>
-        {card.kind === "email" ? <Mail className="w-4 h-4 text-white" /> : <MessageSquare className="w-4 h-4 text-white" />}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-primary truncate">{card.name}</p>
-          <span
-            className={cn(
-              "text-xs px-1.5 py-0.5 rounded-full border shrink-0",
-              card.connected ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" : "bg-tertiary text-muted border-primary",
-            )}
-          >
-            {card.connected ? "Connected" : "Offline"}
-          </span>
-        </div>
-        <p className="text-xs text-muted truncate mt-0.5">{card.detail}</p>
-      </div>
-      <ArrowRight className="w-3.5 h-3.5 text-muted shrink-0" />
-    </button>
-  );
-}
-
-function QuickLink({
-  title,
-  description,
-  icon,
-  gradient,
-  onClick,
-}: {
-  title: string;
-  description: string;
-  icon: ReactNode;
-  gradient: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center gap-3 px-4 py-3 bg-secondary border border-primary rounded-xl text-left hover:bg-hover/40 transition-colors focus-ring cursor-pointer shadow-sm"
-    >
-      <div className={cn("w-9 h-9 rounded-lg bg-linear-to-br flex items-center justify-center shrink-0 [&>svg]:w-4 [&>svg]:h-4 [&>svg]:text-white", gradient)}>
-        {icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-primary">{title}</p>
-        <p className="text-xs text-muted">{description}</p>
-      </div>
-      <ArrowRight className="w-3.5 h-3.5 text-muted shrink-0" />
-    </button>
   );
 }

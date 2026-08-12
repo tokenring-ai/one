@@ -1,6 +1,6 @@
-import type { AudioIndexEntry, ImageIndexEntry, VideoIndexEntry } from "@tokenring-ai/media-library/rpc/schema";
-import { AlertTriangle, FileMusic, ImageIcon, Loader2, RefreshCw, Search, Video as VideoIcon, X } from "lucide-react";
+import { AlertTriangle, FileMusic, ImageIcon, Loader2, RefreshCw, Video as VideoIcon } from "lucide-react";
 import NavigationSidebarHeader from "../../../components/layout/NavigationSidebarHeader.tsx";
+import SearchInput from "../../../components/ui/SearchInput.tsx";
 import type { MediaEntry, MediaKind } from "../types.ts";
 import AudioThumbnail from "./thumbnails/AudioThumbnail.tsx";
 import ImageThumbnail from "./thumbnails/ImageThumbnail.tsx";
@@ -12,9 +12,7 @@ export default function GallerySidebar({
   loading,
   error,
   selectedFilename,
-  images,
-  videos,
-  audios,
+  entries,
   onSearch,
   onSelect,
   onRefresh,
@@ -24,14 +22,11 @@ export default function GallerySidebar({
   loading: boolean;
   error?: string | null;
   selectedFilename: string | null;
-  images: ImageIndexEntry[];
-  videos: VideoIndexEntry[];
-  audios: AudioIndexEntry[];
+  entries: MediaEntry[];
   onSearch: (q: string) => void;
   onSelect: (entry: MediaEntry) => void;
   onRefresh: () => void;
 }) {
-  const entries: MediaEntry[] = kind === "image" ? images : kind === "video" ? videos : audios;
   const EmptyIcon = kind === "image" ? ImageIcon : kind === "video" ? VideoIcon : FileMusic;
   const kindLabel = kind === "audio" ? "audio" : `${kind}s`;
 
@@ -50,27 +45,19 @@ export default function GallerySidebar({
         ]}
       />
       <div className="shrink-0 px-3 py-2 border-b border-primary">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={e => onSearch(e.target.value)}
-            placeholder={`Search ${kindLabel}...`}
-            aria-label={`Search ${kindLabel}`}
-            className="w-full bg-input border border-primary rounded-lg py-1.5 pl-8 pr-8 text-xs text-primary placeholder-muted focus-accent transition-all"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => onSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors cursor-pointer"
-              aria-label="Clear search"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </div>
+        <SearchInput
+          value={search}
+          onChange={onSearch}
+          placeholder={`Search ${kindLabel}...`}
+          aria-label={`Search ${kindLabel}`}
+          inputProps={{
+            onKeyDown: e => {
+              if (e.key === "Enter") {
+                e.currentTarget.blur();
+              }
+            },
+          }}
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
@@ -103,12 +90,20 @@ export default function GallerySidebar({
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2">
-            {kind === "image" &&
-              images.map(img => <ImageThumbnail key={img.filename} image={img} selected={selectedFilename === img.filename} onClick={() => onSelect(img)} />)}
-            {kind === "video" &&
-              videos.map(v => <VideoThumbnail key={v.filename} video={v} selected={selectedFilename === v.filename} onClick={() => onSelect(v)} />)}
-            {kind === "audio" &&
-              audios.map(a => <AudioThumbnail key={a.filename} audio={a} selected={selectedFilename === a.filename} onClick={() => onSelect(a)} />)}
+            {entries.map(entry => {
+              switch (entry.kind) {
+                case "image":
+                  return <ImageThumbnail key={entry.filename} image={entry} selected={selectedFilename === entry.filename} onClick={() => onSelect(entry)} />;
+                case "video":
+                  return <VideoThumbnail key={entry.filename} video={entry} selected={selectedFilename === entry.filename} onClick={() => onSelect(entry)} />;
+                case "audio":
+                  return <AudioThumbnail key={entry.filename} audio={entry} selected={selectedFilename === entry.filename} onClick={() => onSelect(entry)} />;
+                default: {
+                  const exhaustive: never = entry;
+                  return exhaustive;
+                }
+              }
+            })}
           </div>
         )}
       </div>

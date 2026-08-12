@@ -1,5 +1,19 @@
 import { describe, expect, test } from "bun:test";
-import { bucketTotals, categoryKind, categoryShares, filterAgents, formatAgentIdShort, formatPercent, formatUsd, shortCategoryLabel } from "./formatters.ts";
+import {
+  bucketTotals,
+  categoryKind,
+  categoryShares,
+  filterAgents,
+  formatAgentIdShort,
+  formatCount,
+  formatMs,
+  formatPercent,
+  formatTps,
+  formatUsd,
+  shortCategoryLabel,
+  sumRecord,
+  topRecordEntries,
+} from "./formatters.ts";
 
 describe("formatUsd", () => {
   test("formats zero", () => {
@@ -40,6 +54,46 @@ describe("formatPercent", () => {
 
   test("handles non-finite", () => {
     expect(formatPercent(Number.NaN)).toBe("0%");
+  });
+});
+
+describe("formatCount", () => {
+  test("formats zero and small counts", () => {
+    expect(formatCount(0)).toBe("0");
+    expect(formatCount(42)).toBe("42");
+  });
+
+  test("compacts thousands and millions", () => {
+    expect(formatCount(1200)).toBe("1.2k");
+    expect(formatCount(12500)).toBe("12.5k");
+    expect(formatCount(2_500_000)).toBe("2.5M");
+  });
+});
+
+describe("formatMs", () => {
+  test("formats ms and seconds", () => {
+    expect(formatMs(120)).toBe("120ms");
+    expect(formatMs(1500)).toBe("1.50s");
+    expect(formatMs(undefined)).toBe("—");
+    expect(formatMs(0)).toBe("—");
+  });
+});
+
+describe("formatTps", () => {
+  test("formats throughput", () => {
+    expect(formatTps(42.3)).toBe("42.3 tk/s");
+    expect(formatTps(150)).toBe("150 tk/s");
+    expect(formatTps(0)).toBe("—");
+  });
+});
+
+describe("sumRecord / topRecordEntries", () => {
+  test("sums and ranks records", () => {
+    expect(sumRecord({ a: 1, b: 2 })).toBe(3);
+    expect(topRecordEntries({ a: 1, b: 5, c: 3 }, 2)).toEqual([
+      { key: "b", value: 5 },
+      { key: "c", value: 3 },
+    ]);
   });
 });
 

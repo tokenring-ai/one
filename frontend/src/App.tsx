@@ -22,6 +22,7 @@ import DocumentsApp from "./pages/apps/DocumentsApp.tsx";
 import EmailApp from "./pages/apps/EmailApp.tsx";
 import FilesApp from "./pages/apps/FilesApp.tsx";
 import MediaApp from "./pages/apps/MediaApp.tsx";
+import MemoriesApp from "./pages/apps/MemoriesApp.tsx";
 import MessagingApp from "./pages/apps/MessagingApp.tsx";
 import MetricsApp from "./pages/apps/MetricsApp.tsx";
 import PluginsApp from "./pages/apps/PluginsApp.tsx";
@@ -33,6 +34,7 @@ import SettingsApp from "./pages/apps/SettingsApp.tsx";
 import SkillsApp from "./pages/apps/SkillsApp.tsx";
 import SocialApp from "./pages/apps/SocialApp.tsx";
 import StocksApp from "./pages/apps/StocksApp.tsx";
+import TasksApp from "./pages/apps/TasksApp.tsx";
 import TerminalApp from "./pages/apps/TerminalApp.tsx";
 import VaultApp from "./pages/apps/VaultApp.tsx";
 import WebDesignApp from "./pages/apps/WebDesignApp.tsx";
@@ -129,6 +131,8 @@ export default function App() {
                     <Route path="/agents/:agentType?" element={<AgentsApp />} />
                     {/* Optional param keeps the app mounted while navigating between workflows */}
                     <Route path="/workflows/:workflowName?" element={<WorkflowsApp />} />
+                    {/* Optional params keep the app mounted while navigating between tasks */}
+                    <Route path="/tasks/:listName?/:taskName?" element={<TasksApp />} />
                     {/* Optional param keeps the app mounted while navigating between bots */}
                     <Route path="/bots/:botId?" element={<BotsApp />} />
                     <Route path="/scheduler" element={<SchedulerApp />} />
@@ -138,6 +142,7 @@ export default function App() {
                     <Route path="/web-design/:flowName?/:designName?" element={<WebDesignApp />} />
                     <Route path="/documents" element={<DocumentsApp />} />
                     <Route path="/research/:topicName?/:itemName?" element={<ResearchApp />} />
+                    <Route path="/memories/:category?/:memoryName?" element={<MemoriesApp />} />
                     {/* Optional param keeps the app mounted while navigating between posts */}
                     <Route path="/blog/:blogId?" element={<BlogApp />} />
                     {/* Optional param keeps the app mounted while navigating between files */}

@@ -67,7 +67,7 @@ daemon.
 - **Database Abstraction**: SQL execution, schema inspection, and resource management
 - **Checkpoint Persistence**: Agent state storage across sessions
 - **Task Queuing**: Sequential processing with checkpoint preservation
-- **Memory Management**: Short-term memory and attention storage
+- **Memory Management**: Durable categorized memories backed by markdown files
 
 ### Cloud and Infrastructure
 
@@ -89,7 +89,7 @@ daemon.
 ### Workflow Automation
 
 - **Scripting Language**: Variables, functions, LLM integration, and command sequences
-- **Task Orchestration**: Multi-step workflows with user approval
+- **Tasks**: Markdown task files agents can create, search, and execute in parallel
 - **Batch Processing**: Named iterables system with /foreach command
 - **Workflow Engine**: Advanced task planning and execution
 - **Scheduler**: Task scheduling and automation
@@ -428,7 +428,7 @@ TokenRing One is built as a modular TypeScript monorepo with specialized package
 - **@tokenring-ai/drizzle-storage**: Multi-database storage using Drizzle ORM (SQLite, MySQL, PostgreSQL)
 - **@tokenring-ai/checkpoint**: Checkpoint service for agent state persistence
 - **@tokenring-ai/queue**: App-level work queue that dispatches items to agents of a specific type
-- **@tokenring-ai/memory**: Agent memory management and attention storage
+- **@tokenring-ai/memory**: Durable categorized memories backed by markdown files
 
 ### Development Tools
 
@@ -700,7 +700,7 @@ of dependencies, see the package.json file.
 - **drizzle-storage**: Multi-database ORM support
 - **checkpoint**: Agent state persistence
 - **queue**: App-level work queue dispatching to typed agents
-- **memory**: Memory management and attention storage
+- **memory**: Durable categorized memories backed by markdown files
 
 #### Development Tools
 

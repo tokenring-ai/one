@@ -1,19 +1,23 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { FileText, FolderOpen, Info, Search, X } from "lucide-react";
-import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Eye, EyeOff, FilePlus, FileText, FolderOpen, FolderPlus, Info, Plus, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSWRConfig } from "swr";
 import WorkspaceShell from "../../components/layout/WorkspaceShell.tsx";
-import ConfirmDialog from "../../components/overlay/confirm-dialog.tsx";
+import AgentLaunchPanel from "../../components/ui/AgentLaunchPanel.tsx";
 import AppPageHeader from "../../components/ui/AppPageHeader.tsx";
+import BreadcrumbBar, { type BreadcrumbAction, type BreadcrumbSegment } from "../../components/ui/BreadcrumbBar.tsx";
+import ConfirmModal from "../../components/ui/ConfirmModal.tsx";
 import ErrorState from "../../components/ui/ErrorState.tsx";
 import LoadingState from "../../components/ui/LoadingState.tsx";
+import SearchInput from "../../components/ui/SearchInput.tsx";
 import { toastManager } from "../../components/ui/toast.tsx";
+import { useDebounce } from "../../hooks/useDebounce.ts";
+import { useDirtyState } from "../../hooks/useDirtyState.tsx";
+import { useEntityDelete } from "../../hooks/useEntityDelete.ts";
+import { useFileUpload } from "../../hooks/useFileUpload.ts";
 import { useHeadlessAgent } from "../../hooks/useHeadlessAgent.ts";
 import { filesystemRPCClient, useFileContents, useFilesystemProviders } from "../../rpc.ts";
-import AgentLaunchPanel from "./components/AgentLaunchPanel.tsx";
-import BreadcrumbBar from "./components/BreadcrumbBar.tsx";
 import FileEditorPane from "./components/FileEditorPane.tsx";
 import FileListPane from "./components/FileListPane.tsx";
 import NamePromptModal from "./components/NamePromptModal.tsx";
@@ -21,6 +25,10 @@ import PreviewMetadataPane from "./components/PreviewMetadataPane.tsx";
 import { getBasename, getParentPath, isLikelyTextFile, joinPath } from "./fsUtils.ts";
 
 type NamePrompt = { mode: "new-file" } | { mode: "new-folder" } | { mode: "rename"; path: string; isDir: boolean };
+
+/** Max size for Files app uploads (matches user-facing error copy). */
+const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
+const MAX_UPLOAD_SIZE_MB = 5;
 
 function filesPath(fileId: string | null | undefined): string {
   return fileId ? `/files/${encodeURIComponent(fileId)}` : "/files";
@@ -51,9 +59,8 @@ export default function FilesApp() {
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
   const [showHidden, setShowHidden] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Debounce search for workspace-wide search
+  const debouncedSearch = useDebounce(searchQuery, 250);
 
   const [saving, setSaving] = useState(false);
   const fileContent = useFileContents(selectedFile && isLikelyTextFile(selectedFile) ? selectedFile : undefined, provider ?? undefined);
@@ -61,7 +68,6 @@ export default function FilesApp() {
   const [updatedContent, setUpdatedContent] = useState<string | null>(null);
   const [namePrompt, setNamePrompt] = useState<NamePrompt | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [fileView, setFileView] = useState<"editor" | "details">("editor");
 
   // When deep-linking to a file, open its parent directory in the list.
@@ -72,28 +78,29 @@ export default function FilesApp() {
     setFileView(isLikelyTextFile(selectedFile) ? "editor" : "details");
   }, [selectedFile]);
 
-  // Debounce search for workspace-wide search
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchQuery), 250);
-    return () => clearTimeout(t);
-  }, [searchQuery]);
-
   const editorContent = updatedContent ?? fileContent.data?.content ?? "";
-  const isDirty = updatedContent !== null && updatedContent !== (fileContent.data?.content ?? "");
-
-  const confirmDiscardIfDirty = useCallback(() => {
-    if (!isDirty) return true;
-    return window.confirm("You have unsaved changes. Discard them?");
-  }, [isDirty]);
+  const diskContent = fileContent.data?.content ?? "";
+  const { isDirty, confirmDiscard } = useDirtyState({
+    current: editorContent,
+    saved: diskContent,
+  });
 
   const selectFile = useCallback(
     (file: string | null, options?: { replace?: boolean }) => {
-      if (file === selectedFile) return;
-      if (!confirmDiscardIfDirty()) return;
+      // Re-selecting the open file reloads content from disk (e.g. external/agent edits).
+      if (file === selectedFile) {
+        if (file && isLikelyTextFile(file)) {
+          if (isDirty && !confirmDiscard()) return;
+          setUpdatedContent(null);
+          void fileContent.mutate();
+        }
+        return;
+      }
+      if (!confirmDiscard()) return;
       setUpdatedContent(null);
       void navigate(filesPath(file), options?.replace ? { replace: true } : undefined);
     },
-    [selectedFile, confirmDiscardIfDirty, navigate],
+    [selectedFile, confirmDiscard, navigate, isDirty, fileContent],
   );
 
   const navigateTo = useCallback(
@@ -102,7 +109,7 @@ export default function FilesApp() {
         setSearchQuery("");
         return;
       }
-      if (selectedFile && !confirmDiscardIfDirty()) return;
+      if (selectedFile && !confirmDiscard()) return;
       setUpdatedContent(null);
       setPath(nextPath);
       setSearchQuery("");
@@ -111,7 +118,7 @@ export default function FilesApp() {
         void navigate("/files");
       }
     },
-    [path, selectedFile, confirmDiscardIfDirty, navigate],
+    [path, selectedFile, confirmDiscard, navigate],
   );
 
   const refreshListing = useCallback(async () => {
@@ -121,6 +128,120 @@ export default function FilesApp() {
       { revalidate: true },
     );
   }, [globalMutate]);
+
+  const entityDelete = useEntityDelete({
+    currentRouteId: selectedFile,
+    navigateToOverview: () => {
+      setUpdatedContent(null);
+      void navigate("/files", { replace: true });
+    },
+    refreshList: () => {
+      void refreshListing();
+    },
+    clearLocalState: id => {
+      setSelectedPaths(prev => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    },
+    successMessage: name => `Deleted ${getBasename(name)}`,
+    errorMessage: error => `Delete failed: ${formatError(error)}`,
+    successDuration: 2000,
+    errorDuration: 4000,
+  });
+
+  /** Binary-safe uploads via base64 so images and other non-text files are not corrupted. */
+  const upload = useFileUpload({
+    encoding: "base64",
+    maxSize: MAX_UPLOAD_SIZE,
+    maxSizeLabel: `${MAX_UPLOAD_SIZE_MB} MB`,
+    uploadFile: async ({ filePath, content, encoding }) => {
+      if (!provider) throw new Error("No filesystem provider");
+      const dest = joinPath(path, filePath);
+      await filesystemRPCClient.writeFile({ path: dest, content, encoding, provider });
+    },
+    checkExists: async ({ filePath }) => {
+      if (!provider) return { exists: false };
+      const dest = joinPath(path, filePath);
+      return filesystemRPCClient.exists({ path: dest, provider });
+    },
+    onSkip: ({ reason, detail }) => {
+      if (reason === "size" && detail) {
+        toastManager.error(detail, { duration: 3000 });
+      } else if (reason === "invalid-name" && detail) {
+        toastManager.error(detail, { duration: 3000 });
+      }
+    },
+    onError: ({ fileName, error }) => {
+      toastManager.error(`Failed to upload "${fileName}": ${formatError(error)}`, { duration: 3000 });
+    },
+    onComplete: async ({ uploaded }) => {
+      await refreshListing();
+      if (uploaded > 0) {
+        toastManager.success(uploaded === 1 ? "Uploaded 1 file" : `Uploaded ${uploaded} files`, { duration: 2000 });
+      }
+    },
+  });
+
+  /** Refresh directory listing and, when safe, the open text file. */
+  const handleRefresh = useCallback(async () => {
+    await refreshListing();
+    if (selectedFile && isLikelyTextFile(selectedFile) && !isDirty) {
+      await fileContent.mutate();
+    }
+  }, [refreshListing, selectedFile, isDirty, fileContent]);
+
+  const breadcrumbSegments = useMemo((): BreadcrumbSegment[] => {
+    if (path === ".") return [];
+    const parts = path.split("/");
+    return parts.map((part, i) => ({
+      label: part,
+      value: parts.slice(0, i + 1).join("/"),
+    }));
+  }, [path]);
+
+  const breadcrumbActions = useMemo((): BreadcrumbAction[] => {
+    return [
+      {
+        icon: RefreshCw,
+        onClick: () => void handleRefresh(),
+        ariaLabel: "Refresh",
+        title: "Refresh",
+      },
+      {
+        icon: showHidden ? EyeOff : Eye,
+        label: showHidden ? "Hide hidden" : "Show hidden",
+        onClick: () => setShowHidden(v => !v),
+        ariaLabel: showHidden ? "Hide hidden files" : "Show hidden files",
+        title: showHidden ? "Hide hidden files" : "Show hidden files",
+      },
+      {
+        icon: FilePlus,
+        label: "New file",
+        labelBreakpoint: "md",
+        onClick: () => setNamePrompt({ mode: "new-file" }),
+        ariaLabel: "New file",
+        title: "New file",
+      },
+      {
+        icon: FolderPlus,
+        label: "New folder",
+        labelBreakpoint: "md",
+        onClick: () => setNamePrompt({ mode: "new-folder" }),
+        ariaLabel: "New folder",
+        title: "New folder",
+      },
+      {
+        icon: Plus,
+        label: "Upload",
+        onClick: upload.trigger,
+        ariaLabel: "Upload files",
+        title: "Upload files",
+      },
+    ];
+  }, [handleRefresh, showHidden, upload.trigger]);
 
   const handleSave = useCallback(async () => {
     if (!selectedFile || !provider || !isLikelyTextFile(selectedFile)) return;
@@ -175,34 +296,6 @@ export default function FilesApp() {
     });
   }, []);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!provider) return;
-    const files = e.target.files;
-    if (!files?.length) return;
-    const MAX = 5 * 1024 * 1024;
-    const names = Array.from(files).map(f => f.name);
-    setUploadingFiles(names);
-    let ok = 0;
-    for (const file of Array.from(files)) {
-      if (file.size > MAX) {
-        toastManager.error(`"${file.name}" exceeds 5 MB limit`, { duration: 3000 });
-        continue;
-      }
-      try {
-        const content = await file.text();
-        const dest = joinPath(path, file.name);
-        await filesystemRPCClient.writeFile({ path: dest, content, provider });
-        ok += 1;
-      } catch (err: unknown) {
-        toastManager.error(`Failed to upload "${file.name}": ${formatError(err)}`, { duration: 3000 });
-      }
-    }
-    setUploadingFiles([]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    await refreshListing();
-    if (ok > 0) toastManager.success(ok === 1 ? "Uploaded 1 file" : `Uploaded ${ok} files`, { duration: 2000 });
-  };
-
   const validateEntryName = (name: string): string | null => {
     if (!name.trim()) return "Name is required";
     if (name.includes("/") || name.includes("\\")) return "Name cannot contain path separators";
@@ -212,51 +305,59 @@ export default function FilesApp() {
 
   const handleNamePromptSubmit = async (name: string) => {
     if (!provider || !namePrompt) return;
-    if (namePrompt.mode === "new-file") {
-      if (selectedFile && !confirmDiscardIfDirty()) return;
-      const dest = joinPath(path, name);
-      await filesystemRPCClient.writeFile({ path: dest, content: "", provider });
+    const action = namePrompt.mode === "rename" ? "Rename" : namePrompt.mode === "new-file" ? "Create file" : "Create folder";
+    try {
+      if (namePrompt.mode === "new-file") {
+        if (selectedFile && !confirmDiscard()) return;
+        const dest = joinPath(path, name);
+        await filesystemRPCClient.writeFile({ path: dest, content: "", provider });
+        await refreshListing();
+        setUpdatedContent(null);
+        // Navigate directly — selectFile would re-check dirty against stale state.
+        void navigate(filesPath(dest));
+        setNamePrompt(null);
+        toastManager.success(`Created ${name}`, { duration: 2000 });
+        return;
+      }
+      if (namePrompt.mode === "new-folder") {
+        const dest = joinPath(path, name);
+        await filesystemRPCClient.createDirectory({ path: dest, provider, recursive: true });
+        await refreshListing();
+        setNamePrompt(null);
+        toastManager.success(`Created folder ${name}`, { duration: 2000 });
+        return;
+      }
+      // Remaining mode is always "rename" after the branches above.
+      const parent = getParentPath(namePrompt.path);
+      const newPath = joinPath(parent, name);
+      const oldPath = namePrompt.isDir ? (namePrompt.path.endsWith("/") ? namePrompt.path.slice(0, -1) : namePrompt.path) : namePrompt.path;
+      if (oldPath === newPath) {
+        setNamePrompt(null);
+        return;
+      }
+      await filesystemRPCClient.rename({ oldPath, newPath, provider });
       await refreshListing();
-      setUpdatedContent(null);
-      // Navigate directly — selectFile would re-check dirty against stale state.
-      void navigate(filesPath(dest));
+      // Keep editor draft when renaming the open file (path changes, content stays).
+      if (selectedFile === namePrompt.path || selectedFile === oldPath) {
+        const nextFile = namePrompt.isDir ? `${newPath}/` : newPath;
+        void navigate(filesPath(nextFile), { replace: true });
+      }
+      setSelectedPaths(prev => {
+        if (!prev.has(namePrompt.path) && !prev.has(oldPath)) return prev;
+        const next = new Set(prev);
+        next.delete(namePrompt.path);
+        next.delete(oldPath);
+        if (!namePrompt.isDir) next.add(newPath);
+        return next;
+      });
       setNamePrompt(null);
-      toastManager.success(`Created ${name}`, { duration: 2000 });
-      return;
+      toastManager.success(`Renamed to ${name}`, { duration: 2000 });
+    } catch (e: unknown) {
+      const message = `${action} failed: ${formatError(e)}`;
+      toastManager.error(message, { duration: 4000 });
+      // Re-throw so NamePromptModal keeps the dialog open and shows the error.
+      throw new Error(message);
     }
-    if (namePrompt.mode === "new-folder") {
-      const dest = joinPath(path, name);
-      await filesystemRPCClient.createDirectory({ path: dest, provider, recursive: true });
-      await refreshListing();
-      setNamePrompt(null);
-      toastManager.success(`Created folder ${name}`, { duration: 2000 });
-      return;
-    }
-    // Remaining mode is always "rename" after the branches above.
-    const parent = getParentPath(namePrompt.path);
-    const newPath = joinPath(parent, name);
-    const oldPath = namePrompt.isDir ? (namePrompt.path.endsWith("/") ? namePrompt.path.slice(0, -1) : namePrompt.path) : namePrompt.path;
-    if (oldPath === newPath) {
-      setNamePrompt(null);
-      return;
-    }
-    await filesystemRPCClient.rename({ oldPath, newPath, provider });
-    await refreshListing();
-    // Keep editor draft when renaming the open file (path changes, content stays).
-    if (selectedFile === namePrompt.path || selectedFile === oldPath) {
-      const nextFile = namePrompt.isDir ? `${newPath}/` : newPath;
-      void navigate(filesPath(nextFile), { replace: true });
-    }
-    setSelectedPaths(prev => {
-      if (!prev.has(namePrompt.path) && !prev.has(oldPath)) return prev;
-      const next = new Set(prev);
-      next.delete(namePrompt.path);
-      next.delete(oldPath);
-      if (!namePrompt.isDir) next.add(newPath);
-      return next;
-    });
-    setNamePrompt(null);
-    toastManager.success(`Renamed to ${name}`, { duration: 2000 });
   };
 
   const handleDeleteConfirm = async () => {
@@ -266,27 +367,14 @@ export default function FilesApp() {
       setDeleteTarget(null);
       return;
     }
-    setDeleting(true);
-    try {
-      await filesystemRPCClient.deleteFile({ path: deleteTarget, provider });
-      if (selectedFile === deleteTarget) {
-        setUpdatedContent(null);
-        void navigate("/files", { replace: true });
-      }
-      setSelectedPaths(prev => {
-        const next = new Set(prev);
-        next.delete(deleteTarget);
-        return next;
-      });
-      await refreshListing();
-      toastManager.success(`Deleted ${getBasename(deleteTarget)}`, { duration: 2000 });
-      setDeleteTarget(null);
-    } catch (e: unknown) {
-      toastManager.error(`Delete failed: ${formatError(e)}`, { duration: 4000 });
-    } finally {
-      setDeleting(false);
-    }
+    const pathToDelete = deleteTarget;
+    setDeleteTarget(null);
+    await entityDelete.deleteEntity(pathToDelete, pathToDelete, async () => {
+      await filesystemRPCClient.deleteFile({ path: pathToDelete, provider });
+    });
   };
+
+  const deleting = entityDelete.isDeleting;
 
   const openRename = (file: string) => {
     const isDir = file.endsWith("/");
@@ -295,7 +383,7 @@ export default function FilesApp() {
 
   const switchProvider = (next: string) => {
     if (next === provider) return;
-    if (!confirmDiscardIfDirty()) return;
+    if (!confirmDiscard()) return;
     setProviderOverride(next);
     setPath(".");
     setUpdatedContent(null);
@@ -365,40 +453,11 @@ export default function FilesApp() {
             ))}
           </select>
         )}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search workspace…"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="bg-input border border-primary rounded-lg py-1.5 pl-8 pr-7 text-xs text-primary placeholder-muted focus-accent w-48 transition-all"
-            aria-label="Search workspace files"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-primary focus-ring rounded p-0.5 cursor-pointer"
-              aria-label="Clear search"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </div>
+        <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search workspace…" aria-label="Search workspace files" className="w-48" />
       </AppPageHeader>
 
-      <BreadcrumbBar
-        path={path}
-        onNavigate={navigateTo}
-        showHidden={showHidden}
-        onToggleHidden={() => setShowHidden(v => !v)}
-        onUpload={() => fileInputRef.current?.click()}
-        onRefresh={() => void refreshListing()}
-        onNewFile={() => setNamePrompt({ mode: "new-file" })}
-        onNewFolder={() => setNamePrompt({ mode: "new-folder" })}
-      />
-      <input ref={fileInputRef} type="file" multiple onChange={e => void handleUpload(e)} className="hidden" />
+      <BreadcrumbBar segments={breadcrumbSegments} onNavigate={navigateTo} actions={breadcrumbActions} />
+      <input ref={upload.inputRef} type="file" multiple onChange={e => void upload.onChange(e)} className="hidden" />
 
       <WorkspaceShell
         appId="files"
@@ -417,9 +476,8 @@ export default function FilesApp() {
             selectedPaths={selectedPaths}
             onToggleSelected={toggleSelected}
             onToggleSelectAll={toggleSelectAll}
-            uploadingFiles={uploadingFiles}
+            uploadingFiles={upload.uploadingFiles}
             searchQuery={debouncedSearch}
-            onRefresh={() => void refreshListing()}
             onRename={openRename}
             onDelete={setDeleteTarget}
           />
@@ -470,7 +528,6 @@ export default function FilesApp() {
               className={`${fileView === "details" ? "flex" : "hidden"} min-[1440px]:flex min-[1440px]:w-80 min-[1600px]:w-96 shrink-0 min-w-0 min-h-0 flex-col border-l border-primary bg-secondary`}
             >
               <PreviewMetadataPane
-                agentId={agentId}
                 file={selectedFile}
                 provider={provider}
                 selectedPaths={selectedPaths}
@@ -487,7 +544,19 @@ export default function FilesApp() {
         </div>
       </WorkspaceShell>
 
-      {selectedPaths.size > 0 && <AgentLaunchPanel selectedPaths={selectedPaths} onClear={() => setSelectedPaths(new Set())} />}
+      {selectedPaths.size > 0 && (
+        <AgentLaunchPanel
+          selectedItems={selectedPaths}
+          itemLabel="file"
+          onClear={() => setSelectedPaths(new Set())}
+          attachItemToAgent={async (agentId, file) => {
+            await filesystemRPCClient.addFileToChat({ agentId, file });
+          }}
+          onNavigateToAgent={agentId => {
+            void navigate(`/agent/${agentId}`);
+          }}
+        />
+      )}
 
       {namePrompt && (
         <NamePromptModal
@@ -503,14 +572,12 @@ export default function FilesApp() {
       )}
 
       {deleteTarget && (
-        <ConfirmDialog
+        <ConfirmModal
           title="Delete"
           message={`Delete “${getBasename(deleteTarget)}”? This cannot be undone.`}
-          confirmText={deleting ? "Deleting…" : "Delete"}
-          onConfirm={() => {
-            if (!deleting) void handleDeleteConfirm();
-          }}
-          onCancel={() => {
+          confirmLabel="Delete"
+          onConfirm={handleDeleteConfirm}
+          onClose={() => {
             if (!deleting) setDeleteTarget(null);
           }}
           variant="danger"

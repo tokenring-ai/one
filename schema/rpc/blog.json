@@ -7,6 +7,52 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
+      "title": "getBlogConfiguration request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/blog.getBlogConfiguration"
+        },
+        "params": {
+          "$ref": "#/$defs/getBlogConfigurationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getBlogConfiguration response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getBlogConfigurationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "getAllPosts request",
       "type": "object",
       "properties": {
@@ -317,6 +363,32 @@
         "jsonrpc",
         "id",
         "error"
+      ],
+      "additionalProperties": false
+    },
+    "getBlogConfigurationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getBlogConfigurationResult": {
+      "type": "object",
+      "properties": {
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "providers",
+        "agentTypes"
       ],
       "additionalProperties": false
     },
@@ -925,6 +997,11 @@
     "path": "/rpc/blog",
     "source": "plugin/blog/rpc/schema.ts",
     "methods": {
+      "getBlogConfiguration": {
+        "type": "query",
+        "params": "#/$defs/getBlogConfigurationParams",
+        "result": "#/$defs/getBlogConfigurationResult"
+      },
       "getAllPosts": {
         "type": "query",
         "params": "#/$defs/getAllPostsParams",

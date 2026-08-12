@@ -32,7 +32,9 @@ export default function SaveAsModal({ providers, initialPath, initialProvider, o
   }, []);
 
   useEffect(() => {
-    if (!provider && providers[0]) setProvider(providers[0]);
+    if (!provider || !providers.includes(provider)) {
+      setProvider(providers[0] ?? "");
+    }
   }, [providers, provider]);
 
   // Escape closes when not mid-save (input handler covers focused field; this covers elsewhere)

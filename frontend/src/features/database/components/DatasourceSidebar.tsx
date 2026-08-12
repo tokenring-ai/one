@@ -1,8 +1,10 @@
 import { ChevronRight, Database, Eye, Lock, Pencil, Plus, RefreshCw, Table2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import NavigationSidebarHeader from "../../../components/layout/NavigationSidebarHeader.tsx";
 import ErrorState from "../../../components/ui/ErrorState.tsx";
+import ListItemWithActions from "../../../components/ui/ListItemWithActions.tsx";
 import LoadingState from "../../../components/ui/LoadingState.tsx";
+import { useSearchFilter } from "../../../hooks/useSearchFilter.ts";
 import { cn } from "../../../lib/utils.ts";
 import type { DatasourceSummary, TableRef } from "../types.ts";
 
@@ -40,14 +42,20 @@ export default function DatasourceSidebar({
   onEditDatasource: (datasource: DatasourceSummary) => void;
   onRefresh: () => void;
 }) {
-  const [tableFilter, setTableFilter] = useState("");
+  const {
+    query: tableFilter,
+    setQuery: setTableFilter,
+    filtered: filteredTables,
+    clear: clearTableFilter,
+  } = useSearchFilter({
+    items: tables,
+    searchFields: table => table.name,
+  });
 
   // A filter typed for one datasource shouldn't hide tables after switching.
   useEffect(() => {
-    setTableFilter("");
-  }, [activeDatasource]);
-
-  const filteredTables = tableFilter.trim() ? tables.filter(table => table.name.toLowerCase().includes(tableFilter.trim().toLowerCase())) : tables;
+    clearTableFilter();
+  }, [activeDatasource, clearTableFilter]);
 
   return (
     <>
@@ -87,32 +95,33 @@ export default function DatasourceSidebar({
             const isActive = datasource.name === activeDatasource;
             return (
               <div key={datasource.name}>
-                <div
+                <ListItemWithActions
+                  id={datasource.name}
+                  selected={isActive}
+                  onPrimary={() => onSelectDatasource(datasource.name)}
+                  primaryProps={{ "aria-expanded": isActive }}
                   className={cn(
-                    "group w-full flex items-center gap-2 px-3 py-2 border-b border-primary hover:bg-hover transition-colors border-l-2",
-                    isActive ? "bg-active border-l-accent" : "border-l-transparent",
+                    "w-full gap-2 px-3 py-2 rounded-none border-b border-primary border-l-2",
+                    isActive ? "border-l-accent" : "border-l-transparent",
                   )}
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => onEditDatasource(datasource)}
+                      className="p-1 text-muted hover:text-primary rounded transition-all cursor-pointer focus-ring"
+                      title={`Edit ${datasource.name}`}
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  }
                 >
-                  <button
-                    type="button"
-                    onClick={() => onSelectDatasource(datasource.name)}
-                    className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer focus-ring rounded"
-                    aria-expanded={isActive}
-                  >
+                  <span className="flex items-center gap-2 min-w-0">
                     <ChevronRight className={cn("w-3.5 h-3.5 shrink-0 text-muted transition-transform", isActive && "rotate-90")} />
                     <Database className={cn("w-4 h-4 shrink-0", isActive ? "text-cyan-400" : "text-muted")} />
                     <span className={cn("text-sm truncate", isActive ? "text-primary font-medium" : "text-secondary")}>{datasource.name}</span>
                     {!datasource.allowWrites && <Lock className="w-3 h-3 shrink-0 text-muted" aria-label="Read-only" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onEditDatasource(datasource)}
-                    className="p-1 text-muted hover:text-primary rounded opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all cursor-pointer focus-ring shrink-0"
-                    title={`Edit ${datasource.name}`}
-                  >
-                    <Pencil className="w-3 h-3" />
-                  </button>
-                </div>
+                  </span>
+                </ListItemWithActions>
 
                 {isActive && (
                   <div className="bg-primary/40">
