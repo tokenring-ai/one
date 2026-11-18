@@ -18,14 +18,24 @@ import {
   Mail,
   X,
 } from "lucide-react";
-import { type MouseEvent, useEffect, useMemo, useState } from "react";
+import type React from "react";
+import { type MouseEvent, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useCopyToClipboard } from "../../hooks/useCopyToClipboard.ts";
+import { useLightbox } from "../../hooks/useLightbox.ts";
+import { copyToClipboard } from "../../lib/clipboard.ts";
 import { toastManager } from "../ui/toast.tsx";
 
 interface AttachmentChipProps {
   attachment: ChatAttachment;
   onRemove?: () => void;
   showRemove?: boolean;
+  /**
+   * `row` (default): name plus preview/copy/download buttons, for the composer.
+   * `pill`: a compact chip in a sent message; clicking it opens the preview,
+   * which carries copy and download.
+   */
+  variant?: "row" | "pill";
 }
 
 const actionButtonClassName =
@@ -63,9 +73,31 @@ function decodeAttachmentText(attachment: ChatAttachment): string {
   return attachment.body;
 }
 
+/**
+ * Only http:, https:, data: (for image/video attachments), and relative
+ * references may reach an element src/href; anything else (e.g. javascript:)
+ * is treated as unavailable.
+ */
+function isSafeAttachmentHref(attachment: ChatAttachment): boolean {
+  if (attachment.encoding !== "href") return true;
+  let parsed: URL;
+  try {
+    // The base resolves relative paths; the scheme check below only inspects the protocol.
+    parsed = new URL(attachment.body, "https://tokenring.invalid");
+  } catch {
+    return false;
+  }
+  if (parsed.protocol === "http:" || parsed.protocol === "https:") return true;
+  if (parsed.protocol === "data:") {
+    const classification = mimeTypeClassifications.get(attachment.mimeType);
+    return classification === "image" || classification === "video";
+  }
+  return false;
+}
+
 function getMediaSrc(attachment: ChatAttachment): string | null {
   if (attachment.encoding === "href") {
-    return attachment.body;
+    return isSafeAttachmentHref(attachment) ? attachment.body : null;
   }
   if (attachment.encoding === "base64") {
     return `data:${attachment.mimeType};base64,${attachment.body}`;
@@ -92,6 +124,9 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 
 function downloadAttachment(attachment: ChatAttachment) {
   if (attachment.encoding === "href") {
+    if (!isSafeAttachmentHref(attachment)) {
+      throw new Error(`"${attachment.name}" links to an unsupported URL scheme and cannot be downloaded.`);
+    }
     const a = document.createElement("a");
     a.href = attachment.body;
     a.download = attachment.name;
@@ -137,21 +172,10 @@ function formatPreviewText(attachment: ChatAttachment): string {
   }
 }
 
-function AttachmentPreviewOverlay({ attachment, onClose }: { attachment: ChatAttachment; onClose: () => void }) {
+function AttachmentPreviewOverlay({ attachment, onClose, actions }: { attachment: ChatAttachment; onClose: () => void; actions?: React.ReactNode }) {
   const mediaSrc = useMemo(() => getMediaSrc(attachment), [attachment]);
   const mimeTypeClassification = useMemo(() => getMimeTypeClassification(attachment.mimeType), [attachment]);
   const previewText = useMemo(() => (mimeTypeClassification === "text" ? formatPreviewText(attachment) : ""), [attachment]);
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
 
   return (
     <FocusTrap
@@ -181,6 +205,7 @@ function AttachmentPreviewOverlay({ attachment, onClose }: { attachment: ChatAtt
               </h3>
               <p className="truncate text-xs text-muted">{attachment.mimeType}</p>
             </div>
+            <div className="ml-auto flex shrink-0 items-center gap-0.5">{actions}</div>
             <button
               type="button"
               onClick={onClose}
@@ -218,13 +243,20 @@ function AttachmentPreviewOverlay({ attachment, onClose }: { attachment: ChatAtt
   );
 }
 
-export default function AttachmentChip({ attachment, onRemove, showRemove = false }: AttachmentChipProps) {
+export default function AttachmentChip({ attachment, onRemove, showRemove = false, variant = "row" }: AttachmentChipProps) {
   const Icon = getAttachmentIcon(attachment.mimeType);
   const imageSrc = useMemo(() => getImagePreviewSrc(attachment), [attachment]);
-  const [copied, setCopied] = useState(false);
+  const { copied, markCopied } = useCopyToClipboard();
   const [downloading, setDownloading] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  // Auto-close preview if this chip is reused for a different attachment
+  const {
+    isOpen: previewOpen,
+    open: openPreview,
+    close: closePreview,
+  } = useLightbox({
+    itemKey: `${attachment.name}\0${attachment.mimeType}\0${attachment.encoding}`,
+  });
 
   const showImageThumb = Boolean(imageSrc && !imageError);
 
@@ -243,33 +275,105 @@ export default function AttachmentChip({ attachment, onRemove, showRemove = fals
   const handleCopy = async (e: MouseEvent) => {
     e.stopPropagation();
     const mimeTypeClassification = getMimeTypeClassification(attachment.mimeType);
+    const reportCopyError = (error: unknown) => {
+      toastManager.error(`Failed to copy "${attachment.name}" to clipboard: ${formatError(error)}`, { duration: 5000 });
+    };
+
     try {
-      if (attachment.encoding === "href") {
-        await navigator.clipboard.writeText(attachment.body);
-      } else if (mimeTypeClassification === "text") {
-        await navigator.clipboard.writeText(decodeAttachmentText(attachment));
-      } else if (mimeTypeClassification === "image" && attachment.encoding === "base64" && typeof ClipboardItem !== "undefined") {
+      // Image blobs use ClipboardItem — not covered by the text copy utility
+      if (mimeTypeClassification === "image" && attachment.encoding === "base64" && typeof ClipboardItem !== "undefined") {
         const blob = new Blob([base64ToArrayBuffer(attachment.body)], { type: attachment.mimeType });
         await navigator.clipboard.write([new ClipboardItem({ [attachment.mimeType]: blob })]);
-      } else {
-        await navigator.clipboard.writeText(attachment.body);
+        markCopied();
+        return;
       }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+
+      const text = attachment.encoding === "href" || mimeTypeClassification !== "text" ? attachment.body : decodeAttachmentText(attachment);
+      await copyToClipboard(text, {
+        silent: true,
+        onSuccess: () => markCopied(),
+        onError: reportCopyError,
+      });
     } catch (error: unknown) {
-      toastManager.error(`Failed to copy "${attachment.name}" to clipboard: ${formatError(error)}`, { duration: 5000 });
+      reportCopyError(error);
     }
   };
 
   const handlePreview = (e: MouseEvent) => {
     e.stopPropagation();
-    setPreviewOpen(true);
+    openPreview();
   };
 
   const handleRemove = (e: MouseEvent) => {
     e.stopPropagation();
     onRemove?.();
   };
+
+  const copyButton = (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className={actionButtonClassName}
+      title={`Copy ${attachment.name} to clipboard`}
+      aria-label={`Copy ${attachment.name} to clipboard`}
+    >
+      {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
+  );
+  const downloadButton = (
+    <button
+      type="button"
+      onClick={handleDownload}
+      className={actionButtonClassName}
+      title={downloading ? `Downloading ${attachment.name}...` : `Download ${attachment.name}`}
+      aria-label={downloading ? `Downloading ${attachment.name}...` : `Download ${attachment.name}`}
+      disabled={downloading}
+    >
+      {downloading ? (
+        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+      ) : (
+        <Download className="h-3.5 w-3.5" />
+      )}
+    </button>
+  );
+  const glyph = showImageThumb ? (
+    <img src={imageSrc!} alt="" className="h-4 w-4 shrink-0 rounded-sm object-cover" loading="lazy" onError={() => setImageError(true)} />
+  ) : (
+    <Icon className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden="true" />
+  );
+  const preview = previewOpen
+    ? createPortal(
+        <AttachmentPreviewOverlay
+          attachment={attachment}
+          onClose={closePreview}
+          actions={
+            <>
+              {copyButton}
+              {downloadButton}
+            </>
+          }
+        />,
+        document.body,
+      )
+    : null;
+
+  if (variant === "pill") {
+    return (
+      <li className="min-w-0 max-w-full">
+        <button
+          type="button"
+          onClick={handlePreview}
+          className="inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-secondary transition-colors hover:border-line-strong hover:text-fg focus-ring cursor-pointer"
+          title={`Preview ${attachment.name}`}
+          aria-label={`Preview attachment ${attachment.name}`}
+        >
+          {glyph}
+          <span className="min-w-0 truncate">{attachment.name}</span>
+        </button>
+        {preview}
+      </li>
+    );
+  }
 
   return (
     <div
@@ -278,11 +382,7 @@ export default function AttachmentChip({ attachment, onRemove, showRemove = fals
       role="listitem"
       aria-label={`Attachment: ${attachment.name}`}
     >
-      {showImageThumb ? (
-        <img src={imageSrc!} alt="" className="h-5 w-5 shrink-0 rounded object-cover" loading="lazy" onError={() => setImageError(true)} />
-      ) : (
-        <Icon className="h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
-      )}
+      {glyph}
 
       <span className="min-w-0 flex-1 truncate font-mono text-primary" title={attachment.name}>
         {attachment.name}
@@ -298,34 +398,13 @@ export default function AttachmentChip({ attachment, onRemove, showRemove = fals
         >
           <Eye className="h-3.5 w-3.5" />
         </button>
-        <button
-          type="button"
-          onClick={handleCopy}
-          className={actionButtonClassName}
-          title={`Copy ${attachment.name} to clipboard`}
-          aria-label={`Copy ${attachment.name} to clipboard`}
-        >
-          {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-        </button>
-        <button
-          type="button"
-          onClick={handleDownload}
-          className={actionButtonClassName}
-          title={downloading ? `Downloading ${attachment.name}...` : `Download ${attachment.name}`}
-          aria-label={downloading ? `Downloading ${attachment.name}...` : `Download ${attachment.name}`}
-          disabled={downloading}
-        >
-          {downloading ? (
-            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          ) : (
-            <Download className="h-3.5 w-3.5" />
-          )}
-        </button>
+        {copyButton}
+        {downloadButton}
         {showRemove && onRemove && (
           <button
             type="button"
             onClick={handleRemove}
-            className={`${actionButtonClassName} hover:text-red-500`}
+            className={`${actionButtonClassName} hover:text-error`}
             title={`Remove ${attachment.name}`}
             aria-label={`Remove ${attachment.name}`}
           >
@@ -334,7 +413,7 @@ export default function AttachmentChip({ attachment, onRemove, showRemove = fals
         )}
       </div>
 
-      {previewOpen && createPortal(<AttachmentPreviewOverlay attachment={attachment} onClose={() => setPreviewOpen(false)} />, document.body)}
+      {preview}
     </div>
   );
 }

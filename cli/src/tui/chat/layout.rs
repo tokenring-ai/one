@@ -66,7 +66,11 @@ pub(super) fn composer_text_width(area: Rect, theme: &Theme, spacing: UiSpacing)
         .max(1) as usize
 }
 
-pub(super) fn composer_surface_height(content_lines: u16, theme: &Theme, spacing: UiSpacing) -> u16 {
+pub(super) fn composer_surface_height(
+    content_lines: u16,
+    theme: &Theme,
+    spacing: UiSpacing,
+) -> u16 {
     content_lines
         .max(1)
         .saturating_add(spacing.pad_v.saturating_mul(2))
@@ -94,7 +98,10 @@ pub(super) fn surface_vertical_chrome(theme: &Theme) -> u16 {
 }
 
 /// Resolve a stripe colour, honouring the `composer_stripe` enable flag.
-pub(super) fn stripe_color(theme: &Theme, color: crate::theme::HexColor) -> Option<crate::theme::HexColor> {
+pub(super) fn stripe_color(
+    theme: &Theme,
+    color: crate::theme::HexColor,
+) -> Option<crate::theme::HexColor> {
     if theme.layout.composer_stripe {
         Some(color)
     } else {

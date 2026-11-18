@@ -1,5 +1,5 @@
 import { Bot, Check, ChevronRight, Loader2, Sparkles, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { cn } from "../../../lib/utils.ts";
 import type { TextSelection } from "../types.ts";
 
@@ -8,6 +8,10 @@ export interface AIEditPanelProps {
   agentId: string | null;
   initError: string | null;
   initialising: boolean;
+  /** Replaces the plain init error when AI editing cannot start (e.g. a missing agent type). */
+  unavailableNotice?: ReactNode;
+  /** Bumped by the editor's "Ask AI" control to focus the instruction field. */
+  focusNonce?: number;
   prompt: string;
   onPromptChange: (v: string) => void;
   loading: boolean;
@@ -23,6 +27,8 @@ export default function AIEditPanel({
   agentId,
   initError,
   initialising,
+  unavailableNotice,
+  focusNonce = 0,
   prompt,
   onPromptChange,
   loading,
@@ -41,6 +47,10 @@ export default function AIEditPanel({
     }
   }, [selection?.start, selection?.end, selection]);
 
+  useEffect(() => {
+    if (focusNonce > 0) promptRef.current?.focus();
+  }, [focusNonce]);
+
   if (initialising) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
@@ -55,7 +65,7 @@ export default function AIEditPanel({
       <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
         <Bot className="w-10 h-10 text-muted opacity-30" />
         <p className="text-sm text-muted">AI editing unavailable</p>
-        <p className="text-2xs text-dim">{initError ?? "No writer agent could be started"}</p>
+        {unavailableNotice ?? <p className="text-xs text-dim">{initError ?? "No writer agent could be started"}</p>}
       </div>
     );
   }
@@ -80,7 +90,7 @@ export default function AIEditPanel({
               <p className="text-sm font-medium text-primary mb-1">Select text to edit with AI</p>
               <p className="text-xs text-muted">Highlight any part of your document in the editor</p>
             </div>
-            <div className="flex items-center gap-1 text-2xs text-dim mt-1">
+            <div className="flex items-center gap-1 text-xs text-dim mt-1">
               <span className="font-medium text-muted">1.</span> Highlight text
               <ChevronRight className="w-3 h-3 opacity-50" />
               <span className="font-medium text-muted">2.</span> Type instruction
@@ -92,15 +102,15 @@ export default function AIEditPanel({
           <>
             {/* Selected text preview */}
             <div className="space-y-1.5">
-              <label className="text-2xs font-semibold text-muted uppercase tracking-wide">Selected text ({selection.end - selection.start} chars)</label>
+              <label className="text-xs font-semibold text-muted uppercase tracking-wide">Selected text ({selection.end - selection.start} chars)</label>
               <div className="bg-tertiary border border-primary rounded-lg p-3 max-h-32 overflow-y-auto">
-                <pre className="text-2xs text-primary font-mono whitespace-pre-wrap wrap-break-word leading-relaxed">{selection.text}</pre>
+                <pre className="text-xs text-primary font-mono whitespace-pre-wrap wrap-break-word leading-relaxed">{selection.text}</pre>
               </div>
             </div>
 
             {/* Prompt */}
             <div className="space-y-1.5">
-              <label className="text-2xs font-semibold text-muted uppercase tracking-wide">Instruction</label>
+              <label className="text-xs font-semibold text-muted uppercase tracking-wide">Instruction</label>
               <textarea
                 ref={promptRef}
                 value={prompt}
@@ -114,17 +124,17 @@ export default function AIEditPanel({
                 placeholder="e.g. Make this more concise, Fix the grammar, Convert to a bullet list, Make it more formal..."
                 rows={3}
                 disabled={loading}
-                className="w-full bg-input border border-primary rounded-lg p-3 text-xs text-primary placeholder-muted resize-none focus-accent disabled:opacity-50 transition-all leading-relaxed"
+                className="w-full bg-input border border-control rounded-lg p-3 text-xs text-primary placeholder-muted resize-none focus-accent disabled:opacity-50 transition-all leading-relaxed"
                 aria-label="AI instruction"
               />
-              <p className="text-2xs text-dim">Ctrl/⌘+Enter to submit</p>
+              <p className="text-xs text-dim">Ctrl/⌘+Enter to submit</p>
             </div>
 
             {/* AI Response */}
             {response !== null && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-2xs font-semibold text-muted uppercase tracking-wide">{loading ? "Generating…" : "AI Response"}</label>
+                  <label className="text-xs font-semibold text-muted uppercase tracking-wide">{loading ? "Generating…" : "AI Response"}</label>
                   {!loading && (
                     <button
                       type="button"
@@ -143,7 +153,7 @@ export default function AIEditPanel({
                     response.length > 400 ? "max-h-52" : "",
                   )}
                 >
-                  <pre className="text-2xs text-primary font-mono whitespace-pre-wrap wrap-break-word leading-relaxed">
+                  <pre className="text-xs text-primary font-mono whitespace-pre-wrap wrap-break-word leading-relaxed">
                     {response}
                     {loading && <span className="inline-block w-1.5 h-3 bg-accent-soft animate-pulse ml-0.5 align-text-bottom" />}
                   </pre>
@@ -179,7 +189,7 @@ export default function AIEditPanel({
               type="button"
               onClick={onSubmit}
               disabled={!prompt.trim()}
-              className="w-full flex items-center justify-center gap-2 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition-colors focus-ring shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 py-2 btn-accent text-xs font-semibold rounded-lg transition-colors focus-ring shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Sparkles className="w-3.5 h-3.5" />
               {response !== null ? "Re-generate" : "Ask AI"}

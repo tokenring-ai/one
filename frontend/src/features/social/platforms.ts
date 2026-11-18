@@ -7,6 +7,8 @@
  * - connected messaging services (`listBots` services)
  */
 
+import { serviceGradient } from "../../lib/serviceGradient.ts";
+
 export type PlatformKind = "messaging" | "social";
 
 export type PlatformStatusId = "connected" | "configured" | "needs_config" | "not_installed";
@@ -27,13 +29,14 @@ export interface PlatformDef {
 /**
  * Platforms the Social app surfaces.
  * Slack, Telegram, Discord, X, and Reddit are messaging transports for bots.
+ * Gradients come from the shared service brand map.
  */
 export const SOCIAL_PLATFORMS: PlatformDef[] = [
   {
     id: "slack",
     name: "Slack",
     description: "Workspaces, channels, and DMs via bot accounts",
-    color: "from-purple-500 to-accent-hover",
+    color: serviceGradient("slack"),
     pluginName: "@tokenring-ai/slack",
     configSlice: "slack",
     kind: "messaging",
@@ -42,7 +45,7 @@ export const SOCIAL_PLATFORMS: PlatformDef[] = [
     id: "telegram",
     name: "Telegram",
     description: "Bot accounts for groups and direct messages",
-    color: "from-sky-500 to-blue-600",
+    color: serviceGradient("telegram"),
     pluginName: "@tokenring-ai/telegram",
     configSlice: "telegram",
     kind: "messaging",
@@ -51,7 +54,7 @@ export const SOCIAL_PLATFORMS: PlatformDef[] = [
     id: "discord",
     name: "Discord",
     description: "Servers, channels, and DMs via bot accounts",
-    color: "from-accent to-violet-600",
+    color: serviceGradient("discord"),
     pluginName: "@tokenring-ai/discord",
     configSlice: "discord",
     kind: "messaging",
@@ -60,7 +63,7 @@ export const SOCIAL_PLATFORMS: PlatformDef[] = [
     id: "x",
     name: "X / Twitter",
     description: "Mentions and DMs via X accounts",
-    color: "from-gray-700 to-gray-900",
+    color: serviceGradient("x"),
     pluginName: "@tokenring-ai/x",
     configSlice: "x",
     kind: "messaging",
@@ -69,7 +72,7 @@ export const SOCIAL_PLATFORMS: PlatformDef[] = [
     id: "reddit",
     name: "Reddit",
     description: "Subreddit comments and private messages via bot accounts",
-    color: "from-orange-500 to-red-600",
+    color: serviceGradient("reddit"),
     pluginName: "@tokenring-ai/reddit",
     configSlice: "reddit",
     kind: "messaging",
@@ -162,7 +165,7 @@ export function statusLabel(status: PlatformStatusId): string {
 }
 
 export function statusDetail(info: PlatformStatus): string {
-  const { status, accountNames, connectedAccountNames, platform } = info;
+  const { status, accountNames, connectedAccountNames, platform, hasConfig } = info;
   switch (status) {
     case "connected": {
       const n = connectedAccountNames.length;
@@ -182,6 +185,11 @@ export function statusDetail(info: PlatformStatus): string {
       return "Ready";
     }
     case "needs_config":
+      // hasConfig means the plugin exposes a config schema (settings UI), not that
+      // entries already exist. Without a schema there is no Configuration path.
+      if (!hasConfig) {
+        return "Plugin is installed but has no configuration UI";
+      }
       return platform.kind === "messaging" ? "Add an account in Configuration" : "Add credentials in Configuration";
     case "not_installed":
       return "Plugin is not installed on this instance";

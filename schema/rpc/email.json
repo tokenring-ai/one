@@ -7,7 +7,7 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
-      "title": "getEmailProviders request",
+      "title": "getEmailConfiguration request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -17,10 +17,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/email.getEmailProviders"
+          "const": "/rpc/email.getEmailConfiguration"
         },
         "params": {
-          "$ref": "#/$defs/getEmailProvidersParams"
+          "$ref": "#/$defs/getEmailConfigurationParams"
         }
       },
       "required": [
@@ -32,7 +32,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getEmailProviders response",
+      "title": "getEmailConfiguration response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -42,7 +42,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getEmailProvidersResult"
+          "$ref": "#/$defs/getEmailConfigurationResult"
         }
       },
       "required": [
@@ -191,6 +191,282 @@
       "additionalProperties": false
     },
     {
+      "title": "getEmailCapabilities request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/email.getEmailCapabilities"
+        },
+        "params": {
+          "$ref": "#/$defs/getEmailCapabilitiesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getEmailCapabilities response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getEmailCapabilitiesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "modifyMessages request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/email.modifyMessages"
+        },
+        "params": {
+          "$ref": "#/$defs/modifyMessagesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "modifyMessages response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/modifyMessagesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "saveDraft request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/email.saveDraft"
+        },
+        "params": {
+          "$ref": "#/$defs/saveDraftParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "saveDraft response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/saveDraftResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getDraftForMessage request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/email.getDraftForMessage"
+        },
+        "params": {
+          "$ref": "#/$defs/getDraftForMessageParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getDraftForMessage response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getDraftForMessageResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "sendDraft request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/email.sendDraft"
+        },
+        "params": {
+          "$ref": "#/$defs/sendDraftParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "sendDraft response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/sendDraftResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getEmailWatchStatus request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/email.getEmailWatchStatus"
+        },
+        "params": {
+          "$ref": "#/$defs/getEmailWatchStatusParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getEmailWatchStatus response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getEmailWatchStatusResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "getMessageById request",
       "type": "object",
       "properties": {
@@ -227,6 +503,98 @@
         },
         "result": {
           "$ref": "#/$defs/getMessageByIdResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "markMessageAsRead request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/email.markMessageAsRead"
+        },
+        "params": {
+          "$ref": "#/$defs/markMessageAsReadParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "markMessageAsRead response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/markMessageAsReadResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteMessage request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/email.deleteMessage"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteMessageParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteMessage response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteMessageResult"
         }
       },
       "required": [
@@ -504,11 +872,11 @@
       ],
       "additionalProperties": false
     },
-    "getEmailProvidersParams": {
+    "getEmailConfigurationParams": {
       "type": "object",
       "properties": {}
     },
-    "getEmailProvidersResult": {
+    "getEmailConfigurationResult": {
       "type": "object",
       "properties": {
         "providers": {
@@ -516,10 +884,17 @@
           "items": {
             "type": "string"
           }
+        },
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
-        "providers"
+        "providers",
+        "agentTypes"
       ],
       "additionalProperties": false
     },
@@ -691,6 +1066,9 @@
               "isRead": {
                 "type": "boolean"
               },
+              "isStarred": {
+                "type": "boolean"
+              },
               "receivedAt": {
                 "type": "number"
               },
@@ -744,6 +1122,9 @@
         },
         "unreadOnly": {
           "type": "boolean"
+        },
+        "pageToken": {
+          "type": "string"
         }
       },
       "required": [
@@ -855,6 +1236,9 @@
               "isRead": {
                 "type": "boolean"
               },
+              "isStarred": {
+                "type": "boolean"
+              },
               "receivedAt": {
                 "type": "number"
               },
@@ -875,6 +1259,9 @@
         "count": {
           "type": "number"
         },
+        "nextPageToken": {
+          "type": "string"
+        },
         "message": {
           "type": "string"
         }
@@ -885,6 +1272,585 @@
         "message"
       ],
       "additionalProperties": false
+    },
+    "getEmailCapabilitiesParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider"
+      ]
+    },
+    "getEmailCapabilitiesResult": {
+      "type": "object",
+      "properties": {
+        "capabilities": {
+          "type": "object",
+          "properties": {
+            "markUnread": {
+              "type": "boolean"
+            },
+            "archive": {
+              "type": "boolean"
+            },
+            "star": {
+              "type": "boolean"
+            },
+            "move": {
+              "type": "boolean"
+            },
+            "resumeDrafts": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "markUnread",
+            "archive",
+            "star",
+            "move",
+            "resumeDrafts"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "capabilities"
+      ],
+      "additionalProperties": false
+    },
+    "modifyMessagesParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "ids": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "action": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "markRead"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "markUnread"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "archive"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "star"
+                },
+                "starred": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "starred"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "move"
+                },
+                "box": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "type",
+                "box"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "provider",
+        "ids",
+        "action"
+      ]
+    },
+    "modifyMessagesResult": {
+      "type": "object",
+      "properties": {
+        "succeeded": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "failed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "error": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "error"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "succeeded",
+        "failed",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "saveDraftParams": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string"
+        },
+        "to": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "email": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "email"
+            ]
+          }
+        },
+        "cc": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "email": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "email"
+            ]
+          }
+        },
+        "bcc": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "email": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "email"
+            ]
+          }
+        },
+        "textBody": {
+          "type": "string"
+        },
+        "htmlBody": {
+          "type": "string"
+        },
+        "threadId": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject",
+        "to",
+        "provider"
+      ]
+    },
+    "saveDraftResult": {
+      "type": "object",
+      "properties": {
+        "draft": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "threadId": {
+              "type": "string"
+            },
+            "subject": {
+              "type": "string"
+            },
+            "to": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "cc": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "bcc": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "textBody": {
+              "type": "string"
+            },
+            "htmlBody": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "subject",
+            "to",
+            "createdAt",
+            "updatedAt"
+          ],
+          "additionalProperties": false
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "draft",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "getDraftForMessageParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "messageId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "messageId"
+      ]
+    },
+    "getDraftForMessageResult": {
+      "type": "object",
+      "properties": {
+        "draft": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "threadId": {
+                  "type": "string"
+                },
+                "subject": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "email"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "cc": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "email"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "bcc": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "email"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "textBody": {
+                  "type": "string"
+                },
+                "htmlBody": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "number"
+                },
+                "updatedAt": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "id",
+                "subject",
+                "to",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "draft",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "sendDraftParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "id"
+      ]
+    },
+    "sendDraftResult": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "getEmailWatchStatusParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "getEmailWatchStatusResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "configured": {
+              "type": "boolean"
+            },
+            "running": {
+              "type": "boolean"
+            },
+            "pollIntervalSeconds": {
+              "type": "number"
+            },
+            "unreadOnly": {
+              "type": "boolean"
+            },
+            "markAsRead": {
+              "type": "boolean"
+            },
+            "actionCount": {
+              "type": "number"
+            },
+            "processedCount": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "status",
+            "configured",
+            "running",
+            "pollIntervalSeconds",
+            "unreadOnly",
+            "markAsRead",
+            "actionCount",
+            "processedCount"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
     },
     "getMessageByIdParams": {
       "type": "object",
@@ -1003,6 +1969,9 @@
             "isRead": {
               "type": "boolean"
             },
+            "isStarred": {
+              "type": "boolean"
+            },
             "receivedAt": {
               "type": "number"
             },
@@ -1028,6 +1997,82 @@
         "message"
       ],
       "additionalProperties": false
+    },
+    "markMessageAsReadParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "id"
+      ]
+    },
+    "markMessageAsReadResult": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "deleteMessageParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId",
+        "id"
+      ]
+    },
+    "deleteMessageResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
     },
     "createDraftParams": {
       "type": "object",
@@ -1583,33 +2628,21 @@
               "const": "success"
             },
             "selectedMessageId": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "selectedDraftId": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "selectedProvider": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "availableProviders": {
@@ -1653,7 +2686,10 @@
           "type": "string"
         },
         "selectedMessageId": {
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [
@@ -1670,33 +2706,21 @@
               "const": "success"
             },
             "selectedMessageId": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "selectedDraftId": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "selectedProvider": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "availableProviders": {
@@ -1736,10 +2760,10 @@
     "path": "/rpc/email",
     "source": "plugin/email/rpc/schema.ts",
     "methods": {
-      "getEmailProviders": {
+      "getEmailConfiguration": {
         "type": "query",
-        "params": "#/$defs/getEmailProvidersParams",
-        "result": "#/$defs/getEmailProvidersResult"
+        "params": "#/$defs/getEmailConfigurationParams",
+        "result": "#/$defs/getEmailConfigurationResult"
       },
       "getEmailBoxes": {
         "type": "query",
@@ -1756,10 +2780,50 @@
         "params": "#/$defs/searchMessagesParams",
         "result": "#/$defs/searchMessagesResult"
       },
+      "getEmailCapabilities": {
+        "type": "query",
+        "params": "#/$defs/getEmailCapabilitiesParams",
+        "result": "#/$defs/getEmailCapabilitiesResult"
+      },
+      "modifyMessages": {
+        "type": "mutation",
+        "params": "#/$defs/modifyMessagesParams",
+        "result": "#/$defs/modifyMessagesResult"
+      },
+      "saveDraft": {
+        "type": "mutation",
+        "params": "#/$defs/saveDraftParams",
+        "result": "#/$defs/saveDraftResult"
+      },
+      "getDraftForMessage": {
+        "type": "query",
+        "params": "#/$defs/getDraftForMessageParams",
+        "result": "#/$defs/getDraftForMessageResult"
+      },
+      "sendDraft": {
+        "type": "mutation",
+        "params": "#/$defs/sendDraftParams",
+        "result": "#/$defs/sendDraftResult"
+      },
+      "getEmailWatchStatus": {
+        "type": "query",
+        "params": "#/$defs/getEmailWatchStatusParams",
+        "result": "#/$defs/getEmailWatchStatusResult"
+      },
       "getMessageById": {
         "type": "query",
         "params": "#/$defs/getMessageByIdParams",
         "result": "#/$defs/getMessageByIdResult"
+      },
+      "markMessageAsRead": {
+        "type": "mutation",
+        "params": "#/$defs/markMessageAsReadParams",
+        "result": "#/$defs/markMessageAsReadResult"
+      },
+      "deleteMessage": {
+        "type": "mutation",
+        "params": "#/$defs/deleteMessageParams",
+        "result": "#/$defs/deleteMessageResult"
       },
       "createDraft": {
         "type": "mutation",

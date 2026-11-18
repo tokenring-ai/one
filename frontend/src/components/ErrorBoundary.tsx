@@ -1,6 +1,8 @@
-import { AlertTriangle, Check, ChevronDown, Copy, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, Copy } from "lucide-react";
 import type React from "react";
-import { Component, type ReactNode, useState } from "react";
+import { Component, type ReactNode, useEffect, useRef, useState } from "react";
+import { useCopyToClipboard } from "../hooks/useCopyToClipboard.ts";
+import Button from "../ui/button.tsx";
 
 interface Props {
   children: ReactNode;
@@ -56,6 +58,14 @@ export default class ErrorBoundary extends Component<Props, State> {
 // Helper component for the reset button with immediate feedback
 function ResetButton({ onReset }: { onReset: () => void }) {
   const [isResetting, setIsResetting] = useState(false);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear the pending reset timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    };
+  }, []);
 
   const handleReset = () => {
     setIsResetting(true);
@@ -63,32 +73,21 @@ function ResetButton({ onReset }: { onReset: () => void }) {
       onReset();
     } finally {
       // Reset loading state after a brief moment to show feedback
-      setTimeout(() => setIsResetting(false), 200);
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = setTimeout(() => setIsResetting(false), 200);
     }
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleReset}
-      disabled={isResetting}
-      className="px-4 py-2 btn-accent rounded-lg transition-all mt-4 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-    >
-      {isResetting ? (
-        <>
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span>Resetting...</span>
-        </>
-      ) : (
-        <span>Try Again</span>
-      )}
-    </button>
+    <Button type="button" size="md" className="mt-4" busy={isResetting} busyLabel="Resetting..." onClick={handleReset}>
+      Try Again
+    </Button>
   );
 }
 
 function ErrorDetails({ error, errorInfo }: { error?: Error | undefined; errorInfo?: React.ErrorInfo | undefined }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copy, copied } = useCopyToClipboard();
 
   const handleCopy = async () => {
     if (!error) return;
@@ -97,13 +96,7 @@ function ErrorDetails({ error, errorInfo }: { error?: Error | undefined; errorIn
       ? `${error.message}\n\nStack:\n${error.stack}\n\nComponent Stack:\n${errorInfo.componentStack}`
       : `${error.message}\n\nStack:\n${error.stack}`;
 
-    try {
-      await navigator.clipboard.writeText(errorText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy error details:", err);
-    }
+    await copy(errorText);
   };
 
   if (!error) return null;

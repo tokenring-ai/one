@@ -604,7 +604,6 @@ struct FileQuestionConfig {
 
 pub struct FileSession {
     config: FileQuestionConfig,
-    provider: String,
     root: FileNode,
     selected: usize,
     checked: HashSet<String>,
@@ -614,7 +613,7 @@ pub struct FileSession {
 }
 
 impl FileSession {
-    pub fn new(question: Question, provider: String, working_directory: String) -> Self {
+    pub fn new(question: Question, working_directory: String) -> Self {
         let Question::FileSelect {
             label,
             description,
@@ -638,7 +637,6 @@ impl FileSession {
                     maximum: maximum_selections,
                 },
             },
-            provider,
             root: FileNode {
                 name: working_directory.clone(),
                 value: working_directory,
@@ -671,12 +669,11 @@ impl FileSession {
         let (tx, rx) = mpsc::channel();
         let fail_tx = tx.clone();
         let worker_client = client.clone();
-        let provider = self.provider.clone();
         let worker_path = path.clone();
         if let Err(error) = thread::Builder::new()
             .name("tr-question-directory".into())
             .spawn(move || {
-                let result = rpc::list_directory(&worker_client, &provider, &worker_path, false)
+                let result = rpc::list_directory(&worker_client, &worker_path, false)
                     .map_err(|error| format!("Could not load {worker_path}: {error}"));
                 let _ = tx.send(result);
             })
@@ -1021,13 +1018,12 @@ pub struct FormSession {
     values: Vec<Vec<Value>>,
     editors: Vec<Vec<InputEditor>>,
     current_sub: Option<FormSubSession>,
-    provider: String,
     working_directory: String,
     flash: Option<String>,
 }
 
 impl FormSession {
-    pub fn new(question: Question, provider: String, working_directory: String) -> Self {
+    pub fn new(question: Question, working_directory: String) -> Self {
         let sections = match question {
             Question::Form { sections } => sections,
             _ => Vec::new(),
@@ -1057,7 +1053,6 @@ impl FormSession {
             values,
             editors,
             current_sub: None,
-            provider,
             working_directory,
             flash: None,
         };
@@ -1103,7 +1098,6 @@ impl FormSession {
             Question::FileSelect { .. } => {
                 self.current_sub = Some(FormSubSession::File(FileSession::new(
                     question.clone(),
-                    self.provider.clone(),
                     self.working_directory.clone(),
                 )));
             }
@@ -1196,7 +1190,7 @@ impl FormSession {
                 }
                 Some(QuestionAction::Cancel) => Some(QuestionAction::Cancel),
                 None => None,
-            }
+            };
         }
 
         // Text field.
@@ -1251,13 +1245,12 @@ impl FormSession {
 
 // ---------------- Confirmation (yes/no treeSelect) ----------------
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum ConfirmChoice {
-    Yes,
-    No,
-}
+/// The value of the optional third approval answer, "Always allow", which saves a standing
+/// permission (mirrors `ALWAYS_ALLOW_VALUE` in the agent plugin).
+const ALWAYS_ALLOW_VALUE: &str = "Always";
 
-/// Whether a tree-select question is a binary approval prompt (`askForApproval`).
+/// Whether a tree-select question is an approval prompt (`askForApproval`): Yes and No, plus an
+/// optional third "Always allow" answer.
 pub fn is_confirmation_question(question: &Question) -> bool {
     let Question::TreeSelect {
         tree,
@@ -1272,7 +1265,7 @@ pub fn is_confirmation_question(question: &Question) -> bool {
         return false;
     }
     let options = confirmation_options(tree);
-    options.len() == 2
+    options.len() == 2 || (options.len() == 3 && options[2].1 == ALWAYS_ALLOW_VALUE)
 }
 
 fn confirmation_options(tree: &[TreeLeaf]) -> Vec<(String, String)> {
@@ -1287,11 +1280,14 @@ fn confirmation_options(tree: &[TreeLeaf]) -> Vec<(String, String)> {
         .collect()
 }
 
+/// An approval prompt. `options` is Yes, No and, when offered, Always allow. The selection starts
+/// on the question's default (Yes when it names none) and never on "Always allow": that answer
+/// needs an explicit move to it or the `a` key.
 pub struct ConfirmSession {
     label: String,
     description: Option<String>,
     options: Vec<(String, String)>,
-    selected: ConfirmChoice,
+    selected: usize,
 }
 
 impl ConfirmSession {
@@ -1300,17 +1296,28 @@ impl ConfirmSession {
             label,
             description,
             tree,
+            default_value,
             ..
         } = question
         else {
             unreachable!("ConfirmSession requires a tree-select question")
         };
+        let options = confirmation_options(&tree);
+        let selected = default_value
+            .first()
+            .and_then(|default| options.iter().position(|(_, value)| value == default))
+            .filter(|&index| options[index].1 != ALWAYS_ALLOW_VALUE)
+            .unwrap_or(0);
         Self {
             label,
             description,
-            options: confirmation_options(&tree),
-            selected: ConfirmChoice::Yes,
+            options,
+            selected,
         }
+    }
+
+    fn has_always(&self) -> bool {
+        self.options.len() == 3
     }
 
     pub fn render(&self, width: usize, theme: &Theme) -> Vec<(String, Tone)> {
@@ -1321,43 +1328,22 @@ impl ConfirmSession {
                 lines.push((format!("{text_indent}{l}"), Tone::Muted));
             }
         }
-        let (yes_label, no_label) = match (
-            &self.options[0].0,
-            self.options.get(1).map(|o| o.0.as_str()),
-        ) {
-            (yes, Some(no)) => (yes.as_str(), no),
-            _ => ("Yes", "No"),
-        };
-        let yes_marker = if self.selected == ConfirmChoice::Yes {
-            "›"
+        for (index, (name, _)) in self.options.iter().enumerate() {
+            let marker = if self.selected == index { "›" } else { " " };
+            let tone = match (self.selected == index, index) {
+                (false, _) => Tone::Muted,
+                (true, 0) => Tone::Success,
+                (true, 1) => Tone::Error,
+                (true, _) => Tone::Ask,
+            };
+            lines.push((format!("{marker} {name}"), tone));
+        }
+        let help = if self.has_always() {
+            "Enter confirm  y yes  n no  a always allow (saved as a permission)  Up/Down move  Esc cancel"
         } else {
-            " "
+            "Enter confirm  Left/Right or Up/Down toggle  Esc cancel"
         };
-        let no_marker = if self.selected == ConfirmChoice::No {
-            "›"
-        } else {
-            " "
-        };
-        lines.push((
-            format!("{yes_marker} {yes_label}"),
-            if self.selected == ConfirmChoice::Yes {
-                Tone::Success
-            } else {
-                Tone::Muted
-            },
-        ));
-        lines.push((
-            format!("{no_marker} {no_label}"),
-            if self.selected == ConfirmChoice::No {
-                Tone::Error
-            } else {
-                Tone::Muted
-            },
-        ));
-        lines.push((
-            "Enter confirm  Left/Right or Up/Down toggle  Esc cancel".to_string(),
-            Tone::Muted,
-        ));
+        lines.push((help.to_string(), Tone::Muted));
         let _ = theme.confirmation;
         lines
     }
@@ -1366,19 +1352,23 @@ impl ConfirmSession {
         match (key.modifiers, key.code) {
             (_, KeyCode::Esc) => Some(QuestionAction::Cancel),
             (_, KeyCode::Left) | (_, KeyCode::Up) => {
-                self.selected = ConfirmChoice::Yes;
+                self.selected = self.selected.saturating_sub(1);
                 None
             }
             (_, KeyCode::Right) | (_, KeyCode::Down) => {
-                self.selected = ConfirmChoice::No;
+                self.selected = (self.selected + 1).min(self.options.len() - 1);
                 None
             }
             (_, KeyCode::Char('y') | KeyCode::Char('Y')) => {
-                self.selected = ConfirmChoice::Yes;
+                self.selected = 0;
                 self.submit()
             }
             (_, KeyCode::Char('n') | KeyCode::Char('N')) => {
-                self.selected = ConfirmChoice::No;
+                self.selected = 1;
+                self.submit()
+            }
+            (_, KeyCode::Char('a') | KeyCode::Char('A')) if self.has_always() => {
+                self.selected = 2;
                 self.submit()
             }
             (_, KeyCode::Enter) => self.submit(),
@@ -1387,16 +1377,12 @@ impl ConfirmSession {
     }
 
     fn submit(&self) -> Option<QuestionAction> {
-        let index = match self.selected {
-            ConfirmChoice::Yes => 0,
-            ConfirmChoice::No => 1,
-        };
         let value = self
             .options
-            .get(index)
+            .get(self.selected)
             .map(|(_, value)| value.clone())
             .unwrap_or_else(|| {
-                if self.selected == ConfirmChoice::Yes {
+                if self.selected == 0 {
                     "Approved".to_string()
                 } else {
                     "Not approved".to_string()
@@ -1431,7 +1417,6 @@ mod tests {
     fn file_session_applies_default_values() {
         let session = FileSession::new(
             file_question(true, false, None, vec!["/repo/README.md".to_string()]),
-            "posix".to_string(),
             "/repo".to_string(),
         );
 
@@ -1442,7 +1427,6 @@ mod tests {
     fn file_session_enforces_maximum_selection_count() {
         let mut session = FileSession::new(
             file_question(true, false, Some(1), Vec::new()),
-            "posix".to_string(),
             "/repo".to_string(),
         );
 
@@ -1458,12 +1442,10 @@ mod tests {
     fn file_session_respects_file_and_directory_allow_flags() {
         let files_only = FileSession::new(
             file_question(true, false, None, Vec::new()),
-            "posix".to_string(),
             "/repo".to_string(),
         );
         let dirs_only = FileSession::new(
             file_question(false, true, None, Vec::new()),
-            "posix".to_string(),
             "/repo".to_string(),
         );
         let file = FileNode {
@@ -1495,7 +1477,6 @@ mod tests {
     fn completed_directory_load_populates_and_expands_target_node() {
         let mut session = FileSession::new(
             file_question(true, false, None, Vec::new()),
-            "posix".to_string(),
             "/repo".to_string(),
         );
         session.root.children.push(FileNode {
@@ -1522,5 +1503,109 @@ mod tests {
         assert!(src.loaded);
         assert!(src.is_expanded);
         assert_eq!(src.children[0].value, "/repo/src/main.rs");
+    }
+
+    fn approval_question(default: &[&str], always: bool) -> Question {
+        let mut tree = vec![
+            TreeLeaf::Value {
+                name: "Yes".to_string(),
+                value: "Approved".to_string(),
+            },
+            TreeLeaf::Value {
+                name: "No".to_string(),
+                value: "Not approved".to_string(),
+            },
+        ];
+        if always {
+            tree.push(TreeLeaf::Value {
+                name: "Always allow: Publish posts on mysite".to_string(),
+                value: "Always".to_string(),
+            });
+        }
+        Question::TreeSelect {
+            label: "Approve?".to_string(),
+            description: None,
+            minimum_selections: Some(1),
+            maximum_selections: Some(1),
+            default_value: default.iter().map(|v| v.to_string()).collect(),
+            tree,
+        }
+    }
+
+    fn press(session: &mut ConfirmSession, code: KeyCode) -> Option<QuestionAction> {
+        session.handle_key(KeyEvent::new(code, crossterm::event::KeyModifiers::NONE))
+    }
+
+    fn submitted(action: Option<QuestionAction>) -> Value {
+        match action {
+            Some(QuestionAction::Submit(value)) => value,
+            _ => panic!("expected a submitted answer"),
+        }
+    }
+
+    #[test]
+    fn three_option_approval_is_a_confirmation_question() {
+        assert!(is_confirmation_question(&approval_question(&[], true)));
+        assert!(is_confirmation_question(&approval_question(&[], false)));
+    }
+
+    #[test]
+    fn enter_on_the_default_never_picks_always_allow() {
+        let mut yes = ConfirmSession::new(approval_question(&["Approved"], true));
+        assert_eq!(
+            submitted(press(&mut yes, KeyCode::Enter)),
+            json!(["Approved"])
+        );
+        let mut no = ConfirmSession::new(approval_question(&["Not approved"], true));
+        assert_eq!(
+            submitted(press(&mut no, KeyCode::Enter)),
+            json!(["Not approved"])
+        );
+        let mut none = ConfirmSession::new(approval_question(&[], true));
+        assert_eq!(
+            submitted(press(&mut none, KeyCode::Enter)),
+            json!(["Approved"])
+        );
+        let mut sneaky = ConfirmSession::new(approval_question(&["Always"], true));
+        assert_eq!(
+            submitted(press(&mut sneaky, KeyCode::Enter)),
+            json!(["Approved"])
+        );
+    }
+
+    #[test]
+    fn always_allow_needs_the_a_key_or_an_explicit_move() {
+        let mut keyed = ConfirmSession::new(approval_question(&[], true));
+        assert_eq!(
+            submitted(press(&mut keyed, KeyCode::Char('a'))),
+            json!(["Always"])
+        );
+        let mut moved = ConfirmSession::new(approval_question(&[], true));
+        assert!(press(&mut moved, KeyCode::Down).is_none());
+        assert!(press(&mut moved, KeyCode::Down).is_none());
+        assert_eq!(
+            submitted(press(&mut moved, KeyCode::Enter)),
+            json!(["Always"])
+        );
+    }
+
+    #[test]
+    fn yes_no_keys_still_work_and_a_is_ignored_without_the_third_option() {
+        let mut three = ConfirmSession::new(approval_question(&[], true));
+        assert_eq!(
+            submitted(press(&mut three, KeyCode::Char('n'))),
+            json!(["Not approved"])
+        );
+        let mut two = ConfirmSession::new(approval_question(&[], false));
+        assert!(press(&mut two, KeyCode::Char('a')).is_none());
+        assert_eq!(
+            submitted(press(&mut two, KeyCode::Char('y'))),
+            json!(["Approved"])
+        );
+        assert!(press(&mut two, KeyCode::Down).is_none());
+        assert_eq!(
+            submitted(press(&mut two, KeyCode::Enter)),
+            json!(["Not approved"])
+        );
     }
 }

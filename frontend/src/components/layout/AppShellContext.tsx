@@ -1,53 +1,50 @@
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react";
-import { APP_REGISTRY, DEFAULT_PINNED_APP_IDS } from "./AppRegistry.ts";
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
+import { useLocalStorageState } from "../../hooks/useLocalStorageState.ts";
+import { useRefSync } from "../../hooks/useRefSync.ts";
+import { DEFAULT_PINNED_DASHBOARD_IDS, VISIBLE_DASHBOARD_MANIFESTS } from "../../shell/appCatalog.ts";
 
 interface AppShellContextType {
-  isAppSwitcherOpen: boolean;
-  setAppSwitcherOpen: (open: boolean) => void;
-  toggleAppSwitcher: () => void;
-  pinnedAppIds: string[];
-  setPinnedAppIds: (ids: string[]) => void;
-  togglePinnedApp: (id: string) => boolean;
-  recentApps: RecentAppEntry[];
-  recordRecentApp: (id: string) => void;
+  isSwitcherOpen: boolean;
+  setSwitcherOpen: (open: boolean) => void;
+  toggleSwitcher: () => void;
+  pinnedDashboardIds: string[];
+  setPinnedDashboardIds: (ids: string[]) => void;
+  togglePinnedDashboard: (id: string) => boolean;
+  recentDashboards: RecentDashboardEntry[];
+  recordRecentDashboard: (id: string) => void;
   resetToDefaults: () => void;
   localStorageAvailable: boolean;
 }
 
 const AppShellContext = createContext<AppShellContextType | undefined>(undefined);
-const PINNED_APPS_STORAGE_KEY = "tokenring-pinned-apps";
-const RECENT_APPS_STORAGE_KEY = "tokenring-recent-apps";
-export const MAX_PINNED_APPS = 7;
-export const MAX_RECENT_APPS = 5;
+export const PINNED_DASHBOARDS_STORAGE_KEY = "tokenring-pinned-dashboards";
+export const RECENT_DASHBOARDS_STORAGE_KEY = "tokenring-recent-dashboards";
+/** Keys used before dashboards replaced apps; read once and renamed. */
+const LEGACY_STORAGE_KEYS: ReadonlyArray<readonly [legacy: string, current: string]> = [
+  ["tokenring-pinned-apps", PINNED_DASHBOARDS_STORAGE_KEY],
+  ["tokenring-recent-apps", RECENT_DASHBOARDS_STORAGE_KEY],
+];
+export const MAX_PINNED_DASHBOARDS = 7;
+export const MAX_RECENT_DASHBOARDS = 5;
 
-export interface RecentAppEntry {
+export interface RecentDashboardEntry {
   id: string;
   lastVisitedAt: number;
 }
 
-function sanitizeAppIds(value: unknown, limit: number, excludeSettings = false): string[] {
+/** Settings is reachable from the rail's own button, so it is never pinned or recent. */
+const PINNABLE_IDS = new Set(VISIBLE_DASHBOARD_MANIFESTS.filter(dashboard => dashboard.id !== "settings").map(dashboard => dashboard.id));
+
+function sanitizeDashboardIds(value: unknown, limit: number): string[] {
   if (!Array.isArray(value)) return [];
-  const validIds = new Set(APP_REGISTRY.filter(app => !excludeSettings || app.id !== "settings").map(app => app.id));
-  const sanitized = value.filter((id): id is string => typeof id === "string" && validIds.has(id));
+  const sanitized = value.filter((id): id is string => typeof id === "string" && PINNABLE_IDS.has(id));
   return [...new Set(sanitized)].slice(0, limit);
 }
 
-function readPinnedApps(): string[] {
-  if (typeof window === "undefined") return [...DEFAULT_PINNED_APP_IDS];
-  try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(PINNED_APPS_STORAGE_KEY) ?? "null");
-    if (!Array.isArray(parsed)) return [...DEFAULT_PINNED_APP_IDS];
-    return sanitizeAppIds(parsed, MAX_PINNED_APPS);
-  } catch {
-    return [...DEFAULT_PINNED_APP_IDS];
-  }
-}
-
-function sanitizeRecentApps(value: unknown): RecentAppEntry[] {
+function sanitizeRecentDashboards(value: unknown): RecentDashboardEntry[] {
   if (!Array.isArray(value)) return [];
-  const validIds = new Set(APP_REGISTRY.filter(app => app.id !== "settings").map(app => app.id));
   const migrationTime = Date.now();
-  const entries: RecentAppEntry[] = [];
+  const entries: RecentDashboardEntry[] = [];
 
   value.forEach((item, index) => {
     const id =
@@ -56,7 +53,7 @@ function sanitizeRecentApps(value: unknown): RecentAppEntry[] {
         : typeof item === "object" && item !== null && typeof (item as { id?: unknown }).id === "string"
           ? (item as { id: string }).id
           : null;
-    if (!id || !validIds.has(id)) return;
+    if (!id || !PINNABLE_IDS.has(id)) return;
     const storedTimestamp = typeof item === "object" && item !== null ? (item as { lastVisitedAt?: unknown }).lastVisitedAt : undefined;
     const lastVisitedAt = typeof storedTimestamp === "number" && Number.isFinite(storedTimestamp) ? storedTimestamp : migrationTime - index;
     const existing = entries.find(entry => entry.id === id);
@@ -64,17 +61,26 @@ function sanitizeRecentApps(value: unknown): RecentAppEntry[] {
     else entries.push({ id, lastVisitedAt });
   });
 
-  while (entries.length > MAX_RECENT_APPS) {
+  while (entries.length > MAX_RECENT_DASHBOARDS) {
     const leastRecent = entries.reduce((oldestIndex, entry, index) => (entry.lastVisitedAt < entries[oldestIndex]!.lastVisitedAt ? index : oldestIndex), 0);
     entries.splice(leastRecent, 1);
   }
   return entries;
 }
 
-function readRecentApps(): RecentAppEntry[] {
-  if (typeof window === "undefined") return [];
+function deserializePinnedDashboards(raw: string): string[] {
   try {
-    return sanitizeRecentApps(JSON.parse(localStorage.getItem(RECENT_APPS_STORAGE_KEY) ?? "[]"));
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [...DEFAULT_PINNED_DASHBOARD_IDS];
+    return sanitizeDashboardIds(parsed, MAX_PINNED_DASHBOARDS);
+  } catch {
+    return [...DEFAULT_PINNED_DASHBOARD_IDS];
+  }
+}
+
+function deserializeRecentDashboards(raw: string): RecentDashboardEntry[] {
+  try {
+    return sanitizeRecentDashboards(JSON.parse(raw));
   } catch {
     return [];
   }
@@ -92,111 +98,120 @@ function canUseLocalStorage(): boolean {
   }
 }
 
-export function AppShellProvider({ children }: { children: ReactNode }) {
-  const [isAppSwitcherOpen, setAppSwitcherOpen] = useState(false);
-  const [pinnedAppIds, setPinnedAppIdsState] = useState<string[]>(readPinnedApps);
-  const [recentApps, setRecentApps] = useState<RecentAppEntry[]>(() => readRecentApps().filter(entry => !pinnedAppIds.includes(entry.id)));
-  const [localStorageAvailable, setLocalStorageAvailable] = useState(canUseLocalStorage);
-  const pinnedAppIdsRef = useRef(pinnedAppIds);
-  pinnedAppIdsRef.current = pinnedAppIds;
+/** Moves pre-dashboard pin/recent storage to the current keys. Safe to run repeatedly. */
+export function migrateLegacyShellStorage(): void {
+  if (typeof window === "undefined") return;
+  try {
+    for (const [legacy, current] of LEGACY_STORAGE_KEYS) {
+      const value = localStorage.getItem(legacy);
+      if (value === null) continue;
+      if (localStorage.getItem(current) === null) localStorage.setItem(current, value);
+      localStorage.removeItem(legacy);
+    }
+  } catch {
+    // Storage unavailable; the hooks below report it.
+  }
+}
 
-  const setPinnedAppIds = useCallback(
+export function AppShellProvider({ children }: { children: ReactNode }) {
+  const [isSwitcherOpen, setSwitcherOpen] = useState(false);
+  const [localStorageAvailable, setLocalStorageAvailable] = useState(() => {
+    migrateLegacyShellStorage();
+    return canUseLocalStorage();
+  });
+
+  const markStorageUnavailable = useCallback(() => {
+    setLocalStorageAvailable(false);
+  }, []);
+
+  const [pinnedDashboardIds, setPinnedDashboardIdsState] = useLocalStorageState<string[]>(PINNED_DASHBOARDS_STORAGE_KEY, [...DEFAULT_PINNED_DASHBOARD_IDS], {
+    deserialize: deserializePinnedDashboards,
+    onError: markStorageUnavailable,
+  });
+
+  const [recentDashboards, setRecentDashboards] = useLocalStorageState<RecentDashboardEntry[]>(RECENT_DASHBOARDS_STORAGE_KEY, [], {
+    deserialize: raw => deserializeRecentDashboards(raw).filter(entry => !pinnedDashboardIds.includes(entry.id)),
+    onError: markStorageUnavailable,
+  });
+
+  // The deserialize above only runs when reading storage; functional updates still need the filter in setters.
+  const pinnedDashboardIdsRef = useRefSync(pinnedDashboardIds);
+
+  const setPinnedDashboardIds = useCallback(
     (nextIds: string[]) => {
-      const validIds = new Set(APP_REGISTRY.map(app => app.id));
-      const sanitized = [...new Set(nextIds.filter(id => validIds.has(id)))].slice(0, MAX_PINNED_APPS);
-      setPinnedAppIdsState(sanitized);
-      if (!localStorageAvailable) return;
-      try {
-        localStorage.setItem(PINNED_APPS_STORAGE_KEY, JSON.stringify(sanitized));
-      } catch {
-        setLocalStorageAvailable(false);
-      }
+      setPinnedDashboardIdsState(sanitizeDashboardIds(nextIds, MAX_PINNED_DASHBOARDS));
     },
-    [localStorageAvailable],
+    [setPinnedDashboardIdsState],
   );
 
-  const togglePinnedApp = useCallback(
+  const togglePinnedDashboard = useCallback(
     (id: string) => {
-      if (pinnedAppIds.includes(id)) {
-        setPinnedAppIds(pinnedAppIds.filter(pinnedId => pinnedId !== id));
+      if (pinnedDashboardIds.includes(id)) {
+        setPinnedDashboardIds(pinnedDashboardIds.filter(pinnedId => pinnedId !== id));
         return true;
       }
-      if (pinnedAppIds.length >= MAX_PINNED_APPS) return false;
-      setPinnedAppIds([...pinnedAppIds, id]);
-      setRecentApps(current => {
-        const next = current.filter(entry => entry.id !== id);
-        if (next.length !== current.length && localStorageAvailable) {
-          try {
-            localStorage.setItem(RECENT_APPS_STORAGE_KEY, JSON.stringify(next));
-          } catch {
-            setLocalStorageAvailable(false);
-          }
-        }
-        return next;
-      });
+      if (pinnedDashboardIds.length >= MAX_PINNED_DASHBOARDS) return false;
+      setPinnedDashboardIds([...pinnedDashboardIds, id]);
+      setRecentDashboards(current => current.filter(entry => entry.id !== id));
       return true;
     },
-    [localStorageAvailable, pinnedAppIds, setPinnedAppIds],
+    [pinnedDashboardIds, setPinnedDashboardIds, setRecentDashboards],
   );
 
-  const recordRecentApp = useCallback(
+  const recordRecentDashboard = useCallback(
     (id: string) => {
-      if (pinnedAppIdsRef.current.includes(id) || !APP_REGISTRY.some(app => app.id === id && app.id !== "settings")) return;
-      setRecentApps(current => {
+      if (pinnedDashboardIdsRef.current.includes(id) || !PINNABLE_IDS.has(id)) return;
+      setRecentDashboards(current => {
         const lastVisitedAt = Date.now();
         const existingIndex = current.findIndex(entry => entry.id === id);
-        let next: RecentAppEntry[];
+        let next: RecentDashboardEntry[];
         if (existingIndex >= 0) {
           next = current.map((entry, index) => (index === existingIndex ? { ...entry, lastVisitedAt } : entry));
         } else {
           next = [...current];
-          if (next.length >= MAX_RECENT_APPS) {
+          if (next.length >= MAX_RECENT_DASHBOARDS) {
             const leastRecent = next.reduce((oldestIndex, entry, index) => (entry.lastVisitedAt < next[oldestIndex]!.lastVisitedAt ? index : oldestIndex), 0);
             next.splice(leastRecent, 1);
           }
           next.push({ id, lastVisitedAt });
         }
-        if (localStorageAvailable) {
-          try {
-            localStorage.setItem(RECENT_APPS_STORAGE_KEY, JSON.stringify(next));
-          } catch {
-            setLocalStorageAvailable(false);
-          }
-        }
         return next;
       });
     },
-    [localStorageAvailable],
+    [setRecentDashboards],
   );
 
-  const toggleAppSwitcher = useCallback(() => setAppSwitcherOpen(open => !open), []);
+  const toggleSwitcher = useCallback(() => setSwitcherOpen(open => !open), []);
   const resetToDefaults = useCallback(() => {
-    setPinnedAppIds([...DEFAULT_PINNED_APP_IDS]);
-    setRecentApps([]);
-    if (localStorageAvailable) {
-      try {
-        localStorage.setItem(RECENT_APPS_STORAGE_KEY, "[]");
-      } catch {
-        setLocalStorageAvailable(false);
-      }
-    }
-    setAppSwitcherOpen(false);
-  }, [localStorageAvailable, setPinnedAppIds]);
+    setPinnedDashboardIds([...DEFAULT_PINNED_DASHBOARD_IDS]);
+    setRecentDashboards([]);
+    setSwitcherOpen(false);
+  }, [setPinnedDashboardIds, setRecentDashboards]);
 
   const value = useMemo<AppShellContextType>(
     () => ({
-      isAppSwitcherOpen,
-      setAppSwitcherOpen,
-      toggleAppSwitcher,
-      pinnedAppIds,
-      setPinnedAppIds,
-      togglePinnedApp,
-      recentApps,
-      recordRecentApp,
+      isSwitcherOpen,
+      setSwitcherOpen,
+      toggleSwitcher,
+      pinnedDashboardIds,
+      setPinnedDashboardIds,
+      togglePinnedDashboard,
+      recentDashboards,
+      recordRecentDashboard,
       resetToDefaults,
       localStorageAvailable,
     }),
-    [isAppSwitcherOpen, localStorageAvailable, pinnedAppIds, recentApps, recordRecentApp, resetToDefaults, setPinnedAppIds, toggleAppSwitcher, togglePinnedApp],
+    [
+      isSwitcherOpen,
+      localStorageAvailable,
+      pinnedDashboardIds,
+      recentDashboards,
+      recordRecentDashboard,
+      resetToDefaults,
+      setPinnedDashboardIds,
+      toggleSwitcher,
+      togglePinnedDashboard,
+    ],
   );
 
   return <AppShellContext.Provider value={value}>{children}</AppShellContext.Provider>;

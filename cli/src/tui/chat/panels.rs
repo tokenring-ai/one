@@ -58,13 +58,10 @@ pub(super) fn draw_with_question(frame: &mut Frame, session: &mut ChatSession, a
 
     // +1 for the "Question" title line prepended at render time.
     let block_height = (lines.len() as u16 + spacing.pad_v.saturating_mul(2) + 2)
-    .clamp(3, area.height.saturating_sub(4));
+        .clamp(3, area.height.saturating_sub(4));
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Min(3),
-            Constraint::Length(block_height),
-        ])
+        .constraints([Constraint::Min(3), Constraint::Length(block_height)])
         .spacing(spacing.gap)
         .split(area);
 
@@ -117,13 +114,10 @@ pub(super) fn draw_with_optional_picker(frame: &mut Frame, session: &mut ChatSes
     let spacing = ui_spacing(area);
     let count = session.optional_questions().len();
     let height = (count as u16 + 3 + spacing.pad_v.saturating_mul(2))
-    .clamp(4, area.height.saturating_sub(4));
+        .clamp(4, area.height.saturating_sub(4));
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Min(3),
-            Constraint::Length(height),
-        ])
+        .constraints([Constraint::Min(3), Constraint::Length(height)])
         .spacing(spacing.gap)
         .split(area);
 
@@ -318,7 +312,12 @@ pub(super) fn draw_with_followup(frame: &mut Frame, session: &mut ChatSession, a
 
     let stripe = stripe_color(&theme, theme.panel.stripe_color);
     let composer_chunk = if chip_lines > 0 { chunks[3] } else { chunks[2] };
-    let block = surface_block(&theme, theme.composer.background_color, stripe, spacing.block_padding());
+    let block = surface_block(
+        &theme,
+        theme.composer.background_color,
+        stripe,
+        spacing.block_padding(),
+    );
     session.hit_regions.followup_composer = Some(composer_chunk);
     let inner = block.inner(composer_chunk);
     frame.render_widget(block, composer_chunk);

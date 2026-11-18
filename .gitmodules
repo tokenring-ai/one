@@ -258,3 +258,27 @@
 	path = plugin/browser
 	url = ../browser.git
 	branch = main
+[submodule "registry/community"]
+	path = registry/community
+	url = ../community.git
+	branch = main
+[submodule "plugin/goal"]
+	path = plugin/goal
+	url = ../goal.git
+	branch = main
+[submodule "plugin/newsletter"]
+	path = plugin/newsletter
+	url = ../newsletter.git
+	branch = main
+[submodule "plugin/marketplace"]
+	path = plugin/marketplace
+	url = ../marketplace.git
+	branch = main
+[submodule "plugin/dashboard"]
+	path = plugin/dashboard
+	url = ../dashboard.git
+	branch = main
+[submodule "plugin/monitor"]
+	path = plugin/monitor
+	url = ../monitor.git
+	branch = main

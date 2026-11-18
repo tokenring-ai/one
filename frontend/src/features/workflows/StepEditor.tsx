@@ -1,5 +1,9 @@
 import { ArrowDown, ArrowUp, MessageSquare, Plus, Terminal, X } from "lucide-react";
 import { useMemo } from "react";
+import { controlClassName } from "../../ui/control.ts";
+import Select from "../../ui/select.tsx";
+import TextField from "../../ui/text-field.tsx";
+import AutoResizeTextarea from "./AutoResizeTextarea.tsx";
 import type { AvailableAgentCommand, WorkflowCommandStep, WorkflowStep } from "./commandStep.ts";
 import {
   defaultsForCommand,
@@ -11,11 +15,14 @@ import {
   isCommandStep,
   isPositionalRequired,
   isRemainderRequired,
+  MAX_STEP_RETRIES,
   missingRequiredFields,
+  withOnError,
+  withRetries,
 } from "./commandStep.ts";
 
-const fieldClass = "w-full bg-input border border-primary rounded-lg px-2.5 py-1.5 text-xs text-primary placeholder-muted focus-accent";
-const labelClass = "text-2xs font-medium text-muted";
+const fieldClass = controlClassName();
+const labelClass = "text-xs font-medium text-muted";
 
 function RequiredMark() {
   return (
@@ -46,7 +53,7 @@ function CommandFields({
   };
 
   if (!hasFields) {
-    return <p className="text-2xs text-muted italic">This command takes no arguments.</p>;
+    return <p className="text-xs text-muted italic">This command takes no arguments.</p>;
   }
 
   return (
@@ -67,7 +74,7 @@ function CommandFields({
               />
               <span className="min-w-0">
                 <span className="text-xs text-primary font-mono">--{name}</span>
-                <span className="block text-2xs text-muted">{argSchema.description}</span>
+                <span className="block text-xs text-muted">{argSchema.description}</span>
               </span>
             </label>
           );
@@ -79,7 +86,7 @@ function CommandFields({
               <label htmlFor={id} className={labelClass}>
                 <span className="font-mono">--{name}</span>
                 {required && <RequiredMark />}
-                <span className="font-normal ml-1.5 text-muted/80">{argSchema.description}</span>
+                <span className="font-normal ml-1.5 text-muted">{argSchema.description}</span>
               </label>
               <select id={id} value={String(values[name] ?? "")} onChange={e => setArg(name, e.target.value)} className={`${fieldClass} cursor-pointer`}>
                 <option value="">{required ? "Select…" : "Default"}</option>
@@ -99,7 +106,7 @@ function CommandFields({
             <label htmlFor={id} className={labelClass}>
               <span className="font-mono">--{name}</span>
               {required && <RequiredMark />}
-              <span className="font-normal ml-1.5 text-muted/80">{argSchema.description}</span>
+              <span className="font-normal ml-1.5 text-muted">{argSchema.description}</span>
             </label>
             <input
               id={id}
@@ -123,7 +130,7 @@ function CommandFields({
             <label htmlFor={id} className={labelClass}>
               <span className="font-mono">{positional.name}</span>
               {required && <RequiredMark />}
-              <span className="font-normal ml-1.5 text-muted/80">{positional.description}</span>
+              <span className="font-normal ml-1.5 text-muted">{positional.description}</span>
             </label>
             <input
               id={id}
@@ -142,18 +149,48 @@ function CommandFields({
           <label htmlFor={`rem-${command.name}`} className={labelClass}>
             <span className="font-mono">{remainder.name}</span>
             {isRemainderRequired(remainder) && <RequiredMark />}
-            <span className="font-normal ml-1.5 text-muted/80">{remainder.description}</span>
+            <span className="font-normal ml-1.5 text-muted">{remainder.description}</span>
           </label>
-          <textarea
+          <AutoResizeTextarea
             id={`rem-${command.name}`}
             value={step.remainder}
             onChange={e => onChange({ ...step, remainder: e.target.value })}
-            rows={Math.min(8, Math.max(2, remainder.name === "message" || remainder.name === "prompt" ? 3 : 2))}
+            minRows={remainder.name === "message" || remainder.name === "prompt" ? 3 : 2}
+            maxRows={24}
             placeholder={remainder.defaultValue ?? remainder.description}
-            className={`${fieldClass} font-mono resize-y`}
+            className={`${fieldClass} font-mono`}
           />
         </div>
       )}
+    </div>
+  );
+}
+
+/** Failure handling for a command step: stop vs continue, and how many times to retry first. */
+export function StepExecutionOptions({ index, step, onChange }: { index: number; step: WorkflowCommandStep; onChange: (next: WorkflowCommandStep) => void }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <Select
+        label="On failure"
+        value={step.onError ?? "stop"}
+        onChange={value => onChange(withOnError(step, value === "continue" ? "continue" : "stop"))}
+        aria-label={`Step ${index + 1} on failure`}
+        hint="Continue records the failure and runs the next step"
+      >
+        <option value="stop">Stop the run</option>
+        <option value="continue">Continue to next step</option>
+      </Select>
+      <TextField
+        label="Retries"
+        type="number"
+        min={0}
+        max={MAX_STEP_RETRIES}
+        step={1}
+        value={String(step.retries ?? 0)}
+        onChange={value => onChange(withRetries(step, value === "" ? 0 : Number(value)))}
+        aria-label={`Step ${index + 1} retries`}
+        hint="Re-run a failed step this many times first"
+      />
     </div>
   );
 }
@@ -164,8 +201,8 @@ function StepKindToggle({ kind, onKindChange }: { kind: "chat" | "command"; onKi
       <button
         type="button"
         onClick={() => onKindChange("chat")}
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-2xs font-medium transition-colors cursor-pointer focus-ring ${
-          kind === "chat" ? "bg-accent-muted text-accent" : "text-muted hover:text-primary"
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer focus-ring ${
+          kind === "chat" ? "bg-accent-muted text-accent-soft" : "text-muted hover:text-primary"
         }`}
       >
         <MessageSquare className="w-3 h-3" /> Chat
@@ -173,8 +210,8 @@ function StepKindToggle({ kind, onKindChange }: { kind: "chat" | "command"; onKi
       <button
         type="button"
         onClick={() => onKindChange("command")}
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-2xs font-medium transition-colors cursor-pointer focus-ring ${
-          kind === "command" ? "bg-accent-muted text-accent" : "text-muted hover:text-primary"
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer focus-ring ${
+          kind === "command" ? "bg-accent-muted text-accent-soft" : "text-muted hover:text-primary"
         }`}
       >
         <Terminal className="w-3 h-3" /> Command
@@ -231,20 +268,21 @@ function StepRow({
   return (
     <div className="border border-primary rounded-xl bg-secondary/30 overflow-hidden">
       <div className="flex items-start gap-2 px-2.5 pt-2.5 pb-2">
-        <span className="mt-1.5 w-5 shrink-0 text-2xs font-mono text-muted text-right">{index + 1}</span>
+        <span className="mt-1.5 w-5 shrink-0 text-xs font-mono text-muted text-right">{index + 1}</span>
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <StepKindToggle kind={kind} onKindChange={setKind} />
-            <span className="text-2xs text-muted">{kind === "chat" ? "Sent as a plain chat message" : "Runs a registered agent command"}</span>
+            <span className="text-xs text-muted">{kind === "chat" ? "Sent as a plain chat message" : "Runs a registered agent command"}</span>
           </div>
 
           {isChatStep(step) ? (
-            <textarea
+            <AutoResizeTextarea
               value={step}
               onChange={e => onChange(e.target.value)}
-              rows={Math.min(10, Math.max(2, step.split("\n").length))}
+              minRows={2}
+              maxRows={30}
               placeholder="What should the agent do?"
-              className={`${fieldClass} resize-y`}
+              className={fieldClass}
               aria-label={`Step ${index + 1} chat message`}
             />
           ) : (
@@ -267,16 +305,18 @@ function StepRow({
                     </option>
                   ))}
                 </select>
-                {selectedCommand && <p className="text-2xs text-muted">{selectedCommand.description}</p>}
+                {selectedCommand && <p className="text-xs text-muted">{selectedCommand.description}</p>}
               </div>
 
               {selectedCommand && <CommandFields command={selectedCommand} step={step} onChange={onChange} />}
 
+              {step.command !== "" && <StepExecutionOptions index={index} step={step} onChange={onChange} />}
+
               {step.command !== "" && (
                 <div className="rounded-lg bg-primary/40 border border-primary/60 px-2.5 py-1.5">
-                  <span className="block text-2xs font-semibold text-muted uppercase tracking-wide mb-0.5">Preview</span>
-                  <code className="block text-2xs font-mono text-primary break-all whitespace-pre-wrap">{preview}</code>
-                  {missing.length > 0 && <p className="mt-1 text-2xs text-amber-600 dark:text-amber-500">Required: {missing.join(", ")}</p>}
+                  <span className="block text-xs font-semibold text-muted uppercase tracking-wide mb-0.5">Preview</span>
+                  <code className="block text-xs font-mono text-primary break-all whitespace-pre-wrap">{preview}</code>
+                  {missing.length > 0 && <p className="mt-1 text-xs text-warning">Required: {missing.join(", ")}</p>}
                 </div>
               )}
             </>
@@ -360,14 +400,14 @@ export default function StepEditor({
         <button
           type="button"
           onClick={() => onChange([...steps, emptyChatStep()])}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 border border-dashed border-primary text-muted hover:text-primary hover:bg-hover text-2xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 border border-dashed border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
         >
           <Plus className="w-3 h-3" /> Add chat step
         </button>
         <button
           type="button"
           onClick={() => onChange([...steps, emptyCommandStep()])}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 border border-dashed border-primary text-muted hover:text-primary hover:bg-hover text-2xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 border border-dashed border-primary text-muted hover:text-primary hover:bg-hover text-xs font-medium rounded-lg transition-colors cursor-pointer focus-ring"
         >
           <Plus className="w-3 h-3" /> Add command step
         </button>

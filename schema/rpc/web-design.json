@@ -7,6 +7,52 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
+      "title": "getWebDesignConfiguration request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/web-design.getWebDesignConfiguration"
+        },
+        "params": {
+          "$ref": "#/$defs/getWebDesignConfigurationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getWebDesignConfiguration response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getWebDesignConfigurationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "listFlows request",
       "type": "object",
       "properties": {
@@ -206,6 +252,144 @@
         },
         "result": {
           "$ref": "#/$defs/deleteFlowResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "renameFlow request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/web-design.renameFlow"
+        },
+        "params": {
+          "$ref": "#/$defs/renameFlowParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "renameFlow response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/renameFlowResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "duplicateFlow request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/web-design.duplicateFlow"
+        },
+        "params": {
+          "$ref": "#/$defs/duplicateFlowParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "duplicateFlow response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/duplicateFlowResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "exportFlow request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/web-design.exportFlow"
+        },
+        "params": {
+          "$ref": "#/$defs/exportFlowParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "exportFlow response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/exportFlowResult"
         }
       },
       "required": [
@@ -517,6 +701,236 @@
       "additionalProperties": false
     },
     {
+      "title": "renameDesign request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/web-design.renameDesign"
+        },
+        "params": {
+          "$ref": "#/$defs/renameDesignParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "renameDesign response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/renameDesignResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "duplicateDesign request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/web-design.duplicateDesign"
+        },
+        "params": {
+          "$ref": "#/$defs/duplicateDesignParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "duplicateDesign response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/duplicateDesignResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "captureDesignScreenshot request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/web-design.captureDesignScreenshot"
+        },
+        "params": {
+          "$ref": "#/$defs/captureDesignScreenshotParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "captureDesignScreenshot response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/captureDesignScreenshotResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listDesignHistory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/web-design.listDesignHistory"
+        },
+        "params": {
+          "$ref": "#/$defs/listDesignHistoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listDesignHistory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listDesignHistoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getDesignVersion request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/web-design.getDesignVersion"
+        },
+        "params": {
+          "$ref": "#/$defs/getDesignVersionParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getDesignVersion response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getDesignVersionResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "getWebDesignState request",
       "type": "object",
       "properties": {
@@ -646,6 +1060,40 @@
       ],
       "additionalProperties": false
     },
+    "getWebDesignConfigurationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getWebDesignConfigurationResult": {
+      "type": "object",
+      "properties": {
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "webDesignDirectory": {
+          "type": "string"
+        },
+        "serveDirectory": {
+          "type": "string"
+        },
+        "previewBaseUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "agentTypes",
+        "webDesignDirectory",
+        "serveDirectory",
+        "previewBaseUrl"
+      ],
+      "additionalProperties": false
+    },
     "listFlowsParams": {
       "type": "object",
       "properties": {}
@@ -666,12 +1114,16 @@
               },
               "updatedAt": {
                 "type": "string"
+              },
+              "absolutePath": {
+                "type": "string"
               }
             },
             "required": [
               "name",
               "designCount",
-              "updatedAt"
+              "updatedAt",
+              "absolutePath"
             ],
             "additionalProperties": false
           }
@@ -702,12 +1154,16 @@
               },
               "updatedAt": {
                 "type": "string"
+              },
+              "absolutePath": {
+                "type": "string"
               }
             },
             "required": [
               "name",
               "designCount",
-              "updatedAt"
+              "updatedAt",
+              "absolutePath"
             ],
             "additionalProperties": false
           }
@@ -743,12 +1199,16 @@
             },
             "updatedAt": {
               "type": "string"
+            },
+            "absolutePath": {
+              "type": "string"
             }
           },
           "required": [
             "name",
             "designCount",
-            "updatedAt"
+            "updatedAt",
+            "absolutePath"
           ],
           "additionalProperties": false
         }
@@ -778,6 +1238,138 @@
       },
       "required": [
         "success"
+      ],
+      "additionalProperties": false
+    },
+    "renameFlowParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "newName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "newName"
+      ]
+    },
+    "renameFlowResult": {
+      "type": "object",
+      "properties": {
+        "flow": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "designCount": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "absolutePath": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "designCount",
+            "updatedAt",
+            "absolutePath"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "flow"
+      ],
+      "additionalProperties": false
+    },
+    "duplicateFlowParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "newName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "newName"
+      ]
+    },
+    "duplicateFlowResult": {
+      "type": "object",
+      "properties": {
+        "flow": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "designCount": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "absolutePath": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "designCount",
+            "updatedAt",
+            "absolutePath"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "flow"
+      ],
+      "additionalProperties": false
+    },
+    "exportFlowParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "exportFlowResult": {
+      "type": "object",
+      "properties": {
+        "fileName": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string",
+          "const": "application/zip"
+        },
+        "content": {
+          "type": "string"
+        },
+        "fileCount": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "fileName",
+        "mimeType",
+        "content",
+        "fileCount"
       ],
       "additionalProperties": false
     },
@@ -1141,6 +1733,340 @@
       ],
       "additionalProperties": false
     },
+    "renameDesignParams": {
+      "type": "object",
+      "properties": {
+        "flowName": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "newFlowName": {
+          "type": "string"
+        },
+        "newName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "flowName",
+        "name",
+        "newName"
+      ]
+    },
+    "renameDesignResult": {
+      "type": "object",
+      "properties": {
+        "design": {
+          "type": "object",
+          "properties": {
+            "flowName": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "size": {
+              "type": "number"
+            },
+            "mimeType": {
+              "default": "text/html",
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "encoding": {
+              "default": "utf8",
+              "type": "string",
+              "enum": [
+                "utf8",
+                "base64"
+              ]
+            }
+          },
+          "required": [
+            "flowName",
+            "name",
+            "size",
+            "mimeType",
+            "updatedAt",
+            "content",
+            "encoding"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "design"
+      ],
+      "additionalProperties": false
+    },
+    "duplicateDesignParams": {
+      "type": "object",
+      "properties": {
+        "flowName": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "newFlowName": {
+          "type": "string"
+        },
+        "newName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "flowName",
+        "name",
+        "newName"
+      ]
+    },
+    "duplicateDesignResult": {
+      "type": "object",
+      "properties": {
+        "design": {
+          "type": "object",
+          "properties": {
+            "flowName": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "size": {
+              "type": "number"
+            },
+            "mimeType": {
+              "default": "text/html",
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "encoding": {
+              "default": "utf8",
+              "type": "string",
+              "enum": [
+                "utf8",
+                "base64"
+              ]
+            }
+          },
+          "required": [
+            "flowName",
+            "name",
+            "size",
+            "mimeType",
+            "updatedAt",
+            "content",
+            "encoding"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "design"
+      ],
+      "additionalProperties": false
+    },
+    "captureDesignScreenshotParams": {
+      "type": "object",
+      "properties": {
+        "flowName": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16384
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16384
+        },
+        "save": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "flowName",
+        "name"
+      ]
+    },
+    "captureDesignScreenshotResult": {
+      "type": "object",
+      "properties": {
+        "savedAs": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "content": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string",
+          "const": "image/png"
+        },
+        "viewport": {
+          "type": "object",
+          "properties": {
+            "width": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "width",
+            "height"
+          ],
+          "additionalProperties": false
+        },
+        "console": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "savedAs",
+        "content",
+        "mimeType",
+        "viewport",
+        "console"
+      ],
+      "additionalProperties": false
+    },
+    "listDesignHistoryParams": {
+      "type": "object",
+      "properties": {
+        "flowName": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "flowName",
+        "name"
+      ]
+    },
+    "listDesignHistoryResult": {
+      "type": "object",
+      "properties": {
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "size": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "createdAt",
+              "size"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "versions"
+      ],
+      "additionalProperties": false
+    },
+    "getDesignVersionParams": {
+      "type": "object",
+      "properties": {
+        "flowName": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "versionId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "flowName",
+        "name",
+        "versionId"
+      ]
+    },
+    "getDesignVersionResult": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                },
+                "encoding": {
+                  "type": "string",
+                  "enum": [
+                    "utf8",
+                    "base64"
+                  ]
+                },
+                "mimeType": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "createdAt",
+                "content",
+                "encoding",
+                "mimeType"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version"
+      ],
+      "additionalProperties": false
+    },
     "getWebDesignStateParams": {
       "type": "object",
       "properties": {
@@ -1162,23 +2088,15 @@
               "const": "success"
             },
             "selectedFlowName": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "selectedDesignName": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             }
           },
@@ -1211,10 +2129,16 @@
           "type": "string"
         },
         "selectedFlowName": {
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "selectedDesignName": {
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [
@@ -1231,23 +2155,15 @@
               "const": "success"
             },
             "selectedFlowName": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "selectedDesignName": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             }
           },
@@ -1279,6 +2195,11 @@
     "path": "/rpc/web-design",
     "source": "plugin/web-design/rpc/schema.ts",
     "methods": {
+      "getWebDesignConfiguration": {
+        "type": "query",
+        "params": "#/$defs/getWebDesignConfigurationParams",
+        "result": "#/$defs/getWebDesignConfigurationResult"
+      },
       "listFlows": {
         "type": "query",
         "params": "#/$defs/listFlowsParams",
@@ -1298,6 +2219,21 @@
         "type": "mutation",
         "params": "#/$defs/deleteFlowParams",
         "result": "#/$defs/deleteFlowResult"
+      },
+      "renameFlow": {
+        "type": "mutation",
+        "params": "#/$defs/renameFlowParams",
+        "result": "#/$defs/renameFlowResult"
+      },
+      "duplicateFlow": {
+        "type": "mutation",
+        "params": "#/$defs/duplicateFlowParams",
+        "result": "#/$defs/duplicateFlowResult"
+      },
+      "exportFlow": {
+        "type": "query",
+        "params": "#/$defs/exportFlowParams",
+        "result": "#/$defs/exportFlowResult"
       },
       "listDesigns": {
         "type": "query",
@@ -1328,6 +2264,31 @@
         "type": "mutation",
         "params": "#/$defs/deleteDesignParams",
         "result": "#/$defs/deleteDesignResult"
+      },
+      "renameDesign": {
+        "type": "mutation",
+        "params": "#/$defs/renameDesignParams",
+        "result": "#/$defs/renameDesignResult"
+      },
+      "duplicateDesign": {
+        "type": "mutation",
+        "params": "#/$defs/duplicateDesignParams",
+        "result": "#/$defs/duplicateDesignResult"
+      },
+      "captureDesignScreenshot": {
+        "type": "mutation",
+        "params": "#/$defs/captureDesignScreenshotParams",
+        "result": "#/$defs/captureDesignScreenshotResult"
+      },
+      "listDesignHistory": {
+        "type": "query",
+        "params": "#/$defs/listDesignHistoryParams",
+        "result": "#/$defs/listDesignHistoryResult"
+      },
+      "getDesignVersion": {
+        "type": "query",
+        "params": "#/$defs/getDesignVersionParams",
+        "result": "#/$defs/getDesignVersionResult"
       },
       "getWebDesignState": {
         "type": "query",

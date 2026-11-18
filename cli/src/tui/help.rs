@@ -60,7 +60,10 @@ pub fn help_lines(context: HelpContext, kb: &Keybinds, theme: &Theme) -> Vec<Lin
 
     let mut lines = vec![
         Line::from(Span::styled("Keyboard shortcuts", title_style)),
-        Line::from(Span::styled("Press ? or Esc to close", muted)),
+        Line::from(Span::styled(
+            "Press ? or Esc to close · PgUp/PgDn scroll",
+            muted,
+        )),
         Line::raw(""),
     ];
 
@@ -70,7 +73,11 @@ pub fn help_lines(context: HelpContext, kb: &Keybinds, theme: &Theme) -> Vec<Lin
             Span::styled(desc.to_string(), desc_style),
         ]));
     };
+    let section = |lines: &mut Vec<Line<'static>>, title: &str| {
+        lines.push(Line::from(Span::styled(title.to_string(), title_style)));
+    };
 
+    section(&mut lines, "Session");
     push(&mut lines, "?", "This help overlay");
     push(&mut lines, &kb.app_exit_label(), "Quit application");
     push(&mut lines, "Ctrl+C", "Cancel work; press again to exit");
@@ -81,7 +88,11 @@ pub fn help_lines(context: HelpContext, kb: &Keybinds, theme: &Theme) -> Vec<Lin
     push(&mut lines, &format!("{leader} m"), "Model picker");
     push(&mut lines, &format!("{leader} S-t"), "Cycle theme");
     push(&mut lines, &format!("{leader} y"), "Copy latest message");
-    push(&mut lines, &format!("{leader} b"), "Toggle todos/metrics sidebar");
+    push(
+        &mut lines,
+        &format!("{leader} b"),
+        "Toggle todos/metrics sidebar",
+    );
     push(&mut lines, &format!("{leader} s"), "Status detail");
     push(
         &mut lines,
@@ -89,16 +100,27 @@ pub fn help_lines(context: HelpContext, kb: &Keybinds, theme: &Theme) -> Vec<Lin
         "Local instance output",
     );
     push(&mut lines, &kb.command_list.first_label(), "Command list");
+    push(
+        &mut lines,
+        &kb.cli_optional_picker.first_label(),
+        "Optional questions",
+    );
+    push(
+        &mut lines,
+        &kb.messages_toggle_conceal_label(),
+        "Toggle verbose",
+    );
 
+    lines.push(Line::raw(""));
     match context {
         HelpContext::Composer => {
-            push(&mut lines, &kb.input_submit_label(), "Send message");
-            push(&mut lines, &kb.input_newline_label(), "Insert newline");
+            section(&mut lines, "Composer");
             push(
                 &mut lines,
-                &kb.messages_toggle_conceal_label(),
-                "Toggle verbose",
+                &kb.input_submit_label(),
+                "Send, or expand the tool in view when empty",
             );
+            push(&mut lines, &kb.input_newline_label(), "Insert newline");
             push(&mut lines, &format!("{leader} 1/2/3"), "Quick-reply chips");
             push(&mut lines, "@query", "Workspace file search");
             push(&mut lines, "/command", "Slash-command picker");
@@ -107,12 +129,14 @@ pub fn help_lines(context: HelpContext, kb: &Keybinds, theme: &Theme) -> Vec<Lin
             push(&mut lines, "PgUp/PgDn", "Scroll transcript");
         }
         HelpContext::Followup => {
+            section(&mut lines, "Follow-up");
             push(&mut lines, &kb.input_submit_label(), "Submit follow-up");
             push(&mut lines, &kb.input_newline_label(), "Newline in reply");
             push(&mut lines, &format!("{leader} 1/2/3"), "Quick-reply chips");
             push(&mut lines, "Esc", "Cancel follow-up");
         }
         HelpContext::Question => {
+            section(&mut lines, "Question");
             push(&mut lines, &kb.input_submit_label(), "Submit answer");
             push(
                 &mut lines,
@@ -122,6 +146,7 @@ pub fn help_lines(context: HelpContext, kb: &Keybinds, theme: &Theme) -> Vec<Lin
             push(&mut lines, "Esc", "Cancel question");
         }
         HelpContext::OptionalPicker => {
+            section(&mut lines, "Optional questions");
             push(&mut lines, "Up/Down", "Move selection");
             push(
                 &mut lines,
@@ -131,6 +156,7 @@ pub fn help_lines(context: HelpContext, kb: &Keybinds, theme: &Theme) -> Vec<Lin
             push(&mut lines, "Esc", "Close picker");
         }
         HelpContext::FileSearch => {
+            section(&mut lines, "File search");
             push(&mut lines, "Up/Down", "Move selection");
             push(
                 &mut lines,
@@ -140,14 +166,20 @@ pub fn help_lines(context: HelpContext, kb: &Keybinds, theme: &Theme) -> Vec<Lin
             push(&mut lines, "Esc", "Close picker");
         }
         HelpContext::CommandCompletion => {
+            section(&mut lines, "Commands");
             push(&mut lines, "Up/Down", "Move selection");
             push(&mut lines, "Tab/Enter", "Insert command");
             push(&mut lines, "Esc", "Close picker");
         }
         HelpContext::TranscriptScroll => {
+            section(&mut lines, "Transcript");
             push(&mut lines, "PgUp/PgDn", "Scroll transcript");
             push(&mut lines, "End", "Follow latest");
-            push(&mut lines, "Enter", "Expand/collapse tool output");
+            push(
+                &mut lines,
+                &kb.input_submit_label(),
+                "Expand or collapse the tool in view",
+            );
         }
     }
 
@@ -171,7 +203,6 @@ pub fn leader_hint_entries(kb: &Keybinds, chip_count: usize) -> Vec<(String, &'s
     push(&kb.agent_delete, "Delete agent");
     push(&kb.model_list, "Model picker");
     push(&kb.messages_toggle_conceal, "Toggle verbose");
-    push(&kb.tips_toggle, "Toggle verbose");
     push(&kb.cli_tools_select, "Tools picker");
     push(&kb.theme_list, "Cycle theme");
     push(&kb.messages_copy, "Copy latest message");
@@ -198,4 +229,42 @@ pub fn leader_hint_entries(kb: &Keybinds, chip_count: usize) -> Vec<(String, &'s
     }
 
     entries
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tui::keybinds::Keybinds;
+
+    fn line_text(lines: &[Line<'_>]) -> String {
+        lines
+            .iter()
+            .flat_map(|line| line.spans.iter().map(|span| span.content.as_ref()))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    #[test]
+    fn help_groups_session_and_the_active_context() {
+        let theme = crate::theme::Theme::material_dark();
+        let text = line_text(&help_lines(
+            HelpContext::Composer,
+            &Keybinds::defaults(),
+            &theme,
+        ));
+        assert!(text.contains("Session"));
+        assert!(text.contains("Composer"));
+        assert!(text.contains("Toggle verbose"));
+        assert!(text.contains("expand the tool in view"));
+    }
+
+    #[test]
+    fn leader_hint_lists_verbose_once() {
+        let entries = leader_hint_entries(&Keybinds::defaults(), 0);
+        let verbose = entries
+            .iter()
+            .filter(|(_, desc)| *desc == "Toggle verbose")
+            .count();
+        assert_eq!(verbose, 1);
+    }
 }

@@ -154,7 +154,6 @@ impl ChatSession {
             Question::FileSelect { .. } => {
                 let mut fs = FileSession::new(
                     question,
-                    self.provider.clone(),
                     self.working_directory.clone(),
                 );
                 fs.ensure_loaded(&self.client);
@@ -162,7 +161,6 @@ impl ChatSession {
             }
             Question::Form { .. } => ActiveSession::Form(FormSession::new(
                 question,
-                self.provider.clone(),
                 self.working_directory.clone(),
             )),
         };
@@ -202,7 +200,11 @@ impl ChatSession {
                 true
             }
             Err(e) => {
-                self.flash(e.to_string(), Tone::Error, std::time::Duration::from_secs(5));
+                self.flash(
+                    e.to_string(),
+                    Tone::Error,
+                    std::time::Duration::from_secs(5),
+                );
                 false
             }
         }

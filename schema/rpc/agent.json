@@ -333,6 +333,282 @@
       "additionalProperties": false
     },
     {
+      "title": "getAgentDirectory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.getAgentDirectory"
+        },
+        "params": {
+          "$ref": "#/$defs/getAgentDirectoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getAgentDirectory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getAgentDirectoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listAgentDefinitions request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.listAgentDefinitions"
+        },
+        "params": {
+          "$ref": "#/$defs/listAgentDefinitionsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listAgentDefinitions response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listAgentDefinitionsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getAgentTypeDetail request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.getAgentTypeDetail"
+        },
+        "params": {
+          "$ref": "#/$defs/getAgentTypeDetailParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getAgentTypeDetail response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getAgentTypeDetailResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createAgentDefinition request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.createAgentDefinition"
+        },
+        "params": {
+          "$ref": "#/$defs/createAgentDefinitionParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createAgentDefinition response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createAgentDefinitionResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateAgentDefinition request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.updateAgentDefinition"
+        },
+        "params": {
+          "$ref": "#/$defs/updateAgentDefinitionParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateAgentDefinition response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateAgentDefinitionResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteAgentDefinition request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.deleteAgentDefinition"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteAgentDefinitionParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteAgentDefinition response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteAgentDefinitionResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "createAgent request",
       "type": "object",
       "properties": {
@@ -415,6 +691,52 @@
         },
         "result": {
           "$ref": "#/$defs/deleteAgentResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "branchAgent request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.branchAgent"
+        },
+        "params": {
+          "$ref": "#/$defs/branchAgentParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "branchAgent response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/branchAgentResult"
         }
       },
       "required": [
@@ -553,6 +875,52 @@
         },
         "result": {
           "$ref": "#/$defs/abortCurrentOperationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelInput request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent.cancelInput"
+        },
+        "params": {
+          "$ref": "#/$defs/cancelInputParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelInput response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/cancelInputResult"
         }
       },
       "required": [
@@ -752,11 +1120,6 @@
               "description": "Message logged when an agent of this type is created",
               "type": "string"
             },
-            "headless": {
-              "default": false,
-              "description": "Run without an interactive chat surface",
-              "type": "boolean"
-            },
             "minimumRunning": {
               "default": 0,
               "description": "Keep at least this many agents of this type running",
@@ -788,7 +1151,6 @@
             "debug",
             "initialCommands",
             "createMessage",
-            "headless",
             "minimumRunning",
             "idleTimeout",
             "maxRunTime"
@@ -817,7 +1179,9 @@
           "type": "string"
         },
         "fromPosition": {
-          "type": "number"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
         }
       },
       "required": [
@@ -1939,7 +2303,9 @@
           "type": "string"
         },
         "fromPosition": {
-          "type": "number"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
         }
       },
       "required": [
@@ -3083,6 +3449,15 @@
           },
           "currentActivity": {
             "type": "string"
+          },
+          "pendingQuestions": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "parentAgentId": {
+            "type": "string"
           }
         },
         "required": [
@@ -3126,6 +3501,15 @@
           },
           "currentActivity": {
             "type": "string"
+          },
+          "pendingQuestions": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "parentAgentId": {
+            "type": "string"
           }
         },
         "required": [
@@ -3167,16 +3551,834 @@
             "items": {
               "type": "string"
             }
+          },
+          "source": {
+            "default": "bundled",
+            "type": "string",
+            "enum": [
+              "bundled",
+              "workspace"
+            ]
+          },
+          "installedFrom": {
+            "type": "object",
+            "properties": {
+              "registry": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "default": "",
+                "type": "string"
+              },
+              "author": {
+                "default": "",
+                "type": "string"
+              },
+              "installedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "registry",
+              "id",
+              "version",
+              "author",
+              "installedAt"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
           "type",
           "displayName",
           "description",
-          "enabledTools"
+          "enabledTools",
+          "source"
         ],
         "additionalProperties": false
       }
+    },
+    "getAgentDirectoryParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getAgentDirectoryResult": {
+      "type": "object",
+      "properties": {
+        "directory": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "directory"
+      ],
+      "additionalProperties": false
+    },
+    "listAgentDefinitionsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listAgentDefinitionsResult": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "Human-readable name shown in agent pickers"
+          },
+          "description": {
+            "type": "string",
+            "description": "What this agent type is for"
+          },
+          "category": {
+            "type": "string",
+            "description": "Group this agent type appears under in pickers"
+          },
+          "defaultCommand": {
+            "default": "/chat send",
+            "description": "The default command to run when the message to the agent does not start with a '/'",
+            "type": "string"
+          },
+          "debug": {
+            "default": false,
+            "advanced": true,
+            "description": "Log extra diagnostic output for this agent type",
+            "type": "boolean"
+          },
+          "initialCommands": {
+            "default": [],
+            "description": "Commands run automatically when an agent of this type starts",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createMessage": {
+            "default": "Agent Created",
+            "advanced": true,
+            "description": "Message logged when an agent of this type is created",
+            "type": "string"
+          },
+          "minimumRunning": {
+            "default": 0,
+            "description": "Keep at least this many agents of this type running",
+            "type": "number",
+            "minimum": 0
+          },
+          "idleTimeout": {
+            "default": 0,
+            "unit": "s",
+            "description": "Shut idle agents down after this long (0 disables)",
+            "type": "number",
+            "minimum": 0
+          },
+          "maxRunTime": {
+            "default": 0,
+            "unit": "s",
+            "description": "Hard limit on agent runtime (0 disables)",
+            "type": "number",
+            "minimum": 0
+          },
+          "installedFrom": {
+            "type": "object",
+            "properties": {
+              "registry": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "default": "",
+                "type": "string"
+              },
+              "author": {
+                "default": "",
+                "type": "string"
+              },
+              "installedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "registry",
+              "id",
+              "version",
+              "author",
+              "installedAt"
+            ],
+            "additionalProperties": false
+          },
+          "name": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayName",
+          "description",
+          "category",
+          "defaultCommand",
+          "debug",
+          "initialCommands",
+          "createMessage",
+          "minimumRunning",
+          "idleTimeout",
+          "maxRunTime",
+          "name",
+          "updatedAt"
+        ],
+        "additionalProperties": {}
+      }
+    },
+    "getAgentTypeDetailParams": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "getAgentTypeDetailResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "bundled",
+                "workspace"
+              ]
+            },
+            "agent": {
+              "type": "object",
+              "properties": {
+                "displayName": {
+                  "type": "string",
+                  "description": "Human-readable name shown in agent pickers"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "What this agent type is for"
+                },
+                "category": {
+                  "type": "string",
+                  "description": "Group this agent type appears under in pickers"
+                },
+                "defaultCommand": {
+                  "default": "/chat send",
+                  "description": "The default command to run when the message to the agent does not start with a '/'",
+                  "type": "string"
+                },
+                "debug": {
+                  "default": false,
+                  "advanced": true,
+                  "description": "Log extra diagnostic output for this agent type",
+                  "type": "boolean"
+                },
+                "initialCommands": {
+                  "default": [],
+                  "description": "Commands run automatically when an agent of this type starts",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "createMessage": {
+                  "default": "Agent Created",
+                  "advanced": true,
+                  "description": "Message logged when an agent of this type is created",
+                  "type": "string"
+                },
+                "minimumRunning": {
+                  "default": 0,
+                  "description": "Keep at least this many agents of this type running",
+                  "type": "number",
+                  "minimum": 0
+                },
+                "idleTimeout": {
+                  "default": 0,
+                  "unit": "s",
+                  "description": "Shut idle agents down after this long (0 disables)",
+                  "type": "number",
+                  "minimum": 0
+                },
+                "maxRunTime": {
+                  "default": 0,
+                  "unit": "s",
+                  "description": "Hard limit on agent runtime (0 disables)",
+                  "type": "number",
+                  "minimum": 0
+                },
+                "installedFrom": {
+                  "type": "object",
+                  "properties": {
+                    "registry": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "author": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "installedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "registry",
+                    "id",
+                    "version",
+                    "author",
+                    "installedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "displayName",
+                "description",
+                "category",
+                "defaultCommand",
+                "debug",
+                "initialCommands",
+                "createMessage",
+                "minimumRunning",
+                "idleTimeout",
+                "maxRunTime"
+              ],
+              "additionalProperties": {}
+            },
+            "updatedAt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "source",
+            "agent",
+            "updatedAt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentTypeNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "createAgentDefinitionParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "agent": {
+          "type": "object",
+          "properties": {
+            "displayName": {
+              "type": "string",
+              "description": "Human-readable name shown in agent pickers"
+            },
+            "description": {
+              "type": "string",
+              "description": "What this agent type is for"
+            },
+            "category": {
+              "type": "string",
+              "description": "Group this agent type appears under in pickers"
+            },
+            "defaultCommand": {
+              "default": "/chat send",
+              "description": "The default command to run when the message to the agent does not start with a '/'",
+              "type": "string"
+            },
+            "debug": {
+              "default": false,
+              "advanced": true,
+              "description": "Log extra diagnostic output for this agent type",
+              "type": "boolean"
+            },
+            "initialCommands": {
+              "default": [],
+              "description": "Commands run automatically when an agent of this type starts",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "createMessage": {
+              "default": "Agent Created",
+              "advanced": true,
+              "description": "Message logged when an agent of this type is created",
+              "type": "string"
+            },
+            "minimumRunning": {
+              "default": 0,
+              "description": "Keep at least this many agents of this type running",
+              "type": "number",
+              "minimum": 0
+            },
+            "idleTimeout": {
+              "default": 0,
+              "unit": "s",
+              "description": "Shut idle agents down after this long (0 disables)",
+              "type": "number",
+              "minimum": 0
+            },
+            "maxRunTime": {
+              "default": 0,
+              "unit": "s",
+              "description": "Hard limit on agent runtime (0 disables)",
+              "type": "number",
+              "minimum": 0
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "installedAt"
+              ]
+            }
+          },
+          "required": [
+            "displayName",
+            "description",
+            "category"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "name",
+        "agent"
+      ]
+    },
+    "createAgentDefinitionResult": {
+      "type": "object",
+      "properties": {
+        "agent": {
+          "type": "object",
+          "properties": {
+            "displayName": {
+              "type": "string",
+              "description": "Human-readable name shown in agent pickers"
+            },
+            "description": {
+              "type": "string",
+              "description": "What this agent type is for"
+            },
+            "category": {
+              "type": "string",
+              "description": "Group this agent type appears under in pickers"
+            },
+            "defaultCommand": {
+              "default": "/chat send",
+              "description": "The default command to run when the message to the agent does not start with a '/'",
+              "type": "string"
+            },
+            "debug": {
+              "default": false,
+              "advanced": true,
+              "description": "Log extra diagnostic output for this agent type",
+              "type": "boolean"
+            },
+            "initialCommands": {
+              "default": [],
+              "description": "Commands run automatically when an agent of this type starts",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "createMessage": {
+              "default": "Agent Created",
+              "advanced": true,
+              "description": "Message logged when an agent of this type is created",
+              "type": "string"
+            },
+            "minimumRunning": {
+              "default": 0,
+              "description": "Keep at least this many agents of this type running",
+              "type": "number",
+              "minimum": 0
+            },
+            "idleTimeout": {
+              "default": 0,
+              "unit": "s",
+              "description": "Shut idle agents down after this long (0 disables)",
+              "type": "number",
+              "minimum": 0
+            },
+            "maxRunTime": {
+              "default": 0,
+              "unit": "s",
+              "description": "Hard limit on agent runtime (0 disables)",
+              "type": "number",
+              "minimum": 0
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "version",
+                "author",
+                "installedAt"
+              ],
+              "additionalProperties": false
+            },
+            "name": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "displayName",
+            "description",
+            "category",
+            "defaultCommand",
+            "debug",
+            "initialCommands",
+            "createMessage",
+            "minimumRunning",
+            "idleTimeout",
+            "maxRunTime",
+            "name",
+            "updatedAt"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "agent"
+      ],
+      "additionalProperties": false
+    },
+    "updateAgentDefinitionParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "agent": {
+          "type": "object",
+          "properties": {
+            "displayName": {
+              "type": "string",
+              "description": "Human-readable name shown in agent pickers"
+            },
+            "description": {
+              "type": "string",
+              "description": "What this agent type is for"
+            },
+            "category": {
+              "type": "string",
+              "description": "Group this agent type appears under in pickers"
+            },
+            "defaultCommand": {
+              "default": "/chat send",
+              "description": "The default command to run when the message to the agent does not start with a '/'",
+              "type": "string"
+            },
+            "debug": {
+              "default": false,
+              "advanced": true,
+              "description": "Log extra diagnostic output for this agent type",
+              "type": "boolean"
+            },
+            "initialCommands": {
+              "default": [],
+              "description": "Commands run automatically when an agent of this type starts",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "createMessage": {
+              "default": "Agent Created",
+              "advanced": true,
+              "description": "Message logged when an agent of this type is created",
+              "type": "string"
+            },
+            "minimumRunning": {
+              "default": 0,
+              "description": "Keep at least this many agents of this type running",
+              "type": "number",
+              "minimum": 0
+            },
+            "idleTimeout": {
+              "default": 0,
+              "unit": "s",
+              "description": "Shut idle agents down after this long (0 disables)",
+              "type": "number",
+              "minimum": 0
+            },
+            "maxRunTime": {
+              "default": 0,
+              "unit": "s",
+              "description": "Hard limit on agent runtime (0 disables)",
+              "type": "number",
+              "minimum": 0
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "installedAt"
+              ]
+            }
+          },
+          "required": [
+            "displayName",
+            "description",
+            "category"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "name",
+        "agent"
+      ]
+    },
+    "updateAgentDefinitionResult": {
+      "type": "object",
+      "properties": {
+        "agent": {
+          "type": "object",
+          "properties": {
+            "displayName": {
+              "type": "string",
+              "description": "Human-readable name shown in agent pickers"
+            },
+            "description": {
+              "type": "string",
+              "description": "What this agent type is for"
+            },
+            "category": {
+              "type": "string",
+              "description": "Group this agent type appears under in pickers"
+            },
+            "defaultCommand": {
+              "default": "/chat send",
+              "description": "The default command to run when the message to the agent does not start with a '/'",
+              "type": "string"
+            },
+            "debug": {
+              "default": false,
+              "advanced": true,
+              "description": "Log extra diagnostic output for this agent type",
+              "type": "boolean"
+            },
+            "initialCommands": {
+              "default": [],
+              "description": "Commands run automatically when an agent of this type starts",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "createMessage": {
+              "default": "Agent Created",
+              "advanced": true,
+              "description": "Message logged when an agent of this type is created",
+              "type": "string"
+            },
+            "minimumRunning": {
+              "default": 0,
+              "description": "Keep at least this many agents of this type running",
+              "type": "number",
+              "minimum": 0
+            },
+            "idleTimeout": {
+              "default": 0,
+              "unit": "s",
+              "description": "Shut idle agents down after this long (0 disables)",
+              "type": "number",
+              "minimum": 0
+            },
+            "maxRunTime": {
+              "default": 0,
+              "unit": "s",
+              "description": "Hard limit on agent runtime (0 disables)",
+              "type": "number",
+              "minimum": 0
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "version",
+                "author",
+                "installedAt"
+              ],
+              "additionalProperties": false
+            },
+            "name": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "displayName",
+            "description",
+            "category",
+            "defaultCommand",
+            "debug",
+            "initialCommands",
+            "createMessage",
+            "minimumRunning",
+            "idleTimeout",
+            "maxRunTime",
+            "name",
+            "updatedAt"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "agent"
+      ],
+      "additionalProperties": false
+    },
+    "deleteAgentDefinitionParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "deleteAgentDefinitionResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
+      ],
+      "additionalProperties": false
     },
     "createAgentParams": {
       "type": "object",
@@ -3184,13 +4386,20 @@
         "agentType": {
           "type": "string"
         },
-        "headless": {
-          "type": "boolean"
+        "answerTimeoutSeconds": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
-        "agentType",
-        "headless"
+        "agentType"
       ]
     },
     "createAgentResult": {
@@ -3240,6 +4449,58 @@
           },
           "required": [
             "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "branchAgentParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "at": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "branchAgentResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "agentId": {
+              "type": "string"
+            },
+            "agentName": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "agentId",
+            "agentName"
           ],
           "additionalProperties": false
         },
@@ -3456,6 +4717,51 @@
       ]
     },
     "abortCurrentOperationResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "cancelInputParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId",
+        "requestId"
+      ]
+    },
+    "cancelInputResult": {
       "oneOf": [
         {
           "type": "object",
@@ -3826,6 +5132,36 @@
         "params": "#/$defs/getAgentTypesParams",
         "result": "#/$defs/getAgentTypesResult"
       },
+      "getAgentDirectory": {
+        "type": "query",
+        "params": "#/$defs/getAgentDirectoryParams",
+        "result": "#/$defs/getAgentDirectoryResult"
+      },
+      "listAgentDefinitions": {
+        "type": "query",
+        "params": "#/$defs/listAgentDefinitionsParams",
+        "result": "#/$defs/listAgentDefinitionsResult"
+      },
+      "getAgentTypeDetail": {
+        "type": "query",
+        "params": "#/$defs/getAgentTypeDetailParams",
+        "result": "#/$defs/getAgentTypeDetailResult"
+      },
+      "createAgentDefinition": {
+        "type": "mutation",
+        "params": "#/$defs/createAgentDefinitionParams",
+        "result": "#/$defs/createAgentDefinitionResult"
+      },
+      "updateAgentDefinition": {
+        "type": "mutation",
+        "params": "#/$defs/updateAgentDefinitionParams",
+        "result": "#/$defs/updateAgentDefinitionResult"
+      },
+      "deleteAgentDefinition": {
+        "type": "mutation",
+        "params": "#/$defs/deleteAgentDefinitionParams",
+        "result": "#/$defs/deleteAgentDefinitionResult"
+      },
       "createAgent": {
         "type": "mutation",
         "params": "#/$defs/createAgentParams",
@@ -3835,6 +5171,11 @@
         "type": "mutation",
         "params": "#/$defs/deleteAgentParams",
         "result": "#/$defs/deleteAgentResult"
+      },
+      "branchAgent": {
+        "type": "mutation",
+        "params": "#/$defs/branchAgentParams",
+        "result": "#/$defs/branchAgentResult"
       },
       "sendInput": {
         "type": "mutation",
@@ -3850,6 +5191,11 @@
         "type": "mutation",
         "params": "#/$defs/abortCurrentOperationParams",
         "result": "#/$defs/abortCurrentOperationResult"
+      },
+      "cancelInput": {
+        "type": "mutation",
+        "params": "#/$defs/cancelInputParams",
+        "result": "#/$defs/cancelInputResult"
       },
       "getCommandHistory": {
         "type": "query",

@@ -3,10 +3,27 @@ import { terminalRPCClient } from "../rpc.ts";
 import { useRPCStreamSWR } from "./useRPCStreamSWR.ts";
 
 export type TerminalOutputState = {
+  /** The latest output, at most MAX_TERMINAL_OUTPUT_CHARS: older text is dropped from the front. */
   output: string;
   position: number;
   complete: boolean;
+  /**
+   * How many characters have ever been appended. Once `output` is capped its length stops
+   * changing, so a view tells new text apart by this count instead (see XTermView's outputEnd).
+   */
+  outputEnd?: number;
 };
+
+/**
+ * Cap the client-side output buffer to avoid unbounded memory growth (and the
+ * O(n²) cost of repeated full-string concatenation) during long sessions.
+ * Views track new text by `outputEnd`, which keeps counting after the cap.
+ */
+const MAX_TERMINAL_OUTPUT_CHARS = 512 * 1024;
+
+function capOutput(output: string): string {
+  return output.length > MAX_TERMINAL_OUTPUT_CHARS ? output.slice(-MAX_TERMINAL_OUTPUT_CHARS) : output;
+}
 
 export function useTerminalOutput(terminalName: string | null, resume?: TerminalOutputState) {
   const positionRef = useRef(resume?.position ?? 0);
@@ -37,11 +54,10 @@ export function useTerminalOutput(terminalName: string | null, resume?: Terminal
         },
         signal,
       ),
-    // terminalNotFound ends the subscription; complete means the process exited and
+    // Non-success statuses end the subscription; complete means the process exited and
     // the server closed the stream — without stopping here useRPCStream would
     // reconnect in a tight loop and re-yield the same terminal-exited chunk.
-    // After excluding terminalNotFound, status is narrowed to success so only complete matters.
-    shouldStop: chunk => chunk.status === "terminalNotFound" || chunk.complete,
+    shouldStop: chunk => chunk.status !== "success" || chunk.complete,
     reduce: (prev, chunk) => {
       if (chunk.status !== "success") {
         return (
@@ -61,9 +77,10 @@ export function useTerminalOutput(terminalName: string | null, resume?: Terminal
       };
 
       return {
-        output: prior.output + chunk.output,
+        output: capOutput(prior.output + chunk.output),
         position: chunk.position,
         complete: chunk.complete,
+        outputEnd: (prior.outputEnd ?? prior.output.length) + chunk.output.length,
       };
     },
   });

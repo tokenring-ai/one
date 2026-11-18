@@ -1,11 +1,14 @@
 lifecycle:
+  globalHooks:
+    - autoCheckpoint
+    - injectSubAgentResults
+    - todoCompletionCheck
+    - clearReadFiles
+    - goalContinuation
   agentDefaults:
     enabledHooks:
-      - autoCheckpoint
+      - addRelevantMemories
       - addSelectedFiles
-      - clearReadFiles
-      - todoCompletionCheck
-      - injectSubagentResults
       - markdownFileValidator
       - typescriptFileValidator
       - javascriptFileValidator

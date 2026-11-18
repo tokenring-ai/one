@@ -53,6 +53,491 @@
       "additionalProperties": false
     },
     {
+      "title": "listPermissionGrants request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.listPermissionGrants"
+        },
+        "params": {
+          "$ref": "#/$defs/listPermissionGrantsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listPermissionGrants response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listPermissionGrantsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamPermissionGrants request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.streamPermissionGrants"
+        },
+        "params": {
+          "$ref": "#/$defs/streamPermissionGrantsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamPermissionGrants response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamPermissionGrantsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamPermissionGrants stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "revokePermissionGrant request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.revokePermissionGrant"
+        },
+        "params": {
+          "$ref": "#/$defs/revokePermissionGrantParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "revokePermissionGrant response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/revokePermissionGrantResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "grantPermission request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.grantPermission"
+        },
+        "params": {
+          "$ref": "#/$defs/grantPermissionParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "grantPermission response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/grantPermissionResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getToolDirectory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.getToolDirectory"
+        },
+        "params": {
+          "$ref": "#/$defs/getToolDirectoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getToolDirectory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getToolDirectoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listToolDefinitions request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.listToolDefinitions"
+        },
+        "params": {
+          "$ref": "#/$defs/listToolDefinitionsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listToolDefinitions response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listToolDefinitionsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getToolDefinition request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.getToolDefinition"
+        },
+        "params": {
+          "$ref": "#/$defs/getToolDefinitionParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getToolDefinition response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getToolDefinitionResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createToolDefinition request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.createToolDefinition"
+        },
+        "params": {
+          "$ref": "#/$defs/createToolDefinitionParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createToolDefinition response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createToolDefinitionResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateToolDefinition request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.updateToolDefinition"
+        },
+        "params": {
+          "$ref": "#/$defs/updateToolDefinitionParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateToolDefinition response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateToolDefinitionResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteToolDefinition request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.deleteToolDefinition"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteToolDefinitionParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteToolDefinition response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteToolDefinitionResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "getModel request",
       "type": "object",
       "properties": {
@@ -749,6 +1234,77 @@
         "result"
       ],
       "additionalProperties": false
+    },
+    {
+      "title": "searchContext request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/chat.searchContext"
+        },
+        "params": {
+          "$ref": "#/$defs/searchContextParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchContext response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/searchContextResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchContext stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
     }
   ],
   "$defs": {
@@ -805,10 +1361,15 @@
             "properties": {
               "displayName": {
                 "type": "string"
+              },
+              "description": {
+                "default": "",
+                "type": "string"
               }
             },
             "required": [
-              "displayName"
+              "displayName",
+              "description"
             ],
             "additionalProperties": false
           }
@@ -816,6 +1377,1250 @@
       },
       "required": [
         "tools"
+      ],
+      "additionalProperties": false
+    },
+    "listPermissionGrantsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listPermissionGrantsResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "success"
+        },
+        "grants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "grantedAt": {
+                "type": "string"
+              },
+              "lastUsedAt": {
+                "type": "string"
+              },
+              "uses": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "global",
+                  "workspace"
+                ]
+              },
+              "ignoredReason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "grantedAt",
+              "uses",
+              "source"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "maxGrantLevel": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "status",
+        "grants",
+        "maxGrantLevel"
+      ],
+      "additionalProperties": false
+    },
+    "streamPermissionGrantsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamPermissionGrantsResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "success"
+        },
+        "grants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "grantedAt": {
+                "type": "string"
+              },
+              "lastUsedAt": {
+                "type": "string"
+              },
+              "uses": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "global",
+                  "workspace"
+                ]
+              },
+              "ignoredReason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "grantedAt",
+              "uses",
+              "source"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "maxGrantLevel": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "status",
+        "grants",
+        "maxGrantLevel"
+      ],
+      "additionalProperties": false
+    },
+    "revokePermissionGrantParams": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "revokePermissionGrantResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "notFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "rejected"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "grantPermissionParams": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "grantPermissionResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "grant": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "summary": {
+                  "type": "string"
+                },
+                "grantedAt": {
+                  "type": "string"
+                },
+                "lastUsedAt": {
+                  "type": "string"
+                },
+                "uses": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "global",
+                    "workspace"
+                  ]
+                },
+                "ignoredReason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "grantedAt",
+                "uses",
+                "source"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "grant"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "rejected"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "getToolDirectoryParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getToolDirectoryResult": {
+      "type": "object",
+      "properties": {
+        "directory": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "directory"
+      ],
+      "additionalProperties": false
+    },
+    "listToolDefinitionsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listToolDefinitionsResult": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "agentType": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "default": "User-Created Tools",
+            "type": "string"
+          },
+          "inputArguments": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "defaultValue": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "steps": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subAgent": {
+            "type": "object",
+            "properties": {
+              "forwardChatOutput": {
+                "default": false,
+                "type": "boolean"
+              },
+              "forwardStatusMessages": {
+                "default": true,
+                "type": "boolean"
+              },
+              "forwardSystemOutput": {
+                "default": false,
+                "type": "boolean"
+              },
+              "forwardHumanRequests": {
+                "default": true,
+                "type": "boolean"
+              },
+              "forwardReasoning": {
+                "default": false,
+                "type": "boolean"
+              },
+              "forwardInputCommands": {
+                "default": true,
+                "type": "boolean"
+              },
+              "timeout": {
+                "default": 0,
+                "type": "number"
+              },
+              "maxResponseLength": {
+                "default": 10000,
+                "type": "number"
+              },
+              "minContextLength": {
+                "default": 1000,
+                "type": "number"
+              }
+            },
+            "required": [
+              "forwardChatOutput",
+              "forwardStatusMessages",
+              "forwardSystemOutput",
+              "forwardHumanRequests",
+              "forwardReasoning",
+              "forwardInputCommands",
+              "timeout",
+              "maxResponseLength",
+              "minContextLength"
+            ],
+            "additionalProperties": false
+          },
+          "installedFrom": {
+            "type": "object",
+            "properties": {
+              "registry": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "default": "",
+                "type": "string"
+              },
+              "author": {
+                "default": "",
+                "type": "string"
+              },
+              "installedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "registry",
+              "id",
+              "version",
+              "author",
+              "installedAt"
+            ],
+            "additionalProperties": false
+          },
+          "name": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "agentType",
+          "displayName",
+          "description",
+          "category",
+          "inputArguments",
+          "steps",
+          "subAgent",
+          "name",
+          "updatedAt"
+        ],
+        "additionalProperties": {}
+      }
+    },
+    "getToolDefinitionParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "getToolDefinitionResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "tool": {
+              "type": "object",
+              "properties": {
+                "agentType": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "category": {
+                  "default": "User-Created Tools",
+                  "type": "string"
+                },
+                "inputArguments": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "description": {
+                        "type": "string"
+                      },
+                      "defaultValue": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "description"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "steps": {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "subAgent": {
+                  "type": "object",
+                  "properties": {
+                    "forwardChatOutput": {
+                      "default": false,
+                      "type": "boolean"
+                    },
+                    "forwardStatusMessages": {
+                      "default": true,
+                      "type": "boolean"
+                    },
+                    "forwardSystemOutput": {
+                      "default": false,
+                      "type": "boolean"
+                    },
+                    "forwardHumanRequests": {
+                      "default": true,
+                      "type": "boolean"
+                    },
+                    "forwardReasoning": {
+                      "default": false,
+                      "type": "boolean"
+                    },
+                    "forwardInputCommands": {
+                      "default": true,
+                      "type": "boolean"
+                    },
+                    "timeout": {
+                      "default": 0,
+                      "type": "number"
+                    },
+                    "maxResponseLength": {
+                      "default": 10000,
+                      "type": "number"
+                    },
+                    "minContextLength": {
+                      "default": 1000,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "forwardChatOutput",
+                    "forwardStatusMessages",
+                    "forwardSystemOutput",
+                    "forwardHumanRequests",
+                    "forwardReasoning",
+                    "forwardInputCommands",
+                    "timeout",
+                    "maxResponseLength",
+                    "minContextLength"
+                  ],
+                  "additionalProperties": false
+                },
+                "installedFrom": {
+                  "type": "object",
+                  "properties": {
+                    "registry": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "author": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "installedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "registry",
+                    "id",
+                    "version",
+                    "author",
+                    "installedAt"
+                  ],
+                  "additionalProperties": false
+                },
+                "name": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "agentType",
+                "displayName",
+                "description",
+                "category",
+                "inputArguments",
+                "steps",
+                "subAgent",
+                "name",
+                "updatedAt"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "status",
+            "tool"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "toolNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "createToolDefinitionParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "tool": {
+          "type": "object",
+          "properties": {
+            "agentType": {
+              "type": "string"
+            },
+            "displayName": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "category": {
+              "default": "User-Created Tools",
+              "type": "string"
+            },
+            "inputArguments": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "defaultValue": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "description"
+                ]
+              }
+            },
+            "steps": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "subAgent": {
+              "default": {},
+              "type": "object",
+              "properties": {
+                "forwardChatOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardStatusMessages": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardSystemOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardHumanRequests": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardReasoning": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardInputCommands": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "timeout": {
+                  "default": 0,
+                  "type": "number"
+                },
+                "maxResponseLength": {
+                  "default": 10000,
+                  "type": "number"
+                },
+                "minContextLength": {
+                  "default": 1000,
+                  "type": "number"
+                }
+              }
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "installedAt"
+              ]
+            }
+          },
+          "required": [
+            "agentType",
+            "displayName",
+            "description",
+            "inputArguments",
+            "steps"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "name",
+        "tool"
+      ]
+    },
+    "createToolDefinitionResult": {
+      "type": "object",
+      "properties": {
+        "tool": {
+          "type": "object",
+          "properties": {
+            "agentType": {
+              "type": "string"
+            },
+            "displayName": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "category": {
+              "default": "User-Created Tools",
+              "type": "string"
+            },
+            "inputArguments": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "defaultValue": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "description"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "steps": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "subAgent": {
+              "type": "object",
+              "properties": {
+                "forwardChatOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardStatusMessages": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardSystemOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardHumanRequests": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardReasoning": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardInputCommands": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "timeout": {
+                  "default": 0,
+                  "type": "number"
+                },
+                "maxResponseLength": {
+                  "default": 10000,
+                  "type": "number"
+                },
+                "minContextLength": {
+                  "default": 1000,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "forwardChatOutput",
+                "forwardStatusMessages",
+                "forwardSystemOutput",
+                "forwardHumanRequests",
+                "forwardReasoning",
+                "forwardInputCommands",
+                "timeout",
+                "maxResponseLength",
+                "minContextLength"
+              ],
+              "additionalProperties": false
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "version",
+                "author",
+                "installedAt"
+              ],
+              "additionalProperties": false
+            },
+            "name": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "agentType",
+            "displayName",
+            "description",
+            "category",
+            "inputArguments",
+            "steps",
+            "subAgent",
+            "name",
+            "updatedAt"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "tool"
+      ],
+      "additionalProperties": false
+    },
+    "updateToolDefinitionParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "tool": {
+          "type": "object",
+          "properties": {
+            "agentType": {
+              "type": "string"
+            },
+            "displayName": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "category": {
+              "default": "User-Created Tools",
+              "type": "string"
+            },
+            "inputArguments": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "defaultValue": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "description"
+                ]
+              }
+            },
+            "steps": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "subAgent": {
+              "default": {},
+              "type": "object",
+              "properties": {
+                "forwardChatOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardStatusMessages": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardSystemOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardHumanRequests": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardReasoning": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardInputCommands": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "timeout": {
+                  "default": 0,
+                  "type": "number"
+                },
+                "maxResponseLength": {
+                  "default": 10000,
+                  "type": "number"
+                },
+                "minContextLength": {
+                  "default": 1000,
+                  "type": "number"
+                }
+              }
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "installedAt"
+              ]
+            }
+          },
+          "required": [
+            "agentType",
+            "displayName",
+            "description",
+            "inputArguments",
+            "steps"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "name",
+        "tool"
+      ]
+    },
+    "updateToolDefinitionResult": {
+      "type": "object",
+      "properties": {
+        "tool": {
+          "type": "object",
+          "properties": {
+            "agentType": {
+              "type": "string"
+            },
+            "displayName": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "category": {
+              "default": "User-Created Tools",
+              "type": "string"
+            },
+            "inputArguments": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "defaultValue": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "description"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "steps": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "subAgent": {
+              "type": "object",
+              "properties": {
+                "forwardChatOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardStatusMessages": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardSystemOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardHumanRequests": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardReasoning": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardInputCommands": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "timeout": {
+                  "default": 0,
+                  "type": "number"
+                },
+                "maxResponseLength": {
+                  "default": 10000,
+                  "type": "number"
+                },
+                "minContextLength": {
+                  "default": 1000,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "forwardChatOutput",
+                "forwardStatusMessages",
+                "forwardSystemOutput",
+                "forwardHumanRequests",
+                "forwardReasoning",
+                "forwardInputCommands",
+                "timeout",
+                "maxResponseLength",
+                "minContextLength"
+              ],
+              "additionalProperties": false
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "version",
+                "author",
+                "installedAt"
+              ],
+              "additionalProperties": false
+            },
+            "name": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "agentType",
+            "displayName",
+            "description",
+            "category",
+            "inputArguments",
+            "steps",
+            "subAgent",
+            "name",
+            "updatedAt"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "tool"
+      ],
+      "additionalProperties": false
+    },
+    "deleteToolDefinitionParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "deleteToolDefinitionResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
       ],
       "additionalProperties": false
     },
@@ -840,13 +2645,9 @@
               "const": "success"
             },
             "model": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "modelSpec": {
@@ -1034,13 +2835,9 @@
               "const": "success"
             },
             "model": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "modelSpec": {
@@ -1141,6 +2938,19 @@
             "status"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "modelNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
         }
       ]
     },
@@ -1165,13 +2975,9 @@
               "const": "success"
             },
             "model": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "cost": {
@@ -1788,6 +3594,139 @@
           "additionalProperties": false
         }
       ]
+    },
+    "searchContextParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "query": {
+          "type": "string"
+        },
+        "limit": {
+          "default": 8,
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 25
+        }
+      },
+      "required": [
+        "agentId",
+        "query"
+      ]
+    },
+    "searchContextResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "categories": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "tag": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "subtitle": {
+                          "type": "string"
+                        },
+                        "categoryId": {
+                          "type": "string"
+                        },
+                        "categoryLabel": {
+                          "type": "string"
+                        },
+                        "score": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "tag",
+                        "title",
+                        "categoryId",
+                        "categoryLabel"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "label",
+                  "items"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "pending": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "categoryId": {
+                    "type": "string"
+                  },
+                  "categoryLabel": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "categoryId",
+                  "categoryLabel"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "categories",
+            "pending"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "x-tokenring-rpc": {
@@ -1799,6 +3738,56 @@
         "type": "query",
         "params": "#/$defs/getAvailableToolsParams",
         "result": "#/$defs/getAvailableToolsResult"
+      },
+      "listPermissionGrants": {
+        "type": "query",
+        "params": "#/$defs/listPermissionGrantsParams",
+        "result": "#/$defs/listPermissionGrantsResult"
+      },
+      "streamPermissionGrants": {
+        "type": "stream",
+        "params": "#/$defs/streamPermissionGrantsParams",
+        "result": "#/$defs/streamPermissionGrantsResult"
+      },
+      "revokePermissionGrant": {
+        "type": "mutation",
+        "params": "#/$defs/revokePermissionGrantParams",
+        "result": "#/$defs/revokePermissionGrantResult"
+      },
+      "grantPermission": {
+        "type": "mutation",
+        "params": "#/$defs/grantPermissionParams",
+        "result": "#/$defs/grantPermissionResult"
+      },
+      "getToolDirectory": {
+        "type": "query",
+        "params": "#/$defs/getToolDirectoryParams",
+        "result": "#/$defs/getToolDirectoryResult"
+      },
+      "listToolDefinitions": {
+        "type": "query",
+        "params": "#/$defs/listToolDefinitionsParams",
+        "result": "#/$defs/listToolDefinitionsResult"
+      },
+      "getToolDefinition": {
+        "type": "query",
+        "params": "#/$defs/getToolDefinitionParams",
+        "result": "#/$defs/getToolDefinitionResult"
+      },
+      "createToolDefinition": {
+        "type": "mutation",
+        "params": "#/$defs/createToolDefinitionParams",
+        "result": "#/$defs/createToolDefinitionResult"
+      },
+      "updateToolDefinition": {
+        "type": "mutation",
+        "params": "#/$defs/updateToolDefinitionParams",
+        "result": "#/$defs/updateToolDefinitionResult"
+      },
+      "deleteToolDefinition": {
+        "type": "mutation",
+        "params": "#/$defs/deleteToolDefinitionParams",
+        "result": "#/$defs/deleteToolDefinitionResult"
       },
       "getModel": {
         "type": "query",
@@ -1864,6 +3853,11 @@
         "type": "mutation",
         "params": "#/$defs/clearChatMessagesParams",
         "result": "#/$defs/clearChatMessagesResult"
+      },
+      "searchContext": {
+        "type": "stream",
+        "params": "#/$defs/searchContextParams",
+        "result": "#/$defs/searchContextResult"
       }
     }
   }

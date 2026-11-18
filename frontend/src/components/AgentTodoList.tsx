@@ -1,5 +1,6 @@
 import type { TodoItem } from "@tokenring-ai/todo";
-import { useMemo } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
 import { cn } from "../lib/utils.ts";
 import { useTodos } from "../rpc";
 
@@ -22,7 +23,7 @@ const statusMarkers = {
 };
 
 const statusClasses = {
-  in_progress: "text-accent",
+  in_progress: "text-accent-soft",
   completed: "text-success",
   pending: "text-secondary",
   cancelled: "text-failure",
@@ -75,14 +76,19 @@ interface AgentTodoListProps {
   agentName: string;
   /** Extra classes on the list container, for callers that need their own spacing/separator. */
   className?: string;
+  /** When set, the whole list becomes a click target (e.g. to open the agent). */
+  onSelect?: () => void;
+  /** Below `lg`, hide the list behind a "N todos" toggle so narrow layouts stay scannable. */
+  collapsibleOnMobile?: boolean;
 }
 
 /**
  * Live todo list for a single agent, capped to a handful of rows.
  * Renders nothing while the agent has no todos.
  */
-export default function AgentTodoList({ agentId, agentName, className }: AgentTodoListProps) {
+export default function AgentTodoList({ agentId, agentName, className, onSelect, collapsibleOnMobile = false }: AgentTodoListProps) {
   const todosStream = useTodos(agentId);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
 
   const capped = useMemo(() => {
     if (todosStream.data?.status !== "success") {
@@ -94,18 +100,20 @@ export default function AgentTodoList({ agentId, agentName, className }: AgentTo
     return capTodos(todos);
   }, [todosStream.data]);
 
+  const total = todosStream.data?.status === "success" ? todosStream.data.todos.length : 0;
+
   if (capped.items.length === 0) return null;
 
-  return (
-    <ul className={cn("space-y-1", className)} aria-label={`Todos for ${agentName}`}>
-      {capped.moreAbove > 0 && <li className="text-2xs text-muted font-mono leading-snug">{capped.moreAbove} more</li>}
+  const list = (
+    <ul className="space-y-1" aria-label={`Todos for ${agentName}`}>
+      {capped.moreAbove > 0 && <li className="text-xs text-muted leading-snug">{capped.moreAbove} more</li>}
       {capped.items.map(todo => {
         const marker = statusMarkers[todo.status];
         return (
-          <li key={todo.id} className={`relative min-w-0 text-2xs font-mono leading-snug ${contentClasses[todo.status]}`} title={todo.content}>
+          <li key={todo.id} className={`relative min-w-0 text-xs leading-snug ${contentClasses[todo.status]}`} title={todo.content}>
             {/* Marker hangs left of the text column so rows align with "N more". */}
             {marker ? (
-              <span className={`absolute top-0 right-full mr-2 select-none ${statusClasses[todo.status]}`} aria-hidden="true">
+              <span className={`absolute top-0 right-full mr-2 select-none font-mono ${statusClasses[todo.status]}`} aria-hidden="true">
                 {marker}
               </span>
             ) : null}
@@ -113,7 +121,34 @@ export default function AgentTodoList({ agentId, agentName, className }: AgentTo
           </li>
         );
       })}
-      {capped.moreBelow > 0 && <li className="text-2xs text-muted font-mono leading-snug">{capped.moreBelow} more</li>}
+      {capped.moreBelow > 0 && <li className="text-xs text-muted leading-snug">{capped.moreBelow} more</li>}
     </ul>
+  );
+
+  // No aria-label here: the todo text supplies the accessible name, so this button does not
+  // collide with the card's own "Open agent …" control.
+  const body = onSelect ? (
+    <button type="button" onClick={onSelect} className="w-full text-left cursor-pointer focus-ring rounded">
+      {list}
+    </button>
+  ) : (
+    list
+  );
+
+  return (
+    <div className={className}>
+      {collapsibleOnMobile ? (
+        <button
+          type="button"
+          onClick={() => setMobileExpanded(expanded => !expanded)}
+          aria-expanded={mobileExpanded}
+          className="lg:hidden flex items-center gap-1 px-1 py-1.5 text-xs text-muted hover:text-primary transition-colors cursor-pointer focus-ring rounded"
+        >
+          {mobileExpanded ? <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" /> : <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />}
+          {total} {total === 1 ? "todo" : "todos"}
+        </button>
+      ) : null}
+      <div className={cn(collapsibleOnMobile && !mobileExpanded && "hidden lg:block")}>{body}</div>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, AlertTriangle, CheckCircle, Info, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { plainAdminRefusal } from "../../lib/rpcErrors.ts";
 import { cn } from "../../lib/utils.ts";
 
 export type ToastType = "success" | "error" | "info" | "warning";
@@ -206,7 +207,7 @@ class NotificationManager {
   }
 
   error(message: string, options?: Partial<ToastProps>) {
-    return this.add({ type: "error", message, ...options });
+    return this.add({ type: "error", message: plainAdminRefusal(message), ...options });
   }
 
   info(message: string, options?: Partial<ToastProps>) {

@@ -7,6 +7,52 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
+      "title": "estimateCost request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/audio.estimateCost"
+        },
+        "params": {
+          "$ref": "#/$defs/estimateCostParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "estimateCost response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/estimateCostResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "generateSpeech request",
       "type": "object",
       "properties": {
@@ -133,6 +179,45 @@
         "jsonrpc",
         "id",
         "error"
+      ],
+      "additionalProperties": false
+    },
+    "estimateCostParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ]
+    },
+    "estimateCostResult": {
+      "type": "object",
+      "properties": {
+        "amountUsd": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "amountUsd",
+        "model"
       ],
       "additionalProperties": false
     },
@@ -267,6 +352,11 @@
     "path": "/rpc/audio",
     "source": "plugin/audio/rpc/schema.ts",
     "methods": {
+      "estimateCost": {
+        "type": "query",
+        "params": "#/$defs/estimateCostParams",
+        "result": "#/$defs/estimateCostResult"
+      },
       "generateSpeech": {
         "type": "mutation",
         "params": "#/$defs/generateSpeechParams",

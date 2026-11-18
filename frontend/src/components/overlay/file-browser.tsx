@@ -1,1 +1,1 @@
-export { default } from "../../features/filesystem/FileBrowserOverlay.tsx";
+export { default } from "@tokenring-ai/filesystem/frontend/features/filesystem/FileBrowserOverlay.tsx";

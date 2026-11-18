@@ -1,0 +1,1413 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Google RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/google",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "getSetup request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/google.getSetup"
+        },
+        "params": {
+          "$ref": "#/$defs/getSetupParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getSetup response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getSetupResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "saveCredentials request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/google.saveCredentials"
+        },
+        "params": {
+          "$ref": "#/$defs/saveCredentialsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "saveCredentials response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/saveCredentialsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "startConnect request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/google.startConnect"
+        },
+        "params": {
+          "$ref": "#/$defs/startConnectParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "startConnect response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/startConnectResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getConnectStatus request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/google.getConnectStatus"
+        },
+        "params": {
+          "$ref": "#/$defs/getConnectStatusParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getConnectStatus response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getConnectStatusResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelConnect request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/google.cancelConnect"
+        },
+        "params": {
+          "$ref": "#/$defs/cancelConnectParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelConnect response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/cancelConnectResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listAccounts request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/google.listAccounts"
+        },
+        "params": {
+          "$ref": "#/$defs/listAccountsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listAccounts response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listAccountsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateAccountServices request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/google.updateAccountServices"
+        },
+        "params": {
+          "$ref": "#/$defs/updateAccountServicesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateAccountServices response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateAccountServicesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "disconnectAccount request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/google.disconnectAccount"
+        },
+        "params": {
+          "$ref": "#/$defs/disconnectAccountParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "disconnectAccount response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/disconnectAccountResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "getSetupParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getSetupResult": {
+      "type": "object",
+      "properties": {
+        "redirectUris": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "canSaveCredentials": {
+          "type": "boolean"
+        },
+        "clientIdSource": {
+          "type": "string",
+          "enum": [
+            "vault",
+            "environment",
+            "settings",
+            "none"
+          ]
+        },
+        "clientSecretSource": {
+          "type": "string",
+          "enum": [
+            "vault",
+            "environment",
+            "settings",
+            "none"
+          ]
+        },
+        "clientId": {
+          "type": "string"
+        },
+        "credentialsReady": {
+          "type": "boolean"
+        },
+        "accounts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "gmail": {
+                "type": "boolean"
+              },
+              "calendar": {
+                "type": "boolean"
+              },
+              "drive": {
+                "type": "boolean"
+              },
+              "connected": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "email",
+              "gmail",
+              "calendar",
+              "drive",
+              "connected"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "redirectUris",
+        "canSaveCredentials",
+        "clientIdSource",
+        "clientSecretSource",
+        "credentialsReady",
+        "accounts"
+      ],
+      "additionalProperties": false
+    },
+    "saveCredentialsParams": {
+      "type": "object",
+      "properties": {
+        "clientId": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "clientSecret": {
+          "type": "string",
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "clientId",
+        "clientSecret"
+      ]
+    },
+    "saveCredentialsResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "setup": {
+              "type": "object",
+              "properties": {
+                "redirectUris": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "canSaveCredentials": {
+                  "type": "boolean"
+                },
+                "clientIdSource": {
+                  "type": "string",
+                  "enum": [
+                    "vault",
+                    "environment",
+                    "settings",
+                    "none"
+                  ]
+                },
+                "clientSecretSource": {
+                  "type": "string",
+                  "enum": [
+                    "vault",
+                    "environment",
+                    "settings",
+                    "none"
+                  ]
+                },
+                "clientId": {
+                  "type": "string"
+                },
+                "credentialsReady": {
+                  "type": "boolean"
+                },
+                "accounts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "gmail": {
+                        "type": "boolean"
+                      },
+                      "calendar": {
+                        "type": "boolean"
+                      },
+                      "drive": {
+                        "type": "boolean"
+                      },
+                      "connected": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "email",
+                      "gmail",
+                      "calendar",
+                      "drive",
+                      "connected"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "redirectUris",
+                "canSaveCredentials",
+                "clientIdSource",
+                "clientSecretSource",
+                "credentialsReady",
+                "accounts"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "setup"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "vaultLocked"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "invalid"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "startConnectParams": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "maxLength": 320
+        },
+        "services": {
+          "minItems": 1,
+          "maxItems": 3,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "gmail",
+              "calendar",
+              "drive"
+            ]
+          }
+        }
+      },
+      "required": [
+        "email",
+        "services"
+      ]
+    },
+    "startConnectResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "started"
+            },
+            "attempt": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "services": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "gmail",
+                      "calendar",
+                      "drive"
+                    ]
+                  }
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "waiting",
+                    "finishing",
+                    "connected",
+                    "failed",
+                    "cancelled"
+                  ]
+                },
+                "authorizationUrl": {
+                  "type": "string"
+                },
+                "connectedEmail": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "accessDenied",
+                        "redirectUriMismatch",
+                        "wrongClient",
+                        "invalidGrant",
+                        "noRefreshToken",
+                        "vaultLocked",
+                        "noCredentials",
+                        "timedOut",
+                        "exchangeFailed",
+                        "unknown"
+                      ]
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "tryThis": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "title",
+                    "message",
+                    "tryThis",
+                    "details"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "email",
+                "state"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "attempt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "needsCredentials"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "vaultLocked"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "invalid"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "getConnectStatusParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getConnectStatusResult": {
+      "type": "object",
+      "properties": {
+        "attempt": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "services": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "gmail",
+                      "calendar",
+                      "drive"
+                    ]
+                  }
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "waiting",
+                    "finishing",
+                    "connected",
+                    "failed",
+                    "cancelled"
+                  ]
+                },
+                "authorizationUrl": {
+                  "type": "string"
+                },
+                "connectedEmail": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "accessDenied",
+                        "redirectUriMismatch",
+                        "wrongClient",
+                        "invalidGrant",
+                        "noRefreshToken",
+                        "vaultLocked",
+                        "noCredentials",
+                        "timedOut",
+                        "exchangeFailed",
+                        "unknown"
+                      ]
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "tryThis": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "title",
+                    "message",
+                    "tryThis",
+                    "details"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "email",
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "attempt"
+      ],
+      "additionalProperties": false
+    },
+    "cancelConnectParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "cancelConnectResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "success"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "listAccountsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listAccountsResult": {
+      "type": "object",
+      "properties": {
+        "accounts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "gmail": {
+                "type": "boolean"
+              },
+              "calendar": {
+                "type": "boolean"
+              },
+              "drive": {
+                "type": "boolean"
+              },
+              "connected": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "email",
+              "gmail",
+              "calendar",
+              "drive",
+              "connected"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "accounts"
+      ],
+      "additionalProperties": false
+    },
+    "updateAccountServicesParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 320
+        },
+        "services": {
+          "minItems": 1,
+          "maxItems": 3,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "gmail",
+              "calendar",
+              "drive"
+            ]
+          }
+        }
+      },
+      "required": [
+        "name",
+        "services"
+      ]
+    },
+    "updateAccountServicesResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "saved"
+            },
+            "message": {
+              "type": "string"
+            },
+            "accounts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "gmail": {
+                    "type": "boolean"
+                  },
+                  "calendar": {
+                    "type": "boolean"
+                  },
+                  "drive": {
+                    "type": "boolean"
+                  },
+                  "connected": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "email",
+                  "gmail",
+                  "calendar",
+                  "drive",
+                  "connected"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "message",
+            "accounts"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "needsConsent"
+            },
+            "attempt": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "services": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "gmail",
+                      "calendar",
+                      "drive"
+                    ]
+                  }
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "waiting",
+                    "finishing",
+                    "connected",
+                    "failed",
+                    "cancelled"
+                  ]
+                },
+                "authorizationUrl": {
+                  "type": "string"
+                },
+                "connectedEmail": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "accessDenied",
+                        "redirectUriMismatch",
+                        "wrongClient",
+                        "invalidGrant",
+                        "noRefreshToken",
+                        "vaultLocked",
+                        "noCredentials",
+                        "timedOut",
+                        "exchangeFailed",
+                        "unknown"
+                      ]
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "tryThis": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "title",
+                    "message",
+                    "tryThis",
+                    "details"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "email",
+                "state"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "attempt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "needsCredentials"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "vaultLocked"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "invalid"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "disconnectAccountParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 320
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "disconnectAccountResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "disconnected"
+            },
+            "revoke": {
+              "type": "string",
+              "enum": [
+                "confirmed",
+                "notConfirmed",
+                "nothingToRevoke"
+              ]
+            },
+            "message": {
+              "type": "string"
+            },
+            "accounts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "gmail": {
+                    "type": "boolean"
+                  },
+                  "calendar": {
+                    "type": "boolean"
+                  },
+                  "drive": {
+                    "type": "boolean"
+                  },
+                  "connected": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "email",
+                  "gmail",
+                  "calendar",
+                  "drive",
+                  "connected"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "revoke",
+            "message",
+            "accounts"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "vaultLocked"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "invalid"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Google RPC",
+    "path": "/rpc/google",
+    "source": "plugin/google/rpc/schema.ts",
+    "methods": {
+      "getSetup": {
+        "type": "query",
+        "params": "#/$defs/getSetupParams",
+        "result": "#/$defs/getSetupResult"
+      },
+      "saveCredentials": {
+        "type": "mutation",
+        "params": "#/$defs/saveCredentialsParams",
+        "result": "#/$defs/saveCredentialsResult"
+      },
+      "startConnect": {
+        "type": "mutation",
+        "params": "#/$defs/startConnectParams",
+        "result": "#/$defs/startConnectResult"
+      },
+      "getConnectStatus": {
+        "type": "query",
+        "params": "#/$defs/getConnectStatusParams",
+        "result": "#/$defs/getConnectStatusResult"
+      },
+      "cancelConnect": {
+        "type": "mutation",
+        "params": "#/$defs/cancelConnectParams",
+        "result": "#/$defs/cancelConnectResult"
+      },
+      "listAccounts": {
+        "type": "query",
+        "params": "#/$defs/listAccountsParams",
+        "result": "#/$defs/listAccountsResult"
+      },
+      "updateAccountServices": {
+        "type": "mutation",
+        "params": "#/$defs/updateAccountServicesParams",
+        "result": "#/$defs/updateAccountServicesResult"
+      },
+      "disconnectAccount": {
+        "type": "mutation",
+        "params": "#/$defs/disconnectAccountParams",
+        "result": "#/$defs/disconnectAccountResult"
+      }
+    }
+  }
+}

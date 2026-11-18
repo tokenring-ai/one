@@ -20,8 +20,8 @@ function ChatInputWriter() {
 }
 
 describe("StorageErrorBanner", () => {
-  let setItemSpy: ReturnType<typeof spyOn> | undefined;
-  let consoleErrorSpy: ReturnType<typeof spyOn> | undefined;
+  let setItemSpy: ReturnType<typeof spyOn<Storage, "setItem">> | undefined;
+  let consoleErrorSpy: ReturnType<typeof spyOn<Console, "error">> | undefined;
 
   beforeEach(() => {
     localStorage.clear();

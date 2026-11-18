@@ -22,13 +22,13 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
             <Eye className="w-8 h-8 text-muted opacity-30" />
             <p className="text-sm text-muted">Nothing to preview</p>
-            <p className="text-2xs text-dim">Start writing markdown in the editor</p>
+            <p className="text-xs text-dim">Start writing markdown in the editor</p>
           </div>
         ) : (
           <article
             className="prose prose-sm dark:prose-invert max-w-none
             prose-headings:text-primary prose-p:text-secondary prose-code:text-primary
-            prose-a:text-accent prose-strong:text-primary prose-blockquote:text-muted
+            prose-a:text-accent-soft prose-strong:text-primary prose-blockquote:text-muted
             prose-code:bg-tertiary prose-code:rounded prose-code:px-1 prose-code:py-0.5
             prose-pre:bg-tertiary prose-pre:border prose-pre:border-primary"
           >

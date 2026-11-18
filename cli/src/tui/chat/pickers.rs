@@ -13,9 +13,9 @@ use ratatui::{
 
 use crate::theme::Tone;
 use crate::tui::candy;
-use crate::tui::{completion, filesearch};
 use crate::tui::text::shorten_path;
 use crate::tui::ui_layout::PickerHitRegion;
+use crate::tui::{completion, filesearch};
 
 use super::layout::{surface_block, truncate, ui_spacing, UiSpacing};
 use super::ChatSession;
@@ -57,7 +57,12 @@ pub(super) fn draw_filesearch_picker(
 ) {
     let theme = &session.theme;
     let spacing = ui_spacing(area);
-    let block = surface_block(theme, theme.picker.background_color, None, spacing.block_padding());
+    let block = surface_block(
+        theme,
+        theme.picker.background_color,
+        None,
+        spacing.block_padding(),
+    );
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
@@ -191,7 +196,12 @@ pub(super) fn draw_completion_picker(
 ) {
     let theme = &session.theme;
     let spacing = ui_spacing(area);
-    let block = surface_block(theme, theme.picker.background_color, None, spacing.block_padding());
+    let block = surface_block(
+        theme,
+        theme.picker.background_color,
+        None,
+        spacing.block_padding(),
+    );
     let inner = block.inner(area);
     frame.render_widget(block, area);
 

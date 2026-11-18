@@ -62,7 +62,7 @@ impl LocalInstance {
             .arg("127.0.0.1")
             .arg("--port")
             .arg(port.to_string())
-            .arg("--projectDirectory")
+            .arg("--workingDirectory")
             .arg(project_directory)
             .env("TR_ADMIN_USER", username)
             .env("TR_ADMIN_PASSWORD", &password)

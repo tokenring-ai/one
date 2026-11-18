@@ -62,7 +62,9 @@ fn pipe_to(mut cmd: Command, text: &str) -> Result<(), String> {
         .spawn()
         .map_err(|e| e.to_string())?;
     if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(text.as_bytes()).map_err(|e| e.to_string())?;
+        stdin
+            .write_all(text.as_bytes())
+            .map_err(|e| e.to_string())?;
     }
     let status = child.wait().map_err(|e| e.to_string())?;
     if status.success() {
@@ -75,11 +77,7 @@ fn pipe_to(mut cmd: Command, text: &str) -> Result<(), String> {
 fn copy_via_osc52(text: &str) -> Result<(), String> {
     // Cap payload size — some terminals reject huge OSC sequences.
     const MAX: usize = 100_000;
-    let slice = if text.len() > MAX {
-        &text[..MAX]
-    } else {
-        text
-    };
+    let slice = if text.len() > MAX { &text[..MAX] } else { text };
     let b64 = STANDARD.encode(slice.as_bytes());
     let seq = format!("\x1b]52;c;{b64}\x07");
     let mut out = std::io::stdout();

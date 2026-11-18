@@ -316,8 +316,7 @@
         }
       },
       "required": [
-        "key",
-        "value"
+        "key"
       ]
     },
     "searchIndexedDataResult": {
@@ -350,13 +349,9 @@
                 "type": "string"
               },
               "expires": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "updatedAt": {
@@ -414,13 +409,9 @@
               },
               "sponsored": {
                 "default": false,
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "number"
-                  }
+                "type": [
+                  "boolean",
+                  "number"
                 ]
               },
               "indexedData": {
@@ -526,13 +517,9 @@
           ]
         },
         "sponsored": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "number"
-            }
+          "type": [
+            "boolean",
+            "number"
           ]
         },
         "count": {
@@ -600,13 +587,9 @@
                 "type": "string"
               },
               "expires": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "updatedAt": {
@@ -664,13 +647,9 @@
               },
               "sponsored": {
                 "default": false,
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "number"
-                  }
+                "type": [
+                  "boolean",
+                  "number"
                 ]
               },
               "indexedData": {
@@ -756,13 +735,9 @@
               "type": "string"
             },
             "expires": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "updatedAt": {
@@ -820,13 +795,9 @@
             },
             "sponsored": {
               "default": false,
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "number"
-                }
+              "type": [
+                "boolean",
+                "number"
               ]
             },
             "indexedData": {

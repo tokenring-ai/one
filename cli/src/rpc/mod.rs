@@ -3,11 +3,13 @@
 pub mod client;
 pub mod methods;
 
-pub use client::{EventStream, JsonStream, JsonStreamItem, RpcClient, SessionAuth, StreamItem};
+pub use client::{
+    is_session_ended, EventStream, JsonStream, JsonStreamItem, RpcClient, SessionAuth, StreamItem,
+};
 pub use methods::{
     abort_current_operation, create_agent, delete_agent, get_agent_events, get_agent_types,
-    get_available_commands, get_chat_messages, get_command_history, get_enabled_tools,
-    get_filesystem_state, get_model, launch_agent_from_checkpoint, list_agents, list_checkpoints,
+    get_available_commands, get_chat_messages, get_command_history, get_default_directories,
+    get_enabled_tools, get_model, launch_agent_from_checkpoint, list_agents, list_checkpoints,
     list_directory, list_workflows, search_workspace_files, send_input, send_interaction_response,
     spawn_workflow, AgentEventsSnapshot, AgentTypeEntry, CheckpointEntry, RunningAgent,
     WorkflowEntry,

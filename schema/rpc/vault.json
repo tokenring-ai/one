@@ -260,6 +260,399 @@
         "result"
       ],
       "additionalProperties": false
+    },
+    {
+      "title": "moveItem request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/vault.moveItem"
+        },
+        "params": {
+          "$ref": "#/$defs/moveItemParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "moveItem response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/moveItemResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createCategory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/vault.createCategory"
+        },
+        "params": {
+          "$ref": "#/$defs/createCategoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createCategory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createCategoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getStatus request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/vault.getStatus"
+        },
+        "params": {
+          "$ref": "#/$defs/getStatusParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getStatus response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getStatusResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamStatus request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/vault.streamStatus"
+        },
+        "params": {
+          "$ref": "#/$defs/streamStatusParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamStatus response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamStatusResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamStatus stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "lock request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/vault.lock"
+        },
+        "params": {
+          "$ref": "#/$defs/lockParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "lock response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/lockResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "unlock request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/vault.unlock"
+        },
+        "params": {
+          "$ref": "#/$defs/unlockParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "unlock response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/unlockResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createVault request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/vault.createVault"
+        },
+        "params": {
+          "$ref": "#/$defs/createVaultParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createVault response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createVaultResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "changePassword request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/vault.changePassword"
+        },
+        "params": {
+          "$ref": "#/$defs/changePasswordParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "changePassword response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/changePasswordResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
     }
   ],
   "$defs": {
@@ -455,6 +848,270 @@
         "message"
       ],
       "additionalProperties": false
+    },
+    "moveItemParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "minLength": 1
+            },
+            "key": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "category",
+            "key"
+          ]
+        },
+        "to": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "minLength": 1
+            },
+            "key": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "category",
+            "key"
+          ]
+        },
+        "overwrite": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ]
+    },
+    "moveItemResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "success",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "createCategoryParams": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "category"
+      ]
+    },
+    "createCategoryResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "success",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "getStatusParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getStatusResult": {
+      "type": "object",
+      "properties": {
+        "unlocked": {
+          "type": "boolean"
+        },
+        "vaultExists": {
+          "type": "boolean"
+        },
+        "passwordSource": {
+          "type": "string"
+        },
+        "canChangePassword": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "unlocked",
+        "vaultExists",
+        "passwordSource",
+        "canChangePassword"
+      ],
+      "additionalProperties": false
+    },
+    "streamStatusParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamStatusResult": {
+      "type": "object",
+      "properties": {
+        "unlocked": {
+          "type": "boolean"
+        },
+        "vaultExists": {
+          "type": "boolean"
+        },
+        "passwordSource": {
+          "type": "string"
+        },
+        "canChangePassword": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "unlocked",
+        "vaultExists",
+        "passwordSource",
+        "canChangePassword"
+      ],
+      "additionalProperties": false
+    },
+    "lockParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "lockResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "success",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "unlockParams": {
+      "type": "object",
+      "properties": {
+        "password": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "unlockResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "success",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "createVaultParams": {
+      "type": "object",
+      "properties": {
+        "password": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "password"
+      ]
+    },
+    "createVaultResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        },
+        "passwordStored": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success",
+        "message",
+        "passwordStored"
+      ],
+      "additionalProperties": false
+    },
+    "changePasswordParams": {
+      "type": "object",
+      "properties": {
+        "currentPassword": {
+          "type": "string",
+          "minLength": 1
+        },
+        "newPassword": {
+          "type": "string",
+          "minLength": 8
+        }
+      },
+      "required": [
+        "currentPassword",
+        "newPassword"
+      ]
+    },
+    "changePasswordResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "success",
+        "message"
+      ],
+      "additionalProperties": false
     }
   },
   "x-tokenring-rpc": {
@@ -486,6 +1143,46 @@
         "type": "mutation",
         "params": "#/$defs/deleteItemsParams",
         "result": "#/$defs/deleteItemsResult"
+      },
+      "moveItem": {
+        "type": "mutation",
+        "params": "#/$defs/moveItemParams",
+        "result": "#/$defs/moveItemResult"
+      },
+      "createCategory": {
+        "type": "mutation",
+        "params": "#/$defs/createCategoryParams",
+        "result": "#/$defs/createCategoryResult"
+      },
+      "getStatus": {
+        "type": "query",
+        "params": "#/$defs/getStatusParams",
+        "result": "#/$defs/getStatusResult"
+      },
+      "streamStatus": {
+        "type": "stream",
+        "params": "#/$defs/streamStatusParams",
+        "result": "#/$defs/streamStatusResult"
+      },
+      "lock": {
+        "type": "mutation",
+        "params": "#/$defs/lockParams",
+        "result": "#/$defs/lockResult"
+      },
+      "unlock": {
+        "type": "mutation",
+        "params": "#/$defs/unlockParams",
+        "result": "#/$defs/unlockResult"
+      },
+      "createVault": {
+        "type": "mutation",
+        "params": "#/$defs/createVaultParams",
+        "result": "#/$defs/createVaultResult"
+      },
+      "changePassword": {
+        "type": "mutation",
+        "params": "#/$defs/changePasswordParams",
+        "result": "#/$defs/changePasswordResult"
       }
     }
   }

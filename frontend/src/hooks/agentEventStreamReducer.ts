@@ -19,6 +19,12 @@ export type AgentEventStreamState = {
   currentExecutionState: InputExecutionState | null | undefined;
   agentNotFound: boolean;
   inputExecutions: EnhancedMap<string, InputExecutionState>;
+  /**
+   * Dedup keys (`requestId:interactionId`) for question prompts already in
+   * `messages`. Maintained incrementally so a chunk doesn't have to rescan the
+   * whole message list to avoid re-adding a prompt.
+   */
+  seenQuestionIds: Set<string>;
 };
 
 export const INITIAL_AGENT_STATUS: RemoteAgentStatus = {
@@ -37,6 +43,7 @@ export function createInitialAgentEventStreamState(): AgentEventStreamState {
     currentExecutionState: null,
     agentNotFound: false,
     inputExecutions: new EnhancedMap(),
+    seenQuestionIds: new Set(),
   };
 }
 
@@ -44,35 +51,51 @@ function hasMessage(event: AgentEventEnvelope): event is Extract<AgentEventEnvel
   return "message" in event;
 }
 
+/** Dedup key for a question prompt, or null when the message isn't one. */
+function questionKey(message: ChatMessage): string | null {
+  const m = message as { requestId?: unknown; interactionId?: unknown };
+  if (typeof m.requestId === "string" && typeof m.interactionId === "string") {
+    return `${m.requestId}:${m.interactionId}`;
+  }
+  return null;
+}
+
 export function reduceAgentEventStreamChunk(prev: AgentEventStreamState, chunk: AgentEventStreamChunk): AgentEventStreamState {
   if (chunk.status === "agentNotFound") {
     return { ...prev, agentNotFound: true };
   }
 
-  const currentMessages = [...prev.messages];
+  // Copy-on-write: reuse the previous array until a message is actually added or
+  // merged, so chunks that only carry status/cancel events (the common case while
+  // streaming) avoid an O(n) copy of the whole message list.
+  let currentMessages = prev.messages;
+  const ensureWritable = (): ChatMessage[] => {
+    if (currentMessages === prev.messages) {
+      currentMessages = [...prev.messages];
+    }
+    return currentMessages;
+  };
+
   let currentAgentStatus = prev.agentStatus;
   let currentExecutionState = prev.currentExecutionState;
   const inputExecutions = prev.inputExecutions.clone();
+  const seenQuestionIds = prev.seenQuestionIds;
 
   const appendMessage = (event: ChatMessage) => {
-    currentMessages.push(event);
+    ensureWritable().push(event);
+    const key = questionKey(event);
+    if (key !== null) seenQuestionIds.add(key);
   };
 
   const mergeStreamingMessage = (event: Extract<AgentEventEnvelope, { type: "output.chat" | "output.reasoning" }>) => {
     const lastIndex = currentMessages.length - 1;
     const lastMessage = currentMessages[lastIndex];
     if (lastMessage && lastMessage.type === event.type && hasMessage(lastMessage)) {
-      currentMessages[lastIndex] = { ...lastMessage, message: lastMessage.message + event.message, timestamp: event.timestamp };
+      ensureWritable()[lastIndex] = { ...lastMessage, message: lastMessage.message + event.message, timestamp: event.timestamp };
       return;
     }
     appendMessage(event);
   };
-
-  const seenQuestionIds = new Set(
-    currentMessages
-      .filter((message): message is ChatMessage & { requestId: string; interactionId: string } => "interactionId" in message)
-      .map(message => `${message.requestId}:${message.interactionId}`),
-  );
 
   const addQuestionPrompts = (requestId: string, interactions: QuestionInteraction[] = []) => {
     for (const interaction of interactions) {
@@ -142,5 +165,6 @@ export function reduceAgentEventStreamChunk(prev: AgentEventStreamState, chunk: 
     currentExecutionState,
     agentNotFound: false,
     inputExecutions,
+    seenQuestionIds,
   };
 }

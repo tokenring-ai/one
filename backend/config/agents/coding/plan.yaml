@@ -25,17 +25,14 @@ agents:
         Use the todo tool to organize your plan into a checklist format.
 
         Your plan should be comprehensive enough that another agent could execute it without additional context.
+
+        Notes on this codebase (structure, patterns, conventions) are kept in {{WORKING_DIRECTORY}}/.tokenring/knowledge/code.md. Read it when it would help; it may not exist yet.
       enabledTools:
         - todo
         - file_*
         - shell_*
         - coding_explore
-    tasks:
-      allowedSubAgents:
-        - coding_explore
-    filesystem:
-      selectedFiles:
-        - .tokenring/knowledge/code.md
+        - memory_*
 commands:
   plan:
     agentType: plan
@@ -61,7 +58,7 @@ commands:
       ## Notes
       - This agent only creates a plan, it does not execute it
       - Use /swarm to execute a plan with multiple agents in parallel
-      - Use /code or the team leader to execute the plan step by step
+      - Use the team leader (/leader) to execute the plan step by step
     steps:
       - |
         The user has requested a detailed implementation plan for the following task:

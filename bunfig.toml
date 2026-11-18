@@ -9,9 +9,9 @@ linker = "hoisted"
 
 [test]
 # Multiple patterns
+# Plugin-shipped frontend apps carry browser-dependent tests; they run under
+# each plugin's own bunfig (which preloads the frontend jsdom setup).
 pathIgnorePatterns = [
-    "frontend/**"
+    "frontend/**",
+    "plugin/*/frontend/**"
 ]
-
-[serve.static]
-plugins = ["bun-plugin-tailwind"]

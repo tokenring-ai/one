@@ -52,6 +52,14 @@ describe("derivePlatformStatus", () => {
     const status = derivePlatformStatus(slack, installedPlugins, { slack: { accounts: {} } }, new Set());
     expect(status.status).toBe("needs_config");
     expect(status.hasConfig).toBe(true);
+    expect(statusDetail(status)).toContain("Configuration");
+  });
+
+  it("explains when an installed plugin has no config schema", () => {
+    const status = derivePlatformStatus(slack, [{ name: "@tokenring-ai/slack", hasConfig: false }], { slack: { accounts: {} } }, new Set());
+    expect(status.status).toBe("needs_config");
+    expect(status.hasConfig).toBe(false);
+    expect(statusDetail(status)).toContain("no configuration UI");
   });
 
   it("marks messaging accounts without live services as configured", () => {

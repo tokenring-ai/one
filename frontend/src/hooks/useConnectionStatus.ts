@@ -1,41 +1,50 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { getRpcConnectionState, type RpcConnectionState, subscribeRpcConnection } from "@tokenring-ai/web-host/createWsRPCClient";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
-export function useConnectionStatus(staleThresholdMs = 30000) {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [lastActivity, setLastActivity] = useState(Date.now());
-  const [isStale, setIsStale] = useState(false);
-  const lastActivityRef = useRef(lastActivity);
-  lastActivityRef.current = lastActivity;
+/** How long a socket drop must persist before the UI reports "offline". Short
+ * reconnects (the stream layer's 1s backoff) should not flash the badge. */
+const DISCONNECT_GRACE_MS = 2_500;
+
+function subscribeToRpcConnection(onStoreChange: () => void): () => void {
+  return subscribeRpcConnection(() => onStoreChange());
+}
+
+/**
+ * Connection health for status indicators: the browser's network state AND the
+ * actual RPC WebSocket health (tracked by the shared client in
+ * `createWsRPCClient`). `isOnline` turns false only after a real drop has
+ * persisted past the grace period.
+ */
+export function useConnectionStatus(options?: { disconnectGraceMs?: number }) {
+  const graceMs = options?.disconnectGraceMs ?? DISCONNECT_GRACE_MS;
+  const [browserOnline, setBrowserOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
+  // useSyncExternalStore re-reads the state when it subscribes, so a transition
+  // between render and subscription is not lost (it would otherwise stick).
+  const rpcState: RpcConnectionState = useSyncExternalStore(subscribeToRpcConnection, getRpcConnectionState, getRpcConnectionState);
+  const [reportedOnline, setReportedOnline] = useState(true);
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    const handleOnline = () => setBrowserOnline(true);
+    const handleOffline = () => setBrowserOnline(false);
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-
-    const interval = setInterval(() => {
-      setIsStale(Date.now() - lastActivityRef.current > staleThresholdMs);
-    }, 1000);
-
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
-      clearInterval(interval);
     };
-  }, [staleThresholdMs]);
-
-  const recordActivity = useCallback(() => {
-    const now = Date.now();
-    lastActivityRef.current = now;
-    setLastActivity(now);
-    setIsStale(false);
   }, []);
 
-  return {
-    isOnline,
-    isStale,
-    lastActivity,
-    recordActivity,
-  };
+  const healthy = browserOnline && rpcState === "connected";
+
+  useEffect(() => {
+    if (healthy) {
+      setReportedOnline(true);
+      return;
+    }
+    const timer = setTimeout(() => setReportedOnline(false), graceMs);
+    return () => clearTimeout(timer);
+  }, [healthy, graceMs]);
+
+  return { isOnline: reportedOnline, rpcState, browserOnline };
 }

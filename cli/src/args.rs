@@ -358,8 +358,7 @@ mod tests {
 
     #[test]
     fn no_flags_are_false_when_absent() {
-        let args =
-            RawArgs::try_parse_from(["tokenring-one-cli", "ws://localhost/rpc:ws"]).unwrap();
+        let args = RawArgs::try_parse_from(["tokenring-one-cli", "ws://localhost/rpc:ws"]).unwrap();
         assert!(!args.no_select);
         assert!(!args.no_verbose);
         assert!(!args.no_shutdown_when_done);
@@ -376,10 +375,8 @@ mod tests {
 
     #[test]
     fn config_true_booleans_survive_when_no_flag_absent() {
-        let path = std::env::temp_dir().join(format!(
-            "tokenring-cli-config-{}.toml",
-            std::process::id()
-        ));
+        let path =
+            std::env::temp_dir().join(format!("tokenring-cli-config-{}.toml", std::process::id()));
         std::fs::write(
             &path,
             r#"

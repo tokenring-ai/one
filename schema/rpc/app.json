@@ -561,6 +561,52 @@
         "stream"
       ],
       "additionalProperties": false
+    },
+    {
+      "title": "setDebugRetention request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/app.setDebugRetention"
+        },
+        "params": {
+          "$ref": "#/$defs/setDebugRetentionParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setDebugRetention response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/setDebugRetentionResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
     }
   ],
   "$defs": {
@@ -626,6 +672,30 @@
               },
               "hasConfig": {
                 "type": "boolean"
+              },
+              "services": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "tools": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "commands": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rpcMethods": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "required": [
@@ -633,14 +703,23 @@
               "displayName",
               "version",
               "description",
-              "hasConfig"
+              "hasConfig",
+              "services",
+              "tools",
+              "commands",
+              "rpcMethods"
             ],
             "additionalProperties": false
           }
+        },
+        "requiresRestart": {
+          "default": false,
+          "type": "boolean"
         }
       },
       "required": [
-        "plugins"
+        "plugins",
+        "requiresRestart"
       ],
       "additionalProperties": false
     },
@@ -755,6 +834,9 @@
                 "type": "string"
               },
               "description": {
+                "type": "string"
+              },
+              "displayName": {
                 "type": "string"
               }
             },
@@ -1013,42 +1095,38 @@
           }
         },
         "startedAt": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "number",
+            "null"
           ]
         },
         "lastCaptureAt": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "number",
+            "null"
           ]
         },
         "captureCount": {
           "type": "number"
         },
         "lastSnapshot": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "string",
+            "null"
           ]
         },
         "lastError": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retainLast": {
           "anyOf": [
             {
-              "type": "string"
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             },
             {
               "type": "null"
@@ -1064,7 +1142,8 @@
         "lastCaptureAt",
         "captureCount",
         "lastSnapshot",
-        "lastError"
+        "lastError",
+        "retainLast"
       ],
       "additionalProperties": false
     },
@@ -1101,42 +1180,38 @@
           }
         },
         "startedAt": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "number",
+            "null"
           ]
         },
         "lastCaptureAt": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "number",
+            "null"
           ]
         },
         "captureCount": {
           "type": "number"
         },
         "lastSnapshot": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "string",
+            "null"
           ]
         },
         "lastError": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retainLast": {
           "anyOf": [
             {
-              "type": "string"
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             },
             {
               "type": "null"
@@ -1152,7 +1227,8 @@
         "lastCaptureAt",
         "captureCount",
         "lastSnapshot",
-        "lastError"
+        "lastError",
+        "retainLast"
       ],
       "additionalProperties": false
     },
@@ -1189,42 +1265,38 @@
           }
         },
         "startedAt": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "number",
+            "null"
           ]
         },
         "lastCaptureAt": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "number",
+            "null"
           ]
         },
         "captureCount": {
           "type": "number"
         },
         "lastSnapshot": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "string",
+            "null"
           ]
         },
         "lastError": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retainLast": {
           "anyOf": [
             {
-              "type": "string"
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             },
             {
               "type": "null"
@@ -1240,7 +1312,109 @@
         "lastCaptureAt",
         "captureCount",
         "lastSnapshot",
-        "lastError"
+        "lastError",
+        "retainLast"
+      ],
+      "additionalProperties": false
+    },
+    "setDebugRetentionParams": {
+      "type": "object",
+      "properties": {
+        "retainLast": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "retainLast"
+      ]
+    },
+    "setDebugRetentionResult": {
+      "type": "object",
+      "properties": {
+        "recording": {
+          "type": "boolean"
+        },
+        "intervalMs": {
+          "type": "number"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "startedAt": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "lastCaptureAt": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "captureCount": {
+          "type": "number"
+        },
+        "lastSnapshot": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lastError": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retainLast": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "recording",
+        "intervalMs",
+        "targets",
+        "startedAt",
+        "lastCaptureAt",
+        "captureCount",
+        "lastSnapshot",
+        "lastError",
+        "retainLast"
       ],
       "additionalProperties": false
     }
@@ -1304,6 +1478,11 @@
         "type": "stream",
         "params": "#/$defs/streamDebugRecordingParams",
         "result": "#/$defs/streamDebugRecordingResult"
+      },
+      "setDebugRetention": {
+        "type": "mutation",
+        "params": "#/$defs/setDebugRetentionParams",
+        "result": "#/$defs/setDebugRetentionResult"
       }
     }
   }

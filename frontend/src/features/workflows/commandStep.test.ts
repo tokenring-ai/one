@@ -1,6 +1,15 @@
 import { describe, expect, it } from "bun:test";
 import type { AvailableAgentCommand } from "./commandStep.ts";
-import { defaultsForCommand, formatStepLabel, isStepFilled, missingRequiredFields, normalizeSteps } from "./commandStep.ts";
+import {
+  defaultsForCommand,
+  formatStepLabel,
+  isStepFilled,
+  MAX_STEP_RETRIES,
+  missingRequiredFields,
+  normalizeSteps,
+  withOnError,
+  withRetries,
+} from "./commandStep.ts";
 
 const agentRun: AvailableAgentCommand = {
   name: "agent run",
@@ -67,6 +76,29 @@ describe("commandStep (structured)", () => {
         arguments: { type: "leader", timeout: 0 },
         remainder: " go",
       },
+    ]);
+  });
+
+  it("withOnError and withRetries keep only non-default execution options", () => {
+    const base = { command: "agent run", arguments: {}, remainder: "" };
+    expect(withOnError(base, "continue")).toEqual({ ...base, onError: "continue" });
+    expect(withOnError({ ...base, onError: "continue" }, "stop")).toEqual(base);
+    expect(withRetries(base, 3)).toEqual({ ...base, retries: 3 });
+    expect(withRetries({ ...base, retries: 3 }, 0)).toEqual(base);
+    expect(withRetries(base, 2.7)).toEqual({ ...base, retries: 2 });
+    expect(withRetries(base, 99)).toEqual({ ...base, retries: MAX_STEP_RETRIES });
+    expect(withRetries(base, Number.NaN)).toEqual(base);
+  });
+
+  it("normalizeSteps preserves onError and retries but drops their defaults", () => {
+    expect(
+      normalizeSteps([
+        { command: "a", arguments: {}, remainder: "", onError: "continue", retries: 2 },
+        { command: "b", arguments: {}, remainder: "", onError: "stop", retries: 0 },
+      ]),
+    ).toEqual([
+      { command: "a", arguments: {}, remainder: "", onError: "continue", retries: 2 },
+      { command: "b", arguments: {}, remainder: "" },
     ]);
   });
 });

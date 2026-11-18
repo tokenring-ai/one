@@ -129,6 +129,7 @@ pub fn format_status_segments(
     theme: &Theme,
     stream: StreamHealth,
     model: String,
+    goal: Option<String>,
     context_label: String,
     context_percent: Option<u8>,
     latency_ms: Option<u64>,
@@ -172,6 +173,9 @@ pub fn format_status_segments(
 
     push_connection(&mut spans, stream.status_text(latency_ms));
     push_segment(&mut spans, model);
+    if let Some(goal) = goal {
+        push_segment(&mut spans, goal);
+    }
 
     let ctx_text = if let Some(p) = context_percent {
         let (bar, _) = context_progress_bar(p, 8);
@@ -208,10 +212,22 @@ pub fn format_status_segments(
             connection,
             Style::default().fg(theme.status.segment_text_color.color()),
         ),
-        Span::styled(sep.clone(), Style::default().fg(theme.status.separator_color.color())),
-        Span::styled(context, Style::default().fg(theme.status.segment_text_color.color())),
-        Span::styled(sep.clone(), Style::default().fg(theme.status.separator_color.color())),
-        Span::styled(cwd_display, Style::default().fg(theme.status.separator_color.color())),
+        Span::styled(
+            sep.clone(),
+            Style::default().fg(theme.status.separator_color.color()),
+        ),
+        Span::styled(
+            context,
+            Style::default().fg(theme.status.segment_text_color.color()),
+        ),
+        Span::styled(
+            sep.clone(),
+            Style::default().fg(theme.status.separator_color.color()),
+        ),
+        Span::styled(
+            cwd_display,
+            Style::default().fg(theme.status.separator_color.color()),
+        ),
     ];
     Line::from(minimal)
 }
@@ -273,7 +289,9 @@ pub fn render_quick_reply_chips(
                 .bg(chip_bg)
                 .add_modifier(Modifier::BOLD)
         } else {
-            Style::default().fg(theme.quick_reply.chip_text_color.color()).bg(chip_bg)
+            Style::default()
+                .fg(theme.quick_reply.chip_text_color.color())
+                .bg(chip_bg)
         };
         spans.push(Span::styled(format!("[{badge}] {label}"), style));
         let _ = chip_border;
@@ -508,17 +526,29 @@ pub fn entry_header_title(
         EntryKind::Reasoning => None,
         EntryKind::ToolCall => Some(format!("▸ {title}")),
         EntryKind::Attachment => Some(format!("▸ {title}")),
-        EntryKind::Input | EntryKind::Chat | EntryKind::System | EntryKind::Info | EntryKind::Warning
-        | EntryKind::Error | EntryKind::Response | EntryKind::Interaction => None,
+        EntryKind::Input
+        | EntryKind::Chat
+        | EntryKind::System
+        | EntryKind::Info
+        | EntryKind::Warning
+        | EntryKind::Error
+        | EntryKind::Response
+        | EntryKind::Interaction => None,
     }
 }
 
 /// Error screen ASCII illustration (candy #21).
 pub fn error_illustration(theme: &Theme) -> Line<'static> {
     Line::from(vec![
-        Span::styled("  ╭──╮ ", Style::default().fg(theme.error.frame_color.color())),
+        Span::styled(
+            "  ╭──╮ ",
+            Style::default().fg(theme.error.frame_color.color()),
+        ),
         Span::styled("⚠", Style::default().fg(theme.error.icon_color.color())),
-        Span::styled(" ╰──╯", Style::default().fg(theme.error.frame_color.color())),
+        Span::styled(
+            " ╰──╯",
+            Style::default().fg(theme.error.frame_color.color()),
+        ),
     ])
 }
 

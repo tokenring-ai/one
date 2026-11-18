@@ -7,6 +7,52 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
+      "title": "getTerminalConfiguration request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.getTerminalConfiguration"
+        },
+        "params": {
+          "$ref": "#/$defs/getTerminalConfigurationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getTerminalConfiguration response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getTerminalConfigurationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "listTerminals request",
       "type": "object",
       "properties": {
@@ -120,6 +166,52 @@
         "id",
         "result",
         "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listTerminalProviders request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.listTerminalProviders"
+        },
+        "params": {
+          "$ref": "#/$defs/listTerminalProvidersParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listTerminalProviders response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listTerminalProvidersResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
       ],
       "additionalProperties": false
     },
@@ -344,6 +436,52 @@
         },
         "result": {
           "$ref": "#/$defs/resizeTerminalResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "renameTerminal request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/terminal.renameTerminal"
+        },
+        "params": {
+          "$ref": "#/$defs/renameTerminalParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "renameTerminal response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/renameTerminalResult"
         }
       },
       "required": [
@@ -600,6 +738,25 @@
       ],
       "additionalProperties": false
     },
+    "getTerminalConfigurationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getTerminalConfigurationResult": {
+      "type": "object",
+      "properties": {
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "agentTypes"
+      ],
+      "additionalProperties": false
+    },
     "listTerminalsParams": {
       "type": "object",
       "properties": {
@@ -628,11 +785,20 @@
                   "lastInput": {
                     "type": "string"
                   },
+                  "title": {
+                    "type": "string"
+                  },
                   "providerName": {
                     "type": "string"
                   },
                   "workingDirectory": {
                     "type": "string"
+                  },
+                  "cwd": {
+                    "type": "string"
+                  },
+                  "lastCommandExitCode": {
+                    "type": "number"
                   },
                   "startTime": {
                     "type": "number"
@@ -644,13 +810,9 @@
                     "type": "number"
                   },
                   "exitCode": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "number",
+                      "null"
                     ]
                   },
                   "connectedAgentIds": {
@@ -689,6 +851,19 @@
             "status": {
               "type": "string",
               "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalProviderNotFound"
             }
           },
           "required": [
@@ -726,11 +901,20 @@
                   "lastInput": {
                     "type": "string"
                   },
+                  "title": {
+                    "type": "string"
+                  },
                   "providerName": {
                     "type": "string"
                   },
                   "workingDirectory": {
                     "type": "string"
+                  },
+                  "cwd": {
+                    "type": "string"
+                  },
+                  "lastCommandExitCode": {
+                    "type": "number"
                   },
                   "startTime": {
                     "type": "number"
@@ -742,13 +926,9 @@
                     "type": "number"
                   },
                   "exitCode": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "number",
+                      "null"
                     ]
                   },
                   "connectedAgentIds": {
@@ -793,8 +973,49 @@
             "status"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalProviderNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
         }
       ]
+    },
+    "listTerminalProvidersParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listTerminalProvidersResult": {
+      "type": "object",
+      "properties": {
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "providers"
+      ],
+      "additionalProperties": false
     },
     "spawnTerminalParams": {
       "type": "object",
@@ -819,9 +1040,29 @@
           ]
         },
         "workingDirectory": {
+          "type": "string",
+          "description": "Absolute directory to start the terminal in; must be inside an allowed path"
+        },
+        "pty": {
+          "type": "boolean"
+        },
+        "cols": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        },
+        "rows": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300
+        },
+        "title": {
           "type": "string"
         }
-      }
+      },
+      "required": [
+        "workingDirectory"
+      ]
     },
     "spawnTerminalResult": {
       "oneOf": [
@@ -865,6 +1106,40 @@
           },
           "required": [
             "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "invalidWorkingDirectory"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "spawnFailed"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
           ],
           "additionalProperties": false
         }
@@ -997,6 +1272,10 @@
         },
         "input": {
           "type": "string"
+        },
+        "submit": {
+          "default": true,
+          "type": "boolean"
         }
       },
       "required": [
@@ -1113,6 +1392,51 @@
         }
       ]
     },
+    "renameTerminalParams": {
+      "type": "object",
+      "properties": {
+        "terminalName": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "terminalName",
+        "title"
+      ]
+    },
+    "renameTerminalResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
     "retrieveOutputParams": {
       "type": "object",
       "properties": {
@@ -1125,18 +1449,26 @@
         },
         "minInterval": {
           "default": 0,
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 60000
         },
         "settleInterval": {
           "default": 0,
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 60000
         },
         "maxInterval": {
           "default": 0,
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 300000
         },
         "cropOutput": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000000
         }
       },
       "required": [
@@ -1246,6 +1578,19 @@
             "status": {
               "type": "string",
               "const": "terminalNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "terminalNotInteractive"
             }
           },
           "required": [
@@ -1384,6 +1729,11 @@
     "path": "/rpc/terminal",
     "source": "plugin/terminal/rpc/schema.ts",
     "methods": {
+      "getTerminalConfiguration": {
+        "type": "query",
+        "params": "#/$defs/getTerminalConfigurationParams",
+        "result": "#/$defs/getTerminalConfigurationResult"
+      },
       "listTerminals": {
         "type": "query",
         "params": "#/$defs/listTerminalsParams",
@@ -1393,6 +1743,11 @@
         "type": "stream",
         "params": "#/$defs/streamTerminalsParams",
         "result": "#/$defs/streamTerminalsResult"
+      },
+      "listTerminalProviders": {
+        "type": "query",
+        "params": "#/$defs/listTerminalProvidersParams",
+        "result": "#/$defs/listTerminalProvidersResult"
       },
       "spawnTerminal": {
         "type": "mutation",
@@ -1418,6 +1773,11 @@
         "type": "mutation",
         "params": "#/$defs/resizeTerminalParams",
         "result": "#/$defs/resizeTerminalResult"
+      },
+      "renameTerminal": {
+        "type": "mutation",
+        "params": "#/$defs/renameTerminalParams",
+        "result": "#/$defs/renameTerminalResult"
       },
       "retrieveOutput": {
         "type": "query",

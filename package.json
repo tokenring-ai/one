@@ -2,12 +2,12 @@
   "name": "@tokenring-ai/one",
   "version": "0.2.56",
   "devDependencies": {
-    "@biomejs/biome": "^2.5.4",
-    "@types/bun": "^1.3.14",
+    "@biomejs/biome": "^2.6.6",
+    "@types/bun": "^1.4.4",
     "husky": "^9.1.7",
-    "knip": "^6.26.0",
-    "oxlint": "^1.74.0",
-    "oxlint-tsgolint": "0.24.0",
+    "knip": "^6.44.2",
+    "oxlint": "^1.92.0",
+    "oxlint-tsgolint": "7.0.2006",
     "typescript": "7.0.2"
   },
   "description": "TokenRing Monorepo with all community apps and packages",
@@ -30,8 +30,7 @@
     "postcss": "^8.5.10",
     "fast-xml-parser": "^5.7.0",
     "request": "npm:@cypress/request@^3.0.10",
-    "basic-ftp": "^5.2.2",
-    "typescript": "7.0.2"
+    "basic-ftp": "^5.2.2"
   },
   "patchedDependencies": {
     "@typescript/typescript6@6.0.2": "patches/@typescript%2Ftypescript6@6.0.2.patch"
@@ -43,11 +42,13 @@
     "package:cli": "cargo build --release --locked --manifest-path cli/Cargo.toml",
     "package:one:docker": "bun run --cwd packaging/docker/one build",
     "schema:rpc": "bun util/export-rpc-schemas.ts",
+    "schema:check": "bun util/export-rpc-schemas.ts --check",
+    "registry:index": "bun run --cwd registry/community generate-index",
     "check:biome": "biome check --fix",
     "check:oxlint": "oxlint -f stylish --fix",
     "check:knip": "knip",
-    "check:tsc": "tsc",
-    "run:one": "bun backend/tokenring.ts --port 14008 --listen 0.0.0.0",
+    "check:tsc": "bun check",
+    "run:one": "bun --inspect backend/tokenring.ts --port 14008 --listen 0.0.0.0",
     "run:cli-remote": "cargo run --manifest-path cli/Cargo.toml -- ws://0.0.0.0:14008",
     "run:cli": "TOKENRING_ONE_BINARY=backend/tokenring.ts cargo run --manifest-path cli/Cargo.toml",
     "frontend:watch-build": "bun run --cwd frontend/ watch:build"

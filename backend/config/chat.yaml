@@ -1,7 +1,7 @@
 chat:
   defaultModels:
-    - "llama:*"
     - "z.ai:glm-5.2"
+    - "llama:*"
     - "openrouter:openrouter/auto"
     - "openai:gpt-5.6-luna"
     - "anthropic:claude-sonnet-5"

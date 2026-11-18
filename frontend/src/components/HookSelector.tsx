@@ -1,5 +1,5 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { Check, Search, X, XCircle, Zap } from "lucide-react";
+import { Check, FishingHook, Search, X, XCircle } from "lucide-react";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { lifecycleRPCClient, useAvailableHooks, useEnabledHooks } from "../rpc.ts";
@@ -107,7 +107,7 @@ export default function HookSelector({ agentId, triggerVariant = "default" }: Ho
           aria-label={`Select hooks. ${enabledCount} of ${hookCount} enabled`}
           title={`${enabledCount} of ${hookCount} hooks enabled`}
         >
-          <Zap className={isIconTrigger ? "w-5 h-5" : "w-3.5 h-3.5 text-muted group-hover:text-primary"} />
+          <FishingHook className={isIconTrigger ? "w-5 h-5" : "w-3.5 h-3.5 text-muted group-hover:text-primary"} />
           {!isIconTrigger && (
             <span className="text-xs font-mono text-muted group-hover:text-primary truncate max-w-48">
               {enabledCount}/{hookCount} enabled
@@ -141,7 +141,7 @@ export default function HookSelector({ agentId, triggerVariant = "default" }: Ho
                   }
                 }
               }}
-              className="w-full bg-input border border-primary rounded-md py-1.5 pl-9 pr-8 text-xs text-primary placeholder-muted focus-ring transition-all"
+              className="w-full bg-input border border-control rounded-md py-1.5 pl-9 pr-8 text-xs text-primary placeholder-muted focus-ring transition-all"
               onClick={e => e.stopPropagation()}
             />
             {searchQuery && (
@@ -208,7 +208,7 @@ export default function HookSelector({ agentId, triggerVariant = "default" }: Ho
                   >
                     {hook.displayName}
                   </div>
-                  {hook.description && <div className="text-2xs text-dim font-mono leading-tight truncate mt-0.5">{hook.description}</div>}
+                  {hook.description && <div className="text-xs text-dim font-mono leading-tight truncate mt-0.5">{hook.description}</div>}
                 </div>
                 {isEnabled ? (
                   <Check className="w-3 h-3 text-amber-500 dark:text-amber-400 ml-2 shrink-0" aria-label="Enabled" />

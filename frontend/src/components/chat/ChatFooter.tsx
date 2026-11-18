@@ -1,22 +1,54 @@
 import { type ChatAttachment, ChatAttachmentSchema } from "@tokenring-ai/agent/AgentEvents";
+import type { RemoteEntry } from "@tokenring-ai/filesystem/remote/RemoteStore";
+import { formatUsd } from "@tokenring-ai/metrics/frontend/features/metrics/formatters.ts";
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { AnimatePresence, motion } from "framer-motion";
-import { FileAudio, FileCode, File as FileIcon, FileText, FolderOpen, History, Image, Mic, Paperclip, Send, Square, X } from "lucide-react";
+import {
+  Cloud,
+  FileAudio,
+  FileCode,
+  File as FileIcon,
+  FileText,
+  Folder,
+  FolderOpen,
+  History,
+  Image,
+  Loader2,
+  Mic,
+  Paperclip,
+  Plus,
+  Send,
+  Square,
+  X,
+} from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatUsd } from "../../features/metrics/formatters.ts";
-import { agentRPCClient, useChatUsage, useFilesystemState } from "../../rpc.ts";
-import HookSelector from "../HookSelector.tsx";
-import ModelSelector from "../ModelSelector.tsx";
-import SkillSelector from "../SkillSelector.tsx";
-import ToolApprovalSelector from "../ToolApprovalSelector.tsx";
-import ToolSelector from "../ToolSelector.tsx";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useContextualSearch } from "../../hooks/useContextualSearch.ts";
+import { findActiveMention, replaceActiveMention } from "../../lib/contextualMention.ts";
+import { agentRPCClient, remoteRPCClient, useChatUsage, useFilesystemState, useRemoteMounts } from "../../rpc.ts";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu.tsx";
 import { toastManager } from "../ui/toast.tsx";
+import ContextualSearchPicker, { flattenContextualSearchItems } from "./ContextualSearchPicker.tsx";
+import RemoteFilePicker from "./RemoteFilePicker.tsx";
 
 interface FileAttachment {
   id: string;
-  file: File;
+  /** Null for drafts re-injected from a previous message (file object is gone). */
+  file: File | null;
   attachment: ChatAttachment;
+}
+
+/** An attachment contributed by the surrounding app (e.g. a design file), shown as a removable chip. */
+export interface ExtraChatAttachment {
+  id: string;
+  label: string;
+  attachment: ChatAttachment;
+}
+
+/** A message waiting in the backend's input queue while another input runs. */
+export interface QueuedChatInput {
+  requestId: string;
+  message: string;
 }
 
 interface ChatFooterProps {
@@ -26,14 +58,29 @@ interface ChatFooterProps {
   inputError: boolean;
   setInputError: (value: boolean) => void;
   idle: boolean;
-  statusMessage: string;
   availableCommands: string[];
   commandHistory: string[];
   showHistory: boolean;
   setShowHistory: (value: boolean) => void;
   setShowFileBrowser: (value: boolean) => void;
-  onSubmit: (attachments?: ChatAttachment[]) => void;
+  /**
+   * Send the composer contents. Resolves true once the message was delivered;
+   * false (or a rejection) means it was not, and the attachment chips are kept.
+   */
+  onSubmit: (attachments?: ChatAttachment[]) => Promise<boolean>;
   submitFeedback: { message: string; type: "success" | "error" } | null;
+  /** App-contributed attachments sent with the next message. */
+  extraAttachments?: ExtraChatAttachment[];
+  onRemoveExtraAttachment?: (id: string) => void;
+  /** Inputs waiting in the agent's queue while another input executes. */
+  queuedInputs?: QueuedChatInput[];
+  /** Cancel a queued input before it starts running. */
+  onCancelQueuedInput?: (requestId: string) => void;
+  /**
+   * Attachments re-injected by "edit message": adopted once per nonce into the
+   * local attachment chips so resending keeps the original files.
+   */
+  injectedDraft?: { attachments: ChatAttachment[]; nonce: number } | null;
 }
 
 // Get file icon based on mime type
@@ -45,18 +92,13 @@ function getFileIcon(mimeType: string) {
   return FileIcon;
 }
 
-// Keyboard hints for the status row; each stays on one line, breaks happen between them.
-const KEYBOARD_HINTS = [
-  { keys: "↑/↓", label: "History" },
-  { keys: "Enter", label: "Send" },
-  { keys: "Shift+Enter", label: "New line" },
-];
-
 // Maximum file size (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 // Match CLI: discard accidental taps, hard-stop long recordings
 const MIN_RECORDING_MS = 150;
 const MAX_RECORDING_MS = 5 * 60 * 1000;
+// Command suggestions actually rendered in the listbox; the rest are summarized as "+N more".
+const MAX_RENDERED_SUGGESTIONS = 15;
 
 // Format file size with appropriate units
 function formatFileSize(bytes: number): string {
@@ -92,7 +134,82 @@ function normalizeAttachmentMimeType(mimeType: string): string {
   if (mimeType.startsWith("audio/wav") || mimeType.startsWith("audio/wave") || mimeType.startsWith("audio/x-wav")) {
     return "audio/wav";
   }
+  // Clipboard / OS aliases that the schema does not list directly.
+  if (mimeType === "image/jpg" || mimeType === "image/pjpeg") return "image/jpeg";
+  if (mimeType === "image/x-png") return "image/png";
   return mimeType;
+}
+
+const PASTED_FILE_EXTENSIONS: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+  "audio/wav": "wav",
+  "audio/mpeg": "mp3",
+  "audio/webm": "webm",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "text/plain": "txt",
+  "text/markdown": "md",
+  "text/html": "html",
+  "text/x-diff": "diff",
+  "application/json": "json",
+  "message/rfc822": "eml",
+};
+
+function pastedFileName(mimeType: string): string {
+  const normalized = normalizeAttachmentMimeType(mimeType);
+  const ext = PASTED_FILE_EXTENSIONS[normalized] ?? "bin";
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace("T", "-").slice(0, 15);
+  return `pasted-${stamp}.${ext}`;
+}
+
+function ensurePastedFileName(file: File): File {
+  if (file.name) return file;
+  const name = pastedFileName(file.type);
+  try {
+    if (typeof File === "function") {
+      return new File([file], name, { type: file.type, lastModified: file.lastModified });
+    }
+  } catch {
+    // Some test environments expose a non-constructable File global.
+  }
+  return Object.assign(new Blob([file], { type: file.type }), {
+    name,
+    lastModified: file.lastModified || Date.now(),
+  }) as File;
+}
+
+function filesFromClipboard(clipboardData: DataTransfer | null): File[] {
+  if (!clipboardData) return [];
+
+  const files: File[] = [];
+  const seen = new Set<string>();
+
+  const addFile = (file: File | null) => {
+    if (!file) return;
+    const key = `${file.name}\0${file.type}\0${file.size}\0${file.lastModified}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    files.push(ensurePastedFileName(file));
+  };
+
+  if (clipboardData.files.length > 0) {
+    for (const file of Array.from(clipboardData.files)) {
+      addFile(file);
+    }
+  }
+
+  // Screenshots and some OS copy operations expose the image only as an item.
+  const items = clipboardData.items;
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (item?.kind === "file") {
+      addFile(item.getAsFile());
+    }
+  }
+
+  return files;
 }
 
 function recordingFileName(mimeType: string): string {
@@ -119,7 +236,7 @@ function formatCompactTokens(value: number): string {
 }
 
 /** Shorten paths for the footer: collapse deep trees to `…/parent/leaf`. */
-function shortenWorkingDirectory(path: string, maxLen = 28): string {
+function shortenPath(path: string, maxLen = 28): string {
   if (!path) return "";
   if (path.length <= maxLen) return path;
 
@@ -165,7 +282,6 @@ export default function ChatFooter({
   inputError,
   setInputError,
   idle,
-  statusMessage,
   availableCommands,
   commandHistory,
   showHistory,
@@ -173,9 +289,16 @@ export default function ChatFooter({
   setShowFileBrowser,
   onSubmit,
   submitFeedback,
+  extraAttachments,
+  onRemoveExtraAttachment,
+  queuedInputs = [],
+  onCancelQueuedInput,
+  injectedDraft = null,
 }: ChatFooterProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** What to open once the + menu has closed (see its onCloseAutoFocus). */
+  const afterAddMenu = useRef<(() => void) | null>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -184,31 +307,74 @@ export default function ChatFooter({
   const maxRecordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordingCancelledRef = useRef(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
+  const [cursor, setCursor] = useState(() => input.length);
+  const [mentionDismissed, setMentionDismissed] = useState(false);
+  const [selectedMention, setSelectedMention] = useState(0);
+  const mentionStartRef = useRef<number | null>(null);
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [historyBuffer, setHistoryBuffer] = useState("");
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
+  const [showRemotePicker, setShowRemotePicker] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDurationMs, setRecordingDurationMs] = useState(0);
   const isNavigatingHistoryRef = useRef(false);
 
+  // Adopt "edit message" attachment drafts exactly once per nonce.
+  const adoptedDraftNonceRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!injectedDraft || injectedDraft.attachments.length === 0) return;
+    if (adoptedDraftNonceRef.current === injectedDraft.nonce) return;
+    adoptedDraftNonceRef.current = injectedDraft.nonce;
+    setAttachments(prev => [
+      ...prev,
+      ...injectedDraft.attachments.map((attachment, index) => ({
+        id: `draft-${injectedDraft.nonce}-${index}`,
+        file: null,
+        attachment,
+      })),
+    ]);
+  }, [injectedDraft]);
+
   // Enter submits on pointer devices and inserts a newline on touch (see handleKeyDown),
   // so the hint follows the device, not the viewport width.
-  const isTouchDevice = useMemo(() => typeof navigator !== "undefined" && navigator.maxTouchPoints > 0, []);
+
+  const remoteMounts = useRemoteMounts().data;
+  // Only kinds with something mounted: the AWS plugin registers S3 even when no bucket is configured.
+  const remoteStores = remoteMounts ? remoteMounts.stores.filter(store => remoteMounts.mounts.some(mount => mount.scheme === store.scheme)) : [];
+  // "Attach from Google Drive" when Drive is the only kind of store. ("Choose from Files" is the host.)
+  const remoteAttachLabel = remoteStores.length === 1 ? `Attach from ${remoteStores[0]!.label}` : "Attach from cloud storage";
 
   const chatUsage = useChatUsage(agentId);
   const filesystemState = useFilesystemState(agentId);
 
+  // Unique per chat: chats can sit side by side.
+  const inputId = useId();
+  const activeMention = useMemo(() => {
+    if (input.startsWith("/")) return null;
+    return findActiveMention(input, cursor);
+  }, [cursor, input]);
+
+  const mentionQuery = !mentionDismissed && activeMention ? activeMention.query : null;
+  const { categories: mentionCategories, pending: mentionPending, isLoading: mentionLoading } = useContextualSearch(agentId, mentionQuery);
+  const mentionItems = useMemo(() => flattenContextualSearchItems(mentionCategories), [mentionCategories]);
+  const mentionPickerOpen = mentionQuery !== null;
+
   const usageSnapshot = chatUsage.data?.status === "success" ? chatUsage.data : null;
   const fsSnapshot = filesystemState.data?.status === "success" ? filesystemState.data : null;
+
+  const hasSomethingToSend = input.trim().length > 0 || attachments.length > 0 || (extraAttachments?.length ?? 0) > 0;
 
   const footerMetrics = useMemo(() => {
     const contextLength = usageSnapshot?.contextLength ?? 0;
     const maxContextLength = usageSnapshot?.maxContextLength ?? null;
     const percentUsed = contextPercentUsed(contextLength, maxContextLength);
     const costTotal = usageSnapshot?.cost.total ?? null;
-    const workingDirectory = fsSnapshot?.workingDirectory ?? null;
+    // Footer chip: first write-allowed path plus a count of the others.
+    const allowedPaths = fsSnapshot?.allowedPaths ?? [];
+    const primaryPath = allowedPaths.find(entry => entry.permission === "write") ?? allowedPaths[0] ?? null;
+    const extraPathCount = primaryPath ? allowedPaths.length - 1 : 0;
 
     return {
       percentUsed,
@@ -221,11 +387,48 @@ export default function ChatFooter({
             ? `${formatCompactTokens(contextLength)} tokens in context`
             : "Context usage unavailable",
       costLabel: costTotal != null ? formatUsd(costTotal) : null,
-      costTitle: costTotal != null ? `Session cost ${formatUsd(costTotal)}` : "Cost unavailable",
-      cwdLabel: workingDirectory ? shortenWorkingDirectory(workingDirectory) : null,
-      cwdTitle: workingDirectory ? `Working directory: ${workingDirectory}` : "Working directory unavailable",
+      costTitle: costTotal != null ? `Most recent response cost ${formatUsd(costTotal)}` : "Cost unavailable",
+      cwdLabel: primaryPath ? `${shortenPath(primaryPath.path)}${extraPathCount > 0 ? ` +${extraPathCount}` : ""}` : null,
+      cwdTitle:
+        allowedPaths.length > 0
+          ? `Allowed paths:\n${allowedPaths.map(entry => `${entry.path} (${entry.permission})`).join("\n")}`
+          : "Allowed paths unavailable",
     };
   }, [usageSnapshot, fsSnapshot]);
+
+  useEffect(() => {
+    const start = activeMention?.start ?? null;
+    if (start === mentionStartRef.current) return;
+    mentionStartRef.current = start;
+    setMentionDismissed(false);
+  }, [activeMention?.start]);
+
+  useEffect(() => {
+    setSelectedMention(0);
+  }, [mentionQuery, mentionCategories]);
+
+  // Keep the highlighted command suggestion within the filtered list as it shrinks,
+  // so completion can never read past the end (and insert a literal "undefined").
+  useEffect(() => {
+    setSelectedSuggestion(prev => Math.min(prev, Math.max(availableCommands.length - 1, 0)));
+  }, [availableCommands]);
+
+  const applyMention = useCallback(
+    (tag: string) => {
+      if (!activeMention) return;
+      const { next, cursor: nextCursor } = replaceActiveMention(input, activeMention, tag);
+      setInput(next);
+      setMentionDismissed(true);
+      requestAnimationFrame(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+        textarea.focus();
+        textarea.setSelectionRange(nextCursor, nextCursor);
+        setCursor(nextCursor);
+      });
+    },
+    [activeMention, input, setInput],
+  );
 
   // Reset history navigation when user manually types
   useEffect(() => {
@@ -287,11 +490,11 @@ export default function ChatFooter({
     (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!isProcessingFiles && idle) {
+      if (!isProcessingFiles) {
         setIsDragOver(true);
       }
     },
-    [isProcessingFiles, idle],
+    [isProcessingFiles],
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -341,6 +544,81 @@ export default function ChatFooter({
       reader.onerror = () => reject(new Error("Failed to read file"));
       reader.readAsArrayBuffer(file);
     });
+  }, []);
+
+  const addFilesAsAttachments = useCallback(
+    async (files: Iterable<File>) => {
+      const fileList = Array.from(files);
+      if (fileList.length === 0) return;
+
+      setIsProcessingFiles(true);
+      const newAttachments: FileAttachment[] = [];
+
+      try {
+        for (const file of fileList) {
+          if (file.size > MAX_FILE_SIZE) {
+            toastManager.warning(`"${file.name}" exceeds the 5MB limit and was not attached.`, { duration: 5000 });
+            continue;
+          }
+
+          const normalizedMime = normalizeAttachmentMimeType(file.type || "application/octet-stream");
+          if (!ChatAttachmentSchema.shape.mimeType.safeParse(normalizedMime).success) {
+            toastManager.warning(`"${file.name || "Pasted file"}" is not a supported attachment type and was not attached.`, { duration: 5000 });
+            continue;
+          }
+
+          try {
+            const attachment = await readFileAsAttachment(file);
+            newAttachments.push(attachment);
+          } catch (error: unknown) {
+            toastManager.error(`Failed to read "${file.name}": ${formatError(error)}`, { duration: 5000 });
+          }
+        }
+
+        if (newAttachments.length > 0) {
+          setAttachments(prev => [...prev, ...newAttachments]);
+        }
+      } finally {
+        setIsProcessingFiles(false);
+      }
+    },
+    [readFileAsAttachment],
+  );
+
+  /** Reads a picked remote file through the remote RPC and adds it as an attachment chip. */
+  const attachRemoteFile = useCallback(async (entry: RemoteEntry) => {
+    if (entry.size !== undefined && !entry.readsAs && entry.size > MAX_FILE_SIZE) {
+      toastManager.warning(`"${entry.name}" exceeds the 5MB limit and was not attached.`, { duration: 5000 });
+      return;
+    }
+    setIsProcessingFiles(true);
+    try {
+      const content = await remoteRPCClient.read({ url: entry.url });
+      if (content.size > MAX_FILE_SIZE) {
+        toastManager.warning(`"${entry.name}" exceeds the 5MB limit and was not attached.`, { duration: 5000 });
+        return;
+      }
+      const isText = content.encoding === "utf8";
+      const declared = ChatAttachmentSchema.shape.mimeType.safeParse(normalizeAttachmentMimeType(content.mimeType));
+      // Text the chat schema does not name (CSV from a Sheet, source code) still goes in, as plain text.
+      const mimeType = declared.success ? declared.data : isText ? "text/plain" : null;
+      if (!mimeType) {
+        toastManager.warning(`"${entry.name}" (${content.mimeType}) is not a supported attachment type and was not attached.`, { duration: 5000 });
+        return;
+      }
+      const attachment: ChatAttachment = {
+        name: content.name,
+        description: `From ${entry.url}`,
+        encoding: isText ? "text" : "base64",
+        mimeType,
+        body: content.content,
+      };
+      setAttachments(prev => [...prev, { id: `${entry.url}-${Date.now()}`, file: null, attachment }]);
+    } catch (error: unknown) {
+      toastManager.error(`Couldn't attach "${entry.name}": ${formatError(error)}`, { duration: 5000 });
+    } finally {
+      setIsProcessingFiles(false);
+    }
   }, []);
 
   const finalizeRecording = useCallback(
@@ -423,7 +701,7 @@ export default function ChatFooter({
   }, [clearMaxRecordingTimeout, stopMediaTracks]);
 
   const startRecording = useCallback(async () => {
-    if (!idle || isProcessingFiles || isRecording) return;
+    if (isProcessingFiles || isRecording) return;
 
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- can be null in the browser
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
@@ -506,7 +784,7 @@ export default function ChatFooter({
         toastManager.error(`Failed to start recording: ${message}`, { duration: 5000 });
       }
     }
-  }, [clearMaxRecordingTimeout, finalizeRecording, idle, isProcessingFiles, isRecording, stopMediaTracks, stopRecording]);
+  }, [clearMaxRecordingTimeout, finalizeRecording, isProcessingFiles, isRecording, stopMediaTracks, stopRecording]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -516,35 +794,9 @@ export default function ChatFooter({
 
       const files = Array.from(e.dataTransfer.files);
       if (files.length === 0) return;
-
-      setIsProcessingFiles(true);
-      const newAttachments: FileAttachment[] = [];
-
-      const processFiles = async () => {
-        for (const file of files) {
-          // Check file size
-          if (file.size > MAX_FILE_SIZE) {
-            toastManager.warning(`"${file.name}" exceeds the 5MB limit and was not attached.`, { duration: 5000 });
-            continue;
-          }
-
-          try {
-            const attachment = await readFileAsAttachment(file);
-            newAttachments.push(attachment);
-          } catch (error: unknown) {
-            toastManager.error(`Failed to read "${file.name}": ${formatError(error)}`, { duration: 5000 });
-          }
-        }
-
-        if (newAttachments.length > 0) {
-          setAttachments(prev => [...prev, ...newAttachments]);
-        }
-        setIsProcessingFiles(false);
-      };
-
-      void processFiles();
+      void addFilesAsAttachments(files);
     },
-    [readFileAsAttachment],
+    [addFilesAsAttachments],
   );
 
   // Handle file selection
@@ -553,38 +805,31 @@ export default function ChatFooter({
       const files = e.target.files;
       if (!files || files.length === 0) return;
 
-      setIsProcessingFiles(true);
-      const newAttachments: FileAttachment[] = [];
-
       try {
-        for (const file of Array.from(files)) {
-          // Check file size
-          if (file.size > MAX_FILE_SIZE) {
-            toastManager.warning(`"${file.name}" exceeds the 5MB limit and was not attached.`, { duration: 5000 });
-            continue;
-          }
-
-          try {
-            const attachment = await readFileAsAttachment(file);
-            newAttachments.push(attachment);
-          } catch (error: unknown) {
-            toastManager.error(`Failed to read "${file.name}": ${formatError(error)}`, { duration: 5000 });
-          }
-        }
-
-        if (newAttachments.length > 0) {
-          setAttachments(prev => [...prev, ...newAttachments]);
-        }
+        await addFilesAsAttachments(files);
       } finally {
-        setIsProcessingFiles(false);
-      }
-
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
       }
     },
-    [readFileAsAttachment],
+    [addFilesAsAttachments],
+  );
+
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      if (isRecording) return;
+
+      const files = filesFromClipboard(e.clipboardData);
+      if (files.length === 0) return;
+
+      // Keep default paste for plain text; only consume the event when files are present.
+      e.preventDefault();
+      e.stopPropagation();
+      void addFilesAsAttachments(files);
+    },
+    [addFilesAsAttachments, isRecording],
   );
 
   // Remove attachment
@@ -593,18 +838,30 @@ export default function ChatFooter({
   }, []);
 
   // Handle submit with attachments
-  const handleSubmitWithAttachments = useCallback(() => {
+  const handleSubmitWithAttachments = useCallback(async () => {
     if (isRecording) return;
-    const inputAttachments = attachments.length > 0 ? attachments.map(a => a.attachment) : undefined;
-    onSubmit(inputAttachments);
-    setAttachments([]);
-    // Reset textarea height after submission
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
+    const fileAttachmentList = attachments.length > 0 ? attachments.map(a => a.attachment) : [];
+    const extraAttachmentList = (extraAttachments ?? []).map(extra => extra.attachment);
+    const inputAttachments = fileAttachmentList.length + extraAttachmentList.length > 0 ? [...extraAttachmentList, ...fileAttachmentList] : undefined;
+    // Keep the chips until delivery is confirmed: a failed, dropped or cancelled
+    // send must not lose the user's files. Only the chips that were part of this
+    // submission are removed, so files added while it was in flight survive.
+    const submittedIds = new Set(attachments.map(a => a.id));
+    const delivered = await Promise.resolve()
+      .then(() => onSubmit(inputAttachments))
+      .catch(() => false);
+    if (delivered) {
+      if (submittedIds.size > 0) setAttachments(prev => prev.filter(a => !submittedIds.has(a.id)));
+      // Reset textarea height after submission
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
     }
-  }, [attachments, isRecording, onSubmit]);
+  }, [attachments, extraAttachments, isRecording, onSubmit]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    setCursor(e.currentTarget.selectionStart);
+
     // Handle command suggestions with arrow keys
     if (availableCommands.length > 0 && historyIndex === null) {
       if (e.key === "ArrowDown") {
@@ -619,9 +876,45 @@ export default function ChatFooter({
       }
       if (e.key === "Tab") {
         e.preventDefault();
-        const cmd = availableCommands[selectedSuggestion];
+        const cmd = availableCommands[Math.min(selectedSuggestion, availableCommands.length - 1)];
         setInput(`/${cmd} `);
         textareaRef.current?.focus();
+        return;
+      }
+    }
+
+    if (mentionPickerOpen && historyIndex === null) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (mentionItems.length > 0) {
+          setSelectedMention(prev => (prev + 1) % mentionItems.length);
+        }
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (mentionItems.length > 0) {
+          setSelectedMention(prev => (prev - 1 + mentionItems.length) % mentionItems.length);
+        }
+        return;
+      }
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const item = mentionItems[selectedMention];
+        if (item) applyMention(item.tag);
+        return;
+      }
+      if (e.key === "Enter" && !e.shiftKey) {
+        const item = mentionItems[selectedMention];
+        if (item) {
+          e.preventDefault();
+          applyMention(item.tag);
+          return;
+        }
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setMentionDismissed(true);
         return;
       }
     }
@@ -643,9 +936,11 @@ export default function ChatFooter({
             newIndex = 0;
           }
 
+          // Only navigate within valid bounds, even if the history shrank mid-navigation.
+          newIndex = Math.max(0, Math.min(newIndex, commandHistory.length - 1));
           setHistoryIndex(newIndex);
           isNavigatingHistoryRef.current = true;
-          setInput(commandHistory[newIndex] ?? "Array Overflow");
+          setInput(commandHistory[newIndex] ?? "");
         }
         return;
       }
@@ -673,7 +968,7 @@ export default function ChatFooter({
       const isTouchDevice = navigator.maxTouchPoints > 0;
       if (!isTouchDevice && !e.shiftKey) {
         e.preventDefault();
-        handleSubmitWithAttachments();
+        void handleSubmitWithAttachments();
       }
     }
   };
@@ -684,10 +979,23 @@ export default function ChatFooter({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onPaste={handlePaste}
       className={`shrink-0 border-t border-primary md:border-t-0 md:bg-transparent relative transition-all duration-200 md:rounded-none ${
         isDragOver ? "ring-2 ring-accent ring-inset bg-accent/10" : ""
       }`}
     >
+      {mentionPickerOpen && availableCommands.length === 0 && (
+        <ContextualSearchPicker
+          categories={mentionCategories}
+          pending={mentionPending}
+          selectedIndex={selectedMention}
+          isLoading={mentionLoading}
+          query={activeMention?.query ?? ""}
+          onHover={setSelectedMention}
+          onSelect={item => applyMention(item.tag)}
+        />
+      )}
+
       <AnimatePresence>
         {availableCommands.length > 0 && (
           <motion.div
@@ -698,9 +1006,9 @@ export default function ChatFooter({
             className="absolute bottom-full left-4 right-4 mb-2 flex flex-wrap gap-2 p-3 bg-secondary border border-primary rounded-lg shadow-md z-20"
             role="listbox"
             aria-label="Command suggestions"
-            aria-activedescendant={`cmd-${selectedSuggestion}`}
+            aria-activedescendant={selectedSuggestion < Math.min(availableCommands.length, MAX_RENDERED_SUGGESTIONS) ? `cmd-${selectedSuggestion}` : undefined}
           >
-            {availableCommands.slice(0, 15).map((cmd, idx) => (
+            {availableCommands.slice(0, MAX_RENDERED_SUGGESTIONS).map((cmd, idx) => (
               <button
                 type="button"
                 key={cmd}
@@ -710,7 +1018,7 @@ export default function ChatFooter({
                   textareaRef.current?.focus();
                 }}
                 className={`text-xs font-mono px-2 py-1 rounded-md transition-colors cursor-pointer ${
-                  idx === selectedSuggestion ? "bg-accent text-primary" : "bg-tertiary hover:bg-hover text-accent"
+                  idx === selectedSuggestion ? "bg-accent text-primary" : "bg-tertiary hover:bg-hover text-accent-soft"
                 }`}
                 role="option"
                 aria-selected={idx === selectedSuggestion}
@@ -718,7 +1026,9 @@ export default function ChatFooter({
                 /{cmd}
               </button>
             ))}
-            {availableCommands.length > 15 && <span className="text-xs text-muted ml-auto">+{availableCommands.length - 15} more</span>}
+            {availableCommands.length > MAX_RENDERED_SUGGESTIONS && (
+              <span className="text-xs text-muted ml-auto">+{availableCommands.length - MAX_RENDERED_SUGGESTIONS} more</span>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -737,7 +1047,7 @@ export default function ChatFooter({
                 <Paperclip className="w-12 h-12 text-accent" />
               </motion.div>
               <div className="text-center">
-                <p className="text-lg font-mono text-accent/80 font-semibold">Drop files to attach</p>
+                <p className="text-lg font-mono text-accent-soft font-semibold">Drop files to attach</p>
                 <p className="text-sm text-muted font-mono mt-1">Maximum 5MB per file</p>
               </div>
             </div>
@@ -745,7 +1055,7 @@ export default function ChatFooter({
         )}
       </AnimatePresence>
 
-      <div className="md:mx-4 md:mb-4 md:rounded-xl md:overflow-hidden md:ring-1 md:ring-white/10 md:shadow-xl md:bg-secondary rounded-t-xl overflow-hidden">
+      <div className="md:mx-4 md:mb-4 md:rounded-xl md:overflow-hidden md:ring-1 md:ring-line md:shadow-xl md:bg-secondary rounded-t-xl overflow-hidden">
         <div className="relative bg-secondary">
           {/* Hidden file input for local file upload */}
           <input ref={fileInputRef} type="file" multiple onChange={handleFileSelect} className="hidden" aria-label="Upload files" />
@@ -784,7 +1094,7 @@ export default function ChatFooter({
                   <button
                     type="button"
                     onClick={stopRecording}
-                    className="px-2.5 py-1.5 rounded-md text-xs font-mono bg-error/15 text-error hover:bg-error/25 transition-colors focus-ring flex items-center gap-1.5"
+                    className="px-2.5 py-1.5 rounded-md text-xs font-mono bg-error/15 text-error hover:bg-(--status-danger-bg) transition-colors focus-ring flex items-center gap-1.5"
                     aria-label="Stop recording and attach"
                   >
                     <Square className="w-3 h-3 fill-current" />
@@ -794,6 +1104,30 @@ export default function ChatFooter({
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* App-contributed attachment chips (e.g. designs attached from the Web Design app) */}
+          {extraAttachments && extraAttachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-4 pt-3">
+              {extraAttachments.map(extra => (
+                <div key={extra.id} className="flex items-center gap-2 bg-accent-muted px-3 py-1.5 rounded-md group shadow-card">
+                  <FileCode className="w-4 h-4 text-accent" />
+                  <span className="text-sm text-primary font-mono max-w-37.5 truncate" title={extra.attachment.name}>
+                    {extra.label}
+                  </span>
+                  {onRemoveExtraAttachment && (
+                    <button
+                      type="button"
+                      onClick={() => onRemoveExtraAttachment(extra.id)}
+                      className="text-muted hover:text-error transition-colors focus-ring rounded-md p-1.5"
+                      aria-label={`Remove ${extra.label}`}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Attachments preview */}
           <AnimatePresence>
@@ -816,6 +1150,8 @@ export default function ChatFooter({
                 <div className="flex flex-wrap gap-2 px-4 py-3">
                   {attachments.map(({ id, file, attachment }) => {
                     const Icon = getFileIcon(attachment.mimeType);
+                    const name = file?.name ?? attachment.name;
+                    const size = file?.size ?? Math.floor((attachment.body.length * 3) / 4);
                     return (
                       <motion.div
                         key={id}
@@ -825,13 +1161,13 @@ export default function ChatFooter({
                         className="flex items-center gap-2 bg-tertiary px-3 py-1.5 rounded-md group shadow-card"
                       >
                         <Icon className="w-4 h-4 text-muted" />
-                        <span className="text-sm text-primary font-mono max-w-37.5 truncate">{file.name}</span>
-                        <span className="text-xs text-muted font-mono">({formatFileSize(file.size)})</span>
+                        <span className="text-sm text-primary font-mono max-w-37.5 truncate">{name}</span>
+                        <span className="text-xs text-muted font-mono">({formatFileSize(size)})</span>
                         <button
                           type="button"
                           onClick={() => removeAttachment(id)}
                           className="text-muted hover:text-error transition-colors focus-ring rounded-md p-1.5"
-                          aria-label={`Remove ${file.name}`}
+                          aria-label={`Remove ${name}`}
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -844,12 +1180,14 @@ export default function ChatFooter({
                   <span className="text-xs text-muted font-mono">Total:</span>
                   <span
                     className={`text-xs font-mono ${
-                      attachments.reduce((sum, a) => sum + a.file.size, 0) > MAX_FILE_SIZE * 0.8 ? "text-warning" : "text-muted"
+                      attachments.reduce((sum, a) => sum + (a.file?.size ?? Math.floor((a.attachment.body.length * 3) / 4)), 0) > MAX_FILE_SIZE * 0.8
+                        ? "text-warning"
+                        : "text-muted"
                     }`}
                   >
-                    {attachments.reduce((sum, a) => sum + a.file.size, 0).toLocaleString()} bytes
+                    {attachments.reduce((sum, a) => sum + (a.file?.size ?? Math.floor((a.attachment.body.length * 3) / 4)), 0).toLocaleString()} bytes
                   </span>
-                  {attachments.reduce((sum, a) => sum + a.file.size, 0) > MAX_FILE_SIZE && (
+                  {attachments.reduce((sum, a) => sum + (a.file?.size ?? Math.floor((a.attachment.body.length * 3) / 4)), 0) > MAX_FILE_SIZE && (
                     <span className="text-xs text-error font-mono">Exceeds 5MB limit</span>
                   )}
                 </div>
@@ -857,95 +1195,143 @@ export default function ChatFooter({
             )}
           </AnimatePresence>
 
-          <div className="flex items-start gap-4 px-6 pt-3 pb-2">
-            <div className="shrink-0 h-lh items-center flex justify-center select-none text-lg">
-              <span className="text-accent font-bold">&gt;</span>
+          {/* Inputs waiting in the agent's queue while another input runs */}
+          {queuedInputs.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-4 pt-3" role="list" aria-label="Queued messages">
+              {queuedInputs.map(queued => (
+                <div
+                  key={queued.requestId}
+                  className="flex items-center gap-2 bg-warning/10 border border-warning/30 px-2.5 py-1.5 rounded-md group shadow-card"
+                  role="listitem"
+                >
+                  <span className="text-xs text-warning" aria-hidden="true">
+                    ⏳
+                  </span>
+                  <span className="text-xs text-primary font-mono max-w-75 truncate" title={queued.message}>
+                    {queued.message || "(empty message)"}
+                  </span>
+                  {onCancelQueuedInput && (
+                    <button
+                      type="button"
+                      onClick={() => onCancelQueuedInput(queued.requestId)}
+                      className="text-muted hover:text-error transition-colors focus-ring rounded-md p-1"
+                      aria-label={`Cancel queued message: ${queued.message.slice(0, 50)}`}
+                      title="Cancel this queued message"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
+          )}
 
-            <div className="flex-1 relative pt-0.75">
-              <label htmlFor="chat-input" className="sr-only">
+          {/* One row: add (+), the message, then voice, history and send. */}
+          <div className="flex items-end gap-1.5 px-2.5 py-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Add to message"
+                  title={isProcessingFiles ? "Processing files…" : "Add to message"}
+                  disabled={isProcessingFiles || isRecording}
+                  className="p-1.5 rounded-md hover:bg-hover transition-colors text-muted hover:text-primary focus-ring disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                >
+                  {isProcessingFiles ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="top"
+                align="start"
+                className="min-w-52"
+                onCloseAutoFocus={event => {
+                  // Open what was picked only once the menu has let go of focus. The file browser
+                  // traps focus too; opened while the menu was still handing focus back to +, the
+                  // two traps pulled focus back and forth forever and hung the page.
+                  const action = afterAddMenu.current;
+                  afterAddMenu.current = null;
+                  if (action) {
+                    event.preventDefault();
+                    action();
+                  }
+                }}
+              >
+                <DropdownMenuItem className="gap-2.5" onSelect={() => fileInputRef.current?.click()}>
+                  <Paperclip className="h-4 w-4 text-muted" aria-hidden="true" /> Add files or photos
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2.5"
+                  onSelect={() => {
+                    afterAddMenu.current = () => setShowFileBrowser(true);
+                  }}
+                >
+                  <FolderOpen className="h-4 w-4 text-muted" aria-hidden="true" /> Choose from Files
+                </DropdownMenuItem>
+                {remoteStores.length > 0 && (
+                  <DropdownMenuItem
+                    className="gap-2.5"
+                    onSelect={() => {
+                      afterAddMenu.current = () => setShowRemotePicker(true);
+                    }}
+                  >
+                    <Cloud className="h-4 w-4 text-muted" aria-hidden="true" /> {remoteAttachLabel}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="relative min-w-0 flex-1">
+              <label htmlFor={inputId} className="sr-only">
                 Command or message input
               </label>
-              <div className="relative">
+              <div className="relative rounded-md border border-control px-2.5 focus-within:border-accent">
                 <textarea
                   ref={textareaRef}
-                  id="chat-input"
+                  id={inputId}
                   value={input}
                   onChange={e => {
                     setInput(e.target.value);
+                    setCursor(e.target.selectionStart);
                     setInputError(false);
                     // Auto-expand textarea when typing
                     const target = e.target;
                     target.style.height = "auto";
                     target.style.height = `${target.scrollHeight}px`;
                   }}
+                  onClick={e => setCursor(e.currentTarget.selectionStart)}
+                  onKeyUp={e => setCursor(e.currentTarget.selectionStart)}
+                  onSelect={e => setCursor(e.currentTarget.selectionStart)}
                   onKeyDown={handleKeyDown}
-                  disabled={!idle || isRecording}
+                  onPaste={handlePaste}
+                  disabled={isRecording}
                   rows={1}
-                  className={`w-full bg-transparent border-none focus:ring-0 resize-none text-sm font-mono text-primary placeholder-muted p-0 leading-relaxed outline-none transition-opacity ${
+                  className={`block w-full bg-transparent border-none focus:ring-0 resize-none text-sm text-primary placeholder-muted px-0 py-[5px] leading-[22px] outline-none transition-opacity ${
                     inputError ? "placeholder:text-error/50" : ""
-                  } ${!idle || isRecording ? "opacity-60" : ""}`}
+                  } ${isRecording ? "opacity-60" : ""}`}
                   placeholder={
                     isRecording
                       ? "Recording… add a message or stop to attach audio"
                       : inputError
                         ? "Please enter a message, command, or attach a file..."
-                        : "Execute command or send message..."
+                        : idle
+                          ? "Message the agent, or type / for commands"
+                          : "Agent is busy — your message will be queued"
                   }
                   spellCheck="false"
                   aria-label="Command or message input"
-                  aria-describedby={availableCommands.length > 0 ? "command-suggestions" : undefined}
+                  aria-describedby={availableCommands.length > 0 ? "command-suggestions" : mentionPickerOpen ? "contextual-search-results" : undefined}
+                  aria-autocomplete={mentionPickerOpen || availableCommands.length > 0 ? "list" : undefined}
+                  aria-controls={availableCommands.length > 0 ? "command-suggestions" : mentionPickerOpen ? "contextual-search-results" : undefined}
+                  aria-activedescendant={mentionPickerOpen && mentionItems[selectedMention] ? `ctx-${selectedMention}` : undefined}
                   aria-invalid={inputError}
                   aria-required="true"
-                  style={{ height: "auto", minHeight: "1.5rem", maxHeight: "12rem" }}
+                  // One line is exactly as tall as the icon buttons (32px), so its text centres on them.
+                  style={{ height: "auto", minHeight: "2rem", maxHeight: "12rem" }}
                 />
               </div>
             </div>
 
-            {/* Send/Abort button - moved to right of input */}
-            <div className="shrink-0">
-              {idle ? (
-                <button
-                  type="button"
-                  aria-label="Send message"
-                  onClick={handleSubmitWithAttachments}
-                  disabled={isRecording}
-                  className="p-2 rounded-md hover:bg-hover transition-colors text-muted hover:text-primary focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  aria-label="Abort current operation"
-                  onClick={() => agentRPCClient.abortCurrentOperation({ agentId, message: "User aborted the current operation via the chat webapp" })}
-                  className="p-2 rounded-md hover:bg-hover transition-colors text-muted hover:text-error focus-ring"
-                >
-                  <Square className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="min-h-10 pb-3 bg-secondary flex flex-wrap items-center justify-between px-6 gap-x-3 gap-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Local file upload button */}
-              <button
-                type="button"
-                aria-label="Attach file"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!idle || isProcessingFiles || isRecording}
-                className="p-1.5 rounded-md hover:bg-hover transition-colors text-muted hover:text-primary focus-ring disabled:opacity-50 disabled:cursor-not-allowed relative"
-                title={isProcessingFiles ? "Processing files..." : "Attach file"}
-              >
-                {isProcessingFiles ? (
-                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5">
-                    <Paperclip className="w-5 h-5" />
-                  </motion.div>
-                ) : (
-                  <Paperclip className="w-5 h-5" />
-                )}
-              </button>
+            <div className="flex shrink-0 items-center gap-0.5">
               {/* Audio recording button */}
               <button
                 type="button"
@@ -958,85 +1344,62 @@ export default function ChatFooter({
                     void startRecording();
                   }
                 }}
-                disabled={!idle || isProcessingFiles}
+                disabled={isProcessingFiles}
                 className={`p-1.5 rounded-md transition-colors focus-ring disabled:opacity-50 disabled:cursor-not-allowed relative ${
-                  isRecording ? "bg-error/15 text-error hover:bg-error/25" : "hover:bg-hover text-muted hover:text-primary"
+                  isRecording ? "bg-error/15 text-error hover:bg-(--status-danger-bg)" : "hover:bg-hover text-muted hover:text-primary"
                 }`}
                 title={isRecording ? "Stop recording and attach" : "Record audio"}
               >
                 <Mic className="w-5 h-5" />
               </button>
-              {/* Remote file browser button */}
-              <button
-                type="button"
-                aria-label="Browse remote files"
-                onClick={() => setShowFileBrowser(true)}
-                disabled={isRecording}
-                className="p-1.5 rounded-md hover:bg-hover transition-colors text-muted hover:text-primary focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FolderOpen className="w-5 h-5" />
-              </button>
               <button
                 type="button"
                 aria-label={showHistory ? "Hide command history" : "Show command history"}
+                title="Message history"
                 onClick={() => setShowHistory(!showHistory)}
                 disabled={commandHistory.length === 0}
                 className="p-1.5 rounded-md hover:bg-hover transition-colors text-muted hover:text-primary focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <History className="w-5 h-5" />
               </button>
-              <div className="w-px h-5 bg-primary/70 mx-0.5" aria-hidden="true" />
-              <ModelSelector agentId={agentId} triggerVariant="icon" />
-              <ToolSelector agentId={agentId} triggerVariant="icon" />
-              <HookSelector agentId={agentId} triggerVariant="icon" />
-              <SkillSelector
-                agentId={agentId}
-                triggerVariant="icon"
-                onTrySkill={name => {
-                  setInput(`/${name} `);
-                  setInputError(false);
-                  requestAnimationFrame(() => textareaRef.current?.focus());
-                }}
-              />
-              <ToolApprovalSelector agentId={agentId} triggerVariant="icon" />
-            </div>
-
-            {/* Wraps below the toolbar when the panel is too narrow for both on one line. */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0" aria-live="polite" aria-atomic="true">
-              {/* Keyboard hints — break between hints, never inside one */}
-              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-dim min-w-0">
-                {isTouchDevice ? (
-                  <span>↑/↓ History • Enter for new line • Tap send to submit</span>
-                ) : (
-                  KEYBOARD_HINTS.map(({ keys, label }, idx) => (
-                    <span key={keys} className="flex items-center gap-1 whitespace-nowrap">
-                      {idx > 0 && (
-                        <span className="text-dim/60 mr-0.5" aria-hidden="true">
-                          •
-                        </span>
-                      )}
-                      <kbd className="px-1.5 py-0.5 bg-tertiary rounded-md text-primary font-mono">{keys}</kbd> {label}
-                    </span>
-                  ))
-                )}
-              </div>
-
-              {/* Status indicator — wraps onto its own line last */}
-              <div className="flex items-center gap-2 min-w-0">
-                <div
-                  className={`w-2 h-2 shrink-0 ${idle ? "bg-accent" : "bg-warning"} rounded-full animate-pulse`}
-                  aria-label={idle ? "Agent is online" : "Agent is busy"}
-                  role="status"
-                />
-                <span className={`text-xs ${idle ? "text-accent" : "text-warning"} font-mono uppercase`}>{idle ? "Online" : "Busy"}</span>
-                {attachments.length > 0 && (
-                  <span className="text-xs text-accent font-mono whitespace-nowrap">
-                    • {attachments.length} file{attachments.length !== 1 ? "s" : ""}
-                  </span>
-                )}
-              </div>
+              {/* Send/Queue and Stop: send (queues while busy) when there is something to send;
+                  Stop stays reachable whenever the agent is busy, even with a draft in the composer. */}
+              {hasSomethingToSend && (
+                <button
+                  type="button"
+                  aria-label={idle ? "Send message" : "Queue message"}
+                  title={idle ? "Send message" : "Agent is busy — click to queue this message"}
+                  onClick={() => void handleSubmitWithAttachments()}
+                  disabled={isRecording}
+                  className="p-2 rounded-md hover:bg-hover transition-colors text-muted hover:text-primary focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              )}
+              {!idle && (
+                <button
+                  type="button"
+                  aria-label="Abort current operation"
+                  title="Stop the current operation"
+                  onClick={() => {
+                    // Wrapped so a synchronous throw is caught too; a failed stop must surface, not vanish.
+                    Promise.resolve()
+                      .then(() => agentRPCClient.abortCurrentOperation({ agentId, message: "User aborted the current operation via the chat webapp" }))
+                      .catch((error: unknown) => toastManager.error(`Failed to stop the agent: ${formatError(error)}`, { duration: 5000 }));
+                  }}
+                  className="p-2 rounded-md hover:bg-hover transition-colors text-muted hover:text-error focus-ring"
+                >
+                  <Square className="w-5 h-5" />
+                </button>
+              )}
             </div>
           </div>
+
+          {queuedInputs.length > 0 && (
+            <p className="px-4 pb-2 text-xs text-warning" aria-live="polite">
+              {queuedInputs.length} queued
+            </p>
+          )}
 
           <AnimatePresence>
             {showHistory && commandHistory.length > 0 && (
@@ -1093,52 +1456,43 @@ export default function ChatFooter({
           </AnimatePresence>
         </div>
 
-        <div className="min-h-6 py-0.5 bg-tertiary flex flex-wrap items-center justify-between px-6 select-none gap-x-3 gap-y-0.5">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 min-w-0">
-            <span className="text-xs text-muted font-mono line-clamp-1">{statusMessage}</span>
-            <span className="text-xs text-dim font-mono shrink-0">{input.length} chars</span>
+        <div className="min-h-6 py-0.5 bg-tertiary flex flex-wrap items-center justify-between px-4 select-none gap-x-3 gap-y-0.5">
+          {/* Where the agent works, on the left; what this conversation costs, on the right. */}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-0.5">
+            {footerMetrics.cwdLabel && (
+              <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted" title={footerMetrics.cwdTitle} data-testid="chat-footer-cwd">
+                <Folder className="h-3 w-3 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 max-w-72 truncate font-mono">{footerMetrics.cwdLabel}</span>
+              </span>
+            )}
             {submitFeedback && (
               <span className={`text-xs font-mono shrink-0 ${submitFeedback.type === "success" ? "text-success" : "text-error"}`}>
                 {submitFeedback.message}
               </span>
             )}
           </div>
-          {/* Live chat usage + workspace indicators */}
-          {(footerMetrics.contextLabel || footerMetrics.costLabel || footerMetrics.cwdLabel) && (
-            <div className="flex flex-wrap items-center gap-x-2 min-w-0 shrink" data-testid="chat-footer-metrics" aria-live="polite" aria-atomic="true">
+          {(footerMetrics.contextLabel || footerMetrics.costLabel) && (
+            <div className="flex items-center gap-x-2 shrink-0" data-testid="chat-footer-metrics">
               {footerMetrics.contextLabel && (
                 <span className={`text-xs font-mono tabular-nums shrink-0 ${contextToneClass(footerMetrics.percentUsed)}`} title={footerMetrics.contextTitle}>
                   {footerMetrics.contextLabel}
                 </span>
               )}
-              {footerMetrics.costLabel && (
-                <>
-                  {footerMetrics.contextLabel && (
-                    <span className="text-xs text-muted/50 font-mono" aria-hidden="true">
-                      ·
-                    </span>
-                  )}
-                  <span className="text-xs font-mono tabular-nums text-muted shrink-0" title={footerMetrics.costTitle}>
-                    {footerMetrics.costLabel}
-                  </span>
-                </>
+              {footerMetrics.contextLabel && footerMetrics.costLabel && (
+                <span className="text-xs text-muted/50 font-mono" aria-hidden="true">
+                  ·
+                </span>
               )}
-              {footerMetrics.cwdLabel && (
-                <>
-                  {(footerMetrics.contextLabel || footerMetrics.costLabel) && (
-                    <span className="text-xs text-muted/50 font-mono" aria-hidden="true">
-                      ·
-                    </span>
-                  )}
-                  <span className="text-xs font-mono text-muted min-w-0 max-w-56 truncate" title={footerMetrics.cwdTitle}>
-                    {footerMetrics.cwdLabel}
-                  </span>
-                </>
+              {footerMetrics.costLabel && (
+                <span className="text-xs font-mono tabular-nums text-muted shrink-0" title={footerMetrics.costTitle}>
+                  {footerMetrics.costLabel}
+                </span>
               )}
             </div>
           )}
         </div>
       </div>
+      {showRemotePicker && <RemoteFilePicker onClose={() => setShowRemotePicker(false)} onPick={entry => void attachRemoteFile(entry)} />}
     </footer>
   );
 }

@@ -2,7 +2,7 @@
 //!
 //! All keybindings live declaratively in a [`Keybinds`] struct rather than
 //! being scattered across `match` arms. Each binding is parsed from a
-//! spec string (e.g. `"ctrl+x"`, `"pageup,ctrl+alt+b"`, `"<leader>q"`). 
+//! spec string (e.g. `"ctrl+x"`, `"pageup,ctrl+alt+b"`, `"<leader>q"`).
 //! The leader key (`ctrl+x` by default) prefixes chord
 //! bindings: press the leader, then within [`Keybinds::leader_timeout`] press
 //! the action key.
@@ -748,10 +748,9 @@ mod tests {
             .cli_tools_select
             .matches_leader(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE)));
         // Theme is leader+Shift+t (not plain t).
-        assert!(kb.theme_list.matches_leader(KeyEvent::new(
-            KeyCode::Char('t'),
-            KeyModifiers::SHIFT
-        )));
+        assert!(kb
+            .theme_list
+            .matches_leader(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::SHIFT)));
         assert!(kb.agent_cycle.direct.is_empty());
     }
 

@@ -4,31 +4,31 @@ import userEvent from "@testing-library/user-event";
 import { AppShellProvider, useAppShell } from "./AppShellContext.tsx";
 
 function Harness() {
-  const { pinnedAppIds, togglePinnedApp, recentApps, recordRecentApp, isAppSwitcherOpen, toggleAppSwitcher, resetToDefaults } = useAppShell();
+  const { pinnedDashboardIds, togglePinnedDashboard, recentDashboards, recordRecentDashboard, isSwitcherOpen, toggleSwitcher, resetToDefaults } = useAppShell();
   return (
     <div>
-      <output aria-label="pins">{pinnedAppIds.join(",")}</output>
-      <output aria-label="recent apps">{JSON.stringify(recentApps)}</output>
-      <output aria-label="switcher">{String(isAppSwitcherOpen)}</output>
-      <button type="button" onClick={() => togglePinnedApp("email")}>
-        Email
+      <output aria-label="pins">{pinnedDashboardIds.join(",")}</output>
+      <output aria-label="recent dashboards">{JSON.stringify(recentDashboards)}</output>
+      <output aria-label="switcher">{String(isSwitcherOpen)}</output>
+      <button type="button" onClick={() => togglePinnedDashboard("tasks")}>
+        Tasks
       </button>
-      <button type="button" onClick={() => togglePinnedApp("calendar")}>
-        Calendar
+      <button type="button" onClick={() => togglePinnedDashboard("metrics")}>
+        Metrics
       </button>
-      <button type="button" onClick={() => togglePinnedApp("database")}>
+      <button type="button" onClick={() => togglePinnedDashboard("database")}>
         Database
       </button>
-      <button type="button" onClick={() => recordRecentApp("email")}>
-        Visit Email
+      <button type="button" onClick={() => recordRecentDashboard("tasks")}>
+        Visit Tasks
       </button>
-      <button type="button" onClick={() => recordRecentApp("calendar")}>
-        Visit Calendar
+      <button type="button" onClick={() => recordRecentDashboard("metrics")}>
+        Visit Metrics
       </button>
-      <button type="button" onClick={() => recordRecentApp("vault")}>
+      <button type="button" onClick={() => recordRecentDashboard("vault")}>
         Visit Vault
       </button>
-      <button type="button" onClick={toggleAppSwitcher}>
+      <button type="button" onClick={toggleSwitcher}>
         Switcher
       </button>
       <button type="button" onClick={resetToDefaults}>
@@ -41,24 +41,24 @@ function Harness() {
 describe("AppShellProvider", () => {
   beforeEach(() => localStorage.clear());
 
-  it("persists pin changes and enforces the seven-app rail budget", async () => {
+  it("persists pin changes and enforces the seven-dashboard rail budget", async () => {
     const user = userEvent.setup();
     render(
       <AppShellProvider>
         <Harness />
       </AppShellProvider>,
     );
-    await user.click(screen.getByRole("button", { name: "Email" }));
-    await user.click(screen.getByRole("button", { name: "Calendar" }));
+    await user.click(screen.getByRole("button", { name: "Tasks" }));
+    await user.click(screen.getByRole("button", { name: "Metrics" }));
     await user.click(screen.getByRole("button", { name: "Database" }));
 
     const pins = screen.getByLabelText("pins").textContent?.split(",") ?? [];
     expect(pins).toHaveLength(7);
     expect(pins).not.toContain("database");
-    expect(JSON.parse(localStorage.getItem("tokenring-pinned-apps") ?? "[]")).toEqual(pins);
+    expect(JSON.parse(localStorage.getItem("tokenring-pinned-dashboards") ?? "[]")).toEqual(pins);
   });
 
-  it("opens the app switcher and resets durable layout state", async () => {
+  it("opens the switcher and resets durable rail state", async () => {
     const user = userEvent.setup();
     render(
       <AppShellProvider>
@@ -67,20 +67,20 @@ describe("AppShellProvider", () => {
     );
     await user.click(screen.getByRole("button", { name: "Switcher" }));
     expect(screen.getByLabelText("switcher")).toHaveTextContent("true");
-    await user.click(screen.getByRole("button", { name: "Email" }));
+    await user.click(screen.getByRole("button", { name: "Tasks" }));
     await user.click(screen.getByRole("button", { name: "Reset" }));
     expect(screen.getByLabelText("switcher")).toHaveTextContent("false");
-    expect(screen.getByLabelText("pins")).not.toHaveTextContent("email");
-    expect(screen.getByLabelText("recent apps")).toHaveTextContent("[]");
-    expect(JSON.parse(localStorage.getItem("tokenring-recent-apps") ?? "null")).toEqual([]);
+    expect(screen.getByLabelText("pins")).not.toHaveTextContent("tasks");
+    expect(screen.getByLabelText("recent dashboards")).toHaveTextContent("[]");
+    expect(JSON.parse(localStorage.getItem("tokenring-recent-dashboards") ?? "null")).toEqual([]);
   });
 
-  it("updates an existing app timestamp without changing its position", async () => {
+  it("updates an existing dashboard timestamp without changing its position", async () => {
     localStorage.setItem(
-      "tokenring-recent-apps",
+      "tokenring-recent-dashboards",
       JSON.stringify([
-        { id: "email", lastVisitedAt: 100 },
-        { id: "calendar", lastVisitedAt: 200 },
+        { id: "tasks", lastVisitedAt: 100 },
+        { id: "metrics", lastVisitedAt: 200 },
       ]),
     );
     const originalNow = Date.now;
@@ -92,25 +92,25 @@ describe("AppShellProvider", () => {
           <Harness />
         </AppShellProvider>,
       );
-      await user.click(screen.getByRole("button", { name: "Visit Email" }));
+      await user.click(screen.getByRole("button", { name: "Visit Tasks" }));
 
-      const entries = JSON.parse(localStorage.getItem("tokenring-recent-apps") ?? "[]");
+      const entries = JSON.parse(localStorage.getItem("tokenring-recent-dashboards") ?? "[]");
       expect(entries).toEqual([
-        { id: "email", lastVisitedAt: 300 },
-        { id: "calendar", lastVisitedAt: 200 },
+        { id: "tasks", lastVisitedAt: 300 },
+        { id: "metrics", lastVisitedAt: 200 },
       ]);
-      expect(JSON.parse(screen.getByLabelText("recent apps").textContent ?? "[]")).toEqual(entries);
+      expect(JSON.parse(screen.getByLabelText("recent dashboards").textContent ?? "[]")).toEqual(entries);
     } finally {
       Date.now = originalNow;
     }
   });
 
-  it("appends new apps and prunes the least recently visited entry when full", async () => {
+  it("appends new dashboards and prunes the least recently visited entry when full", async () => {
     localStorage.setItem(
-      "tokenring-recent-apps",
+      "tokenring-recent-dashboards",
       JSON.stringify([
-        { id: "email", lastVisitedAt: 500 },
-        { id: "calendar", lastVisitedAt: 100 },
+        { id: "tasks", lastVisitedAt: 500 },
+        { id: "metrics", lastVisitedAt: 100 },
         { id: "database", lastVisitedAt: 400 },
         { id: "media", lastVisitedAt: 300 },
         { id: "blog", lastVisitedAt: 200 },
@@ -125,27 +125,27 @@ describe("AppShellProvider", () => {
           <Harness />
         </AppShellProvider>,
       );
-      await user.click(screen.getByRole("button", { name: "Visit Email" }));
+      await user.click(screen.getByRole("button", { name: "Visit Tasks" }));
       await user.click(screen.getByRole("button", { name: "Visit Vault" }));
 
-      const entries = JSON.parse(localStorage.getItem("tokenring-recent-apps") ?? "[]") as Array<{ id: string }>;
-      expect(entries.map(entry => entry.id)).toEqual(["email", "database", "media", "blog", "vault"]);
+      const entries = JSON.parse(localStorage.getItem("tokenring-recent-dashboards") ?? "[]") as Array<{ id: string }>;
+      expect(entries.map(entry => entry.id)).toEqual(["tasks", "database", "media", "blog", "vault"]);
     } finally {
       Date.now = originalNow;
     }
   });
 
-  it("removes newly pinned apps from recents and does not track pinned visits", async () => {
+  it("removes newly pinned dashboards from recents and does not track pinned visits", async () => {
     const user = userEvent.setup();
     render(
       <AppShellProvider>
         <Harness />
       </AppShellProvider>,
     );
-    await user.click(screen.getByRole("button", { name: "Visit Email" }));
-    await user.click(screen.getByRole("button", { name: "Email" }));
-    await user.click(screen.getByRole("button", { name: "Visit Email" }));
+    await user.click(screen.getByRole("button", { name: "Visit Tasks" }));
+    await user.click(screen.getByRole("button", { name: "Tasks" }));
+    await user.click(screen.getByRole("button", { name: "Visit Tasks" }));
 
-    expect(JSON.parse(localStorage.getItem("tokenring-recent-apps") ?? "[]")).toEqual([]);
+    expect(JSON.parse(localStorage.getItem("tokenring-recent-dashboards") ?? "[]")).toEqual([]);
   });
 });

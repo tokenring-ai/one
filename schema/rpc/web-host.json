@@ -1,0 +1,1215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Users RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/users",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "getMe request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/users.getMe"
+        },
+        "params": {
+          "$ref": "#/$defs/getMeParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getMe response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getMeResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getRemoteAccessInfo request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/users.getRemoteAccessInfo"
+        },
+        "params": {
+          "$ref": "#/$defs/getRemoteAccessInfoParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getRemoteAccessInfo response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getRemoteAccessInfoResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listUsers request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/users.listUsers"
+        },
+        "params": {
+          "$ref": "#/$defs/listUsersParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listUsers response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listUsersResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listAccessLinks request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/users.listAccessLinks"
+        },
+        "params": {
+          "$ref": "#/$defs/listAccessLinksParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listAccessLinks response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listAccessLinksResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createUser request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/users.createUser"
+        },
+        "params": {
+          "$ref": "#/$defs/createUserParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createUser response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createUserResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createAccessLink request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/users.createAccessLink"
+        },
+        "params": {
+          "$ref": "#/$defs/createAccessLinkParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createAccessLink response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createAccessLinkResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createMyAccessLink request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/users.createMyAccessLink"
+        },
+        "params": {
+          "$ref": "#/$defs/createMyAccessLinkParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createMyAccessLink response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createMyAccessLinkResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setPassword request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/users.setPassword"
+        },
+        "params": {
+          "$ref": "#/$defs/setPasswordParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setPassword response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/setPasswordResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setRole request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/users.setRole"
+        },
+        "params": {
+          "$ref": "#/$defs/setRoleParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setRole response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/setRoleResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "signOutUser request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/users.signOutUser"
+        },
+        "params": {
+          "$ref": "#/$defs/signOutUserParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "signOutUser response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/signOutUserResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "removeUser request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/users.removeUser"
+        },
+        "params": {
+          "$ref": "#/$defs/removeUserParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "removeUser response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/removeUserResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "revokeAccessLink request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/users.revokeAccessLink"
+        },
+        "params": {
+          "$ref": "#/$defs/revokeAccessLinkParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "revokeAccessLink response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/revokeAccessLinkResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "getMeParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getMeResult": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "admin",
+            "member"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "config",
+            "managed"
+          ]
+        }
+      },
+      "required": [
+        "username",
+        "role",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "getRemoteAccessInfoParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getRemoteAccessInfoResult": {
+      "type": "object",
+      "properties": {
+        "baseUrl": {
+          "type": "string"
+        },
+        "baseUrlSource": {
+          "type": "string",
+          "enum": [
+            "configured",
+            "request",
+            "derived"
+          ]
+        },
+        "isLoopback": {
+          "type": "boolean"
+        },
+        "isHttps": {
+          "type": "boolean"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "storeProblem": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "baseUrl",
+        "baseUrlSource",
+        "isLoopback",
+        "isHttps",
+        "warnings",
+        "storeProblem"
+      ],
+      "additionalProperties": false
+    },
+    "listUsersParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listUsersResult": {
+      "type": "object",
+      "properties": {
+        "users": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "username": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "admin",
+                  "member"
+                ]
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "config",
+                  "managed"
+                ]
+              },
+              "hasPassword": {
+                "type": "boolean"
+              },
+              "createdAt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "createdBy": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "lastLoginAt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "activeSessions": {
+                "type": "number"
+              },
+              "pendingAccessLinks": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "username",
+              "role",
+              "source",
+              "hasPassword",
+              "createdAt",
+              "createdBy",
+              "lastLoginAt",
+              "activeSessions",
+              "pendingAccessLinks"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "storeProblem": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "users",
+        "storeProblem"
+      ],
+      "additionalProperties": false
+    },
+    "listAccessLinksParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listAccessLinksResult": {
+      "type": "object",
+      "properties": {
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "username": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "number"
+              },
+              "expiresAt": {
+                "type": "number"
+              },
+              "createdBy": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "username",
+              "createdAt",
+              "expiresAt",
+              "createdBy"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "links"
+      ],
+      "additionalProperties": false
+    },
+    "createUserParams": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "admin",
+            "member"
+          ]
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "accessLink",
+            "password"
+          ]
+        },
+        "password": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "expiresInMinutes": {
+          "type": "integer",
+          "minimum": 15,
+          "maximum": 10080
+        }
+      },
+      "required": [
+        "username",
+        "role",
+        "method"
+      ]
+    },
+    "createUserResult": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "object",
+          "properties": {
+            "username": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "admin",
+                "member"
+              ]
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "config",
+                "managed"
+              ]
+            },
+            "hasPassword": {
+              "type": "boolean"
+            },
+            "createdAt": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "createdBy": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "lastLoginAt": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "activeSessions": {
+              "type": "number"
+            },
+            "pendingAccessLinks": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "username",
+            "role",
+            "source",
+            "hasPassword",
+            "createdAt",
+            "createdBy",
+            "lastLoginAt",
+            "activeSessions",
+            "pendingAccessLinks"
+          ],
+          "additionalProperties": false
+        },
+        "link": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "expiresAt": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "url",
+            "expiresAt"
+          ],
+          "additionalProperties": false
+        },
+        "generatedPassword": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "user"
+      ],
+      "additionalProperties": false
+    },
+    "createAccessLinkParams": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "expiresInMinutes": {
+          "type": "integer",
+          "minimum": 15,
+          "maximum": 10080
+        }
+      },
+      "required": [
+        "username"
+      ]
+    },
+    "createAccessLinkResult": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "expiresAt"
+      ],
+      "additionalProperties": false
+    },
+    "createMyAccessLinkParams": {
+      "type": "object",
+      "properties": {
+        "expiresInMinutes": {
+          "type": "integer",
+          "minimum": 15,
+          "maximum": 10080
+        }
+      }
+    },
+    "createMyAccessLinkResult": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "expiresAt"
+      ],
+      "additionalProperties": false
+    },
+    "setPasswordParams": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "password": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "username"
+      ]
+    },
+    "setPasswordResult": {
+      "type": "object",
+      "properties": {
+        "generatedPassword": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "setRoleParams": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "admin",
+            "member"
+          ]
+        }
+      },
+      "required": [
+        "username",
+        "role"
+      ]
+    },
+    "setRoleResult": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "ok"
+      ],
+      "additionalProperties": false
+    },
+    "signOutUserParams": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        }
+      },
+      "required": [
+        "username"
+      ]
+    },
+    "signOutUserResult": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "ok"
+      ],
+      "additionalProperties": false
+    },
+    "removeUserParams": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        }
+      },
+      "required": [
+        "username"
+      ]
+    },
+    "removeUserResult": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "ok"
+      ],
+      "additionalProperties": false
+    },
+    "revokeAccessLinkParams": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "revokeAccessLinkResult": {
+      "type": "object",
+      "properties": {
+        "revoked": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "revoked"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Users RPC",
+    "path": "/rpc/users",
+    "source": "plugin/web-host/rpc/schema.ts",
+    "methods": {
+      "getMe": {
+        "type": "query",
+        "params": "#/$defs/getMeParams",
+        "result": "#/$defs/getMeResult"
+      },
+      "getRemoteAccessInfo": {
+        "type": "query",
+        "params": "#/$defs/getRemoteAccessInfoParams",
+        "result": "#/$defs/getRemoteAccessInfoResult"
+      },
+      "listUsers": {
+        "type": "query",
+        "params": "#/$defs/listUsersParams",
+        "result": "#/$defs/listUsersResult"
+      },
+      "listAccessLinks": {
+        "type": "query",
+        "params": "#/$defs/listAccessLinksParams",
+        "result": "#/$defs/listAccessLinksResult"
+      },
+      "createUser": {
+        "type": "mutation",
+        "params": "#/$defs/createUserParams",
+        "result": "#/$defs/createUserResult"
+      },
+      "createAccessLink": {
+        "type": "mutation",
+        "params": "#/$defs/createAccessLinkParams",
+        "result": "#/$defs/createAccessLinkResult"
+      },
+      "createMyAccessLink": {
+        "type": "mutation",
+        "params": "#/$defs/createMyAccessLinkParams",
+        "result": "#/$defs/createMyAccessLinkResult"
+      },
+      "setPassword": {
+        "type": "mutation",
+        "params": "#/$defs/setPasswordParams",
+        "result": "#/$defs/setPasswordResult"
+      },
+      "setRole": {
+        "type": "mutation",
+        "params": "#/$defs/setRoleParams",
+        "result": "#/$defs/setRoleResult"
+      },
+      "signOutUser": {
+        "type": "mutation",
+        "params": "#/$defs/signOutUserParams",
+        "result": "#/$defs/signOutUserResult"
+      },
+      "removeUser": {
+        "type": "mutation",
+        "params": "#/$defs/removeUserParams",
+        "result": "#/$defs/removeUserResult"
+      },
+      "revokeAccessLink": {
+        "type": "mutation",
+        "params": "#/$defs/revokeAccessLinkParams",
+        "result": "#/$defs/revokeAccessLinkResult"
+      }
+    }
+  }
+}

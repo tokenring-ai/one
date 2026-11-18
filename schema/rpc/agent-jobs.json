@@ -1,0 +1,1289 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Jobs RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/agent-jobs",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "listJobs request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent-jobs.listJobs"
+        },
+        "params": {
+          "$ref": "#/$defs/listJobsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listJobs response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listJobsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamJobs request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent-jobs.streamJobs"
+        },
+        "params": {
+          "$ref": "#/$defs/streamJobsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamJobs response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamJobsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamJobs stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getJobPolicy request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent-jobs.getJobPolicy"
+        },
+        "params": {
+          "$ref": "#/$defs/getJobPolicyParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getJobPolicy response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getJobPolicyResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getJobRollup request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent-jobs.getJobRollup"
+        },
+        "params": {
+          "$ref": "#/$defs/getJobRollupParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getJobRollup response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getJobRollupResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelJob request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/agent-jobs.cancelJob"
+        },
+        "params": {
+          "$ref": "#/$defs/cancelJobParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelJob response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/cancelJobResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "listJobsParams": {
+      "type": "object",
+      "properties": {
+        "owner": {
+          "type": "string"
+        },
+        "status": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "interrupted"
+            ]
+          }
+        },
+        "rootJobId": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        }
+      }
+    },
+    "listJobsResult": {
+      "type": "object",
+      "properties": {
+        "jobs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "owner": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "ownerRef": {
+                "default": {},
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "origin": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "agent"
+                      },
+                      "agentId": {
+                        "type": "string"
+                      },
+                      "agentType": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "agentId",
+                      "agentType"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "person"
+                      },
+                      "label": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "label"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "schedule"
+                      },
+                      "scheduleId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "scheduleId"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "parentJobId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rootJobId": {
+                "type": "string"
+              },
+              "depth": {
+                "type": "number"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "succeeded",
+                  "failed",
+                  "cancelled",
+                  "interrupted"
+                ]
+              },
+              "requestedAt": {
+                "type": "number"
+              },
+              "startedAt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "endedAt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "summary": {
+                "type": "string"
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "costUsd": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "tokens": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "agentId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "maxCostUsd": {
+                "default": null,
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "approvalLevel": {
+                "default": null,
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "refusals": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tool": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "level": {
+                      "type": "number"
+                    },
+                    "permissionId": {
+                      "type": "string"
+                    },
+                    "permissionSummary": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "tool",
+                    "message",
+                    "level"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "refusalCount": {
+                "default": 0,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "unanswered": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "question": {
+                      "type": "string"
+                    },
+                    "answer": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "deadline",
+                        "nobody"
+                      ]
+                    },
+                    "at": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "question",
+                    "answer",
+                    "reason",
+                    "at"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "unansweredCount": {
+                "default": 0,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "owner",
+              "label",
+              "ownerRef",
+              "agentType",
+              "origin",
+              "parentJobId",
+              "rootJobId",
+              "depth",
+              "status",
+              "requestedAt",
+              "startedAt",
+              "endedAt",
+              "summary",
+              "error",
+              "costUsd",
+              "tokens",
+              "agentId",
+              "maxCostUsd",
+              "approvalLevel",
+              "refusals",
+              "refusalCount",
+              "unanswered",
+              "unansweredCount"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "jobs"
+      ],
+      "additionalProperties": false
+    },
+    "streamJobsParams": {
+      "type": "object",
+      "properties": {
+        "owner": {
+          "type": "string"
+        },
+        "status": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "interrupted"
+            ]
+          }
+        },
+        "rootJobId": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        }
+      }
+    },
+    "streamJobsResult": {
+      "type": "object",
+      "properties": {
+        "jobs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "owner": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "ownerRef": {
+                "default": {},
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "origin": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "agent"
+                      },
+                      "agentId": {
+                        "type": "string"
+                      },
+                      "agentType": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "agentId",
+                      "agentType"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "person"
+                      },
+                      "label": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "label"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "schedule"
+                      },
+                      "scheduleId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "scheduleId"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "parentJobId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rootJobId": {
+                "type": "string"
+              },
+              "depth": {
+                "type": "number"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "succeeded",
+                  "failed",
+                  "cancelled",
+                  "interrupted"
+                ]
+              },
+              "requestedAt": {
+                "type": "number"
+              },
+              "startedAt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "endedAt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "summary": {
+                "type": "string"
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "costUsd": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "tokens": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "agentId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "maxCostUsd": {
+                "default": null,
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "approvalLevel": {
+                "default": null,
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "refusals": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tool": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "level": {
+                      "type": "number"
+                    },
+                    "permissionId": {
+                      "type": "string"
+                    },
+                    "permissionSummary": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "tool",
+                    "message",
+                    "level"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "refusalCount": {
+                "default": 0,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "unanswered": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "question": {
+                      "type": "string"
+                    },
+                    "answer": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "deadline",
+                        "nobody"
+                      ]
+                    },
+                    "at": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "question",
+                    "answer",
+                    "reason",
+                    "at"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "unansweredCount": {
+                "default": 0,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "owner",
+              "label",
+              "ownerRef",
+              "agentType",
+              "origin",
+              "parentJobId",
+              "rootJobId",
+              "depth",
+              "status",
+              "requestedAt",
+              "startedAt",
+              "endedAt",
+              "summary",
+              "error",
+              "costUsd",
+              "tokens",
+              "agentId",
+              "maxCostUsd",
+              "approvalLevel",
+              "refusals",
+              "refusalCount",
+              "unanswered",
+              "unansweredCount"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "jobs"
+      ],
+      "additionalProperties": false
+    },
+    "getJobPolicyParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getJobPolicyResult": {
+      "type": "object",
+      "properties": {
+        "defaultApprovalLevel": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "approvalCeiling": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "defaultMaxCostUsd": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "escalationConfigured": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "defaultApprovalLevel",
+        "approvalCeiling",
+        "defaultMaxCostUsd",
+        "escalationConfigured"
+      ],
+      "additionalProperties": false
+    },
+    "getJobRollupParams": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90
+        },
+        "owner": {
+          "type": "string"
+        },
+        "groupBy": {
+          "type": "string",
+          "enum": [
+            "schedule",
+            "queue",
+            "workflow",
+            "day",
+            "owner"
+          ]
+        }
+      },
+      "required": [
+        "groupBy"
+      ]
+    },
+    "getJobRollupResult": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "since": {
+          "type": "number"
+        },
+        "groupBy": {
+          "type": "string",
+          "enum": [
+            "schedule",
+            "queue",
+            "workflow",
+            "day",
+            "owner"
+          ]
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "runs": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "active": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "succeeded": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "failed": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "interrupted": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "cancelled": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "refusedActions": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "totalCostUsd": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "costUnavailableJobs": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "averageDurationMs": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "lastRunAt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "lastStatus": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "queued",
+                      "running",
+                      "succeeded",
+                      "failed",
+                      "cancelled",
+                      "interrupted"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "key",
+              "label",
+              "runs",
+              "active",
+              "succeeded",
+              "failed",
+              "interrupted",
+              "cancelled",
+              "refusedActions",
+              "totalCostUsd",
+              "costUnavailableJobs",
+              "averageDurationMs",
+              "lastRunAt",
+              "lastStatus"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "totals": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            },
+            "runs": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "active": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "succeeded": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "failed": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "interrupted": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "cancelled": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "refusedActions": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "totalCostUsd": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "costUnavailableJobs": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "averageDurationMs": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "lastRunAt": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "lastStatus": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "queued",
+                    "running",
+                    "succeeded",
+                    "failed",
+                    "cancelled",
+                    "interrupted"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "key",
+            "label",
+            "runs",
+            "active",
+            "succeeded",
+            "failed",
+            "interrupted",
+            "cancelled",
+            "refusedActions",
+            "totalCostUsd",
+            "costUnavailableJobs",
+            "averageDurationMs",
+            "lastRunAt",
+            "lastStatus"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "days",
+        "since",
+        "groupBy",
+        "truncated",
+        "rows",
+        "totals"
+      ],
+      "additionalProperties": false
+    },
+    "cancelJobParams": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "jobId"
+      ]
+    },
+    "cancelJobResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "success"
+        },
+        "cancelled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "status",
+        "cancelled"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Agent Jobs RPC",
+    "path": "/rpc/agent-jobs",
+    "source": "plugin/agent/rpc/jobs.schema.ts",
+    "methods": {
+      "listJobs": {
+        "type": "query",
+        "params": "#/$defs/listJobsParams",
+        "result": "#/$defs/listJobsResult"
+      },
+      "streamJobs": {
+        "type": "stream",
+        "params": "#/$defs/streamJobsParams",
+        "result": "#/$defs/streamJobsResult"
+      },
+      "getJobPolicy": {
+        "type": "query",
+        "params": "#/$defs/getJobPolicyParams",
+        "result": "#/$defs/getJobPolicyResult"
+      },
+      "getJobRollup": {
+        "type": "query",
+        "params": "#/$defs/getJobRollupParams",
+        "result": "#/$defs/getJobRollupResult"
+      },
+      "cancelJob": {
+        "type": "mutation",
+        "params": "#/$defs/cancelJobParams",
+        "result": "#/$defs/cancelJobResult"
+      }
+    }
+  }
+}

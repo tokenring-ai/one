@@ -4,7 +4,7 @@
 
 use std::time::Instant;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEventKind};
 
 use crate::tui::editor::apply_editor_keypress;
 use crate::tui::ui_layout::MouseAction;
@@ -63,6 +63,23 @@ impl ChatSession {
                 || self.keybinds.which_key_toggle.matches(key)
             {
                 self.help_open = false;
+                return;
+            }
+            if self.keybinds.messages_page_up.matches(key) {
+                self.help_scroll = self.help_scroll.saturating_sub(self.help_page_rows.max(1));
+                return;
+            }
+            if self.keybinds.messages_page_down.matches(key) {
+                self.help_scroll = self.help_scroll.saturating_add(self.help_page_rows.max(1));
+                return;
+            }
+            if self.keybinds.messages_first.matches(key) {
+                self.help_scroll = 0;
+                return;
+            }
+            if self.keybinds.messages_last.matches(key) {
+                self.help_scroll = usize::MAX;
+                return;
             }
             return;
         }
@@ -125,11 +142,11 @@ impl ChatSession {
         // composer, no question/follow-up/picker typing). Otherwise it falls
         // through and inserts normally.
         if matches!(key.code, KeyCode::Char('?')) && self.can_open_help_with_question_mark() {
-            self.help_open = true;
+            self.open_help();
             return;
         }
         if self.keybinds.which_key_toggle.matches(key) {
-            self.help_open = true;
+            self.open_help();
             return;
         }
 
@@ -361,6 +378,15 @@ impl ChatSession {
         // Submit / history / interrupt
         // session_interrupt).
         if self.keybinds.input_submit.matches(key) {
+            if self.editor.is_empty()
+                && self.filesearch.is_none()
+                && self.completion.is_none()
+                && self
+                    .visible_tool_entry()
+                    .is_some_and(|idx| self.toggle_tool_entry(idx))
+            {
+                return;
+            }
             self.submit();
             return;
         }
@@ -400,6 +426,8 @@ impl ChatSession {
             self.trigger_shortcut("/model", "Opening model…");
             return;
         }
+        // `tips_toggle` (leader h) is a legacy alias of verbose. The which-key
+        // lists only `messages_toggle_conceal` so the chord menu is not duplicated.
         if self.keybinds.messages_toggle_conceal.matches_leader(key)
             || self.keybinds.tips_toggle.matches_leader(key)
         {
@@ -433,7 +461,7 @@ impl ChatSession {
             return;
         }
         if self.keybinds.which_key_toggle.matches_leader(key) {
-            self.help_open = true;
+            self.open_help();
             return;
         }
 
@@ -531,6 +559,12 @@ impl ChatSession {
     }
 
     pub(super) fn handle_mouse(&mut self, event: crossterm::event::MouseEvent) {
+        if !self.help_open && matches!(event.kind, MouseEventKind::Down(_)) {
+            if let Some(idx) = self.tool_entry_at(event.column, event.row) {
+                self.toggle_tool_entry(idx);
+                return;
+            }
+        }
         let action =
             self.hit_regions
                 .mouse_action(event, self.help_open, self.can_scroll_transcript());

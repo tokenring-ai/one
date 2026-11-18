@@ -2,12 +2,14 @@
 
 <img src="assets/tokenring-one-logo.webp">
 
-**An AI-powered coding assistant with a comprehensive ecosystem for local development**
+**A local-first, multi-agent workspace for coding, canvas, documents, media, and research**
 
-TokenRing One is an interactive AI assistant designed to help developers with coding tasks like editing, refactoring,
-testing, and git operations. It runs locally on your machine and supports multiple AI providers while keeping your code
-secure. The modular ecosystem includes specialized packages covering everything from audio processing to cloud services,
-communication platforms, and advanced development tools.
+TokenRing One is a local-first, multi-agent workspace that bundles five purpose-built apps (coding, canvas, documents,
+media, and research) into a single product. Same agents, same ecosystem, same configuration across every surface. It
+provides a chat interface where you can ask questions, issue commands, and work with source code and content, using AI
+to help with code edits, refactors, testing, research, writing, publishing, and more. It runs on your own machine and
+supports multiple AI providers, and its modular ecosystem covers everything from audio processing to cloud services and
+communication platforms. New here? Start with the [Getting started guide](docs/docs/getting-started.md).
 
 ## How it works: Backend (daemon) and CLI
 
@@ -67,7 +69,7 @@ daemon.
 - **Database Abstraction**: SQL execution, schema inspection, and resource management
 - **Checkpoint Persistence**: Agent state storage across sessions
 - **Task Queuing**: Sequential processing with checkpoint preservation
-- **Memory Management**: Short-term memory and attention storage
+- **Memory Management**: Durable categorized memories backed by markdown files
 
 ### Cloud and Infrastructure
 
@@ -89,7 +91,7 @@ daemon.
 ### Workflow Automation
 
 - **Scripting Language**: Variables, functions, LLM integration, and command sequences
-- **Task Orchestration**: Multi-step workflows with user approval
+- **Tasks**: Markdown task files agents can create, search, and execute in parallel
 - **Batch Processing**: Named iterables system with /foreach command
 - **Workflow Engine**: Advanced task planning and execution
 - **Scheduler**: Task scheduling and automation
@@ -303,7 +305,7 @@ Published images:
 | Tag                               | Contents                                                     |
 |-----------------------------------|--------------------------------------------------------------|
 | `ghcr.io/tokenring-ai/one:full`   | CLI + backend with bundled web UI (entrypoint is the CLI)    |
-| `ghcr.io/tokenring-ai/one:server` | Backend daemon only (listens on port 80 by default)          |
+| `ghcr.io/tokenring-ai/one:server` | Backend daemon only (listens on port 14008 by default)       |
 | `ghcr.io/tokenring-ai/one:cli`    | CLI only (pass a backend URL)                                |
 
 ```bash
@@ -317,11 +319,16 @@ docker run -ti --rm \
 # Backend only (web UI + RPC)
 docker pull ghcr.io/tokenring-ai/one:server
 docker run -ti --rm \
-  -p 3000:80 \
+  -p 3000:14008 \
   -v ./your-project:/repo:rw \
-  -e OPENAI_API_KEY \
-  ghcr.io/tokenring-ai/one:server \
-  --listen 0.0.0.0 --port 80 --workingDirectory /repo
+  -v tokenring-data:/home/tokenring/.tokenring \
+  -v tokenring-vault:/home/tokenring/.config/tokenring \
+  -e TR_ADMIN_PASSWORD \
+  -e TR_VAULT_PASSWORD \
+  ghcr.io/tokenring-ai/one:server
+  # Another port inside the container: add `--port 9000` after the image name (and map -p 3000:9000)
+# A container has no system keychain: set the web login (TR_ADMIN_PASSWORD) and the vault password
+# (TR_VAULT_PASSWORD) yourself, then connect a model provider in Configuration → AI providers.
 ```
 
 ## Command Line Options
@@ -336,8 +343,8 @@ tokenring-one-server [options]
 
 | Option                         | Description                                                                |
 |--------------------------------|----------------------------------------------------------------------------|
-| `--workingDirectory <path>`    | Working directory for agents (default: cwd)                                |
-| `--workspaceDirectory <path>`  | Knowledge, session data, etc. (default: `<workingDirectory>/.tokenring`)   |
+| `--workingDirectory <path>`    | Launch directory; seeds the default allowed path for agents (default: cwd) |
+| `--workspaceDirectory <path>`  | Knowledge, session data, etc. (default: `~/.tokenring/workspaces/<name>-<hash>`) |
 | `--listen <host>`              | HTTP bind address (default: `127.0.0.1`)                                   |
 | `--port <port>`                | HTTP port; `0` picks a free port (default: `0`)                            |
 | `--vaultFile <path>`           | Secrets vault path (default: `~/.config/tokenring/secrets.vault`)          |
@@ -428,7 +435,7 @@ TokenRing One is built as a modular TypeScript monorepo with specialized package
 - **@tokenring-ai/drizzle-storage**: Multi-database storage using Drizzle ORM (SQLite, MySQL, PostgreSQL)
 - **@tokenring-ai/checkpoint**: Checkpoint service for agent state persistence
 - **@tokenring-ai/queue**: App-level work queue that dispatches items to agents of a specific type
-- **@tokenring-ai/memory**: Agent memory management and attention storage
+- **@tokenring-ai/memory**: Durable categorized memories backed by markdown files
 
 ### Development Tools
 
@@ -506,20 +513,20 @@ TokenRing One is built as a modular TypeScript monorepo with specialized package
 
 ## Configuration
 
-Configuration is loaded from `.tokenring/one-config.mjs` in your working directory. The file uses the same schema as the
-plugin config. A minimal example:
+Most setup happens in the app: **Configuration → AI providers** (or `/ai connect` in the terminal app) connects a
+model provider and saves its key in the credential vault. None is on by default.
 
-```javascript
-export default {
-  ai: {
-    autoConfigure: true, // auto-detect providers from env vars
-  },
-  filesystem: {
-    providers: {
-      local: {type: "posix"}
-    }
-  }
-};
+Settings are YAML, layered as built-in defaults, then `~/.tokenring/config.yaml` (all projects), then the workspace's
+`config.yaml` (one project). You only write the keys you want to change. See [Configuration](docs/docs/configuration.md).
+
+```yaml
+# ~/.tokenring/config.yaml
+ai:
+  providers:
+    OpenAI:
+      provider: openai
+      catalog: openai
+      apiKey: { source: vault, category: env, key: OPENAI_API_KEY }
 ```
 
 ### Default AI Models
@@ -572,7 +579,7 @@ Local launches (CLI starts the backend itself) use generated session credentials
 | Image                             | Entrypoint                                              | Use when                               |
 |-----------------------------------|---------------------------------------------------------|----------------------------------------|
 | `ghcr.io/tokenring-ai/one:full`   | CLI (`tokenring`) with backend (bundled web UI) on image | Interactive TUI in a container         |
-| `ghcr.io/tokenring-ai/one:server` | Backend daemon on port 80                               | Headless / web UI / remote CLI clients |
+| `ghcr.io/tokenring-ai/one:server` | Backend daemon on port 14008                            | Headless / web UI / remote CLI clients |
 | `ghcr.io/tokenring-ai/one:cli`    | CLI only                                                | Connecting to a backend elsewhere      |
 
 ```bash
@@ -587,10 +594,12 @@ docker run -ti --rm \
 # Backend daemon with published port (web UI + RPC)
 docker pull ghcr.io/tokenring-ai/one:server
 docker run -ti --rm \
-  -p 3000:80 \
+  -p 3000:14008 \
   -v ./your-project:/repo:rw \
-  -e OPENAI_API_KEY \
+  -v tokenring-data:/home/tokenring/.tokenring \
+  -v tokenring-vault:/home/tokenring/.config/tokenring \
   -e TR_ADMIN_PASSWORD \
+  -e TR_VAULT_PASSWORD \
   ghcr.io/tokenring-ai/one:server
 
 # CLI container against a host or remote backend
@@ -605,17 +614,19 @@ docker run -ti --rm \
 ```dockerfile
 FROM ghcr.io/tokenring-ai/one:server
 
-# Install additional dependencies
+# The image runs as the unprivileged user "tokenring"; installing packages needs root
+USER root
 RUN apt-get update && apt-get install -y \
     portaudio19-dev \
     libpq-dev \
     mysql-client \
     && rm -rf /var/lib/apt/lists/*
+USER tokenring
 
 # Add custom configuration
-COPY .tokenring/one-config.mjs /root/.tokenring/one-config.mjs
+COPY --chown=tokenring:tokenring config.yaml /home/tokenring/.tokenring/config.yaml
 
-EXPOSE 80
+EXPOSE 14008
 ```
 
 ### Docker Compose Setup
@@ -626,20 +637,13 @@ services:
     image: ghcr.io/tokenring-ai/one:server
     container_name: tokenring-one
     ports:
-      - "3000:80"
+      - "3000:14008"
     volumes:
       - ./your-project:/repo:rw
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - TR_ADMIN_PASSWORD=${TR_ADMIN_PASSWORD}
-    command:
-      - --listen
-      - 0.0.0.0
-      - --port
-      - "80"
-      - --workingDirectory
-      - /repo
 ```
 
 ## Development
@@ -700,7 +704,7 @@ of dependencies, see the package.json file.
 - **drizzle-storage**: Multi-database ORM support
 - **checkpoint**: Agent state persistence
 - **queue**: App-level work queue dispatching to typed agents
-- **memory**: Memory management and attention storage
+- **memory**: Durable categorized memories backed by markdown files
 
 #### Development Tools
 

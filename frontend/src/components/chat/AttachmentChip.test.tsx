@@ -19,6 +19,20 @@ const textAttachment: ChatAttachment = {
   body: btoa("hello world"),
 };
 
+const httpsImageAttachment: ChatAttachment = {
+  name: "logo.png",
+  encoding: "href",
+  mimeType: "image/png",
+  body: "https://example.com/logo.png",
+};
+
+const javascriptImageAttachment: ChatAttachment = {
+  name: "evil.png",
+  encoding: "href",
+  mimeType: "image/png",
+  body: "javascript:alert(1)",
+};
+
 describe("AttachmentChip", () => {
   beforeEach(() => {
     mock.clearAllMocks();
@@ -44,6 +58,17 @@ describe("AttachmentChip", () => {
     expect(screen.getByText("hello world")).toBeTruthy();
 
     await user.click(screen.getByLabelText("Close preview"));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("closes the preview overlay on Escape", async () => {
+    const user = userEvent.setup();
+    render(<AttachmentChip attachment={textAttachment} />);
+
+    await user.click(screen.getByLabelText("Preview notes.txt"));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+
+    await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -79,5 +104,35 @@ describe("AttachmentChip", () => {
     });
 
     createObjectURLSpy.mockRestore();
+  });
+
+  it("renders https href image attachments with a thumbnail and preview source", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<AttachmentChip attachment={httpsImageAttachment} />);
+
+    expect(container.querySelector("img")?.getAttribute("src")).toBe("https://example.com/logo.png");
+
+    await user.click(screen.getByLabelText("Preview logo.png"));
+    const previewImages = screen.getByRole("dialog").querySelectorAll("img");
+    expect(previewImages.length).toBeGreaterThan(0);
+    expect(previewImages[previewImages.length - 1]?.getAttribute("src")).toBe("https://example.com/logo.png");
+  });
+
+  it("blocks javascript: href attachments from media and download links", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<AttachmentChip attachment={javascriptImageAttachment} />);
+
+    // No thumbnail from the unsafe href; the name is still shown
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.getByText("evil.png")).toBeTruthy();
+
+    await user.click(screen.getByLabelText("Preview evil.png"));
+    expect(screen.getByText("No preview available for this attachment.")).toBeTruthy();
+    await user.click(screen.getByLabelText("Close preview"));
+
+    await user.click(screen.getByRole("button", { name: "Download evil.png" }));
+    await waitFor(() => {
+      expect(errorMock).toHaveBeenCalledWith(expect.stringContaining("unsupported URL scheme"), { duration: 5000 });
+    });
   });
 });

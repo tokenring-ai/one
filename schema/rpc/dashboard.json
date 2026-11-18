@@ -1,0 +1,651 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Dashboard RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/dashboard",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "getDashboardLayout request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/dashboard.getDashboardLayout"
+        },
+        "params": {
+          "$ref": "#/$defs/getDashboardLayoutParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getDashboardLayout response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getDashboardLayoutResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "saveDashboardLayout request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/dashboard.saveDashboardLayout"
+        },
+        "params": {
+          "$ref": "#/$defs/saveDashboardLayoutParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "saveDashboardLayout response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/saveDashboardLayoutResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteDashboardLayout request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/dashboard.deleteDashboardLayout"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteDashboardLayoutParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteDashboardLayout response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteDashboardLayoutResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listDashboardLayouts request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/dashboard.listDashboardLayouts"
+        },
+        "params": {
+          "$ref": "#/$defs/listDashboardLayoutsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listDashboardLayouts response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listDashboardLayoutsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "getDashboardLayoutParams": {
+      "type": "object",
+      "properties": {
+        "dashboardId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        }
+      },
+      "required": [
+        "dashboardId"
+      ]
+    },
+    "getDashboardLayoutResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "record": {
+              "type": "object",
+              "properties": {
+                "dashboardId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "pattern": "^[a-z0-9][a-z0-9-]*$"
+                },
+                "schemaVersion": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "viewRegistryHash": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "layout": {
+                  "type": "string",
+                  "maxLength": 262144
+                },
+                "updatedAt": {
+                  "type": "number"
+                },
+                "app": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60
+                    },
+                    "icon": {
+                      "type": "string",
+                      "maxLength": 40
+                    },
+                    "basedOn": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64,
+                      "pattern": "^[a-z0-9][a-z0-9-]*$"
+                    },
+                    "group": {
+                      "type": "string",
+                      "maxLength": 40
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "icon",
+                    "basedOn"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "dashboardId",
+                "schemaVersion",
+                "viewRegistryHash",
+                "layout",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "record"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "notFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "saveDashboardLayoutParams": {
+      "type": "object",
+      "properties": {
+        "dashboardId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "viewRegistryHash": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "layout": {
+          "type": "string",
+          "maxLength": 262144
+        },
+        "app": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            "icon": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "basedOn": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-z0-9][a-z0-9-]*$"
+            },
+            "group": {
+              "type": "string",
+              "maxLength": 40
+            }
+          },
+          "required": [
+            "label",
+            "icon",
+            "basedOn"
+          ]
+        },
+        "expectedUpdatedAt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "dashboardId",
+        "schemaVersion",
+        "viewRegistryHash",
+        "layout"
+      ]
+    },
+    "saveDashboardLayoutResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "updatedAt": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "status",
+            "updatedAt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "conflict"
+            },
+            "record": {
+              "type": "object",
+              "properties": {
+                "dashboardId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "pattern": "^[a-z0-9][a-z0-9-]*$"
+                },
+                "schemaVersion": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "viewRegistryHash": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "layout": {
+                  "type": "string",
+                  "maxLength": 262144
+                },
+                "updatedAt": {
+                  "type": "number"
+                },
+                "app": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60
+                    },
+                    "icon": {
+                      "type": "string",
+                      "maxLength": 40
+                    },
+                    "basedOn": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64,
+                      "pattern": "^[a-z0-9][a-z0-9-]*$"
+                    },
+                    "group": {
+                      "type": "string",
+                      "maxLength": 40
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "icon",
+                    "basedOn"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "dashboardId",
+                "schemaVersion",
+                "viewRegistryHash",
+                "layout",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "record"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "deleteDashboardLayoutParams": {
+      "type": "object",
+      "properties": {
+        "dashboardId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        }
+      },
+      "required": [
+        "dashboardId"
+      ]
+    },
+    "deleteDashboardLayoutResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "notFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "listDashboardLayoutsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listDashboardLayoutsResult": {
+      "type": "object",
+      "properties": {
+        "layouts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "dashboardId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "pattern": "^[a-z0-9][a-z0-9-]*$"
+              },
+              "schemaVersion": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "viewRegistryHash": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "updatedAt": {
+                "type": "number"
+              },
+              "app": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "icon": {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "basedOn": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[a-z0-9][a-z0-9-]*$"
+                  },
+                  "group": {
+                    "type": "string",
+                    "maxLength": 40
+                  }
+                },
+                "required": [
+                  "label",
+                  "icon",
+                  "basedOn"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "dashboardId",
+              "schemaVersion",
+              "viewRegistryHash",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "layouts"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Dashboard RPC",
+    "path": "/rpc/dashboard",
+    "source": "plugin/dashboard/rpc/schema.ts",
+    "methods": {
+      "getDashboardLayout": {
+        "type": "query",
+        "params": "#/$defs/getDashboardLayoutParams",
+        "result": "#/$defs/getDashboardLayoutResult"
+      },
+      "saveDashboardLayout": {
+        "type": "mutation",
+        "params": "#/$defs/saveDashboardLayoutParams",
+        "result": "#/$defs/saveDashboardLayoutResult"
+      },
+      "deleteDashboardLayout": {
+        "type": "mutation",
+        "params": "#/$defs/deleteDashboardLayoutParams",
+        "result": "#/$defs/deleteDashboardLayoutResult"
+      },
+      "listDashboardLayouts": {
+        "type": "query",
+        "params": "#/$defs/listDashboardLayoutsParams",
+        "result": "#/$defs/listDashboardLayoutsResult"
+      }
+    }
+  }
+}

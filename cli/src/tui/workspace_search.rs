@@ -25,8 +25,8 @@ impl WorkspaceSearch {
     }
 
     /// Start or refresh a backend search for `query` when not already cached.
-    pub fn ensure_loading(&mut self, client: &RpcClient, provider: &str, query: &str) {
-        if self.cache.get(provider, query).is_some() {
+    pub fn ensure_loading(&mut self, client: &RpcClient, query: &str) {
+        if self.cache.get(query).is_some() {
             return;
         }
 
@@ -37,14 +37,13 @@ impl WorkspaceSearch {
         let (tx, rx) = std::sync::mpsc::channel();
         self.rx = Some(rx);
         let client = client.clone();
-        let provider = provider.to_string();
         let query = query.to_string();
         let fail_tx = tx.clone();
         let fail_query = query.clone();
         if let Err(error) = thread::Builder::new()
             .name("tr-workspace-search".into())
             .spawn(move || {
-                let result = rpc::search_workspace_files(&client, &provider, &query, 48)
+                let result = rpc::search_workspace_files(&client, &query, 48)
                     .map_err(|e| e.to_string());
                 let _ = tx.send((request_id, query, result));
             })
@@ -58,7 +57,7 @@ impl WorkspaceSearch {
     }
 
     /// Apply a finished search result when it matches the latest request.
-    pub fn drain(&mut self, provider: &str, filesearch: &mut Option<FileSearchState>) {
+    pub fn drain(&mut self, filesearch: &mut Option<FileSearchState>) {
         let Some(rx) = &self.rx else {
             return;
         };
@@ -76,7 +75,7 @@ impl WorkspaceSearch {
 
                 match result {
                     Ok((files, total)) => {
-                        self.cache.store(provider, &query, files.clone(), total);
+                        self.cache.store(&query, files.clone(), total);
                         if let Some(state) = filesearch.as_mut() {
                             state.matches = files;
                             state.indexed_count = total;
@@ -144,7 +143,7 @@ mod tests {
         let (tx, rx) = std::sync::mpsc::channel();
         let _ = tx.send((1, "src".into(), Ok((vec!["a.rs".into()], 1))));
         search.rx = Some(rx);
-        search.drain("posix", &mut filesearch);
+        search.drain(&mut filesearch);
 
         let state = filesearch.as_ref().unwrap();
         assert!(state.matches.is_empty());
@@ -176,7 +175,7 @@ mod tests {
         let (_tx, rx) = std::sync::mpsc::channel::<(u64, String, SearchResultMsg)>();
         drop(_tx);
         search.rx = Some(rx);
-        search.drain("posix", &mut filesearch);
+        search.drain(&mut filesearch);
 
         let state = filesearch.as_ref().unwrap();
         assert!(!state.loading);

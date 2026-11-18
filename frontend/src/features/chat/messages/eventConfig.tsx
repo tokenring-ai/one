@@ -9,7 +9,7 @@ export interface EventConfig {
 
 export const events: Record<ChatMessage["type"], EventConfig> = {
   "agent.created": {
-    style: "text-success font-medium",
+    style: "text-muted text-xs",
     icon: <div className="w-[1em] h-[1em] mt-1 rounded-full bg-success" />,
   },
   "agent.stopped": {
@@ -17,11 +17,11 @@ export const events: Record<ChatMessage["type"], EventConfig> = {
     icon: <div className="w-[1em] h-[1em] mt-1 rounded-full bg-error" />,
   },
   "agent.status": {
-    style: "text-accent",
+    style: "text-accent-soft",
     icon: <div className="w-[1em] h-[1em] mt-1 rounded-full bg-accent" />,
   },
   "agent.response": {
-    style: "text-success font-medium",
+    style: "text-primary",
     icon: <span className="text-success font-bold flex items-center">✓</span>,
   },
   "output.info": {
@@ -46,14 +46,14 @@ export const events: Record<ChatMessage["type"], EventConfig> = {
   },
   "input.received": {
     style: "text-primary font-medium",
-    icon: <span className="text-accent font-bold flex items-center">&gt;</span>,
+    icon: <span className="text-accent-soft font-bold flex items-center">&gt;</span>,
   },
   "input.execution": {
-    style: "text-accent",
+    style: "text-accent-soft",
     icon: <Activity className="w-[1em] text-accent/70" />,
   },
   "input.interaction": {
-    style: "text-success font-medium",
+    style: "text-primary",
     icon: <span className="text-success font-bold flex items-center">❖</span>,
   },
   cancel: {
@@ -61,11 +61,12 @@ export const events: Record<ChatMessage["type"], EventConfig> = {
     icon: <CircleSlash className="w-[1em] text-error" />,
   },
   question: {
-    style: "text-accent",
-    icon: <span className="text-accent font-bold flex items-center">?</span>,
+    style: "text-accent-soft",
+    icon: <span className="text-accent-soft font-bold flex items-center">?</span>,
   },
+  // Routine: quiet text, and the colour is saved for the outcome (a failed call turns red).
   toolCall: {
-    style: "text-primary font-mono",
-    icon: <span className="text-accent font-bold flex items-center">●</span>,
+    style: "text-secondary text-sm",
+    icon: <span className="text-dim flex items-center text-[0.7em]">●</span>,
   },
 };

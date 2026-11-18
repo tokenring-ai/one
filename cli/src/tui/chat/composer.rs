@@ -84,7 +84,7 @@ impl ChatSession {
         if let Some(cached) = self
             .workspace_search
             .cache
-            .get(&self.provider, &token.query)
+            .get(&token.query)
         {
             let matches = cached.matches.clone();
             let previous_index = self.filesearch.as_ref().map(|s| s.selected_index);
@@ -103,7 +103,7 @@ impl ChatSession {
         }
 
         self.workspace_search
-            .ensure_loading(&self.client, &self.provider, &token.query);
+            .ensure_loading(&self.client, &token.query);
 
         let loading = self.workspace_search.is_loading();
         let previous_index = self.filesearch.as_ref().map(|s| s.selected_index);
@@ -120,7 +120,7 @@ impl ChatSession {
     /// Drain the backend search result, if ready.
     pub(super) fn drain_search(&mut self) {
         self.workspace_search
-            .drain(&self.provider, &mut self.filesearch);
+            .drain(&mut self.filesearch);
     }
 
     pub(super) fn insert_selected_filesearch(&mut self) {
@@ -445,11 +445,7 @@ impl ChatSession {
             PanelStyle::Flat => "flat",
             PanelStyle::Framed => "framed",
         });
-        self.flash(
-            format!("Theme: {next}"),
-            Tone::Info,
-            Duration::from_secs(2),
-        );
+        self.flash(format!("Theme: {next}"), Tone::Info, Duration::from_secs(2));
     }
 
     pub(super) fn toggle_sidebar(&mut self) {
@@ -588,9 +584,7 @@ mod tests {
         let Some(idx) = chip_index else {
             return false;
         };
-        chips
-            .get(idx)
-            .is_some_and(|chip| editor_text == *chip)
+        chips.get(idx).is_some_and(|chip| editor_text == *chip)
     }
 
     #[test]

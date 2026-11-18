@@ -131,8 +131,8 @@ impl FileConfig {
             return Ok(Self::default());
         }
         enforce_private_mode(&path)?;
-        let text = fs::read_to_string(&path)
-            .with_context(|| format!("read config {}", path.display()))?;
+        let text =
+            fs::read_to_string(&path).with_context(|| format!("read config {}", path.display()))?;
         toml::from_str(&text).with_context(|| format!("parse config {}", path.display()))
     }
 

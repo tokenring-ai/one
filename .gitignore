@@ -23,3 +23,10 @@ keys
 /target/
 /build/
 /frontend/dist/
+# Output of util/export-community-agents.ts; published to the community registry repo, not this one.
+/community-registry/
+
+# TokenRing runtime state (database, debug output, knowledge base, media index)
+/.tokenring/
+/.zcode/plans
+/manifesto

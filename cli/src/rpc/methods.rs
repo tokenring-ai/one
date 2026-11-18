@@ -90,11 +90,8 @@ pub struct CreatedAgent {
 }
 
 /// Create a new agent of the given type.
-pub fn create_agent(client: &RpcClient, agent_type: &str, headless: bool) -> Result<CreatedAgent> {
-    let result = client.call(
-        "/rpc/agent.createAgent",
-        json!({ "agentType": agent_type, "headless": headless }),
-    )?;
+pub fn create_agent(client: &RpcClient, agent_type: &str) -> Result<CreatedAgent> {
+    let result = client.call("/rpc/agent.createAgent", json!({ "agentType": agent_type }))?;
     let response: CreatedAgentResponse = decode_response(result, "createAgent")?;
     Ok(CreatedAgent {
         id: response.id,
@@ -195,9 +192,17 @@ pub struct CheckpointEntry {
 /// List saved checkpoints without loading their full state payloads.
 pub fn list_checkpoints(client: &RpcClient) -> Result<Vec<CheckpointEntry>> {
     let result = client.call("/rpc/checkpoint.listCheckpoints", json!({}))?;
+    parse_checkpoint_list(&result)
+}
+
+/// Parse a `listCheckpoints` result: a paginated `{items,total,hasMore,…}`
+/// object (current servers) or a bare array (older servers).
+fn parse_checkpoint_list(result: &Value) -> Result<Vec<CheckpointEntry>> {
     let array = result
-        .as_array()
-        .context("listCheckpoints result is not an array")?;
+        .get("items")
+        .and_then(Value::as_array)
+        .or_else(|| result.as_array())
+        .context("listCheckpoints result has no items array")?;
     Ok(array
         .iter()
         .map(|v| CheckpointEntry {
@@ -237,7 +242,7 @@ pub fn launch_agent_from_checkpoint(
 ) -> Result<CreatedAgent> {
     let result = client.call(
         "/rpc/checkpoint.launchAgentFromCheckpoint",
-        json!({ "checkpointId": checkpoint_id, "headless": false }),
+        json!({ "checkpointId": checkpoint_id }),
     )?;
     let status = result.get("status").and_then(Value::as_str).unwrap_or("");
     if status == "checkpointNotFound" {
@@ -272,6 +277,8 @@ pub struct RunningAgent {
     pub description: String,
     pub idle: bool,
     pub current_activity: String,
+    /// Set on sub-agents: the agent that started this one.
+    pub parent_agent_id: Option<String>,
 }
 
 fn parse_epoch_ms(value: Option<&Value>) -> i64 {
@@ -282,6 +289,10 @@ fn parse_epoch_ms(value: Option<&Value>) -> i64 {
 
 pub fn list_agents(client: &RpcClient) -> Result<Vec<RunningAgent>> {
     let result = client.call("/rpc/agent.listAgents", json!({}))?;
+    parse_running_agents(&result)
+}
+
+fn parse_running_agents(result: &Value) -> Result<Vec<RunningAgent>> {
     let array = result
         .as_array()
         .context("listAgents result is not an array")?;
@@ -310,6 +321,11 @@ pub fn list_agents(client: &RpcClient) -> Result<Vec<RunningAgent>> {
                 .and_then(Value::as_str)
                 .unwrap_or("")
                 .to_string(),
+            parent_agent_id: v
+                .get("parentAgentId")
+                .and_then(Value::as_str)
+                .filter(|id| !id.is_empty())
+                .map(str::to_string),
         })
         .collect())
 }
@@ -330,6 +346,52 @@ pub fn get_agent_types(client: &RpcClient) -> Result<Vec<AgentTypeEntry>> {
     decode_response(result, "getAgentTypes")
 }
 
+/// A single workflow step from `/rpc/workflow.listWorkflows`.
+///
+/// Matches the backend `WorkflowStepSchema`: a plain string is a chat message,
+/// and an object is a structured agent command (`/command …`).
+#[derive(Clone, Debug, Deserialize)]
+#[serde(untagged)]
+pub enum WorkflowStep {
+    Message(String),
+    Command {
+        command: String,
+        #[serde(default)]
+        arguments: serde_json::Map<String, Value>,
+        #[serde(default)]
+        remainder: String,
+    },
+}
+
+impl WorkflowStep {
+    /// Short label for UI lists and previews (mirrors `formatWorkflowStepLabel`).
+    pub fn label(&self) -> String {
+        match self {
+            WorkflowStep::Message(text) => text.clone(),
+            WorkflowStep::Command {
+                command,
+                arguments,
+                remainder,
+            } => {
+                let mut parts = vec![format!("/{command}")];
+                for (name, value) in arguments {
+                    match value {
+                        Value::Bool(true) => parts.push(format!("--{name}")),
+                        Value::Bool(false) | Value::Null => {}
+                        Value::String(s) if s.is_empty() => {}
+                        other => parts.push(format!("--{name} {other}")),
+                    }
+                }
+                let remainder = remainder.trim();
+                if !remainder.is_empty() {
+                    parts.push(remainder.to_string());
+                }
+                parts.join(" ")
+            }
+        }
+    }
+}
+
 /// A workflow entry (from `/rpc/workflow.listWorkflows`).
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -339,7 +401,7 @@ pub struct WorkflowEntry {
     pub display_name: String,
     pub description: String,
     pub agent_type: String,
-    pub steps: Vec<String>,
+    pub steps: Vec<WorkflowStep>,
 }
 
 pub fn list_workflows(client: &RpcClient) -> Result<Vec<WorkflowEntry>> {
@@ -356,10 +418,7 @@ pub fn list_workflows(client: &RpcClient) -> Result<Vec<WorkflowEntry>> {
 /// Spawn a workflow and return the resulting agent (from
 /// `/rpc/workflow.spawnWorkflow`).
 pub fn spawn_workflow(client: &RpcClient, name: &str) -> Result<CreatedAgent> {
-    let result = client.call(
-        "/rpc/workflow.spawnWorkflow",
-        json!({ "name": name, "headless": false }),
-    )?;
+    let result = client.call("/rpc/workflow.spawnWorkflow", json!({ "name": name }))?;
     let response: CreatedAgentResponse = decode_response(result, "spawnWorkflow")?;
     ensure!(!response.id.is_empty(), "spawnWorkflow response missing id");
     Ok(CreatedAgent {
@@ -432,38 +491,19 @@ pub fn get_chat_messages(client: &RpcClient, agent_id: &str) -> Result<Vec<Value
 // Filesystem RPC (`/rpc/filesystem.*`)
 // ---------------------------------------------------------------------------
 
-/// The agent's filesystem state (provider + working directory).
+/// The backend's default directories (`/rpc/filesystem.getDefaultDirectories`).
 #[derive(Clone, Debug, Default, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FilesystemState {
-    pub provider: String,
+#[serde(default, rename_all = "camelCase")]
+pub struct DefaultDirectories {
+    /// Directory the backend was launched in (the project / cwd).
     pub working_directory: String,
+    /// Backend data directory (sessions, knowledge, media).
+    pub workspace_directory: String,
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct FilesystemResponse {
-    #[serde(default)]
-    status: String,
-    provider: Option<String>,
-    working_directory: Option<String>,
-}
-
-pub fn get_filesystem_state(client: &RpcClient, agent_id: &str) -> Result<FilesystemState> {
-    let result = client.call(
-        "/rpc/filesystem.getFilesystemState",
-        json!({ "agentId": agent_id }),
-    )?;
-    let response: FilesystemResponse = decode_response(result, "getFilesystemState")?;
-    if response.status == "agentNotFound" {
-        return Ok(FilesystemState::default());
-    }
-    Ok(FilesystemState {
-        provider: response.provider.unwrap_or_else(|| "posix".to_string()),
-        working_directory: response
-            .working_directory
-            .unwrap_or_else(|| ".".to_string()),
-    })
+pub fn get_default_directories(client: &RpcClient) -> Result<DefaultDirectories> {
+    let result = client.call("/rpc/filesystem.getDefaultDirectories", json!({}))?;
+    decode_response(result, "getDefaultDirectories")
 }
 
 // ---------------------------------------------------------------------------
@@ -528,14 +568,12 @@ fn parse_command_defs(array: &[Value]) -> Vec<CommandDef> {
 /// Search workspace files on the backend (nice-to-have #18).
 pub fn search_workspace_files(
     client: &RpcClient,
-    provider: &str,
     query: &str,
     limit: usize,
 ) -> Result<(Vec<String>, usize)> {
     let result = client.call(
         "/rpc/filesystem.searchWorkspaceFiles",
         json!({
-            "provider": provider,
             "query": query,
             "limit": limit,
         }),
@@ -557,13 +595,12 @@ pub struct DirEntry {
 /// List a directory (non-recursive) for the file-select question browser.
 pub fn list_directory(
     client: &RpcClient,
-    provider: &str,
     path: &str,
     show_hidden: bool,
 ) -> Result<Vec<DirEntry>> {
     let result = client.call(
         "/rpc/filesystem.listDirectory",
-        json!({ "provider": provider, "path": path, "showHidden": show_hidden, "recursive": false }),
+        json!({ "path": path, "showHidden": show_hidden, "recursive": false }),
     )?;
     Ok(parse_directory_entries(&result))
 }
@@ -739,6 +776,103 @@ mod tests {
         };
 
         assert!(error.contains("decode createAgent response"));
+    }
+
+    #[test]
+    fn list_workflows_accepts_string_and_command_steps() {
+        let workflows: Vec<WorkflowEntry> = decode_response(
+            json!([{
+                "name": "bugHunter",
+                "displayName": "Bug Hunter",
+                "category": "Code Review",
+                "description": "find bugs",
+                "agentType": "leader",
+                "updatedAt": "2026-01-01T00:00:00.000Z",
+                "steps": [
+                    "look around",
+                    {
+                        "command": "for",
+                        "arguments": {},
+                        "remainder": "$pkg in @packages { /eval fix $pkg }"
+                    },
+                    {
+                        "command": "agent run",
+                        "arguments": { "type": "code", "neverFail": true },
+                        "remainder": "fix it"
+                    }
+                ],
+                "subAgent": { "timeout": 0 }
+            }]),
+            "listWorkflows",
+        )
+        .unwrap();
+
+        assert_eq!(workflows.len(), 1);
+        assert_eq!(workflows[0].name, "bugHunter");
+        assert_eq!(workflows[0].agent_type, "leader");
+        assert_eq!(workflows[0].steps.len(), 3);
+        assert_eq!(workflows[0].steps[0].label(), "look around");
+        assert_eq!(
+            workflows[0].steps[1].label(),
+            "/for $pkg in @packages { /eval fix $pkg }"
+        );
+        assert!(workflows[0].steps[2].label().starts_with("/agent run"));
+        assert!(workflows[0].steps[2].label().contains("fix it"));
+    }
+
+    #[test]
+    fn checkpoint_list_reads_paginated_items() {
+        let entries = parse_checkpoint_list(&json!({
+            "items": [{
+                "id": 7,
+                "sessionId": "s1",
+                "name": "first",
+                "agentId": "a1",
+                "agentType": "coding",
+                "createdAt": 1_700_000_000_000u64
+            }],
+            "total": 1,
+            "hasMore": false,
+            "limit": 50,
+            "offset": 0
+        }))
+        .unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].id, 7);
+        assert_eq!(entries[0].session_id, "s1");
+        assert_eq!(entries[0].agent_type, "coding");
+        assert_eq!(entries[0].created_at, 1_700_000_000_000);
+    }
+
+    #[test]
+    fn checkpoint_list_accepts_legacy_array_and_rejects_garbage() {
+        assert_eq!(
+            parse_checkpoint_list(&json!([{ "id": 1 }])).unwrap().len(),
+            1
+        );
+        assert!(parse_checkpoint_list(&json!({ "total": 0 })).is_err());
+    }
+
+    #[test]
+    fn running_agents_read_parent_agent_id() {
+        let agents = parse_running_agents(&json!([
+            { "id": "parent", "displayName": "Lead", "idle": true },
+            { "id": "child", "displayName": "Helper", "parentAgentId": "parent" }
+        ]))
+        .unwrap();
+        assert_eq!(agents[0].parent_agent_id, None);
+        assert_eq!(agents[1].parent_agent_id.as_deref(), Some("parent"));
+    }
+
+    #[test]
+    fn default_directories_decode() {
+        let dirs: DefaultDirectories = decode_response(
+            json!({ "workingDirectory": "/repo", "workspaceDirectory": "/data" }),
+            "getDefaultDirectories",
+        )
+        .unwrap();
+        assert_eq!(dirs.working_directory, "/repo");
+        assert_eq!(dirs.workspace_directory, "/data");
     }
 
     #[test]

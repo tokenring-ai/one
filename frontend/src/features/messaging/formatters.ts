@@ -1,53 +1,15 @@
-/** Relative phrase for conversation timestamps. */
+import { formatRelativeTime as formatRelativeTimeBase } from "@tokenring-ai/utility/date/formatRelativeTime";
+import { formatTimestamp as formatTimestampBase } from "@tokenring-ai/utility/date/formatTimestamp";
+
+/** Relative phrase for conversation timestamps (past-only; future activity is treated as just now). */
 export function formatRelativeTime(ts: number | null | undefined, now = Date.now()): string {
-  if (ts == null || ts <= 0) return "—";
-  const delta = Math.max(0, now - ts);
-  if (delta < 60_000) return "just now";
-
-  const minutes = Math.floor(delta / 60_000);
-  const hours = Math.floor(delta / 3_600_000);
-  const days = Math.floor(delta / 86_400_000);
-
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 48) return `${hours}h ago`;
-  return `${days}d ago`;
+  return formatRelativeTimeBase(ts, { now, future: false });
 }
 
 /** Absolute timestamp for titles and tooltips. */
 export function formatTimestamp(ts: number | null | undefined): string {
-  if (ts == null || ts <= 0) return "—";
-  return new Date(ts).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatTimestampBase(ts);
 }
 
-/** Title-case a messaging service name (slack → Slack). */
-export function formatServiceName(service: string): string {
-  if (!service) return "Unknown";
-  if (service.toLowerCase() === "x") return "X";
-  return service.charAt(0).toUpperCase() + service.slice(1);
-}
-
-/** Known channel brand colors for status cards. */
-export function serviceGradient(service: string): string {
-  switch (service.toLowerCase()) {
-    case "slack":
-      return "from-purple-500 to-violet-600";
-    case "telegram":
-      return "from-sky-500 to-blue-600";
-    case "discord":
-      return "from-indigo-500 to-violet-600";
-    case "x":
-    case "twitter":
-      return "from-gray-700 to-gray-900";
-    case "reddit":
-      return "from-orange-500 to-red-600";
-    case "email":
-      return "from-red-500 to-rose-600";
-    default:
-      return "from-emerald-500 to-green-600";
-  }
-}
+/** Service display names, gradients, and brand tokens. Re-exported from shared lib. */
+export { formatServiceName, getServiceBrand, serviceGradient } from "../../lib/serviceGradient.ts";

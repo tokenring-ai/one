@@ -13,12 +13,70 @@ import { type SecretSource, secretSourceOf } from "@tokenring-ai/secrets/secret"
 import deepEqual from "@tokenring-ai/utility/object/deepEqual";
 import { isPlainObject } from "@tokenring-ai/utility/object/isPlainObject";
 import { ChevronRight, Plus, RotateCcw, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { isRedactedSensitiveValue } from "../../lib/utils.ts";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import PasswordInput from "../../components/ui/PasswordInput.tsx";
+import { useExpandedSet } from "../../hooks/useExpandedSet.ts";
+import { cn, isRedactedSensitiveValue } from "../../lib/utils.ts";
 
 export interface ConfigIssue {
   path: (string | number)[];
   message: string;
+}
+
+/**
+ * Lets "Reset to default" remove a value that is already saved, not just an
+ * unsaved edit. Provided by the editor panel; without it every reset only
+ * edits the draft (and takes effect on the next save).
+ */
+export interface ConfigSavedResetContextValue {
+  /** The scope's overrides as the server last reported them. */
+  savedOverrides: Record<string, unknown>;
+  /** Removes the saved override at `path` (after asking). */
+  onResetSaved: (path: string[], label: string) => void;
+}
+
+export const ConfigSavedResetContext = createContext<ConfigSavedResetContextValue | null>(null);
+
+function valueAtPath(source: unknown, path: readonly (string | number)[]): unknown {
+  let current = source;
+  for (const part of path) {
+    if (!isPlainObject(current)) return undefined;
+    current = current[String(part)];
+  }
+  return current;
+}
+
+/**
+ * The per-field reset. When the field shows exactly what is saved, reset removes
+ * the saved override straight away (via `resetConfig`, after a confirm); when it
+ * shows an unsaved edit, reset just drops that edit from the draft.
+ */
+function ResetToDefaultButton({
+  absPath,
+  label,
+  overrideValue,
+  onLocalReset,
+}: {
+  absPath: (string | number)[];
+  label: string;
+  overrideValue: unknown;
+  onLocalReset: () => void;
+}) {
+  const savedReset = useContext(ConfigSavedResetContext);
+  const stringPath = absPath.every(part => typeof part === "string") ? (absPath as string[]) : null;
+  const saved = savedReset && stringPath ? valueAtPath(savedReset.savedOverrides, stringPath) : undefined;
+  const resetsSaved = savedReset !== null && stringPath !== null && saved !== undefined && deepEqual(saved, overrideValue);
+  return (
+    <button
+      type="button"
+      onClick={() => (resetsSaved ? savedReset.onResetSaved(stringPath, label) : onLocalReset())}
+      className="p-1 text-muted hover:text-primary transition-colors cursor-pointer focus-ring rounded"
+      title={resetsSaved ? "Reset to default (removes the saved value)" : "Reset to default"}
+      aria-label={`Reset ${label}`}
+    >
+      <RotateCcw className="w-3.5 h-3.5" />
+    </button>
+  );
 }
 
 interface NodeRendererProps {
@@ -32,6 +90,8 @@ interface NodeRendererProps {
   /** Reports the new override value for this node; undefined clears the override. */
   onChange: (value: unknown) => void;
   issues: ConfigIssue[];
+  /** Render a group's children without its own header/card — used where the container already labels it. */
+  bare?: boolean;
 }
 
 function pathsEqual(a: (string | number)[], b: (string | number)[]): boolean {
@@ -93,7 +153,7 @@ function GroupRenderer(props: NodeRendererProps & { node: ConfigGroupNode }) {
       {normalChildren.map(renderChild)}
       {advancedChildren.length > 0 && (
         <details className="group/adv">
-          <summary className="flex items-center gap-1 text-2xs font-semibold text-muted uppercase tracking-widest cursor-pointer select-none py-1">
+          <summary className="flex items-center gap-1 text-xs font-semibold text-muted uppercase tracking-widest cursor-pointer select-none py-1">
             <ChevronRight className="w-3 h-3 transition-transform group-open/adv:rotate-90" />
             Advanced
           </summary>
@@ -103,12 +163,14 @@ function GroupRenderer(props: NodeRendererProps & { node: ConfigGroupNode }) {
     </div>
   );
 
+  if (props.bare) return body;
+
   // Top-level slice groups get a section card; nested groups a lighter header.
   return (
     <section className="space-y-2">
       <div className="px-1">
         <h3 className="text-xs font-bold text-secondary uppercase tracking-widest">{node.label}</h3>
-        {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
+        {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
       </div>
       <div className="bg-secondary border border-primary rounded-xl px-4 py-3">{body}</div>
     </section>
@@ -129,38 +191,35 @@ function FieldRenderer(props: NodeRendererProps & { node: ConfigFieldNode }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-medium text-primary">{node.label}</span>
-            {node.required && <span className="text-2xs text-red-400">*</span>}
+            {node.required && <span className="text-xs text-red-400">*</span>}
             {overridden && (
-              <span className="inline-flex items-center gap-0.5 text-2xs px-1.5 py-px bg-accent/10 text-accent rounded-full" title="This value is overridden">
+              <span className="inline-flex items-center gap-0.5 text-xs px-1.5 py-px bg-accent/10 text-accent-soft rounded-full" title="This value is overridden">
                 modified
               </span>
             )}
             {node.restartRequired && (
-              <span className="text-2xs px-1.5 py-px bg-amber-500/10 text-amber-500 rounded-full" title="Changing this requires a restart">
+              <span className="text-xs px-1.5 py-px bg-amber-500/10 text-amber-500 rounded-full" title="Changing this requires a restart">
                 restart
               </span>
             )}
           </div>
-          {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
+          {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
           {fieldIssues.map(issue => (
-            <p key={issue.message} className="text-2xs text-red-400 mt-0.5" role="alert">
+            <p key={issue.message} className="text-xs text-red-400 mt-0.5" role="alert">
               {issue.message}
             </p>
           ))}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <FieldControl node={node} value={displayed} overridden={overridden} onChange={props.onChange} />
-          {node.unit && <span className="text-2xs text-muted">{node.unit}</span>}
+          {node.unit && <span className="text-xs text-muted">{node.unit}</span>}
           {overridden && (
-            <button
-              type="button"
-              onClick={() => props.onChange(undefined)}
-              className="p-1 text-muted hover:text-primary transition-colors cursor-pointer"
-              title="Reset to default"
-              aria-label={`Reset ${node.label}`}
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
+            <ResetToDefaultButton
+              absPath={props.absPath}
+              label={node.label}
+              overrideValue={props.overrideValue}
+              onLocalReset={() => props.onChange(undefined)}
+            />
           )}
         </div>
       </div>
@@ -168,7 +227,7 @@ function FieldRenderer(props: NodeRendererProps & { node: ConfigFieldNode }) {
   );
 }
 
-const inputClass = "px-2.5 py-1.5 bg-tertiary border border-primary rounded-lg text-sm text-primary placeholder:text-muted focus-ring min-w-0 w-full sm:w-56";
+const inputClass = "px-2.5 py-1.5 bg-tertiary border border-control rounded-lg text-sm text-primary placeholder:text-muted focus-ring min-w-0 w-full sm:w-56";
 
 function formatDefaultValue(value: unknown): string {
   if (typeof value === "string") return value;
@@ -210,12 +269,12 @@ function FieldControl({
     case "password": {
       const isSet = isRedactedSensitiveValue(value) ? value.isSet : typeof value === "string" && value.length > 0;
       return (
-        <input
-          type="password"
-          className={inputClass + inheritedClass}
+        <PasswordInput
+          className={cn("min-w-0 w-full sm:w-56", !overridden && "opacity-70")}
+          inputClassName="px-2.5 py-1.5 bg-tertiary rounded-lg text-sm focus-ring font-sans"
           value={typeof value === "string" ? value : ""}
           placeholder={isSet ? "•••••••• (set — type to replace)" : (node.placeholder ?? "")}
-          onChange={event => onChange(event.target.value === "" ? undefined : event.target.value)}
+          onChange={next => onChange(next === "" ? undefined : next)}
           aria-label={node.label}
         />
       );
@@ -401,7 +460,7 @@ function RegexControl({
         </span>
       </div>
       {syntaxError && (
-        <p className="text-2xs text-red-400 max-w-full text-right" role="alert">
+        <p className="text-xs text-red-400 max-w-full text-right" role="alert">
           {syntaxError}
         </p>
       )}
@@ -437,7 +496,7 @@ function StringListControl({
       <div className="flex items-center gap-1 w-full">
         <input
           type="text"
-          className={inputClass + " flex-1 sm:w-auto"}
+          className={cn(inputClass, "flex-1 sm:w-auto")}
           value={pending}
           placeholder="Add item…"
           onChange={event => setPending(event.target.value)}
@@ -459,7 +518,7 @@ function StringListControl({
             <span
               // eslint-disable-next-line react/no-array-index-key -- items may repeat; position is identity
               key={`${String(item)}-${index}`}
-              className="inline-flex items-center gap-1 text-2xs px-2 py-0.5 bg-tertiary border border-primary rounded-full text-secondary font-mono"
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-tertiary border border-primary rounded-full text-secondary font-mono"
             >
               {String(item)}
               <button
@@ -514,7 +573,7 @@ function JsonControl({ node, value, onChange }: { node: ConfigFieldNode; value: 
   return (
     <div className="flex flex-col items-end gap-1 w-full sm:w-72">
       <textarea
-        className={inputClass + " font-mono text-xs w-full sm:w-72"}
+        className={cn(inputClass, "font-mono text-xs w-full sm:w-72")}
         rows={5}
         value={text}
         onFocus={() => {
@@ -544,7 +603,7 @@ function JsonControl({ node, value, onChange }: { node: ConfigFieldNode; value: 
         spellCheck={false}
       />
       {parseError && (
-        <p className="text-2xs text-red-400" role="alert">
+        <p className="text-xs text-red-400" role="alert">
           {parseError}
         </p>
       )}
@@ -569,23 +628,21 @@ function ListRenderer(props: NodeRendererProps & { node: ConfigListNode }) {
       <div className="flex items-center justify-between px-1">
         <div>
           <h3 className="text-xs font-bold text-secondary uppercase tracking-widest">{node.label}</h3>
-          {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
+          {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
         </div>
         <div className="flex items-center gap-1.5">
           {overridden && (
-            <button
-              type="button"
-              onClick={() => props.onChange(undefined)}
-              className="p-1 text-muted hover:text-primary cursor-pointer"
-              title="Reset to default"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
+            <ResetToDefaultButton
+              absPath={props.absPath}
+              label={node.label}
+              overrideValue={props.overrideValue}
+              onLocalReset={() => props.onChange(undefined)}
+            />
           )}
           <button
             type="button"
             onClick={() => update([...items, {}])}
-            className="inline-flex items-center gap-1 text-2xs px-2 py-1 bg-tertiary border border-primary rounded-lg text-secondary hover:text-primary cursor-pointer"
+            className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-tertiary border border-control rounded-lg text-secondary hover:text-primary cursor-pointer"
           >
             <Plus className="w-3 h-3" /> Add
           </button>
@@ -632,16 +689,36 @@ function ListRenderer(props: NodeRendererProps & { node: ConfigListNode }) {
           />
         </div>
       ))}
-      {items.length === 0 && <p className="text-2xs text-muted px-1">No items</p>}
+      {items.length === 0 && <p className="text-xs text-muted px-1">No items</p>}
     </section>
   );
 }
 
 /* ----------------------------------- map ----------------------------------- */
 
+/** Fields worth showing next to an entry key so collapsed rows stay identifiable. */
+const ENTRY_SUMMARY_KEYS = ["displayName", "name", "title", "label", "description"];
+
+function entrySummary(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (!isPlainObject(value)) return undefined;
+  for (const key of ENTRY_SUMMARY_KEYS) {
+    const candidate = value[key];
+    if (typeof candidate === "string" && candidate.trim() !== "") return candidate;
+  }
+  return undefined;
+}
+
+/** Number of entries past which the list gets a filter box. */
+const MAP_FILTER_THRESHOLD = 8;
+
 function MapRenderer(props: NodeRendererProps & { node: ConfigMapNode }) {
   const { node } = props;
   const [pendingKey, setPendingKey] = useState("");
+  const [filter, setFilter] = useState("");
+  const { isExpanded, toggle: toggleEntry, expand } = useExpandedSet();
+  // Set when the user adds an entry so the new row scrolls itself into view once it mounts.
+  const addedKeyRef = useRef<string | null>(null);
   const overrideMap = isPlainObject(props.overrideValue) ? props.overrideValue : {};
   const effectiveMap = isPlainObject(props.effectiveValue) ? props.effectiveValue : {};
   const entryKeys = [...new Set([...Object.keys(effectiveMap), ...Object.keys(overrideMap)])];
@@ -661,19 +738,33 @@ function MapRenderer(props: NodeRendererProps & { node: ConfigMapNode }) {
     if (!trimmed || entryKeys.includes(trimmed)) return;
     setEntry(trimmed, {});
     setPendingKey("");
+    setFilter("");
+    expand(trimmed);
+    addedKeyRef.current = trimmed;
   };
+
+  const showFilter = entryKeys.length > MAP_FILTER_THRESHOLD;
+  const needle = filter.trim().toLowerCase();
+  const visibleKeys =
+    needle === ""
+      ? entryKeys
+      : entryKeys.filter(entryKey => {
+          const summary = entrySummary(mergeEntry(effectiveMap[entryKey], overrideMap[entryKey]));
+          return entryKey.toLowerCase().includes(needle) || (summary?.toLowerCase().includes(needle) ?? false);
+        });
 
   return (
     <section className="space-y-2">
-      <div className="flex items-center justify-between px-1 gap-2">
-        <div>
+      {/* Wraps on narrow screens, so the new-entry box drops below the heading instead of being squeezed. */}
+      <div className="flex flex-wrap items-center justify-between px-1 gap-2">
+        <div className="min-w-48 flex-1">
           <h3 className="text-xs font-bold text-secondary uppercase tracking-widest">{node.label}</h3>
-          {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
+          {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <input
             type="text"
-            className={inputClass + " sm:w-36"}
+            className={cn(inputClass, "w-44 sm:w-36")}
             value={pendingKey}
             placeholder="New entry name…"
             onChange={event => setPendingKey(event.target.value)}
@@ -690,17 +781,56 @@ function MapRenderer(props: NodeRendererProps & { node: ConfigMapNode }) {
           </button>
         </div>
       </div>
-      {entryKeys.map(entryKey => {
-        const onlyInOverride = !(entryKey in effectiveMap) || (entryKey in overrideMap && !(entryKey in effectiveMap));
+      {showFilter && (
+        <div className="px-1">
+          <input
+            type="search"
+            className={cn(inputClass, "sm:w-full")}
+            value={filter}
+            placeholder={`Filter ${entryKeys.length} entries…`}
+            onChange={event => setFilter(event.target.value)}
+            aria-label={`Filter ${node.label}`}
+          />
+        </div>
+      )}
+      {visibleKeys.map(entryKey => {
+        const onlyInOverride = !(entryKey in effectiveMap);
+        const entryIssues = issuesWithin(props.issues, [...props.absPath, entryKey]);
+        // Entries with validation issues stay open so problems are never hidden behind a collapsed row.
+        const expanded = isExpanded(entryKey) || entryIssues.length > 0;
+        const summary = entrySummary(mergeEntry(effectiveMap[entryKey], overrideMap[entryKey]));
         return (
-          <div key={entryKey} className="bg-secondary border border-primary rounded-xl px-4 py-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-primary font-mono">{entryKey}</span>
+          <div
+            key={entryKey}
+            ref={element => {
+              if (!element || addedKeyRef.current !== entryKey) return;
+              addedKeyRef.current = null;
+              element.scrollIntoView({ block: "nearest" });
+            }}
+            className="bg-secondary border border-primary rounded-xl"
+          >
+            <div className="flex items-center gap-2 px-3 py-2">
+              <button
+                type="button"
+                onClick={() => toggleEntry(entryKey)}
+                aria-expanded={expanded}
+                className="flex flex-1 items-center gap-2 min-w-0 text-left cursor-pointer focus-ring rounded-md"
+              >
+                <ChevronRight className={`w-3.5 h-3.5 shrink-0 text-muted transition-transform ${expanded ? "rotate-90" : ""}`} aria-hidden="true" />
+                <span className="text-sm font-semibold text-primary font-mono truncate">{entryKey}</span>
+                {summary && <span className="text-xs text-muted truncate min-w-0">{summary}</span>}
+                {entryKey in overrideMap && <span className="text-xs px-1.5 py-px bg-accent/10 text-accent-soft rounded-full shrink-0">modified</span>}
+                {entryIssues.length > 0 && (
+                  <span className="text-xs px-1.5 py-px bg-red-500/10 text-red-400 rounded-full shrink-0">
+                    {entryIssues.length} {entryIssues.length === 1 ? "issue" : "issues"}
+                  </span>
+                )}
+              </button>
               {entryKey in overrideMap && (
                 <button
                   type="button"
                   onClick={() => setEntry(entryKey, undefined)}
-                  className="p-1 text-muted hover:text-red-400 cursor-pointer"
+                  className="p-1 text-muted hover:text-red-400 cursor-pointer shrink-0"
                   title={onlyInOverride ? "Remove entry" : "Reset entry to base configuration"}
                   aria-label={`${onlyInOverride ? "Remove" : "Reset"} ${entryKey}`}
                 >
@@ -708,20 +838,32 @@ function MapRenderer(props: NodeRendererProps & { node: ConfigMapNode }) {
                 </button>
               )}
             </div>
-            <ConfigNodeRenderer
-              node={node.value}
-              absPath={[...props.absPath, entryKey]}
-              overrideValue={overrideMap[entryKey]}
-              effectiveValue={effectiveMap[entryKey]}
-              onChange={value => setEntry(entryKey, value)}
-              issues={props.issues}
-            />
+            {expanded && (
+              <div className="px-4 pb-3 pt-3 border-t border-primary">
+                <ConfigNodeRenderer
+                  node={node.value}
+                  absPath={[...props.absPath, entryKey]}
+                  overrideValue={overrideMap[entryKey]}
+                  effectiveValue={effectiveMap[entryKey]}
+                  onChange={value => setEntry(entryKey, value)}
+                  issues={props.issues}
+                  bare
+                />
+              </div>
+            )}
           </div>
         );
       })}
-      {entryKeys.length === 0 && <p className="text-2xs text-muted px-1">No entries</p>}
+      {entryKeys.length === 0 && <p className="text-xs text-muted px-1">No entries</p>}
+      {entryKeys.length > 0 && visibleKeys.length === 0 && <p className="text-xs text-muted px-1">No entries match “{filter.trim()}”</p>}
     </section>
   );
+}
+
+/** Override wins per-field for summary purposes; non-objects replace outright. */
+function mergeEntry(effective: unknown, override: unknown): unknown {
+  if (isPlainObject(effective) && isPlainObject(override)) return { ...effective, ...override };
+  return override ?? effective;
 }
 
 /* --------------------------------- variant --------------------------------- */
@@ -748,11 +890,11 @@ function VariantRenderer(props: NodeRendererProps & { node: ConfigVariantNode })
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="min-w-0">
           <h3 className="text-xs font-bold text-secondary uppercase tracking-widest">{node.label}</h3>
-          {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
+          {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <select
-            className="px-2.5 py-1.5 bg-tertiary border border-primary rounded-lg text-sm text-primary focus-ring cursor-pointer"
+            className="px-2.5 py-1.5 bg-tertiary border border-control rounded-lg text-sm text-primary focus-ring cursor-pointer"
             value={selected}
             onChange={event => props.onChange(event.target.value === "" ? undefined : { [node.discriminator]: event.target.value })}
             aria-label={`${node.label} ${node.discriminator}`}
@@ -765,15 +907,12 @@ function VariantRenderer(props: NodeRendererProps & { node: ConfigVariantNode })
             ))}
           </select>
           {overridden && (
-            <button
-              type="button"
-              onClick={() => props.onChange(undefined)}
-              className="p-1 text-muted hover:text-primary cursor-pointer"
-              title="Reset to default"
-              aria-label={`Reset ${node.label}`}
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
+            <ResetToDefaultButton
+              absPath={props.absPath}
+              label={node.label}
+              overrideValue={props.overrideValue}
+              onLocalReset={() => props.onChange(undefined)}
+            />
           )}
         </div>
       </div>
@@ -914,18 +1053,18 @@ function SecretRenderer(props: NodeRendererProps & { node: ConfigSecretNode }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-medium text-primary">{node.label}</span>
-            {node.required && <span className="text-2xs text-red-400">*</span>}
-            {overridden && <span className="text-2xs px-1.5 py-px bg-accent/10 text-accent rounded-full">modified</span>}
+            {node.required && <span className="text-xs text-red-400">*</span>}
+            {overridden && <span className="text-xs px-1.5 py-px bg-accent/10 text-accent-soft rounded-full">modified</span>}
             {node.restartRequired && (
-              <span className="text-2xs px-1.5 py-px bg-amber-500/10 text-amber-500 rounded-full" title="Changing this requires a restart">
+              <span className="text-xs px-1.5 py-px bg-amber-500/10 text-amber-500 rounded-full" title="Changing this requires a restart">
                 restart
               </span>
             )}
           </div>
-          {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
-          {!overridden && defaultDescription && <p className="text-2xs text-muted mt-0.5">Defaults to {defaultDescription}</p>}
+          {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
+          {!overridden && defaultDescription && <p className="text-xs text-muted mt-0.5">Defaults to {defaultDescription}</p>}
           {nodeIssues.map(issue => (
-            <p key={issue.message} className="text-2xs text-red-400 mt-0.5" role="alert">
+            <p key={issue.message} className="text-xs text-red-400 mt-0.5" role="alert">
               {issue.message}
             </p>
           ))}
@@ -933,7 +1072,7 @@ function SecretRenderer(props: NodeRendererProps & { node: ConfigSecretNode }) {
         <div className="flex items-start gap-1.5 shrink-0">
           <div className="flex flex-col gap-1.5 items-end">
             <select
-              className="px-2.5 py-1.5 bg-tertiary border border-primary rounded-lg text-sm text-primary focus-ring cursor-pointer w-full sm:w-56"
+              className="px-2.5 py-1.5 bg-tertiary border border-control rounded-lg text-sm text-primary focus-ring cursor-pointer w-full sm:w-56"
               value={source ?? ""}
               onChange={event => changeSource(event.target.value)}
               aria-label={`${node.label} source`}
@@ -946,18 +1085,26 @@ function SecretRenderer(props: NodeRendererProps & { node: ConfigSecretNode }) {
               ))}
             </select>
 
-            {source === "value" && (
-              <input
-                type={node.sensitive ? "password" : "text"}
-                className={inputClass + (overridden ? "" : " opacity-70")}
-                value={valueInput}
-                placeholder={
-                  node.sensitive ? (isSet ? "•••••••• (set — type to replace)" : (node.placeholder ?? "Secret value")) : (node.placeholder ?? "Value")
-                }
-                onChange={event => emitValue(event.target.value)}
-                aria-label={`${node.label} value`}
-              />
-            )}
+            {source === "value" &&
+              (node.sensitive ? (
+                <PasswordInput
+                  className={cn("min-w-0 w-full sm:w-56", !overridden && "opacity-70")}
+                  inputClassName="px-2.5 py-1.5 bg-tertiary rounded-lg text-sm focus-ring font-sans"
+                  value={valueInput}
+                  placeholder={isSet ? "•••••••• (set — type to replace)" : (node.placeholder ?? "Secret value")}
+                  onChange={emitValue}
+                  aria-label={`${node.label} value`}
+                />
+              ) : (
+                <input
+                  type="text"
+                  className={inputClass + (overridden ? "" : " opacity-70")}
+                  value={valueInput}
+                  placeholder={node.placeholder ?? "Value"}
+                  onChange={event => emitValue(event.target.value)}
+                  aria-label={`${node.label} value`}
+                />
+              ))}
 
             {source === "env" && (
               <input
@@ -992,19 +1139,16 @@ function SecretRenderer(props: NodeRendererProps & { node: ConfigSecretNode }) {
             )}
           </div>
           {overridden && (
-            <button
-              type="button"
-              onClick={() => {
+            <ResetToDefaultButton
+              absPath={props.absPath}
+              label={node.label}
+              overrideValue={props.overrideValue}
+              onLocalReset={() => {
                 setPickedSource(null);
                 clearStash();
                 props.onChange(undefined);
               }}
-              className="p-1 text-muted hover:text-primary transition-colors cursor-pointer"
-              title="Reset to default"
-              aria-label={`Reset ${node.label}`}
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
+            />
           )}
         </div>
       </div>
@@ -1023,12 +1167,12 @@ function OpaqueRenderer(props: NodeRendererProps & { node: ConfigOpaqueNode }) {
     <div className="py-1.5">
       <div className="flex items-center gap-1.5">
         <span className="text-sm font-medium text-primary">{node.label}</span>
-        {overridden && <span className="text-2xs px-1.5 py-px bg-accent/10 text-accent rounded-full">modified</span>}
+        {overridden && <span className="text-xs px-1.5 py-px bg-accent/10 text-accent-soft rounded-full">modified</span>}
       </div>
-      {node.description && <p className="text-2xs text-muted mt-0.5">{node.description}</p>}
-      <p className="text-2xs text-muted mt-0.5 italic">{node.reason} — edited as JSON</p>
+      {node.description && <p className="text-xs text-muted mt-0.5">{node.description}</p>}
+      <p className="text-xs text-muted mt-0.5 italic">{node.reason} — edited as JSON</p>
       {nodeIssues.map(issue => (
-        <p key={issue.message} className="text-2xs text-red-400 mt-0.5" role="alert">
+        <p key={issue.message} className="text-xs text-red-400 mt-0.5" role="alert">
           {issue.message}
         </p>
       ))}
@@ -1039,15 +1183,7 @@ function OpaqueRenderer(props: NodeRendererProps & { node: ConfigOpaqueNode }) {
           onChange={props.onChange}
         />
         {overridden && (
-          <button
-            type="button"
-            onClick={() => props.onChange(undefined)}
-            className="p-1 text-muted hover:text-primary cursor-pointer"
-            title="Reset to default"
-            aria-label={`Reset ${node.label}`}
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
+          <ResetToDefaultButton absPath={props.absPath} label={node.label} overrideValue={props.overrideValue} onLocalReset={() => props.onChange(undefined)} />
         )}
       </div>
     </div>

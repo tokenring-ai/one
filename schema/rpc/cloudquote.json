@@ -7,6 +7,144 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
+      "title": "getStatus request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/cloudquote.getStatus"
+        },
+        "params": {
+          "$ref": "#/$defs/getStatusParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getStatus response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getStatusResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getWatchlist request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/cloudquote.getWatchlist"
+        },
+        "params": {
+          "$ref": "#/$defs/getWatchlistParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getWatchlist response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getWatchlistResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "saveWatchlist request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/cloudquote.saveWatchlist"
+        },
+        "params": {
+          "$ref": "#/$defs/saveWatchlistParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "saveWatchlist response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/saveWatchlistResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "getQuote request",
       "type": "object",
       "properties": {
@@ -49,6 +187,77 @@
         "jsonrpc",
         "id",
         "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamQuotes request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/cloudquote.streamQuotes"
+        },
+        "params": {
+          "$ref": "#/$defs/streamQuotesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamQuotes response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamQuotesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamQuotes stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
       ],
       "additionalProperties": false
     },
@@ -237,52 +446,6 @@
       "additionalProperties": false
     },
     {
-      "title": "getPriceChart request",
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "const": "2.0"
-        },
-        "id": {
-          "type": "number"
-        },
-        "method": {
-          "const": "/rpc/cloudquote.getPriceChart"
-        },
-        "params": {
-          "$ref": "#/$defs/getPriceChartParams"
-        }
-      },
-      "required": [
-        "jsonrpc",
-        "id",
-        "method",
-        "params"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "title": "getPriceChart response",
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "const": "2.0"
-        },
-        "id": {
-          "type": "number"
-        },
-        "result": {
-          "$ref": "#/$defs/getPriceChartResult"
-        }
-      },
-      "required": [
-        "jsonrpc",
-        "id",
-        "result"
-      ],
-      "additionalProperties": false
-    },
-    {
       "title": "findStock request",
       "type": "object",
       "properties": {
@@ -366,6 +529,90 @@
       ],
       "additionalProperties": false
     },
+    "getStatusParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getStatusResult": {
+      "type": "object",
+      "properties": {
+        "configured": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "configured"
+      ],
+      "additionalProperties": false
+    },
+    "getWatchlistParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getWatchlistResult": {
+      "type": "object",
+      "properties": {
+        "symbols": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "updatedAt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "symbols",
+        "updatedAt"
+      ],
+      "additionalProperties": false
+    },
+    "saveWatchlistParams": {
+      "type": "object",
+      "properties": {
+        "symbols": {
+          "maxItems": 1000,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expectedUpdatedAt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "symbols"
+      ]
+    },
+    "saveWatchlistResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "success",
+            "conflict"
+          ]
+        },
+        "symbols": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "updatedAt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "status",
+        "symbols",
+        "updatedAt"
+      ],
+      "additionalProperties": false
+    },
     "getQuoteParams": {
       "type": "object",
       "properties": {
@@ -381,6 +628,302 @@
       ]
     },
     "getQuoteResult": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "SymbolID": {
+                "type": "string"
+              },
+              "Symbol": {
+                "type": "string"
+              },
+              "Name": {
+                "type": "string"
+              },
+              "ShortName": {
+                "type": "string"
+              },
+              "Price": {
+                "type": "number"
+              },
+              "PrevClose": {
+                "type": "number"
+              },
+              "Ask": {
+                "type": "number"
+              },
+              "Bid": {
+                "type": "number"
+              },
+              "High": {
+                "type": "number"
+              },
+              "Low": {
+                "type": "number"
+              },
+              "Open": {
+                "type": "number"
+              },
+              "AfterHoursPrice": {
+                "type": "number"
+              },
+              "Change": {
+                "type": "number"
+              },
+              "ChangePercent": {
+                "type": "number"
+              },
+              "AskSize": {
+                "type": "number"
+              },
+              "BidSize": {
+                "type": "number"
+              },
+              "LastTradeTime": {
+                "type": "number"
+              },
+              "AfterHoursTradeTime": {
+                "type": "number"
+              },
+              "Volume": {
+                "type": "number"
+              },
+              "AverageVolume": {
+                "type": "number"
+              },
+              "AvgVolume1M": {
+                "type": "number"
+              },
+              "AvgVolume1W": {
+                "type": "number"
+              },
+              "AvgVolume3M": {
+                "type": "number"
+              },
+              "AvgVolume52": {
+                "type": "number"
+              },
+              "AvgVolume6M": {
+                "type": "number"
+              },
+              "AvgVolumeYTD": {
+                "type": "number"
+              },
+              "AnnualDividend": {
+                "type": "number"
+              },
+              "TTMDividend": {
+                "type": "number"
+              },
+              "YTDDividend": {
+                "type": "number"
+              },
+              "LatestDividendDate": {
+                "type": "number"
+              },
+              "LatestDividend": {
+                "type": "number"
+              },
+              "EPS": {
+                "type": "number"
+              },
+              "SharesOutstanding": {
+                "type": "number"
+              },
+              "ExchangeName": {
+                "type": "string"
+              },
+              "ExchangeShortName": {
+                "type": "string"
+              },
+              "ExchangePrefixCode": {
+                "type": "string"
+              },
+              "ExchangeDefaultCurrency": {
+                "type": "string"
+              },
+              "SecurityTypeName": {
+                "type": "string"
+              },
+              "SecurityTypeCode": {
+                "type": "string"
+              },
+              "NominalCurrencyCode": {
+                "type": "string"
+              },
+              "NominalCurrencyName": {
+                "type": "string"
+              },
+              "StartingPrice1M": {
+                "type": "number"
+              },
+              "StartingPrice1W": {
+                "type": "number"
+              },
+              "StartingPrice3M": {
+                "type": "number"
+              },
+              "StartingPrice52": {
+                "type": "number"
+              },
+              "StartingPrice6M": {
+                "type": "number"
+              },
+              "StartingPriceYTD": {
+                "type": "number"
+              },
+              "Low1MDate": {
+                "type": "number"
+              },
+              "Low1WDate": {
+                "type": "number"
+              },
+              "Low3MDate": {
+                "type": "number"
+              },
+              "Low52Date": {
+                "type": "number"
+              },
+              "Low6MDate": {
+                "type": "number"
+              },
+              "Low1M": {
+                "type": "number"
+              },
+              "Low1W": {
+                "type": "number"
+              },
+              "Low3M": {
+                "type": "number"
+              },
+              "Low52": {
+                "type": "number"
+              },
+              "Low6M": {
+                "type": "number"
+              },
+              "LowYTD": {
+                "type": "number"
+              },
+              "High1MDate": {
+                "type": "number"
+              },
+              "High1WDate": {
+                "type": "number"
+              },
+              "High3MDate": {
+                "type": "number"
+              },
+              "High52Date": {
+                "type": "number"
+              },
+              "High6MDate": {
+                "type": "number"
+              },
+              "High1M": {
+                "type": "number"
+              },
+              "High1W": {
+                "type": "number"
+              },
+              "High3M": {
+                "type": "number"
+              },
+              "High52": {
+                "type": "number"
+              },
+              "High6M": {
+                "type": "number"
+              },
+              "HighYTD": {
+                "type": "number"
+              },
+              "ChartStartTime": {
+                "type": "number"
+              },
+              "ChartEndTime": {
+                "type": "number"
+              },
+              "HolidayName": {
+                "type": "string"
+              },
+              "MovingAverage50": {
+                "type": "number"
+              },
+              "MovingAverage200": {
+                "type": "number"
+              },
+              "MostRecentClose": {
+                "type": "number"
+              },
+              "MostRecentCloseDate": {
+                "type": "number"
+              },
+              "LessRecentClose": {
+                "type": "number"
+              },
+              "LessRecentCloseDate": {
+                "type": "number"
+              },
+              "TodayClose": {
+                "type": "number"
+              },
+              "UpdateTime": {
+                "type": "number"
+              },
+              "ExchangeDelay": {
+                "type": "string"
+              },
+              "CLIconBright128": {
+                "type": "string"
+              },
+              "CLLogoBright128": {
+                "type": "string"
+              },
+              "CLIconDark128": {
+                "type": "string"
+              },
+              "CLLogoDark128": {
+                "type": "string"
+              },
+              "CLWebsite": {
+                "type": "string"
+              },
+              "Delay": {
+                "type": "number"
+              },
+              "CIK": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": {}
+          }
+        }
+      },
+      "required": [
+        "rows"
+      ],
+      "additionalProperties": {}
+    },
+    "streamQuotesParams": {
+      "type": "object",
+      "properties": {
+        "symbols": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "symbols"
+      ]
+    },
+    "streamQuotesResult": {
       "type": "object",
       "properties": {
         "rows": {
@@ -715,7 +1258,10 @@
                 "type": "number",
                 "description": "Adjusted close price"
               }
-            ]
+            ],
+            "items": false,
+            "minItems": 7,
+            "maxItems": 7
           }
         },
         "columns": {
@@ -761,7 +1307,10 @@
                 "type": "number",
                 "description": "Cumulative Volume"
               }
-            ]
+            ],
+            "items": false,
+            "minItems": 3,
+            "maxItems": 3
           }
         },
         "columns": {
@@ -1118,37 +1667,55 @@
     "getHeadlinesBySecurityResult": {
       "type": "object",
       "properties": {
-        "data": {}
+        "data": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "bodyId": {
+                    "type": "string"
+                  },
+                  "slug": {
+                    "type": "string"
+                  },
+                  "link": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": {}
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "bodyId": {
+                        "type": "string"
+                      },
+                      "slug": {
+                        "type": "string"
+                      },
+                      "link": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": {}
+                  }
+                }
+              },
+              "additionalProperties": {}
+            }
+          ]
+        }
       },
       "required": [
         "data"
-      ],
-      "additionalProperties": false
-    },
-    "getPriceChartParams": {
-      "type": "object",
-      "properties": {
-        "symbol": {
-          "type": "string"
-        },
-        "interval": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "symbol",
-        "interval"
-      ]
-    },
-    "getPriceChartResult": {
-      "type": "object",
-      "properties": {
-        "svgDataUri": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "svgDataUri"
       ],
       "additionalProperties": false
     },
@@ -1456,10 +2023,30 @@
     "path": "/rpc/cloudquote",
     "source": "plugin/cloudquote/rpc/schema.ts",
     "methods": {
+      "getStatus": {
+        "type": "query",
+        "params": "#/$defs/getStatusParams",
+        "result": "#/$defs/getStatusResult"
+      },
+      "getWatchlist": {
+        "type": "query",
+        "params": "#/$defs/getWatchlistParams",
+        "result": "#/$defs/getWatchlistResult"
+      },
+      "saveWatchlist": {
+        "type": "mutation",
+        "params": "#/$defs/saveWatchlistParams",
+        "result": "#/$defs/saveWatchlistResult"
+      },
       "getQuote": {
         "type": "query",
         "params": "#/$defs/getQuoteParams",
         "result": "#/$defs/getQuoteResult"
+      },
+      "streamQuotes": {
+        "type": "stream",
+        "params": "#/$defs/streamQuotesParams",
+        "result": "#/$defs/streamQuotesResult"
       },
       "getPriceHistory": {
         "type": "query",
@@ -1480,11 +2067,6 @@
         "type": "query",
         "params": "#/$defs/getHeadlinesBySecurityParams",
         "result": "#/$defs/getHeadlinesBySecurityResult"
-      },
-      "getPriceChart": {
-        "type": "query",
-        "params": "#/$defs/getPriceChartParams",
-        "result": "#/$defs/getPriceChartResult"
       },
       "findStock": {
         "type": "query",

@@ -7,6 +7,52 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
+      "title": "getBlogConfiguration request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/blog.getBlogConfiguration"
+        },
+        "params": {
+          "$ref": "#/$defs/getBlogConfigurationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getBlogConfiguration response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getBlogConfigurationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "getAllPosts request",
       "type": "object",
       "properties": {
@@ -43,6 +89,190 @@
         },
         "result": {
           "$ref": "#/$defs/getAllPostsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchPosts request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/blog.searchPosts"
+        },
+        "params": {
+          "$ref": "#/$defs/searchPostsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchPosts response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/searchPostsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deletePost request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/blog.deletePost"
+        },
+        "params": {
+          "$ref": "#/$defs/deletePostParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deletePost response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deletePostResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "generateFeatureImage request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/blog.generateFeatureImage"
+        },
+        "params": {
+          "$ref": "#/$defs/generateFeatureImageParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "generateFeatureImage response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/generateFeatureImageResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "testConnection request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/blog.testConnection"
+        },
+        "params": {
+          "$ref": "#/$defs/testConnectionParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "testConnection response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/testConnectionResult"
         }
       },
       "required": [
@@ -135,6 +365,52 @@
         },
         "result": {
           "$ref": "#/$defs/updatePostResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "publishPost request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/blog.publishPost"
+        },
+        "params": {
+          "$ref": "#/$defs/publishPostParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "publishPost response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/publishPostResult"
         }
       },
       "required": [
@@ -320,6 +596,52 @@
       ],
       "additionalProperties": false
     },
+    "getBlogConfigurationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getBlogConfigurationResult": {
+      "type": "object",
+      "properties": {
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "providerStatuses": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "published",
+                "scheduled",
+                "pending",
+                "private"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "providers",
+        "agentTypes",
+        "providerStatuses"
+      ],
+      "additionalProperties": false
+    },
     "getAllPostsParams": {
       "type": "object",
       "properties": {
@@ -374,6 +696,7 @@
                 ]
               },
               "tags": {
+                "default": [],
                 "type": "array",
                 "items": {
                   "type": "string"
@@ -408,6 +731,7 @@
               "id",
               "title",
               "status",
+              "tags",
               "created_at",
               "updated_at"
             ],
@@ -418,13 +742,9 @@
           "type": "number"
         },
         "currentlySelected": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "string",
+            "null"
           ]
         },
         "message": {
@@ -436,6 +756,355 @@
         "count",
         "currentlySelected",
         "message"
+      ],
+      "additionalProperties": false
+    },
+    "searchPostsParams": {
+      "type": "object",
+      "properties": {
+        "keyword": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "published",
+            "scheduled",
+            "pending",
+            "private"
+          ]
+        },
+        "sort": {
+          "default": "updated",
+          "type": "string",
+          "enum": [
+            "updated",
+            "newest",
+            "oldest",
+            "title"
+          ]
+        },
+        "offset": {
+          "default": 0,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "limit": {
+          "default": 25,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "provider": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider"
+      ]
+    },
+    "searchPostsResult": {
+      "type": "object",
+      "properties": {
+        "posts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "published",
+                  "scheduled",
+                  "pending",
+                  "private"
+                ]
+              },
+              "tags": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "created_at": {
+                "type": "number"
+              },
+              "updated_at": {
+                "type": "number"
+              },
+              "published_at": {
+                "type": "number"
+              },
+              "feature_image": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "status",
+              "tags",
+              "created_at",
+              "updated_at"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "posts",
+        "hasMore"
+      ],
+      "additionalProperties": false
+    },
+    "deletePostParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "id"
+      ]
+    },
+    "deletePostResult": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "generateFeatureImageParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "quality": {
+          "default": "standard",
+          "type": "string",
+          "enum": [
+            "ultra",
+            "high",
+            "standard",
+            "low"
+          ]
+        },
+        "shape": {
+          "default": "landscape",
+          "type": "string",
+          "enum": [
+            "square",
+            "landscape",
+            "portrait",
+            "ultrawide",
+            "ultratall"
+          ]
+        }
+      },
+      "required": [
+        "agentId",
+        "provider",
+        "id"
+      ]
+    },
+    "generateFeatureImageResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "post": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "published",
+                    "scheduled",
+                    "pending",
+                    "private"
+                  ]
+                },
+                "tags": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "created_at": {
+                  "type": "number"
+                },
+                "updated_at": {
+                  "type": "number"
+                },
+                "published_at": {
+                  "type": "number"
+                },
+                "feature_image": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "url": {
+                  "type": "string"
+                },
+                "html": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "status",
+                "tags",
+                "created_at",
+                "updated_at",
+                "html"
+              ],
+              "additionalProperties": false
+            },
+            "imageUrl": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "post",
+            "imageUrl",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "testConnectionParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider"
+      ]
+    },
+    "testConnectionResult": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "step": {
+                "type": "string"
+              },
+              "ok": {
+                "type": "boolean"
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "step",
+              "ok",
+              "detail"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "ok",
+        "steps"
       ],
       "additionalProperties": false
     },
@@ -487,6 +1156,7 @@
               ]
             },
             "tags": {
+              "default": [],
               "type": "array",
               "items": {
                 "type": "string"
@@ -524,6 +1194,7 @@
             "id",
             "title",
             "status",
+            "tags",
             "created_at",
             "updated_at",
             "html"
@@ -566,16 +1237,11 @@
               ]
             },
             "tags": {
+              "default": [],
               "type": "array",
               "items": {
                 "type": "string"
               }
-            },
-            "created_at": {
-              "type": "number"
-            },
-            "updated_at": {
-              "type": "number"
             },
             "published_at": {
               "type": "number"
@@ -629,6 +1295,7 @@
               ]
             },
             "tags": {
+              "default": [],
               "type": "array",
               "items": {
                 "type": "string"
@@ -666,6 +1333,7 @@
             "id",
             "title",
             "status",
+            "tags",
             "created_at",
             "updated_at",
             "html"
@@ -677,6 +1345,108 @@
         }
       },
       "required": [
+        "post",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "publishPostParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "id"
+      ]
+    },
+    "publishPostResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "published",
+            "reviewRequired",
+            "escalated"
+          ]
+        },
+        "post": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "published",
+                "scheduled",
+                "pending",
+                "private"
+              ]
+            },
+            "tags": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "created_at": {
+              "type": "number"
+            },
+            "updated_at": {
+              "type": "number"
+            },
+            "published_at": {
+              "type": "number"
+            },
+            "feature_image": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "url": {
+              "type": "string"
+            },
+            "html": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "status",
+            "tags",
+            "created_at",
+            "updated_at",
+            "html"
+          ],
+          "additionalProperties": false
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
         "post",
         "message"
       ],
@@ -720,6 +1490,7 @@
               ]
             },
             "tags": {
+              "default": [],
               "type": "array",
               "items": {
                 "type": "string"
@@ -757,6 +1528,7 @@
             "id",
             "title",
             "status",
+            "tags",
             "created_at",
             "updated_at",
             "html"
@@ -794,23 +1566,15 @@
               "const": "success"
             },
             "selectedPostId": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "selectedProvider": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "availableProviders": {
@@ -870,23 +1634,15 @@
               "const": "success"
             },
             "selectedPostId": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "selectedProvider": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "availableProviders": {
@@ -925,10 +1681,35 @@
     "path": "/rpc/blog",
     "source": "plugin/blog/rpc/schema.ts",
     "methods": {
+      "getBlogConfiguration": {
+        "type": "query",
+        "params": "#/$defs/getBlogConfigurationParams",
+        "result": "#/$defs/getBlogConfigurationResult"
+      },
       "getAllPosts": {
         "type": "query",
         "params": "#/$defs/getAllPostsParams",
         "result": "#/$defs/getAllPostsResult"
+      },
+      "searchPosts": {
+        "type": "query",
+        "params": "#/$defs/searchPostsParams",
+        "result": "#/$defs/searchPostsResult"
+      },
+      "deletePost": {
+        "type": "mutation",
+        "params": "#/$defs/deletePostParams",
+        "result": "#/$defs/deletePostResult"
+      },
+      "generateFeatureImage": {
+        "type": "mutation",
+        "params": "#/$defs/generateFeatureImageParams",
+        "result": "#/$defs/generateFeatureImageResult"
+      },
+      "testConnection": {
+        "type": "mutation",
+        "params": "#/$defs/testConnectionParams",
+        "result": "#/$defs/testConnectionResult"
       },
       "createPost": {
         "type": "mutation",
@@ -939,6 +1720,11 @@
         "type": "mutation",
         "params": "#/$defs/updatePostParams",
         "result": "#/$defs/updatePostResult"
+      },
+      "publishPost": {
+        "type": "mutation",
+        "params": "#/$defs/publishPostParams",
+        "result": "#/$defs/publishPostResult"
       },
       "getPostById": {
         "type": "query",

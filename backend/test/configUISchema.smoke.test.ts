@@ -11,7 +11,10 @@ describe("buildConfigUISchema against all installed plugins", () => {
   for (const plugin of plugins) {
     it(`introspects ${plugin.name}`, () => {
       const uiSchema = buildConfigUISchema(plugin);
-      if (!("configSchema" in plugin)) {
+      // buildConfigUISchema walks `configSchema ?? immutableConfigSchema`; only a
+      // plugin with neither produces no UI schema. Immutable-config plugins
+      // (bun-storage, vault) render read-only config, so they must be walked too.
+      if (!("configSchema" in plugin) && !("immutableConfigSchema" in plugin)) {
         expect(uiSchema).toBeNull();
         return;
       }

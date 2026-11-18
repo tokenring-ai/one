@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 import { isValidElement, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { scrollBehavior } from "../../lib/motion.ts";
+import { isApprovalQuestion, plainTitle } from "../../lib/questionSummary.ts";
 import type { InteractionResponseMessage, QuestionInteraction } from "../../types/agent-events.ts";
 import { markdownLinkComponents } from "../chat/MarkdownLink.tsx";
 import FileInlineQuestion from "./inputs/file-inline.tsx";
@@ -20,6 +22,8 @@ interface InlineQuestionProps {
   autoScroll?: boolean;
   isUrgent?: boolean;
   urgencyLevel?: number | null;
+  /** Who is asking; part of the question's accessible name. */
+  agentName?: string;
 }
 
 function formatResponseResult(result: unknown) {
@@ -60,9 +64,9 @@ function QuestionMessageMarkdown({ message, className }: { message: string; clas
           code: ({ children, className: codeClassName }) => {
             const text = getNodeText(children).replace(/\n$/, "");
             if (codeClassName || text.includes("\n")) {
-              return <code className={`${codeClassName ?? ""} block whitespace-pre-wrap text-2xs font-mono`.trim()}>{text}</code>;
+              return <code className={`${codeClassName ?? ""} block whitespace-pre-wrap text-xs font-mono`.trim()}>{text}</code>;
             }
-            return <code className="rounded bg-tertiary px-1 py-0.5 text-2xs font-mono">{text}</code>;
+            return <code className="rounded bg-tertiary px-1 py-0.5 text-xs font-mono">{text}</code>;
           },
         }}
       >
@@ -72,7 +76,16 @@ function QuestionMessageMarkdown({ message, className }: { message: string; clas
   );
 }
 
-export default function InlineQuestion({ request, agentId, requestId, response, autoScroll = true, isUrgent = false }: InlineQuestionProps) {
+/** Seconds left as "45s", "4:05" or "1:02:05". */
+export function formatCountdown(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const rest = (seconds % 60).toString().padStart(2, "0");
+  return hours > 0 ? `${hours}:${minutes.toString().padStart(2, "0")}:${rest}` : `${minutes}:${rest}`;
+}
+
+export default function InlineQuestion({ request, agentId, requestId, response, autoScroll = true, isUrgent = false, agentName }: InlineQuestionProps) {
   const [isExpanded, setIsExpanded] = useState(!response);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [autoSubmitted, setAutoSubmitted] = useState(false);
@@ -84,9 +97,17 @@ export default function InlineQuestion({ request, agentId, requestId, response, 
   // Focus on the header when the question is rendered
   useEffect(() => {
     if (autoScroll && containerRef.current) {
-      containerRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      containerRef.current.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
     }
   }, [autoScroll]);
+
+  // A question that needs an answer takes focus when it appears, so a keyboard or screen-reader user
+  // lands on it (the chat's status region announces the arrival too). Most inputs focus themselves
+  // first (the text field, the tree); the header is the fallback for those that do not.
+  useEffect(() => {
+    if (response || containerRef.current?.contains(document.activeElement)) return;
+    headerRef.current?.focus({ preventScroll: true });
+  }, [response]);
 
   // Countdown timer
   useEffect(() => {
@@ -121,10 +142,12 @@ export default function InlineQuestion({ request, agentId, requestId, response, 
     }
   };
 
+  const regionLabel = [agentName, isApprovalQuestion(request) ? "Approval needed" : "Question", plainTitle(request.message)].filter(Boolean).join(": ");
+
   const toggleExpanded = () => setIsExpanded(prev => !prev);
 
   return (
-    <div ref={containerRef} className="not-prose mb-2" role="region" aria-labelledby={`question-title-${request.interactionId}`}>
+    <div ref={containerRef} className="not-prose mb-2" role="region" aria-label={regionLabel}>
       {/* Header - chevron toggles; message is markdown (not inside the button so links stay valid) */}
       <div className={`flex items-start gap-2 py-1 px-1.5 w-full group/header rounded-md ${autoSubmitted ? "bg-emerald-500/10" : ""}`}>
         <button
@@ -148,7 +171,7 @@ export default function InlineQuestion({ request, agentId, requestId, response, 
           </div>
         </button>
         <div className="flex items-start gap-2 flex-1 min-w-0">
-          {isUrgent && <span className="inline-block w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0 mt-1.5" title="Urgent - auto-submit pending" />}
+          {isUrgent && <span className="inline-block w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0 mt-1.5" title="Has a deadline" />}
           {/* Message is outside the expand button so markdown links remain valid HTML */}
           <div
             id={`question-title-${request.interactionId}`}
@@ -172,27 +195,28 @@ export default function InlineQuestion({ request, agentId, requestId, response, 
               className="text-sm font-medium text-primary prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
             />
           </div>
-          <span className="text-2xs font-mono text-muted opacity-0 group-hover/header:opacity-100 transition-opacity leading-none pt-1.5 shrink-0">
+          <span className="text-xs font-mono text-muted opacity-0 group-hover/header:opacity-100 transition-opacity leading-none pt-1.5 shrink-0">
             {question.type}
           </span>
           {countdown !== null && countdown > 0 && (
             <>
               <span
-                className={`text-2xs font-medium leading-none pt-1.5 shrink-0 ${
+                title="Unanswered by then, the agent goes on with the default answer (an approval is refused)"
+                className={`text-xs font-medium leading-none pt-1.5 shrink-0 ${
                   countdown <= 5
                     ? "text-red-500 dark:text-red-400 font-bold animate-pulse"
                     : countdown <= 15
                       ? "text-orange-500 dark:text-orange-400"
-                      : "text-accent"
+                      : "text-accent-soft"
                 }`}
               >
-                {countdown}s
+                {formatCountdown(countdown)}
               </span>
               {/* Visual progress indicator for urgency */}
               {totalTime !== null && totalTime > 0 && (
                 <div
                   className="w-8 h-0.5 bg-primary/30 dark:bg-primary/20 rounded-full overflow-hidden shrink-0 mt-2"
-                  title={`Time remaining: ${countdown}s of ${totalTime}s`}
+                  title={`Time remaining: ${formatCountdown(countdown)} of ${formatCountdown(totalTime)}`}
                 >
                   <div
                     className={`h-full rounded-full transition-all duration-1000 ${
@@ -205,12 +229,12 @@ export default function InlineQuestion({ request, agentId, requestId, response, 
             </>
           )}
           {countdown !== null && countdown === 0 && !autoSubmitted && (
-            <span className="text-2xs text-amber-600 dark:text-amber-400 font-medium leading-none pt-1.5 animate-pulse shrink-0">Submitting...</span>
+            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium leading-none pt-1.5 animate-pulse shrink-0">Submitting...</span>
           )}
           {autoSubmitted && (
-            <span className="text-2xs text-emerald-600 dark:text-emerald-400 font-medium leading-none pt-1.5 shrink-0 flex items-center gap-0.5">
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium leading-none pt-1.5 shrink-0 flex items-center gap-0.5">
               <Check className="w-3 h-3 inline" />
-              Auto-submitted
+              Default used
             </span>
           )}
         </div>

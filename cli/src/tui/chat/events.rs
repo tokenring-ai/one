@@ -49,6 +49,12 @@ impl ChatSession {
                     );
                     self.exit = Some(ChatExit::SelectAgent);
                 }
+                StreamItem::SessionEnded(message) => {
+                    // Reconnecting would resend the rejected password forever.
+                    self.stream.connecting = false;
+                    self.stream.reconnect_at = None;
+                    self.exit = Some(ChatExit::SessionEnded(message));
+                }
                 StreamItem::Ended => {
                     self.schedule_stream_reconnect("Event stream closed.".to_string());
                 }
@@ -71,6 +77,10 @@ impl ChatSession {
     /// Schedule a reconnect from the last known stream position.
     pub(super) fn schedule_stream_reconnect(&mut self, message: String) {
         if self.exit.is_some() {
+            return;
+        }
+        if let Some(ended) = self.client.session_ended() {
+            self.exit = Some(ChatExit::SessionEnded(ended));
             return;
         }
         self.stream.connecting = true;

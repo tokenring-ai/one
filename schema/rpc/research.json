@@ -7,6 +7,52 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
+      "title": "getResearchConfiguration request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/research.getResearchConfiguration"
+        },
+        "params": {
+          "$ref": "#/$defs/getResearchConfigurationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getResearchConfiguration response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getResearchConfigurationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "listTopics request",
       "type": "object",
       "properties": {
@@ -160,6 +206,52 @@
         },
         "result": {
           "$ref": "#/$defs/createTopicResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setTopicTags request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/research.setTopicTags"
+        },
+        "params": {
+          "$ref": "#/$defs/setTopicTagsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setTopicTags response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/setTopicTagsResult"
         }
       },
       "required": [
@@ -517,6 +609,190 @@
       "additionalProperties": false
     },
     {
+      "title": "renameItem request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/research.renameItem"
+        },
+        "params": {
+          "$ref": "#/$defs/renameItemParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "renameItem response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/renameItemResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchItems request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/research.searchItems"
+        },
+        "params": {
+          "$ref": "#/$defs/searchItemsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchItems response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/searchItemsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "exportTopic request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/research.exportTopic"
+        },
+        "params": {
+          "$ref": "#/$defs/exportTopicParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "exportTopic response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/exportTopicResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "exportBrief request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/research.exportBrief"
+        },
+        "params": {
+          "$ref": "#/$defs/exportBriefParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "exportBrief response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/exportBriefResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "getResearchState request",
       "type": "object",
       "properties": {
@@ -646,6 +922,29 @@
       ],
       "additionalProperties": false
     },
+    "getResearchConfigurationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getResearchConfigurationResult": {
+      "type": "object",
+      "properties": {
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "searchProviderAvailable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "agentTypes",
+        "searchProviderAvailable"
+      ],
+      "additionalProperties": false
+    },
     "listTopicsParams": {
       "type": "object",
       "properties": {}
@@ -666,12 +965,19 @@
               },
               "updatedAt": {
                 "type": "string"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "required": [
               "name",
               "itemCount",
-              "updatedAt"
+              "updatedAt",
+              "tags"
             ],
             "additionalProperties": false
           }
@@ -702,12 +1008,19 @@
               },
               "updatedAt": {
                 "type": "string"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "required": [
               "name",
               "itemCount",
-              "updatedAt"
+              "updatedAt",
+              "tags"
             ],
             "additionalProperties": false
           }
@@ -743,12 +1056,74 @@
             },
             "updatedAt": {
               "type": "string"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           "required": [
             "name",
             "itemCount",
-            "updatedAt"
+            "updatedAt",
+            "tags"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "topic"
+      ],
+      "additionalProperties": false
+    },
+    "setTopicTagsParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "tags": {
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "tags"
+      ]
+    },
+    "setTopicTagsResult": {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "itemCount": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "itemCount",
+            "updatedAt",
+            "tags"
           ],
           "additionalProperties": false
         }
@@ -811,13 +1186,17 @@
               },
               "updatedAt": {
                 "type": "string"
+              },
+              "sourceCount": {
+                "type": "number"
               }
             },
             "required": [
               "topicName",
               "name",
               "size",
-              "updatedAt"
+              "updatedAt",
+              "sourceCount"
             ],
             "additionalProperties": false
           }
@@ -858,13 +1237,17 @@
               },
               "updatedAt": {
                 "type": "string"
+              },
+              "sourceCount": {
+                "type": "number"
               }
             },
             "required": [
               "topicName",
               "name",
               "size",
-              "updatedAt"
+              "updatedAt",
+              "sourceCount"
             ],
             "additionalProperties": false
           }
@@ -910,7 +1293,37 @@
                 "updatedAt": {
                   "type": "string"
                 },
+                "sourceCount": {
+                  "type": "number"
+                },
                 "content": {
+                  "type": "string"
+                },
+                "sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "url": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "publisher": {
+                        "type": "string"
+                      },
+                      "accessed": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "url"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "warning": {
                   "type": "string"
                 }
               },
@@ -919,7 +1332,9 @@
                 "name",
                 "size",
                 "updatedAt",
-                "content"
+                "sourceCount",
+                "content",
+                "sources"
               ],
               "additionalProperties": false
             },
@@ -946,6 +1361,36 @@
         "content": {
           "default": "",
           "type": "string"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "The http(s) URL that was actually read"
+              },
+              "title": {
+                "description": "Title of the page or document",
+                "type": "string",
+                "minLength": 1
+              },
+              "publisher": {
+                "description": "Publisher or site name",
+                "type": "string",
+                "minLength": 1
+              },
+              "accessed": {
+                "description": "Date the source was read (YYYY-MM-DD); defaults to today",
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url"
+            ]
+          }
         }
       },
       "required": [
@@ -971,7 +1416,37 @@
             "updatedAt": {
               "type": "string"
             },
+            "sourceCount": {
+              "type": "number"
+            },
             "content": {
+              "type": "string"
+            },
+            "sources": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "publisher": {
+                    "type": "string"
+                  },
+                  "accessed": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "warning": {
               "type": "string"
             }
           },
@@ -980,7 +1455,9 @@
             "name",
             "size",
             "updatedAt",
-            "content"
+            "sourceCount",
+            "content",
+            "sources"
           ],
           "additionalProperties": false
         }
@@ -1001,6 +1478,66 @@
         },
         "content": {
           "type": "string"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "The http(s) URL that was actually read"
+              },
+              "title": {
+                "description": "Title of the page or document",
+                "type": "string",
+                "minLength": 1
+              },
+              "publisher": {
+                "description": "Publisher or site name",
+                "type": "string",
+                "minLength": 1
+              },
+              "accessed": {
+                "description": "Date the source was read (YYYY-MM-DD); defaults to today",
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url"
+            ]
+          }
+        },
+        "baseSources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "The http(s) URL that was actually read"
+              },
+              "title": {
+                "description": "Title of the page or document",
+                "type": "string",
+                "minLength": 1
+              },
+              "publisher": {
+                "description": "Publisher or site name",
+                "type": "string",
+                "minLength": 1
+              },
+              "accessed": {
+                "description": "Date the source was read (YYYY-MM-DD); defaults to today",
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url"
+            ]
+          }
         }
       },
       "required": [
@@ -1027,7 +1564,37 @@
             "updatedAt": {
               "type": "string"
             },
+            "sourceCount": {
+              "type": "number"
+            },
             "content": {
+              "type": "string"
+            },
+            "sources": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "publisher": {
+                    "type": "string"
+                  },
+                  "accessed": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "warning": {
               "type": "string"
             }
           },
@@ -1036,7 +1603,9 @@
             "name",
             "size",
             "updatedAt",
-            "content"
+            "sourceCount",
+            "content",
+            "sources"
           ],
           "additionalProperties": false
         }
@@ -1073,6 +1642,281 @@
       ],
       "additionalProperties": false
     },
+    "renameItemParams": {
+      "type": "object",
+      "properties": {
+        "topicName": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "newTopicName": {
+          "type": "string"
+        },
+        "newName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "topicName",
+        "name",
+        "newTopicName",
+        "newName"
+      ]
+    },
+    "renameItemResult": {
+      "type": "object",
+      "properties": {
+        "item": {
+          "type": "object",
+          "properties": {
+            "topicName": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "size": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "sourceCount": {
+              "type": "number"
+            },
+            "content": {
+              "type": "string"
+            },
+            "sources": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "publisher": {
+                    "type": "string"
+                  },
+                  "accessed": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "warning": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "topicName",
+            "name",
+            "size",
+            "updatedAt",
+            "sourceCount",
+            "content",
+            "sources"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "item"
+      ],
+      "additionalProperties": false
+    },
+    "searchItemsParams": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "topicName": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "required": [
+        "query"
+      ]
+    },
+    "searchItemsResult": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "topicName": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "titleMatch": {
+                "type": "boolean"
+              },
+              "contentMatches": {
+                "type": "number"
+              },
+              "snippet": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "topicName",
+              "name",
+              "title",
+              "titleMatch",
+              "contentMatches",
+              "snippet",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "results"
+      ],
+      "additionalProperties": false
+    },
+    "exportTopicParams": {
+      "type": "object",
+      "properties": {
+        "topicName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "topicName"
+      ]
+    },
+    "exportTopicResult": {
+      "type": "object",
+      "properties": {
+        "fileName": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "itemCount": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "fileName",
+        "content",
+        "itemCount"
+      ],
+      "additionalProperties": false
+    },
+    "exportBriefParams": {
+      "type": "object",
+      "properties": {
+        "topicName": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "md",
+            "docx",
+            "pdf"
+          ]
+        }
+      },
+      "required": [
+        "topicName"
+      ]
+    },
+    "exportBriefResult": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "fileName": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "itemCount": {
+              "type": "number"
+            },
+            "sourceCount": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "fileName",
+            "content",
+            "itemCount",
+            "sourceCount"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "fileName": {
+              "type": "string"
+            },
+            "mimeType": {
+              "type": "string"
+            },
+            "contentBase64": {
+              "type": "string"
+            },
+            "itemCount": {
+              "type": "number"
+            },
+            "sourceCount": {
+              "type": "number"
+            },
+            "warnings": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "fileName",
+            "mimeType",
+            "contentBase64",
+            "itemCount",
+            "sourceCount",
+            "warnings"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
     "getResearchStateParams": {
       "type": "object",
       "properties": {
@@ -1094,23 +1938,15 @@
               "const": "success"
             },
             "selectedTopicName": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "selectedItemName": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             }
           },
@@ -1163,23 +1999,15 @@
               "const": "success"
             },
             "selectedTopicName": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "selectedItemName": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             }
           },
@@ -1211,6 +2039,11 @@
     "path": "/rpc/research",
     "source": "plugin/research/rpc/schema.ts",
     "methods": {
+      "getResearchConfiguration": {
+        "type": "query",
+        "params": "#/$defs/getResearchConfigurationParams",
+        "result": "#/$defs/getResearchConfigurationResult"
+      },
       "listTopics": {
         "type": "query",
         "params": "#/$defs/listTopicsParams",
@@ -1225,6 +2058,11 @@
         "type": "mutation",
         "params": "#/$defs/createTopicParams",
         "result": "#/$defs/createTopicResult"
+      },
+      "setTopicTags": {
+        "type": "mutation",
+        "params": "#/$defs/setTopicTagsParams",
+        "result": "#/$defs/setTopicTagsResult"
       },
       "deleteTopic": {
         "type": "mutation",
@@ -1260,6 +2098,26 @@
         "type": "mutation",
         "params": "#/$defs/deleteItemParams",
         "result": "#/$defs/deleteItemResult"
+      },
+      "renameItem": {
+        "type": "mutation",
+        "params": "#/$defs/renameItemParams",
+        "result": "#/$defs/renameItemResult"
+      },
+      "searchItems": {
+        "type": "query",
+        "params": "#/$defs/searchItemsParams",
+        "result": "#/$defs/searchItemsResult"
+      },
+      "exportTopic": {
+        "type": "query",
+        "params": "#/$defs/exportTopicParams",
+        "result": "#/$defs/exportTopicResult"
+      },
+      "exportBrief": {
+        "type": "query",
+        "params": "#/$defs/exportBriefParams",
+        "result": "#/$defs/exportBriefResult"
       },
       "getResearchState": {
         "type": "query",

@@ -15,8 +15,13 @@ const spinnerSizes = {
 
 export default function LoadingState({ message, size = "md", className }: LoadingStateProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center gap-2 py-8", className)} role="status" aria-live="polite">
-      <Loader2 className={cn(spinnerSizes[size], "text-muted animate-spin")} />
+    <div
+      className={cn("flex flex-col items-center justify-center gap-2 py-8", className)}
+      role="status"
+      aria-live="polite"
+      aria-label={message ? undefined : "Loading"}
+    >
+      <Loader2 className={cn(spinnerSizes[size], "text-muted animate-spin")} aria-hidden="true" />
       {message && <p className="text-xs text-muted">{message}</p>}
     </div>
   );

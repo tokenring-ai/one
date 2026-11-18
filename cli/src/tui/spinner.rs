@@ -126,7 +126,11 @@ pub fn banner_lines(width: usize) -> Vec<String> {
         BANNER_COMPACT
     };
     let lines: Vec<&'static str> = banner.lines().collect();
-    let max_line_width = lines.iter().map(|line| visible_len(line)).max().unwrap_or(0);
+    let max_line_width = lines
+        .iter()
+        .map(|line| visible_len(line))
+        .max()
+        .unwrap_or(0);
 
     lines
         .into_iter()

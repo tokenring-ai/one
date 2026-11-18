@@ -11,6 +11,8 @@ pub enum TodoStatus {
     Pending,
     InProgress,
     Completed,
+    /// Dropped without being done (schema enum `cancelled`).
+    Cancelled,
     Unknown,
 }
 
@@ -20,6 +22,7 @@ impl TodoStatus {
             "pending" => Self::Pending,
             "in_progress" => Self::InProgress,
             "completed" => Self::Completed,
+            "cancelled" => Self::Cancelled,
             _ => Self::Unknown,
         }
     }
@@ -30,6 +33,7 @@ impl TodoStatus {
             Self::Pending => "[ ]",
             Self::InProgress => "[>]",
             Self::Completed => "[x]",
+            Self::Cancelled => "[-]",
             Self::Unknown => "[?]",
         }
     }
@@ -130,7 +134,11 @@ fn parse_todos(value: &Value) -> Option<Todos> {
                     let id = item.get("id")?.as_str()?.to_string();
                     let content = item.get("content")?.as_str()?.to_string();
                     let status = TodoStatus::parse(item.get("status")?.as_str()?);
-                    Some(TodoItem { id, content, status })
+                    Some(TodoItem {
+                        id,
+                        content,
+                        status,
+                    })
                 })
                 .collect()
         })
@@ -180,6 +188,18 @@ mod tests {
         updated["todos"][2]["status"] = json!("completed");
         assert!(apply_snapshot(&mut latest, &updated));
         assert_eq!(latest.as_ref().unwrap().completed_count(), 2);
+    }
+
+    #[test]
+    fn parses_cancelled_status() {
+        let todos = parse_todos(&json!({
+            "status": "success",
+            "todos": [{ "id": "1", "content": "Dropped", "status": "cancelled" }]
+        }))
+        .unwrap();
+        assert_eq!(todos.items[0].status, TodoStatus::Cancelled);
+        assert_eq!(todos.items[0].status.marker(), "[-]");
+        assert_eq!(todos.completed_count(), 0);
     }
 
     #[test]

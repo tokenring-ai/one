@@ -1,0 +1,1832 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Monitor RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/monitor",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "listMonitors request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/monitor.listMonitors"
+        },
+        "params": {
+          "$ref": "#/$defs/listMonitorsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listMonitors response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listMonitorsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createMonitor request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/monitor.createMonitor"
+        },
+        "params": {
+          "$ref": "#/$defs/createMonitorParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createMonitor response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createMonitorResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteMonitor request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/monitor.deleteMonitor"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteMonitorParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteMonitor response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteMonitorResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamMonitors request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/monitor.streamMonitors"
+        },
+        "params": {
+          "$ref": "#/$defs/streamMonitorsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamMonitors response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamMonitorsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamMonitors stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "listMonitorsParams": {
+      "type": "object",
+      "properties": {
+        "ownerAgentId": {
+          "type": "string"
+        }
+      }
+    },
+    "listMonitorsResult": {
+      "type": "object",
+      "properties": {
+        "monitors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "ownerAgentId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "target": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "terminal"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200,
+                        "description": "The terminal's name, as terminal_list shows it"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "name"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "agent"
+                      },
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200,
+                        "description": "The agent's id"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "condition": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "output"
+                      },
+                      "pattern": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Regular expression, tried against output that arrives after the monitor is created"
+                      },
+                      "ignoreCase": {
+                        "default": false,
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "pattern",
+                      "ignoreCase"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "idle"
+                      },
+                      "seconds": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 86400,
+                        "description": "Seconds without any output"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "seconds"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "exit"
+                      },
+                      "nonZeroOnly": {
+                        "default": false,
+                        "description": "Only fire when the exit code is not 0",
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "nonZeroOnly"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "finished"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "errored"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "waiting"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "runtime"
+                      },
+                      "minutes": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 1440,
+                        "description": "Minutes the agent has been working on its current input"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "minutes"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "cost"
+                      },
+                      "amount": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100000,
+                        "description": "Total cost of the agent so far, in the units chat reports (USD)"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "amount"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "action": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40,
+                    "description": "wake, notify, stop or message"
+                  },
+                  "to": {
+                    "description": "For message: who receives it, as service:id (telegram:123, slack:C012) or group:name",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              },
+              "options": {
+                "type": "object",
+                "properties": {
+                  "minSecondsBetween": {
+                    "default": 30,
+                    "description": "Matches closer together than this are counted but do not fire",
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 86400
+                  },
+                  "maxFirings": {
+                    "default": 20,
+                    "description": "After this many firings the monitor disables itself",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "once": {
+                    "default": false,
+                    "description": "Disable after the first firing",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "minSecondsBetween",
+                  "maxFirings",
+                  "once"
+                ],
+                "additionalProperties": false
+              },
+              "createdAt": {
+                "type": "number"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "done",
+                  "disabled"
+                ]
+              },
+              "disabledReason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "firingCount": {
+                "type": "number"
+              },
+              "suppressedCount": {
+                "type": "number"
+              },
+              "lastFiredAt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "firings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "type": "number",
+                      "description": "Epoch milliseconds"
+                    },
+                    "monitorId": {
+                      "type": "string"
+                    },
+                    "monitorName": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "fired",
+                        "disabled",
+                        "removed"
+                      ]
+                    },
+                    "summary": {
+                      "type": "string"
+                    },
+                    "excerpt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "outcome": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "at",
+                    "monitorId",
+                    "monitorName",
+                    "kind",
+                    "summary",
+                    "excerpt",
+                    "outcome",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "ownerAgentId",
+              "target",
+              "condition",
+              "action",
+              "options",
+              "createdAt",
+              "state",
+              "disabledReason",
+              "firingCount",
+              "suppressedCount",
+              "lastFiredAt",
+              "firings"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "recent": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "at": {
+                "type": "number",
+                "description": "Epoch milliseconds"
+              },
+              "monitorId": {
+                "type": "string"
+              },
+              "monitorName": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "fired",
+                  "disabled",
+                  "removed"
+                ]
+              },
+              "summary": {
+                "type": "string"
+              },
+              "excerpt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "outcome": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "at",
+              "monitorId",
+              "monitorName",
+              "kind",
+              "summary",
+              "excerpt",
+              "outcome",
+              "detail"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "monitors",
+        "recent"
+      ],
+      "additionalProperties": false
+    },
+    "createMonitorParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[\\w.-]{1,40}$"
+        },
+        "ownerAgentId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "target": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "terminal"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "The terminal's name, as terminal_list shows it"
+                }
+              },
+              "required": [
+                "kind",
+                "name"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "agent"
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "The agent's id"
+                }
+              },
+              "required": [
+                "kind",
+                "id"
+              ]
+            }
+          ]
+        },
+        "condition": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "output"
+                },
+                "pattern": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Regular expression, tried against output that arrives after the monitor is created"
+                },
+                "ignoreCase": {
+                  "default": false,
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "kind",
+                "pattern"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "idle"
+                },
+                "seconds": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 86400,
+                  "description": "Seconds without any output"
+                }
+              },
+              "required": [
+                "kind",
+                "seconds"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "exit"
+                },
+                "nonZeroOnly": {
+                  "default": false,
+                  "description": "Only fire when the exit code is not 0",
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "finished"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "errored"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "waiting"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "runtime"
+                },
+                "minutes": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 1440,
+                  "description": "Minutes the agent has been working on its current input"
+                }
+              },
+              "required": [
+                "kind",
+                "minutes"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "cost"
+                },
+                "amount": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100000,
+                  "description": "Total cost of the agent so far, in the units chat reports (USD)"
+                }
+              },
+              "required": [
+                "kind",
+                "amount"
+              ]
+            }
+          ]
+        },
+        "action": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "description": "wake, notify, stop or message"
+            },
+            "to": {
+              "description": "For message: who receives it, as service:id (telegram:123, slack:C012) or group:name",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        "options": {
+          "default": {},
+          "type": "object",
+          "properties": {
+            "minSecondsBetween": {
+              "default": 30,
+              "description": "Matches closer together than this are counted but do not fire",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 86400
+            },
+            "maxFirings": {
+              "default": 20,
+              "description": "After this many firings the monitor disables itself",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            },
+            "once": {
+              "default": false,
+              "description": "Disable after the first firing",
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "required": [
+        "target",
+        "condition",
+        "action"
+      ]
+    },
+    "createMonitorResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "monitor": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "ownerAgentId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "target": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "terminal"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200,
+                          "description": "The terminal's name, as terminal_list shows it"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "agent"
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200,
+                          "description": "The agent's id"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "condition": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "output"
+                        },
+                        "pattern": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Regular expression, tried against output that arrives after the monitor is created"
+                        },
+                        "ignoreCase": {
+                          "default": false,
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "pattern",
+                        "ignoreCase"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "idle"
+                        },
+                        "seconds": {
+                          "type": "number",
+                          "minimum": 1,
+                          "maximum": 86400,
+                          "description": "Seconds without any output"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "seconds"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "exit"
+                        },
+                        "nonZeroOnly": {
+                          "default": false,
+                          "description": "Only fire when the exit code is not 0",
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "nonZeroOnly"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "finished"
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "errored"
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "waiting"
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "runtime"
+                        },
+                        "minutes": {
+                          "type": "number",
+                          "minimum": 1,
+                          "maximum": 1440,
+                          "description": "Minutes the agent has been working on its current input"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "minutes"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "cost"
+                        },
+                        "amount": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 100000,
+                          "description": "Total cost of the agent so far, in the units chat reports (USD)"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "amount"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "action": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40,
+                      "description": "wake, notify, stop or message"
+                    },
+                    "to": {
+                      "description": "For message: who receives it, as service:id (telegram:123, slack:C012) or group:name",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ],
+                  "additionalProperties": false
+                },
+                "options": {
+                  "type": "object",
+                  "properties": {
+                    "minSecondsBetween": {
+                      "default": 30,
+                      "description": "Matches closer together than this are counted but do not fire",
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 86400
+                    },
+                    "maxFirings": {
+                      "default": 20,
+                      "description": "After this many firings the monitor disables itself",
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    },
+                    "once": {
+                      "default": false,
+                      "description": "Disable after the first firing",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "minSecondsBetween",
+                    "maxFirings",
+                    "once"
+                  ],
+                  "additionalProperties": false
+                },
+                "createdAt": {
+                  "type": "number"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "done",
+                    "disabled"
+                  ]
+                },
+                "disabledReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "firingCount": {
+                  "type": "number"
+                },
+                "suppressedCount": {
+                  "type": "number"
+                },
+                "lastFiredAt": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "firings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "at": {
+                        "type": "number",
+                        "description": "Epoch milliseconds"
+                      },
+                      "monitorId": {
+                        "type": "string"
+                      },
+                      "monitorName": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "fired",
+                          "disabled",
+                          "removed"
+                        ]
+                      },
+                      "summary": {
+                        "type": "string"
+                      },
+                      "excerpt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "outcome": {
+                        "type": "string"
+                      },
+                      "detail": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "at",
+                      "monitorId",
+                      "monitorName",
+                      "kind",
+                      "summary",
+                      "excerpt",
+                      "outcome",
+                      "detail"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "ownerAgentId",
+                "target",
+                "condition",
+                "action",
+                "options",
+                "createdAt",
+                "state",
+                "disabledReason",
+                "firingCount",
+                "suppressedCount",
+                "lastFiredAt",
+                "firings"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "monitor"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "invalid"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "deleteMonitorParams": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "deleteMonitorResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "monitorNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "streamMonitorsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamMonitorsResult": {
+      "type": "object",
+      "properties": {
+        "monitors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "ownerAgentId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "target": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "terminal"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200,
+                        "description": "The terminal's name, as terminal_list shows it"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "name"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "agent"
+                      },
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200,
+                        "description": "The agent's id"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "condition": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "output"
+                      },
+                      "pattern": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Regular expression, tried against output that arrives after the monitor is created"
+                      },
+                      "ignoreCase": {
+                        "default": false,
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "pattern",
+                      "ignoreCase"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "idle"
+                      },
+                      "seconds": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 86400,
+                        "description": "Seconds without any output"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "seconds"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "exit"
+                      },
+                      "nonZeroOnly": {
+                        "default": false,
+                        "description": "Only fire when the exit code is not 0",
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "nonZeroOnly"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "finished"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "errored"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "waiting"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "runtime"
+                      },
+                      "minutes": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 1440,
+                        "description": "Minutes the agent has been working on its current input"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "minutes"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "cost"
+                      },
+                      "amount": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100000,
+                        "description": "Total cost of the agent so far, in the units chat reports (USD)"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "amount"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "action": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40,
+                    "description": "wake, notify, stop or message"
+                  },
+                  "to": {
+                    "description": "For message: who receives it, as service:id (telegram:123, slack:C012) or group:name",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              },
+              "options": {
+                "type": "object",
+                "properties": {
+                  "minSecondsBetween": {
+                    "default": 30,
+                    "description": "Matches closer together than this are counted but do not fire",
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 86400
+                  },
+                  "maxFirings": {
+                    "default": 20,
+                    "description": "After this many firings the monitor disables itself",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "once": {
+                    "default": false,
+                    "description": "Disable after the first firing",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "minSecondsBetween",
+                  "maxFirings",
+                  "once"
+                ],
+                "additionalProperties": false
+              },
+              "createdAt": {
+                "type": "number"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "done",
+                  "disabled"
+                ]
+              },
+              "disabledReason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "firingCount": {
+                "type": "number"
+              },
+              "suppressedCount": {
+                "type": "number"
+              },
+              "lastFiredAt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "firings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "type": "number",
+                      "description": "Epoch milliseconds"
+                    },
+                    "monitorId": {
+                      "type": "string"
+                    },
+                    "monitorName": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "fired",
+                        "disabled",
+                        "removed"
+                      ]
+                    },
+                    "summary": {
+                      "type": "string"
+                    },
+                    "excerpt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "outcome": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "at",
+                    "monitorId",
+                    "monitorName",
+                    "kind",
+                    "summary",
+                    "excerpt",
+                    "outcome",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "ownerAgentId",
+              "target",
+              "condition",
+              "action",
+              "options",
+              "createdAt",
+              "state",
+              "disabledReason",
+              "firingCount",
+              "suppressedCount",
+              "lastFiredAt",
+              "firings"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "recent": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "at": {
+                "type": "number",
+                "description": "Epoch milliseconds"
+              },
+              "monitorId": {
+                "type": "string"
+              },
+              "monitorName": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "fired",
+                  "disabled",
+                  "removed"
+                ]
+              },
+              "summary": {
+                "type": "string"
+              },
+              "excerpt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "outcome": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "at",
+              "monitorId",
+              "monitorName",
+              "kind",
+              "summary",
+              "excerpt",
+              "outcome",
+              "detail"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "monitors",
+        "recent"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Monitor RPC",
+    "path": "/rpc/monitor",
+    "source": "plugin/monitor/rpc/schema.ts",
+    "methods": {
+      "listMonitors": {
+        "type": "query",
+        "params": "#/$defs/listMonitorsParams",
+        "result": "#/$defs/listMonitorsResult"
+      },
+      "createMonitor": {
+        "type": "mutation",
+        "params": "#/$defs/createMonitorParams",
+        "result": "#/$defs/createMonitorResult"
+      },
+      "deleteMonitor": {
+        "type": "mutation",
+        "params": "#/$defs/deleteMonitorParams",
+        "result": "#/$defs/deleteMonitorResult"
+      },
+      "streamMonitors": {
+        "type": "stream",
+        "params": "#/$defs/streamMonitorsParams",
+        "result": "#/$defs/streamMonitorsResult"
+      }
+    }
+  }
+}

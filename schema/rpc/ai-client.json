@@ -649,6 +649,399 @@
         "result"
       ],
       "additionalProperties": false
+    },
+    {
+      "title": "listProviders request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.listProviders"
+        },
+        "params": {
+          "$ref": "#/$defs/listProvidersParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listProviders response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listProvidersResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamProviders request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.streamProviders"
+        },
+        "params": {
+          "$ref": "#/$defs/streamProvidersParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamProviders response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamProvidersResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamProviders stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "connectProvider request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.connectProvider"
+        },
+        "params": {
+          "$ref": "#/$defs/connectProviderParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "connectProvider response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/connectProviderResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "disconnectProvider request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.disconnectProvider"
+        },
+        "params": {
+          "$ref": "#/$defs/disconnectProviderParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "disconnectProvider response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/disconnectProviderResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getProviderModels request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.getProviderModels"
+        },
+        "params": {
+          "$ref": "#/$defs/getProviderModelsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getProviderModels response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getProviderModelsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateProviderModels request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.updateProviderModels"
+        },
+        "params": {
+          "$ref": "#/$defs/updateProviderModelsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateProviderModels response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateProviderModelsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "discoverModels request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.discoverModels"
+        },
+        "params": {
+          "$ref": "#/$defs/discoverModelsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "discoverModels response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/discoverModelsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateCatalog request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/ai-client.updateCatalog"
+        },
+        "params": {
+          "$ref": "#/$defs/updateCatalogParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateCatalog response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateCatalogResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
     }
   ],
   "$defs": {
@@ -704,20 +1097,35 @@
             "type": "object",
             "properties": {
               "status": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "online",
+                  "offline"
+                ]
               },
               "available": {
                 "type": "boolean"
               },
-              "hot": {
-                "type": "boolean"
-              },
-              "modelSpec": {}
+              "modelSpec": {
+                "type": "object",
+                "properties": {
+                  "modelId": {
+                    "type": "string"
+                  },
+                  "providerDisplayName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "modelId",
+                  "providerDisplayName"
+                ],
+                "additionalProperties": false
+              }
             },
             "required": [
               "status",
               "available",
-              "hot",
               "modelSpec"
             ],
             "additionalProperties": false
@@ -750,19 +1158,36 @@
               "type": "object",
               "properties": {
                 "status": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline"
+                  ]
                 },
                 "available": {
                   "type": "boolean"
                 },
-                "hot": {
-                  "type": "boolean"
+                "modelSpec": {
+                  "type": "object",
+                  "properties": {
+                    "modelId": {
+                      "type": "string"
+                    },
+                    "providerDisplayName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "modelId",
+                    "providerDisplayName"
+                  ],
+                  "additionalProperties": false
                 }
               },
               "required": [
                 "status",
                 "available",
-                "hot"
+                "modelSpec"
               ],
               "additionalProperties": false
             }
@@ -790,20 +1215,35 @@
             "type": "object",
             "properties": {
               "status": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "online",
+                  "offline"
+                ]
               },
               "available": {
                 "type": "boolean"
               },
-              "hot": {
-                "type": "boolean"
-              },
-              "modelSpec": {}
+              "modelSpec": {
+                "type": "object",
+                "properties": {
+                  "modelId": {
+                    "type": "string"
+                  },
+                  "providerDisplayName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "modelId",
+                  "providerDisplayName"
+                ],
+                "additionalProperties": false
+              }
             },
             "required": [
               "status",
               "available",
-              "hot",
               "modelSpec"
             ],
             "additionalProperties": false
@@ -836,20 +1276,35 @@
               "type": "object",
               "properties": {
                 "status": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline"
+                  ]
                 },
                 "available": {
                   "type": "boolean"
                 },
-                "hot": {
-                  "type": "boolean"
-                },
-                "modelSpec": {}
+                "modelSpec": {
+                  "type": "object",
+                  "properties": {
+                    "modelId": {
+                      "type": "string"
+                    },
+                    "providerDisplayName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "modelId",
+                    "providerDisplayName"
+                  ],
+                  "additionalProperties": false
+                }
               },
               "required": [
                 "status",
                 "available",
-                "hot",
                 "modelSpec"
               ],
               "additionalProperties": false
@@ -878,20 +1333,35 @@
             "type": "object",
             "properties": {
               "status": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "online",
+                  "offline"
+                ]
               },
               "available": {
                 "type": "boolean"
               },
-              "hot": {
-                "type": "boolean"
-              },
-              "modelSpec": {}
+              "modelSpec": {
+                "type": "object",
+                "properties": {
+                  "modelId": {
+                    "type": "string"
+                  },
+                  "providerDisplayName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "modelId",
+                  "providerDisplayName"
+                ],
+                "additionalProperties": false
+              }
             },
             "required": [
               "status",
               "available",
-              "hot",
               "modelSpec"
             ],
             "additionalProperties": false
@@ -924,20 +1394,35 @@
               "type": "object",
               "properties": {
                 "status": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline"
+                  ]
                 },
                 "available": {
                   "type": "boolean"
                 },
-                "hot": {
-                  "type": "boolean"
-                },
-                "modelSpec": {}
+                "modelSpec": {
+                  "type": "object",
+                  "properties": {
+                    "modelId": {
+                      "type": "string"
+                    },
+                    "providerDisplayName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "modelId",
+                    "providerDisplayName"
+                  ],
+                  "additionalProperties": false
+                }
               },
               "required": [
                 "status",
                 "available",
-                "hot",
                 "modelSpec"
               ],
               "additionalProperties": false
@@ -966,20 +1451,35 @@
             "type": "object",
             "properties": {
               "status": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "online",
+                  "offline"
+                ]
               },
               "available": {
                 "type": "boolean"
               },
-              "hot": {
-                "type": "boolean"
-              },
-              "modelSpec": {}
+              "modelSpec": {
+                "type": "object",
+                "properties": {
+                  "modelId": {
+                    "type": "string"
+                  },
+                  "providerDisplayName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "modelId",
+                  "providerDisplayName"
+                ],
+                "additionalProperties": false
+              }
             },
             "required": [
               "status",
               "available",
-              "hot",
               "modelSpec"
             ],
             "additionalProperties": false
@@ -1012,20 +1512,35 @@
               "type": "object",
               "properties": {
                 "status": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline"
+                  ]
                 },
                 "available": {
                   "type": "boolean"
                 },
-                "hot": {
-                  "type": "boolean"
-                },
-                "modelSpec": {}
+                "modelSpec": {
+                  "type": "object",
+                  "properties": {
+                    "modelId": {
+                      "type": "string"
+                    },
+                    "providerDisplayName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "modelId",
+                    "providerDisplayName"
+                  ],
+                  "additionalProperties": false
+                }
               },
               "required": [
                 "status",
                 "available",
-                "hot",
                 "modelSpec"
               ],
               "additionalProperties": false
@@ -1054,20 +1569,35 @@
             "type": "object",
             "properties": {
               "status": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "online",
+                  "offline"
+                ]
               },
               "available": {
                 "type": "boolean"
               },
-              "hot": {
-                "type": "boolean"
-              },
-              "modelSpec": {}
+              "modelSpec": {
+                "type": "object",
+                "properties": {
+                  "modelId": {
+                    "type": "string"
+                  },
+                  "providerDisplayName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "modelId",
+                  "providerDisplayName"
+                ],
+                "additionalProperties": false
+              }
             },
             "required": [
               "status",
               "available",
-              "hot",
               "modelSpec"
             ],
             "additionalProperties": false
@@ -1100,20 +1630,35 @@
               "type": "object",
               "properties": {
                 "status": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline"
+                  ]
                 },
                 "available": {
                   "type": "boolean"
                 },
-                "hot": {
-                  "type": "boolean"
-                },
-                "modelSpec": {}
+                "modelSpec": {
+                  "type": "object",
+                  "properties": {
+                    "modelId": {
+                      "type": "string"
+                    },
+                    "providerDisplayName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "modelId",
+                    "providerDisplayName"
+                  ],
+                  "additionalProperties": false
+                }
               },
               "required": [
                 "status",
                 "available",
-                "hot",
                 "modelSpec"
               ],
               "additionalProperties": false
@@ -1142,20 +1687,35 @@
             "type": "object",
             "properties": {
               "status": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "online",
+                  "offline"
+                ]
               },
               "available": {
                 "type": "boolean"
               },
-              "hot": {
-                "type": "boolean"
-              },
-              "modelSpec": {}
+              "modelSpec": {
+                "type": "object",
+                "properties": {
+                  "modelId": {
+                    "type": "string"
+                  },
+                  "providerDisplayName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "modelId",
+                  "providerDisplayName"
+                ],
+                "additionalProperties": false
+              }
             },
             "required": [
               "status",
               "available",
-              "hot",
               "modelSpec"
             ],
             "additionalProperties": false
@@ -1188,20 +1748,35 @@
               "type": "object",
               "properties": {
                 "status": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline"
+                  ]
                 },
                 "available": {
                   "type": "boolean"
                 },
-                "hot": {
-                  "type": "boolean"
-                },
-                "modelSpec": {}
+                "modelSpec": {
+                  "type": "object",
+                  "properties": {
+                    "modelId": {
+                      "type": "string"
+                    },
+                    "providerDisplayName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "modelId",
+                    "providerDisplayName"
+                  ],
+                  "additionalProperties": false
+                }
               },
               "required": [
                 "status",
                 "available",
-                "hot",
                 "modelSpec"
               ],
               "additionalProperties": false
@@ -1230,20 +1805,35 @@
             "type": "object",
             "properties": {
               "status": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "online",
+                  "offline"
+                ]
               },
               "available": {
                 "type": "boolean"
               },
-              "hot": {
-                "type": "boolean"
-              },
-              "modelSpec": {}
+              "modelSpec": {
+                "type": "object",
+                "properties": {
+                  "modelId": {
+                    "type": "string"
+                  },
+                  "providerDisplayName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "modelId",
+                  "providerDisplayName"
+                ],
+                "additionalProperties": false
+              }
             },
             "required": [
               "status",
               "available",
-              "hot",
               "modelSpec"
             ],
             "additionalProperties": false
@@ -1276,20 +1866,35 @@
               "type": "object",
               "properties": {
                 "status": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "offline"
+                  ]
                 },
                 "available": {
                   "type": "boolean"
                 },
-                "hot": {
-                  "type": "boolean"
-                },
-                "modelSpec": {}
+                "modelSpec": {
+                  "type": "object",
+                  "properties": {
+                    "modelId": {
+                      "type": "string"
+                    },
+                    "providerDisplayName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "modelId",
+                    "providerDisplayName"
+                  ],
+                  "additionalProperties": false
+                }
               },
               "required": [
                 "status",
                 "available",
-                "hot",
                 "modelSpec"
               ],
               "additionalProperties": false
@@ -1301,6 +1906,1317 @@
         "modelsByProvider"
       ],
       "additionalProperties": false
+    },
+    "listProvidersParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listProvidersResult": {
+      "type": "object",
+      "properties": {
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "cloud",
+                  "local",
+                  "custom"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "keyUrl": {
+                "type": "string"
+              },
+              "needsKey": {
+                "type": "boolean"
+              },
+              "keyEnv": {
+                "type": "string"
+              },
+              "keySource": {
+                "type": "string",
+                "enum": [
+                  "environment",
+                  "vault",
+                  "settings",
+                  "none"
+                ]
+              },
+              "baseURL": {
+                "type": "string"
+              },
+              "catalog": {
+                "type": "string"
+              },
+              "editableModels": {
+                "type": "boolean"
+              },
+              "models": {
+                "type": "object",
+                "properties": {
+                  "chat": {
+                    "type": "number"
+                  },
+                  "embedding": {
+                    "type": "number"
+                  },
+                  "image": {
+                    "type": "number"
+                  },
+                  "video": {
+                    "type": "number"
+                  },
+                  "speech": {
+                    "type": "number"
+                  },
+                  "transcription": {
+                    "type": "number"
+                  },
+                  "reranking": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "chat",
+                  "embedding",
+                  "image",
+                  "video",
+                  "speech",
+                  "transcription",
+                  "reranking"
+                ],
+                "additionalProperties": false
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "connected",
+                  "needsKey",
+                  "offline"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "provider",
+              "kind",
+              "description",
+              "needsKey",
+              "keySource",
+              "editableModels",
+              "models",
+              "state",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "templates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "cloud",
+                  "local"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "keyUrl": {
+                "type": "string"
+              },
+              "needsKey": {
+                "type": "boolean"
+              },
+              "keyEnv": {
+                "type": "string"
+              },
+              "keyInVault": {
+                "type": "boolean"
+              },
+              "baseURL": {
+                "type": "string"
+              },
+              "catalog": {
+                "type": "string"
+              },
+              "catalogModels": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "provider",
+              "kind",
+              "description",
+              "needsKey",
+              "keyInVault"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "canSaveKeys": {
+          "type": "boolean"
+        },
+        "catalogWarning": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "providers",
+        "templates",
+        "canSaveKeys"
+      ],
+      "additionalProperties": false
+    },
+    "streamProvidersParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamProvidersResult": {
+      "type": "object",
+      "properties": {
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "cloud",
+                  "local",
+                  "custom"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "keyUrl": {
+                "type": "string"
+              },
+              "needsKey": {
+                "type": "boolean"
+              },
+              "keyEnv": {
+                "type": "string"
+              },
+              "keySource": {
+                "type": "string",
+                "enum": [
+                  "environment",
+                  "vault",
+                  "settings",
+                  "none"
+                ]
+              },
+              "baseURL": {
+                "type": "string"
+              },
+              "catalog": {
+                "type": "string"
+              },
+              "editableModels": {
+                "type": "boolean"
+              },
+              "models": {
+                "type": "object",
+                "properties": {
+                  "chat": {
+                    "type": "number"
+                  },
+                  "embedding": {
+                    "type": "number"
+                  },
+                  "image": {
+                    "type": "number"
+                  },
+                  "video": {
+                    "type": "number"
+                  },
+                  "speech": {
+                    "type": "number"
+                  },
+                  "transcription": {
+                    "type": "number"
+                  },
+                  "reranking": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "chat",
+                  "embedding",
+                  "image",
+                  "video",
+                  "speech",
+                  "transcription",
+                  "reranking"
+                ],
+                "additionalProperties": false
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "connected",
+                  "needsKey",
+                  "offline"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "provider",
+              "kind",
+              "description",
+              "needsKey",
+              "keySource",
+              "editableModels",
+              "models",
+              "state",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "templates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "cloud",
+                  "local"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "keyUrl": {
+                "type": "string"
+              },
+              "needsKey": {
+                "type": "boolean"
+              },
+              "keyEnv": {
+                "type": "string"
+              },
+              "keyInVault": {
+                "type": "boolean"
+              },
+              "baseURL": {
+                "type": "string"
+              },
+              "catalog": {
+                "type": "string"
+              },
+              "catalogModels": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "provider",
+              "kind",
+              "description",
+              "needsKey",
+              "keyInVault"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "canSaveKeys": {
+          "type": "boolean"
+        },
+        "catalogWarning": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "providers",
+        "templates",
+        "canSaveKeys"
+      ],
+      "additionalProperties": false
+    },
+    "connectProviderParams": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "template": {
+              "type": "string",
+              "minLength": 1
+            },
+            "apiKey": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "baseURL": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          },
+          "required": [
+            "template"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "apiKey": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "baseURL": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          },
+          "required": [
+            "name"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "custom": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "endpointType": {
+                  "type": "string",
+                  "enum": [
+                    "openai",
+                    "anthropic"
+                  ]
+                },
+                "baseURL": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048
+                },
+                "apiKey": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "models": {
+                  "type": "object",
+                  "properties": {
+                    "chat": {
+                      "default": {},
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "providerModelId": {
+                            "type": "string",
+                            "maxLength": 256
+                          },
+                          "costPerMillionInputTokens": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "costPerMillionCachedInputTokens": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "costPerMillionOutputTokens": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "maxContextLength": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        }
+                      }
+                    },
+                    "embedding": {
+                      "default": {},
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "costPerMillionInputTokens": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "maxContextLength": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "addServerModels": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "name",
+                "endpointType",
+                "baseURL"
+              ]
+            }
+          },
+          "required": [
+            "custom"
+          ]
+        }
+      ]
+    },
+    "connectProviderResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "provider": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "cloud",
+                    "local",
+                    "custom"
+                  ]
+                },
+                "description": {
+                  "type": "string"
+                },
+                "keyUrl": {
+                  "type": "string"
+                },
+                "needsKey": {
+                  "type": "boolean"
+                },
+                "keyEnv": {
+                  "type": "string"
+                },
+                "keySource": {
+                  "type": "string",
+                  "enum": [
+                    "environment",
+                    "vault",
+                    "settings",
+                    "none"
+                  ]
+                },
+                "baseURL": {
+                  "type": "string"
+                },
+                "catalog": {
+                  "type": "string"
+                },
+                "editableModels": {
+                  "type": "boolean"
+                },
+                "models": {
+                  "type": "object",
+                  "properties": {
+                    "chat": {
+                      "type": "number"
+                    },
+                    "embedding": {
+                      "type": "number"
+                    },
+                    "image": {
+                      "type": "number"
+                    },
+                    "video": {
+                      "type": "number"
+                    },
+                    "speech": {
+                      "type": "number"
+                    },
+                    "transcription": {
+                      "type": "number"
+                    },
+                    "reranking": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "chat",
+                    "embedding",
+                    "image",
+                    "video",
+                    "speech",
+                    "transcription",
+                    "reranking"
+                  ],
+                  "additionalProperties": false
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "connected",
+                    "needsKey",
+                    "offline"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "provider",
+                "kind",
+                "description",
+                "needsKey",
+                "keySource",
+                "editableModels",
+                "models",
+                "state",
+                "message"
+              ],
+              "additionalProperties": false
+            },
+            "warning": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "provider"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "vaultLocked"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "invalid"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "disconnectProviderParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "forgetKey": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "disconnectProviderResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "vaultLocked"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "invalid"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "getProviderModelsParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "getProviderModelsResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "editable": {
+              "type": "boolean"
+            },
+            "addServerModels": {
+              "type": "boolean"
+            },
+            "models": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema0"
+              }
+            }
+          },
+          "required": [
+            "status",
+            "editable",
+            "addServerModels",
+            "models"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "invalid"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "$defs": {
+        "__schema0": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema0"
+              }
+            },
+            {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema0"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "updateProviderModelsParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "models": {
+          "type": "object",
+          "properties": {
+            "chat": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "providerModelId": {
+                    "type": "string",
+                    "maxLength": 256
+                  },
+                  "costPerMillionInputTokens": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "costPerMillionCachedInputTokens": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "costPerMillionOutputTokens": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "maxContextLength": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                }
+              }
+            },
+            "embedding": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "costPerMillionInputTokens": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "maxContextLength": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                }
+              }
+            }
+          }
+        },
+        "addServerModels": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "models",
+        "addServerModels"
+      ]
+    },
+    "updateProviderModelsResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "provider": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "cloud",
+                    "local",
+                    "custom"
+                  ]
+                },
+                "description": {
+                  "type": "string"
+                },
+                "keyUrl": {
+                  "type": "string"
+                },
+                "needsKey": {
+                  "type": "boolean"
+                },
+                "keyEnv": {
+                  "type": "string"
+                },
+                "keySource": {
+                  "type": "string",
+                  "enum": [
+                    "environment",
+                    "vault",
+                    "settings",
+                    "none"
+                  ]
+                },
+                "baseURL": {
+                  "type": "string"
+                },
+                "catalog": {
+                  "type": "string"
+                },
+                "editableModels": {
+                  "type": "boolean"
+                },
+                "models": {
+                  "type": "object",
+                  "properties": {
+                    "chat": {
+                      "type": "number"
+                    },
+                    "embedding": {
+                      "type": "number"
+                    },
+                    "image": {
+                      "type": "number"
+                    },
+                    "video": {
+                      "type": "number"
+                    },
+                    "speech": {
+                      "type": "number"
+                    },
+                    "transcription": {
+                      "type": "number"
+                    },
+                    "reranking": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "chat",
+                    "embedding",
+                    "image",
+                    "video",
+                    "speech",
+                    "transcription",
+                    "reranking"
+                  ],
+                  "additionalProperties": false
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "connected",
+                    "needsKey",
+                    "offline"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "provider",
+                "kind",
+                "description",
+                "needsKey",
+                "keySource",
+                "editableModels",
+                "models",
+                "state",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "provider"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "invalid"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "discoverModelsParams": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "name"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "baseURL": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "endpointType": {
+              "type": "string",
+              "enum": [
+                "openai",
+                "anthropic"
+              ]
+            },
+            "apiKey": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          },
+          "required": [
+            "baseURL",
+            "endpointType"
+          ]
+        }
+      ]
+    },
+    "discoverModelsResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "models": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "chat",
+                      "embedding"
+                    ]
+                  },
+                  "maxContextLength": {
+                    "type": "number"
+                  },
+                  "catalogMatch": {
+                    "type": "object",
+                    "properties": {
+                      "catalog": {
+                        "type": "string"
+                      },
+                      "model": {
+                        "type": "string"
+                      },
+                      "costPerMillionInputTokens": {
+                        "type": "number"
+                      },
+                      "costPerMillionCachedInputTokens": {
+                        "type": "number"
+                      },
+                      "costPerMillionOutputTokens": {
+                        "type": "number"
+                      },
+                      "maxContextLength": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "catalog",
+                      "model"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "id",
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "models"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "invalid"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "unreachable"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "updateCatalogParams": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "maxLength": 2048,
+          "format": "uri"
+        }
+      }
+    },
+    "updateCatalogResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "path": {
+              "type": "string"
+            },
+            "providers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "added": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "removed": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "changed": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "added",
+                  "removed",
+                  "changed"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "path",
+            "providers"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "failed"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "x-tokenring-rpc": {
@@ -1377,6 +3293,46 @@
         "type": "query",
         "params": "#/$defs/listRerankingModelsByProviderParams",
         "result": "#/$defs/listRerankingModelsByProviderResult"
+      },
+      "listProviders": {
+        "type": "query",
+        "params": "#/$defs/listProvidersParams",
+        "result": "#/$defs/listProvidersResult"
+      },
+      "streamProviders": {
+        "type": "stream",
+        "params": "#/$defs/streamProvidersParams",
+        "result": "#/$defs/streamProvidersResult"
+      },
+      "connectProvider": {
+        "type": "mutation",
+        "params": "#/$defs/connectProviderParams",
+        "result": "#/$defs/connectProviderResult"
+      },
+      "disconnectProvider": {
+        "type": "mutation",
+        "params": "#/$defs/disconnectProviderParams",
+        "result": "#/$defs/disconnectProviderResult"
+      },
+      "getProviderModels": {
+        "type": "query",
+        "params": "#/$defs/getProviderModelsParams",
+        "result": "#/$defs/getProviderModelsResult"
+      },
+      "updateProviderModels": {
+        "type": "mutation",
+        "params": "#/$defs/updateProviderModelsParams",
+        "result": "#/$defs/updateProviderModelsResult"
+      },
+      "discoverModels": {
+        "type": "mutation",
+        "params": "#/$defs/discoverModelsParams",
+        "result": "#/$defs/discoverModelsResult"
+      },
+      "updateCatalog": {
+        "type": "mutation",
+        "params": "#/$defs/updateCatalogParams",
+        "result": "#/$defs/updateCatalogResult"
       }
     }
   }

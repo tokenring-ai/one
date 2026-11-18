@@ -1,5 +1,8 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
+import { isRpcConnectionClosed } from "@tokenring-ai/web-host/createWsRPCClient";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useEventListener } from "./useEventListener.ts";
+import { useRefSync } from "./useRefSync.ts";
 
 export const DEFAULT_RECONNECT_OPTIONS = {
   initialDelay: 1000,
@@ -39,7 +42,11 @@ export type UseRPCStreamResult<TData> = {
   isConnecting: boolean;
   isLoading: boolean;
   reconnectAttempts: number;
-  manualReconnect: () => void;
+  /**
+   * Restart the stream and resolve when the next chunk arrives, or when the restarted
+   * stream errors (resolves with the last known data so fire-and-forget callers are safe).
+   */
+  manualReconnect: () => Promise<TData | undefined>;
 };
 
 function resolveInitialData<TData>(initialData: TData | (() => TData) | undefined): TData | undefined {
@@ -82,17 +89,20 @@ export function useRPCStream<TChunk, TData = TChunk>(options: UseRPCStreamOption
   const [reconnectNonce, setReconnectNonce] = useState(0);
   const [documentVisible, setDocumentVisible] = useState(() => typeof document === "undefined" || !document.hidden);
 
-  const subscribeRef = useRef(subscribe);
-  subscribeRef.current = subscribe;
-  const reduceRef = useRef(reduce);
-  reduceRef.current = reduce;
-  const shouldStopRef = useRef(shouldStop);
-  shouldStopRef.current = shouldStop;
-  const onErrorRef = useRef(onError);
-  onErrorRef.current = onError;
+  const subscribeRef = useRefSync(subscribe);
+  const reduceRef = useRefSync(reduce);
+  const shouldStopRef = useRefSync(shouldStop);
+  const onErrorRef = useRefSync(onError);
+  const dataRef = useRefSync(data);
 
-  const dataRef = useRef(data);
-  dataRef.current = data;
+  const reconnectWaitersRef = useRef<Array<(data: TData | undefined) => void>>([]);
+
+  const flushReconnectWaiters = useCallback((next: TData | undefined) => {
+    const waiters = reconnectWaitersRef.current;
+    if (waiters.length === 0) return;
+    reconnectWaitersRef.current = [];
+    for (const resolve of waiters) resolve(next);
+  }, []);
 
   const prevKeyRef = useRef(key);
 
@@ -107,12 +117,14 @@ export function useRPCStream<TChunk, TData = TChunk>(options: UseRPCStreamOption
     setError(null);
   }
 
+  useEventListener("visibilitychange", () => setDocumentVisible(!document.hidden), { target: document, enabled: pauseWhenHidden });
+
+  // Resolve pending waiters if the component unmounts so callers never hang.
   useEffect(() => {
-    if (!pauseWhenHidden) return;
-    const onVisibilityChange = () => setDocumentVisible(!document.hidden);
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, [pauseWhenHidden]);
+    return () => {
+      flushReconnectWaiters(dataRef.current);
+    };
+  }, [flushReconnectWaiters]);
 
   const active = enabled && key !== null && (!pauseWhenHidden || documentVisible);
 
@@ -127,12 +139,15 @@ export function useRPCStream<TChunk, TData = TChunk>(options: UseRPCStreamOption
     let reconnectDelay = reconnectOpts.initialDelay;
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     let stopped: boolean = false;
+    /** A dropped socket gets one immediate, silent retry (see sharedStreamStore). */
+    let quickRetryUsed = false;
 
     const applyChunk = (chunk: TChunk) => {
       const reducer = reduceRef.current ?? defaultReduce<TChunk, TData>;
       const next = reducer(dataRef.current, chunk);
       dataRef.current = next;
       setData(next);
+      flushReconnectWaiters(next);
     };
 
     const scheduleReconnectUi = (waitMs: number) => {
@@ -165,18 +180,50 @@ export function useRPCStream<TChunk, TData = TChunk>(options: UseRPCStreamOption
             }
 
             reconnectDelay = reconnectOpts.initialDelay;
+            quickRetryUsed = false;
             setReconnectAttempts(0);
             setIsConnecting(false);
             applyChunk(chunk);
+          }
+
+          // The server closed the stream cleanly. Re-subscribe with the same
+          // backoff as the error path: without a delay, a server that keeps
+          // closing streams (restart, idle timeout, missing resource) gets
+          // hammered by a tight subscribe→close→subscribe loop.
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- can be mutated asynchronously
+          if (abortController.signal.aborted || stopped) return;
+
+          if (!reconnect) {
+            setIsConnecting(false);
+            return;
+          }
+
+          // Waiters stay pending until the re-subscribed stream delivers its next
+          // chunk (or errors, which settles them with the last known data).
+          const waitMs = reconnectDelay;
+          scheduleReconnectUi(waitMs);
+          reconnectDelay = Math.min(reconnectDelay * reconnectOpts.multiplier, reconnectOpts.maxDelay);
+
+          try {
+            await delay(waitMs, abortController.signal);
+          } catch {
+            return;
           }
         } catch (streamError: unknown) {
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- can be mutated asynchronously
           if (abortController.signal.aborted || stopped) return;
 
-          const errorMessage = formatError(streamError);
+          if (reconnect && !quickRetryUsed && isRpcConnectionClosed(streamError)) {
+            quickRetryUsed = true;
+            continue;
+          }
+
+          const errorMessage = formatError(streamError, { includeStack: false });
           onErrorRef.current?.(streamError);
           setError(errorMessage);
           setIsConnecting(false);
+          // Settle waiters with last known data; error is visible via `error` state.
+          flushReconnectWaiters(dataRef.current);
 
           if (!reconnect) return;
 
@@ -201,13 +248,21 @@ export function useRPCStream<TChunk, TData = TChunk>(options: UseRPCStreamOption
         clearTimeout(reconnectTimeout);
       }
     };
-  }, [key, enabled, pauseWhenHidden, documentVisible, reconnectNonce, reconnect, active]);
+  }, [key, enabled, pauseWhenHidden, documentVisible, reconnectNonce, reconnect, active, flushReconnectWaiters]);
 
-  const manualReconnect = useCallback(() => {
-    setReconnectAttempts(0);
-    setError(null);
-    setReconnectNonce(n => n + 1);
-  }, []);
+  const manualReconnect = useCallback((): Promise<TData | undefined> => {
+    // No subscription will run — resolve immediately with whatever we already have.
+    if (key === null || !enabled) {
+      return Promise.resolve(dataRef.current);
+    }
+
+    return new Promise<TData | undefined>(resolve => {
+      reconnectWaitersRef.current.push(resolve);
+      setReconnectAttempts(0);
+      setError(null);
+      setReconnectNonce(n => n + 1);
+    });
+  }, [enabled, key]);
 
   return {
     data,

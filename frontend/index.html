@@ -7,6 +7,41 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>TokenRing One</title>
+  <script>
+    // Theme bootstrap — must run before first paint so the page background
+    // matches the stored preference (light users otherwise get a dark flash).
+    // Mirrors src/theme/themeStore.ts: raw-string "theme" key, "system" follows
+    // the OS. Colours come from the "theme-boot" cache that applyTheme.ts writes
+    // ({mode, bg, accent, density}); the hex below is only the first-run fallback.
+    // applyTheme.ts keeps the inline background, accent and theme-color meta in
+    // sync after this, including OS changes under "system".
+    (function () {
+      try {
+        var root = document.documentElement;
+        var pref = localStorage.getItem("theme") || "system";
+        var dark = pref === "dark" || (pref !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        var cache = null;
+        try {
+          cache = JSON.parse(localStorage.getItem("theme-boot") || "null");
+        } catch (e) {
+          cache = null;
+        }
+        var mode = dark ? "dark" : "light";
+        var bg = cache && cache.mode === mode && cache.bg ? cache.bg : dark ? "#171717" : "#fafaf9";
+        root.classList.toggle("dark", dark);
+        root.setAttribute("data-theme", dark ? "charcoal" : "paper");
+        if (cache && cache.density) root.setAttribute("data-density", cache.density);
+        if (cache && cache.accent) root.style.setProperty("--accent-primary", cache.accent);
+        root.style.backgroundColor = bg;
+        var meta = document.createElement("meta");
+        meta.name = "theme-color";
+        meta.content = bg;
+        document.head.appendChild(meta);
+      } catch (e) {
+        /* No storage: the dark default below applies. */
+      }
+    })();
+  </script>
   <style>
     /* Proper mobile viewport setup */
     html {
@@ -15,7 +50,7 @@
       width: 100%;
       height: 100dvh;
       overflow: hidden;
-      background-color: #1e1e1e; /* Default dark background to prevent flash */
+      background-color: #171717; /* Fallback when JS is disabled; the bootstrap script overrides it */
       -webkit-tap-highlight-color: transparent;
     }
     

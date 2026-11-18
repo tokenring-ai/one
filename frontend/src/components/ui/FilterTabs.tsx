@@ -27,7 +27,7 @@ export default function FilterTabs<T extends string>({
   tabClassName,
   activeTabClassName = "border-accent text-primary",
   inactiveTabClassName = "border-transparent text-muted hover:text-primary",
-  activeCountClassName = "bg-accent-muted text-accent",
+  activeCountClassName = "bg-accent-muted text-accent-soft",
   inactiveCountClassName = "bg-tertiary text-muted",
   showZeroCounts = false,
 }: FilterTabsProps<T>) {
@@ -50,7 +50,7 @@ export default function FilterTabs<T extends string>({
           >
             {tab.label}
             {shouldShowCount && (
-              <span className={cn("text-2xs px-1.5 py-0.5 rounded-full font-mono", isActive ? activeCountClassName : inactiveCountClassName)}>{tab.count}</span>
+              <span className={cn("text-xs px-1.5 py-0.5 rounded-full font-mono", isActive ? activeCountClassName : inactiveCountClassName)}>{tab.count}</span>
             )}
           </button>
         );

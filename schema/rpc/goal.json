@@ -1,0 +1,636 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Goal RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/goal",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "getGoal request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/goal.getGoal"
+        },
+        "params": {
+          "$ref": "#/$defs/getGoalParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getGoal response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getGoalResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setGoal request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/goal.setGoal"
+        },
+        "params": {
+          "$ref": "#/$defs/setGoalParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setGoal response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/setGoalResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamGoal request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/goal.streamGoal"
+        },
+        "params": {
+          "$ref": "#/$defs/streamGoalParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamGoal response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamGoalResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamGoal stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "getGoalParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "getGoalResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "goal": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "paused",
+                        "completed",
+                        "blocked",
+                        "stopped"
+                      ]
+                    },
+                    "attempts": {
+                      "type": "number"
+                    },
+                    "maxTurns": {
+                      "type": "number"
+                    },
+                    "startedAt": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "endedAt": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "lastVerdict": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "achieved",
+                                "in_progress",
+                                "blocked"
+                              ],
+                              "description": "achieved = goal met, in_progress = keep working, blocked = needs user help"
+                            },
+                            "reasoning": {
+                              "type": "string",
+                              "description": "Evidence-based explanation of the verdict"
+                            },
+                            "guidance": {
+                              "description": "For in_progress verdicts: concrete advice for the next work turn",
+                              "type": "string"
+                            },
+                            "timestamp": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reasoning",
+                            "timestamp"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "status",
+                    "attempts",
+                    "maxTurns",
+                    "startedAt",
+                    "endedAt",
+                    "lastVerdict"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "goal"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "setGoalParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "goal": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId",
+        "goal"
+      ]
+    },
+    "setGoalResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "goal": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "paused",
+                        "completed",
+                        "blocked",
+                        "stopped"
+                      ]
+                    },
+                    "attempts": {
+                      "type": "number"
+                    },
+                    "maxTurns": {
+                      "type": "number"
+                    },
+                    "startedAt": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "endedAt": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "lastVerdict": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "achieved",
+                                "in_progress",
+                                "blocked"
+                              ],
+                              "description": "achieved = goal met, in_progress = keep working, blocked = needs user help"
+                            },
+                            "reasoning": {
+                              "type": "string",
+                              "description": "Evidence-based explanation of the verdict"
+                            },
+                            "guidance": {
+                              "description": "For in_progress verdicts: concrete advice for the next work turn",
+                              "type": "string"
+                            },
+                            "timestamp": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reasoning",
+                            "timestamp"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "status",
+                    "attempts",
+                    "maxTurns",
+                    "startedAt",
+                    "endedAt",
+                    "lastVerdict"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "goal"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "streamGoalParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "agentId"
+      ]
+    },
+    "streamGoalResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "goal": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "paused",
+                        "completed",
+                        "blocked",
+                        "stopped"
+                      ]
+                    },
+                    "attempts": {
+                      "type": "number"
+                    },
+                    "maxTurns": {
+                      "type": "number"
+                    },
+                    "startedAt": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "endedAt": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "lastVerdict": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "achieved",
+                                "in_progress",
+                                "blocked"
+                              ],
+                              "description": "achieved = goal met, in_progress = keep working, blocked = needs user help"
+                            },
+                            "reasoning": {
+                              "type": "string",
+                              "description": "Evidence-based explanation of the verdict"
+                            },
+                            "guidance": {
+                              "description": "For in_progress verdicts: concrete advice for the next work turn",
+                              "type": "string"
+                            },
+                            "timestamp": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reasoning",
+                            "timestamp"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "status",
+                    "attempts",
+                    "maxTurns",
+                    "startedAt",
+                    "endedAt",
+                    "lastVerdict"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "goal"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Goal RPC",
+    "path": "/rpc/goal",
+    "source": "plugin/goal/rpc/schema.ts",
+    "methods": {
+      "getGoal": {
+        "type": "query",
+        "params": "#/$defs/getGoalParams",
+        "result": "#/$defs/getGoalResult"
+      },
+      "setGoal": {
+        "type": "mutation",
+        "params": "#/$defs/setGoalParams",
+        "result": "#/$defs/setGoalResult"
+      },
+      "streamGoal": {
+        "type": "stream",
+        "params": "#/$defs/streamGoalParams",
+        "result": "#/$defs/streamGoalResult"
+      }
+    }
+  }
+}

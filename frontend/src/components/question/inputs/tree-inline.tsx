@@ -1,9 +1,12 @@
-import { getTreeNodeValue, isTreeBranch, type ParsedTreeSelectQuestion, type TreeLeaf } from "@tokenring-ai/agent/question";
+import { ALWAYS_ALLOW_VALUE, getTreeNodeValue, isTreeBranch, type ParsedTreeSelectQuestion, type TreeLeaf } from "@tokenring-ai/agent/question";
 import type { MaybePromise } from "bun";
 import { Check, ChevronDown, ChevronRight, Send, X } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRefSync } from "../../../hooks/useRefSync.ts";
+import { scrollBehavior } from "../../../lib/motion.ts";
 import { sendInteractionResponse } from "../sendInteractionResponse.ts";
+import { useQuestionAnswer } from "../useQuestionAnswer.ts";
 
 interface TreeInlineProps {
   question: ParsedTreeSelectQuestion;
@@ -152,7 +155,7 @@ const CompactTreeNode: React.FC<{
         ) : (
           <span className="w-3.5" aria-hidden="true"></span>
         )}
-        <span className={`text-sm ${isSelected || isFocused ? "text-accent font-medium" : "text-primary"}`}>{node.name}</span>
+        <span className={`text-sm ${isSelected || isFocused ? "text-accent-soft font-medium" : "text-primary"}`}>{node.name}</span>
         {isSelectableNode && isSelected && <Check className="w-3.5 h-3.5 text-accent ml-auto" aria-hidden="true" />}
       </div>
       {isExpanded && hasChildren && (
@@ -187,12 +190,14 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
   const { minimumSelections, maximumSelections, tree, defaultValue } = question;
   const multiple = maximumSelections !== 1;
 
+  // An approval that can be saved as a standing permission (the third answer, next to Yes and No).
+  const offersAlwaysAllow = useMemo(() => tree.flatMap(collectLeafValues).includes(ALWAYS_ALLOW_VALUE), [tree]);
+
   const initialSelected = useMemo(() => filterSelectableDefaults(tree, defaultValue), [tree, defaultValue]);
 
   const [selected, setSelected] = useState<Set<string>>(() => new Set(initialSelected));
   // Keep a ref so submit always sees the latest selection (avoids stale closure if defaults were set on mount)
-  const selectedRef = useRef(selected);
-  selectedRef.current = selected;
+  const selectedRef = useRefSync(selected);
 
   // Expand first root plus every ancestor of pre-selected leaves so defaults are visible and interactable
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
@@ -208,10 +213,10 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
     return expanded;
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Nested in a form (onSubmitValue), the form owns the answer and moves on; stay usable after success.
+  const { answer, busy: isSubmitting, pending, error: answerError } = useQuestionAnswer({ onClose, stayBusyAfterSuccess: !onSubmitValue });
   const [focusedValue, setFocusedValue] = useState<string | null>(null);
-  const focusedValueRef = useRef<string | null>(null);
-  focusedValueRef.current = focusedValue;
+  const focusedValueRef = useRefSync(focusedValue);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Seed selection from defaults once. Avoid re-running when parent re-creates the question object.
@@ -243,7 +248,7 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
   useEffect(() => {
     if (!autoFocus || !containerRef.current) return;
 
-    containerRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    containerRef.current.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
 
     const preferredValue = initialSelected[0];
     const preferredEl = preferredValue ? (containerRef.current.querySelector(`[data-tree-value="${CSS.escape(preferredValue)}"]`) as HTMLElement | null) : null;
@@ -345,7 +350,7 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
       const value = nextElement.getAttribute("data-tree-value");
       if (value) {
         setFocusedValue(value);
-        nextElement.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        nextElement.scrollIntoView({ block: "nearest", behavior: scrollBehavior() });
       }
     }
   };
@@ -383,6 +388,11 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
     return true;
   };
 
+  const respond = async (result: string[] | null) => {
+    if (onSubmitValue) await onSubmitValue(result);
+    else if (interactionId) await sendInteractionResponse({ agentId, requestId, interactionId, result });
+  };
+
   const handleSubmit = async () => {
     const values = resolveSubmitValues();
     if (!isSelectionValid(values)) return;
@@ -394,36 +404,15 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
       setSelected(next);
     }
 
-    setIsSubmitting(true);
     // Multi-select: always send the array (empty means "none selected"). Cancel is the Cancel button.
     // Single-select: send the chosen value(s); empty should not happen when valid.
     const result = multiple ? values : values.length > 0 ? values : null;
 
-    if (onSubmitValue) {
-      await onSubmitValue(result);
-    } else if (interactionId) {
-      await sendInteractionResponse({
-        agentId,
-        requestId,
-        interactionId,
-        result,
-      });
-    }
-    onClose();
+    await answer("submit", () => respond(result));
   };
 
   const handleCancel = async () => {
-    if (onSubmitValue) {
-      await onSubmitValue(null);
-    } else if (interactionId) {
-      await sendInteractionResponse({
-        agentId,
-        requestId,
-        interactionId,
-        result: null,
-      });
-    }
-    onClose();
+    await answer("cancel", () => respond(null));
   };
 
   // For validity display, include the single-select focus fallback so Submit enables when a leaf is focused
@@ -435,7 +424,7 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
     <div ref={containerRef} className="p-4 space-y-3">
       <div
         role="tree"
-        aria-label="Select from tree"
+        aria-label={question.label || "Select from tree"}
         className="max-h-75 overflow-y-auto custom-scrollbar border border-primary rounded-lg bg-secondary shadow-md"
       >
         {tree.map(root => {
@@ -459,13 +448,23 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
           );
         })}
       </div>
+      {offersAlwaysAllow && (
+        <p className="text-xs text-muted" data-testid="always-allow-caption">
+          "Always allow" means TokenRing will not ask again for this kind of action. You can change this any time in Configuration → Permissions.
+        </p>
+      )}
+      {answerError && (
+        <p className="text-xs text-error" role="alert">
+          {answerError}
+        </p>
+      )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className={`text-2xs ${isValid ? "text-primary" : "text-error"}`} aria-live="polite">
+          <span className={`text-xs ${isValid ? "text-primary" : "text-error"}`} aria-live="polite">
             {selectionCount} selected
           </span>
           {(minimumSelections !== undefined || maximumSelections !== undefined) && (
-            <span className="text-2xs text-muted">
+            <span className="text-xs text-muted">
               {minimumSelections !== undefined && `min ${minimumSelections}`}
               {minimumSelections !== undefined && maximumSelections !== undefined && " · "}
               {maximumSelections !== undefined && `max ${maximumSelections}`}
@@ -488,7 +487,7 @@ export default function TreeInlineQuestion({ question, agentId, requestId, inter
             disabled={isSubmitting || !isValid}
             className="flex items-center gap-1.5 bg-accent hover:bg-accent/90 text-white text-xs font-medium px-3 py-1.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-ring"
           >
-            {isSubmitting ? "Sending..." : "Submit"}
+            {pending === "submit" ? "Sending..." : "Submit"}
             <Send className="w-3.5 h-3.5" />
           </button>
         </div>

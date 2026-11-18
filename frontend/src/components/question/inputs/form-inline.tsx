@@ -1,7 +1,9 @@
 import { getDefaultQuestionValue, type ParsedFormQuestion } from "@tokenring-ai/agent/question";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { scrollBehavior } from "../../../lib/motion.ts";
 import { sendInteractionResponse } from "../sendInteractionResponse.ts";
+import { useQuestionAnswer } from "../useQuestionAnswer.ts";
 import FileInlineQuestion from "./file-inline.tsx";
 import TreeInlineQuestion from "./tree-inline.tsx";
 
@@ -18,7 +20,7 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [currentSection, setCurrentSection] = useState(0);
   const [currentField, setCurrentField] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { answer, busy: isSubmitting, pending, error: answerError, isBusy } = useQuestionAnswer({ onClose });
   const [isInvalid, setIsInvalid] = useState(false);
   const [showErrorAnimation, setShowErrorAnimation] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -34,7 +36,7 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
   // Auto-focus on mount and field changes
   useEffect(() => {
     if (containerRef.current) {
-      containerRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      containerRef.current.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
     }
     // Focus on input field when it's a text field
     if (currentEntry?.[1].type === "text" && inputRef.current) {
@@ -43,7 +45,8 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
   }, [currentEntry]);
 
   const handleFieldSubmit = async (value: unknown) => {
-    if (!section || !currentEntry) return;
+    // The final answer (or a cancel) is in flight: ignore further field submits.
+    if (!section || !currentEntry || isBusy()) return;
     const [fieldKey, field] = currentEntry;
     // Validate required fields
     if (field.type === "text" && field.required && !value) {
@@ -71,14 +74,7 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
       const finalSection = (result[section.name] ??= {});
       finalSection[fieldKey] = value;
 
-      setIsSubmitting(true);
-      await sendInteractionResponse({
-        agentId,
-        requestId,
-        interactionId,
-        result,
-      });
-      onClose();
+      await answer("submit", () => sendInteractionResponse({ agentId, requestId, interactionId, result }));
     } else if (isLastField) {
       setCurrentSection(currentSection + 1);
       setCurrentField(0);
@@ -98,13 +94,7 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
   };
 
   const handleCancel = async () => {
-    await sendInteractionResponse({
-      agentId,
-      requestId,
-      interactionId,
-      result: getDefaultQuestionValue(question),
-    });
-    onClose();
+    await answer("cancel", () => sendInteractionResponse({ agentId, requestId, interactionId, result: getDefaultQuestionValue(question) }));
   };
 
   // Reset validation state when field changes
@@ -124,7 +114,7 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
   return (
     <div ref={containerRef} className="p-4 space-y-3">
       {/* Progress indicator */}
-      <div className="flex items-center justify-between text-2xs" aria-live="polite">
+      <div className="flex items-center justify-between text-xs" aria-live="polite">
         <div className="flex items-center gap-2">
           <span className="text-muted">
             Section {currentSection + 1} of {question.sections.length}
@@ -134,11 +124,11 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
             Field {currentField + 1} of {totalFields}
           </span>
         </div>
-        <span className="text-accent font-medium">{section.name}</span>
+        <span className="text-accent-soft font-medium">{section.name}</span>
       </div>
 
       {/* Description */}
-      {section.description && <p className="text-2xs text-muted italic">{section.description}</p>}
+      {section.description && <p className="text-xs text-muted italic">{section.description}</p>}
 
       {/* Field content */}
       <div className="min-h-37.5 flex flex-col">
@@ -148,9 +138,9 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
               {field.label}
               {field.required && <span className="text-error ml-1">*</span>}
             </label>
-            {field.description && <p className="text-2xs text-muted">{field.description}</p>}
+            {field.description && <p className="text-xs text-muted">{field.description}</p>}
             {isInvalid && (
-              <p className="text-2xs text-error flex items-center gap-1" role="alert">
+              <p className="text-xs text-error flex items-center gap-1" role="alert">
                 <span>This field is required</span>
               </p>
             )}
@@ -167,9 +157,10 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
                   void handleCancel();
                 }
               }}
-              className={`w-full bg-primary border border-primary rounded-md text-primary text-sm p-2 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent/20 ${
+              className={`w-full bg-primary border border-control rounded-md text-primary text-sm p-2 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent/20 ${
                 isInvalid ? "border-error" : ""
               } ${showErrorAnimation ? "animate-shake" : ""}`}
+              disabled={isSubmitting}
               aria-required={field.required}
               aria-invalid={isInvalid}
             />
@@ -195,7 +186,7 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
         {field.type === "fileSelect" && (
           <div className="flex-1 flex flex-col gap-2 min-h-37.5">
             <label className="block text-sm text-primary">{field.label}</label>
-            {field.description && <p className="text-2xs text-muted">{field.description}</p>}
+            {field.description && <p className="text-xs text-muted">{field.description}</p>}
             <div className="border border-primary/30 rounded-lg flex-1 flex flex-col overflow-hidden">
               <FileInlineQuestion
                 question={field}
@@ -209,6 +200,12 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
           </div>
         )}
       </div>
+
+      {answerError && (
+        <p className="text-xs text-error" role="alert">
+          {answerError}
+        </p>
+      )}
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-2">
@@ -227,7 +224,7 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
               type="button"
               onClick={handlePrevious}
               disabled={isSubmitting}
-              className="flex items-center gap-1.5 text-xs text-primary hover:text-accent transition-colors disabled:opacity-50 bg-tertiary px-3 py-1.5 rounded-md focus-ring"
+              className="flex items-center gap-1.5 text-xs text-primary hover:text-accent-soft transition-colors disabled:opacity-50 bg-tertiary px-3 py-1.5 rounded-md focus-ring"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               Previous
@@ -244,9 +241,9 @@ export default function FormInlineQuestion({ agentId, question, requestId, inter
             disabled={isSubmitting}
             className="flex items-center gap-1.5 bg-accent hover:bg-accent/90 text-white text-xs font-medium px-3 py-1.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-ring"
           >
-            {isSubmitting ? (
+            {pending === "submit" ? (
               <>
-                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
                 <span>{isLastField && isLastSection ? "Submitting..." : "Processing..."}</span>
               </>
             ) : (

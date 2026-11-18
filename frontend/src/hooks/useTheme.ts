@@ -1,104 +1,27 @@
-import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useCallback } from "react";
+import {
+  type ResolvedTheme,
+  resolveMode,
+  resolveThemeDef,
+  setThemeAccent,
+  setThemeDensity,
+  setThemePreference,
+  type ThemePreference,
+  useThemeState,
+} from "../theme/themeStore.ts";
+import { THEME_FOR_MODE, type ThemeDef } from "../theme/themes.ts";
 
-export type ThemePreference = "light" | "dark" | "system";
-export type ResolvedTheme = "light" | "dark";
-
-const THEME_STORAGE_KEY = "theme";
-
-function getSystemTheme(): ResolvedTheme {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-function readStoredPreference(): ThemePreference {
-  if (typeof window === "undefined") return "system";
-  try {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system") {
-      return stored;
-    }
-  } catch {
-    // localStorage unavailable
-  }
-  // No stored preference — follow the OS (matches prior first-load behavior)
-  return "system";
-}
-
-function resolveTheme(preference: ThemePreference, system: ResolvedTheme): ResolvedTheme {
-  return preference === "system" ? system : preference;
-}
-
-function applyThemeClass(resolved: ResolvedTheme) {
-  if (typeof document === "undefined") return;
-  if (resolved === "dark") {
-    document.documentElement.classList.add("dark");
-  } else {
-    document.documentElement.classList.remove("dark");
-  }
-}
+export type { ResolvedTheme, ThemePreference } from "../theme/themeStore.ts";
+export { resetThemeStoreForTests } from "../theme/themeStore.ts";
 
 /**
- * Module-level store so every `useTheme()` consumer (Settings, top-bar toggle,
- * editors) stays in sync. Per-instance useState desynced as soon as one caller
- * changed the preference.
+ * Page chrome colours per mode (the html background and theme-color meta).
+ * Derived from the ThemeDefs; applyTheme.ts keeps the document in step.
  */
-let preferenceStore: ThemePreference = readStoredPreference();
-let systemThemeStore: ResolvedTheme = getSystemTheme();
-const preferenceListeners = new Set<() => void>();
-const systemListeners = new Set<() => void>();
-
-function emitPreference() {
-  for (const listener of preferenceListeners) listener();
-}
-
-function emitSystem() {
-  for (const listener of systemListeners) listener();
-}
-
-function persistAndApply(preference: ThemePreference, system: ResolvedTheme) {
-  applyThemeClass(resolveTheme(preference, system));
-  try {
-    localStorage.setItem(THEME_STORAGE_KEY, preference);
-  } catch {
-    // localStorage unavailable — theme still applies for this session
-  }
-}
-
-// Apply once at module load so the first paint matches storage before React mounts.
-persistAndApply(preferenceStore, systemThemeStore);
-
-function setPreferenceStore(next: ThemePreference) {
-  if (preferenceStore === next) {
-    // Re-apply in case DOM/storage drifted (e.g. after a partial clear).
-    persistAndApply(preferenceStore, systemThemeStore);
-    return;
-  }
-  preferenceStore = next;
-  persistAndApply(preferenceStore, systemThemeStore);
-  emitPreference();
-}
-
-let systemListening = false;
-function ensureSystemListener() {
-  if (systemListening || typeof window === "undefined") return;
-  systemListening = true;
-  const mql = window.matchMedia("(prefers-color-scheme: dark)");
-  const onChange = (event: MediaQueryListEvent) => {
-    systemThemeStore = event.matches ? "dark" : "light";
-    applyThemeClass(resolveTheme(preferenceStore, systemThemeStore));
-    emitSystem();
-  };
-  mql.addEventListener("change", onChange);
-}
-
-/** Test helper — re-read storage and reset module state between cases. */
-export function resetThemeStoreForTests() {
-  preferenceStore = readStoredPreference();
-  systemThemeStore = getSystemTheme();
-  persistAndApply(preferenceStore, systemThemeStore);
-  emitPreference();
-  emitSystem();
-}
+export const THEME_CHROME_COLORS: Record<ResolvedTheme, string> = {
+  light: THEME_FOR_MODE.light.surface.canvas,
+  dark: THEME_FOR_MODE.dark.surface.canvas,
+};
 
 /**
  * Theme preference hook.
@@ -111,39 +34,26 @@ export function resetThemeStoreForTests() {
  * Existing `[theme, setTheme]` destructuring stays valid.
  */
 export function useTheme() {
-  ensureSystemListener();
-
-  const preference = useSyncExternalStore(
-    onStoreChange => {
-      preferenceListeners.add(onStoreChange);
-      return () => {
-        preferenceListeners.delete(onStoreChange);
-      };
-    },
-    () => preferenceStore,
-    () => "system" as ThemePreference,
-  );
-
-  const systemTheme = useSyncExternalStore(
-    onStoreChange => {
-      systemListeners.add(onStoreChange);
-      return () => {
-        systemListeners.delete(onStoreChange);
-      };
-    },
-    () => systemThemeStore,
-    () => "light" as ResolvedTheme,
-  );
-
-  // Keep class in sync when system appearance changes while preference is "system".
-  useEffect(() => {
-    applyThemeClass(resolveTheme(preference, systemTheme));
-  }, [preference, systemTheme]);
-
+  const state = useThemeState();
   const setTheme = useCallback((next: ThemePreference) => {
-    setPreferenceStore(next);
+    setThemePreference(next);
   }, []);
+  const resolved = resolveMode(state.preference, state.system);
+  return [resolved, setTheme, state.preference] as const;
+}
 
-  const resolved = resolveTheme(preference, systemTheme);
-  return [resolved, setTheme, preference] as const;
+/** The full appearance state (theme, accent, density) and its setters. */
+export function useThemeSettings() {
+  const state = useThemeState();
+  const theme: ThemeDef = resolveThemeDef(state);
+  return {
+    preference: state.preference,
+    resolved: theme.mode,
+    theme,
+    accent: state.accent,
+    density: state.density,
+    setPreference: setThemePreference,
+    setAccent: setThemeAccent,
+    setDensity: setThemeDensity,
+  };
 }

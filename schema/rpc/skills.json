@@ -308,6 +308,144 @@
       "additionalProperties": false
     },
     {
+      "title": "getSkill request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/skills.getSkill"
+        },
+        "params": {
+          "$ref": "#/$defs/getSkillParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getSkill response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getSkillResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateSkill request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/skills.updateSkill"
+        },
+        "params": {
+          "$ref": "#/$defs/updateSkillParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateSkill response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateSkillResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "uploadSkill request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/skills.uploadSkill"
+        },
+        "params": {
+          "$ref": "#/$defs/uploadSkillParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "uploadSkill response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/uploadSkillResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "resetSkill request",
       "type": "object",
       "properties": {
@@ -430,6 +568,12 @@
                     "type": "boolean"
                   },
                   "sourceUrl": {
+                    "type": "string"
+                  },
+                  "installedAt": {
+                    "type": "string"
+                  },
+                  "updatedAt": {
                     "type": "string"
                   },
                   "userInvocable": {
@@ -567,6 +711,12 @@
                 "sourceUrl": {
                   "type": "string"
                 },
+                "installedAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
                 "userInvocable": {
                   "type": "boolean"
                 },
@@ -653,6 +803,12 @@
                 "sourceUrl": {
                   "type": "string"
                 },
+                "installedAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
                 "userInvocable": {
                   "type": "boolean"
                 },
@@ -737,6 +893,12 @@
                   "type": "boolean"
                 },
                 "sourceUrl": {
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
                   "type": "string"
                 },
                 "userInvocable": {
@@ -836,6 +998,318 @@
         }
       ]
     },
+    "getSkillParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "agentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "getSkillResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "skill": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "sourceUrl": {
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
+                "userInvocable": {
+                  "type": "boolean"
+                },
+                "argumentHint": {
+                  "type": "string"
+                },
+                "context": {
+                  "type": "string"
+                },
+                "agent": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "slug",
+                "description",
+                "enabled"
+              ],
+              "additionalProperties": false
+            },
+            "frontmatter": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "argumentHint": {
+                  "type": "string"
+                },
+                "disableModelInvocation": {
+                  "type": "boolean"
+                },
+                "userInvocable": {
+                  "type": "boolean"
+                },
+                "context": {
+                  "type": "string"
+                },
+                "agent": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "body": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "skill",
+            "frontmatter",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "updateSkillParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "agentId",
+        "name"
+      ]
+    },
+    "updateSkillResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "skill": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "sourceUrl": {
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
+                "userInvocable": {
+                  "type": "boolean"
+                },
+                "argumentHint": {
+                  "type": "string"
+                },
+                "context": {
+                  "type": "string"
+                },
+                "agent": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "slug",
+                "description",
+                "enabled"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "skill"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "uploadSkillParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "fileName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentBase64": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "agentId",
+        "fileName",
+        "contentBase64"
+      ]
+    },
+    "uploadSkillResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "skill": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "sourceUrl": {
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
+                "userInvocable": {
+                  "type": "boolean"
+                },
+                "argumentHint": {
+                  "type": "string"
+                },
+                "context": {
+                  "type": "string"
+                },
+                "agent": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "slug",
+                "description",
+                "enabled"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "skill"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
     "resetSkillParams": {
       "type": "object",
       "properties": {
@@ -877,6 +1351,12 @@
                   "type": "boolean"
                 },
                 "sourceUrl": {
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
                   "type": "string"
                 },
                 "userInvocable": {
@@ -957,6 +1437,21 @@
         "type": "mutation",
         "params": "#/$defs/deleteSkillParams",
         "result": "#/$defs/deleteSkillResult"
+      },
+      "getSkill": {
+        "type": "query",
+        "params": "#/$defs/getSkillParams",
+        "result": "#/$defs/getSkillResult"
+      },
+      "updateSkill": {
+        "type": "mutation",
+        "params": "#/$defs/updateSkillParams",
+        "result": "#/$defs/updateSkillResult"
+      },
+      "uploadSkill": {
+        "type": "mutation",
+        "params": "#/$defs/uploadSkillParams",
+        "result": "#/$defs/uploadSkillResult"
       },
       "resetSkill": {
         "type": "mutation",

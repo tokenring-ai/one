@@ -1,5 +1,3 @@
-docker:
-  sandbox: true
 sandbox:
   agentDefaults:
     provider: docker

@@ -1,6 +1,7 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import {
   Bot,
+  Brain,
   Bug,
   Check,
   Circle,
@@ -22,6 +23,7 @@ import {
   Server,
   Sparkles,
   Terminal,
+  Wrench,
   X,
 } from "lucide-react";
 import type React from "react";
@@ -43,7 +45,7 @@ const packageIcons: Record<string, React.ReactNode> = {
   "@tokenring-ai/ai-client": <Database className={iconSm} />,
   "@tokenring-ai/websearch": <Globe className={iconSm} />,
   "@tokenring-ai/filesystem": <Code className={iconSm} />,
-  "@tokenring-ai/memory": <Cloud className={iconSm} />,
+  "@tokenring-ai/memory": <Brain className={iconSm} />,
   "@tokenring-ai/git": <GitBranch className={iconSm} />,
   "@tokenring-ai/testing": <Bug className={iconSm} />,
   "@tokenring-ai/codebase": <FileCode className={iconSm} />,
@@ -59,6 +61,7 @@ const packageIcons: Record<string, React.ReactNode> = {
   "@tokenring-ai/ghost-io": <Newspaper className={iconSm} />,
   "@tokenring-ai/wordpress": <Newspaper className={iconSm} />,
   "@tokenring-ai/newsrpm": <Newspaper className={iconSm} />,
+  "@tokenring-ai/newsletter": <Newspaper className={iconSm} />,
   "@tokenring-ai/reddit": <MessageSquare className={iconSm} />,
   "@tokenring-ai/audio": <Mic className={iconSm} />,
   "@tokenring-ai/linux-audio": <Mic className={iconSm} />,
@@ -78,7 +81,7 @@ const packageColors: Record<string, string> = {
   "@tokenring-ai/ai-client": "text-blue-600 dark:text-blue-400",
   "@tokenring-ai/websearch": "text-cyan-600 dark:text-cyan-400",
   "@tokenring-ai/filesystem": "text-emerald-600 dark:text-emerald-400",
-  "@tokenring-ai/memory": "text-purple-600 dark:text-purple-400",
+  "@tokenring-ai/memory": "text-teal-600 dark:text-teal-400",
   "@tokenring-ai/git": "text-orange-600 dark:text-orange-500",
   "@tokenring-ai/testing": "text-pink-600 dark:text-pink-500",
   "@tokenring-ai/codebase": "text-amber-600 dark:text-amber-500",
@@ -94,6 +97,7 @@ const packageColors: Record<string, string> = {
   "@tokenring-ai/ghost-io": "text-rose-600 dark:text-rose-500",
   "@tokenring-ai/wordpress": "text-blue-500 dark:text-blue-400",
   "@tokenring-ai/newsrpm": "text-orange-600 dark:text-orange-500",
+  "@tokenring-ai/newsletter": "text-sky-600 dark:text-sky-500",
   "@tokenring-ai/reddit": "text-red-600 dark:text-red-500",
   "@tokenring-ai/audio": "text-violet-600 dark:text-violet-500",
   "@tokenring-ai/linux-audio": "text-violet-600 dark:text-violet-500",
@@ -211,9 +215,9 @@ export default function ToolSelector({ agentId, triggerVariant = "default" }: To
           aria-label={`Select tools. ${enabledToolsData?.tools.length ?? 0} enabled`}
           title={`${enabledToolsData?.tools.length ?? 0} tools enabled`}
         >
-          <Layers className={isIconTrigger ? "w-5 h-5" : "w-3.5 h-3.5 text-muted group-hover:text-primary"} />
+          <Wrench className={isIconTrigger ? "w-5 h-5" : "w-3.5 h-3.5 text-muted group-hover:text-primary"} />
           {!isIconTrigger && (
-            <span className="text-xs font-mono text-muted group-hover:text-primary truncate max-w-48">{enabledToolsData?.tools.length ?? 0} enabled</span>
+            <span className="text-xs font-mono text-muted group-hover:text-primary truncate max-w-48">{enabledToolsData?.tools.length ?? 0} tools</span>
           )}
         </button>
       </DropdownMenuTrigger>
@@ -234,7 +238,7 @@ export default function ToolSelector({ agentId, triggerVariant = "default" }: To
               placeholder="Filter tools..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-input border border-primary rounded-md py-1.5 pl-9 pr-8 text-xs text-primary placeholder-muted focus-ring transition-all"
+              className="w-full bg-input border border-control rounded-md py-1.5 pl-9 pr-8 text-xs text-primary placeholder-muted focus-ring transition-all"
               onClick={e => e.stopPropagation()}
             />
             {searchQuery && (
@@ -325,7 +329,7 @@ export default function ToolSelector({ agentId, triggerVariant = "default" }: To
                       }}
                       title={allEnabled ? "Disable all tools" : allDisabled ? "Enable all tools" : "Toggle all tools"}
                     >
-                      <span className="text-2xs font-mono text-muted">
+                      <span className="text-xs font-mono text-muted">
                         {enabledToolCount}/{toolCount}
                       </span>
                       <div className="flex items-center gap-1">

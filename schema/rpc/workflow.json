@@ -237,6 +237,144 @@
       "additionalProperties": false
     },
     {
+      "title": "duplicateWorkflow request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/workflow.duplicateWorkflow"
+        },
+        "params": {
+          "$ref": "#/$defs/duplicateWorkflowParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "duplicateWorkflow response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/duplicateWorkflowResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "exportWorkflow request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/workflow.exportWorkflow"
+        },
+        "params": {
+          "$ref": "#/$defs/exportWorkflowParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "exportWorkflow response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/exportWorkflowResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "importWorkflow request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/workflow.importWorkflow"
+        },
+        "params": {
+          "$ref": "#/$defs/importWorkflowParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "importWorkflow response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/importWorkflowResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "deleteWorkflow request",
       "type": "object",
       "properties": {
@@ -398,6 +536,98 @@
         "result"
       ],
       "additionalProperties": false
+    },
+    {
+      "title": "rerunRun request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/workflow.rerunRun"
+        },
+        "params": {
+          "$ref": "#/$defs/rerunRunParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "rerunRun response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/rerunRunResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelRun request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/workflow.cancelRun"
+        },
+        "params": {
+          "$ref": "#/$defs/cancelRunParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelRun response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/cancelRunResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
     }
   ],
   "$defs": {
@@ -482,22 +712,30 @@
                         "type": "string"
                       },
                       "additionalProperties": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "number"
-                          },
-                          {
-                            "type": "boolean"
-                          }
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean"
                         ]
                       }
                     },
                     "remainder": {
                       "default": "",
                       "type": "string"
+                    },
+                    "onError": {
+                      "description": "continue keeps the run going when this step fails; stop (default) ends the run",
+                      "type": "string",
+                      "enum": [
+                        "stop",
+                        "continue"
+                      ]
+                    },
+                    "retries": {
+                      "description": "Re-run a failed step up to this many times (at most 10) before handling the failure",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10
                     }
                   },
                   "required": [
@@ -560,6 +798,36 @@
               "timeout",
               "maxResponseLength",
               "minContextLength"
+            ],
+            "additionalProperties": false
+          },
+          "installedFrom": {
+            "type": "object",
+            "properties": {
+              "registry": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "default": "",
+                "type": "string"
+              },
+              "author": {
+                "default": "",
+                "type": "string"
+              },
+              "installedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "registry",
+              "id",
+              "version",
+              "author",
+              "installedAt"
             ],
             "additionalProperties": false
           },
@@ -654,22 +922,30 @@
                               "type": "string"
                             },
                             "additionalProperties": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "number"
-                                },
-                                {
-                                  "type": "boolean"
-                                }
+                              "type": [
+                                "string",
+                                "number",
+                                "boolean"
                               ]
                             }
                           },
                           "remainder": {
                             "default": "",
                             "type": "string"
+                          },
+                          "onError": {
+                            "description": "continue keeps the run going when this step fails; stop (default) ends the run",
+                            "type": "string",
+                            "enum": [
+                              "stop",
+                              "continue"
+                            ]
+                          },
+                          "retries": {
+                            "description": "Re-run a failed step up to this many times (at most 10) before handling the failure",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10
                           }
                         },
                         "required": [
@@ -732,6 +1008,36 @@
                     "timeout",
                     "maxResponseLength",
                     "minContextLength"
+                  ],
+                  "additionalProperties": false
+                },
+                "installedFrom": {
+                  "type": "object",
+                  "properties": {
+                    "registry": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "author": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "installedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "registry",
+                    "id",
+                    "version",
+                    "author",
+                    "installedAt"
                   ],
                   "additionalProperties": false
                 },
@@ -810,22 +1116,30 @@
                           "type": "string"
                         },
                         "additionalProperties": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "number"
-                            },
-                            {
-                              "type": "boolean"
-                            }
+                          "type": [
+                            "string",
+                            "number",
+                            "boolean"
                           ]
                         }
                       },
                       "remainder": {
                         "default": "",
                         "type": "string"
+                      },
+                      "onError": {
+                        "description": "continue keeps the run going when this step fails; stop (default) ends the run",
+                        "type": "string",
+                        "enum": [
+                          "stop",
+                          "continue"
+                        ]
+                      },
+                      "retries": {
+                        "description": "Re-run a failed step up to this many times (at most 10) before handling the failure",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10
                       }
                     },
                     "required": [
@@ -876,6 +1190,33 @@
                   "type": "number"
                 }
               }
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "installedAt"
+              ]
             }
           },
           "required": [
@@ -931,22 +1272,30 @@
                           "type": "string"
                         },
                         "additionalProperties": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "number"
-                            },
-                            {
-                              "type": "boolean"
-                            }
+                          "type": [
+                            "string",
+                            "number",
+                            "boolean"
                           ]
                         }
                       },
                       "remainder": {
                         "default": "",
                         "type": "string"
+                      },
+                      "onError": {
+                        "description": "continue keeps the run going when this step fails; stop (default) ends the run",
+                        "type": "string",
+                        "enum": [
+                          "stop",
+                          "continue"
+                        ]
+                      },
+                      "retries": {
+                        "description": "Re-run a failed step up to this many times (at most 10) before handling the failure",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10
                       }
                     },
                     "required": [
@@ -1009,6 +1358,36 @@
                 "timeout",
                 "maxResponseLength",
                 "minContextLength"
+              ],
+              "additionalProperties": false
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "version",
+                "author",
+                "installedAt"
               ],
               "additionalProperties": false
             },
@@ -1082,22 +1461,30 @@
                           "type": "string"
                         },
                         "additionalProperties": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "number"
-                            },
-                            {
-                              "type": "boolean"
-                            }
+                          "type": [
+                            "string",
+                            "number",
+                            "boolean"
                           ]
                         }
                       },
                       "remainder": {
                         "default": "",
                         "type": "string"
+                      },
+                      "onError": {
+                        "description": "continue keeps the run going when this step fails; stop (default) ends the run",
+                        "type": "string",
+                        "enum": [
+                          "stop",
+                          "continue"
+                        ]
+                      },
+                      "retries": {
+                        "description": "Re-run a failed step up to this many times (at most 10) before handling the failure",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10
                       }
                     },
                     "required": [
@@ -1148,6 +1535,33 @@
                   "type": "number"
                 }
               }
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "installedAt"
+              ]
             }
           },
           "required": [
@@ -1203,22 +1617,30 @@
                           "type": "string"
                         },
                         "additionalProperties": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "number"
-                            },
-                            {
-                              "type": "boolean"
-                            }
+                          "type": [
+                            "string",
+                            "number",
+                            "boolean"
                           ]
                         }
                       },
                       "remainder": {
                         "default": "",
                         "type": "string"
+                      },
+                      "onError": {
+                        "description": "continue keeps the run going when this step fails; stop (default) ends the run",
+                        "type": "string",
+                        "enum": [
+                          "stop",
+                          "continue"
+                        ]
+                      },
+                      "retries": {
+                        "description": "Re-run a failed step up to this many times (at most 10) before handling the failure",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10
                       }
                     },
                     "required": [
@@ -1281,6 +1703,463 @@
                 "timeout",
                 "maxResponseLength",
                 "minContextLength"
+              ],
+              "additionalProperties": false
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "version",
+                "author",
+                "installedAt"
+              ],
+              "additionalProperties": false
+            },
+            "name": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "displayName",
+            "category",
+            "description",
+            "agentType",
+            "steps",
+            "subAgent",
+            "name",
+            "updatedAt"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "workflow"
+      ],
+      "additionalProperties": false
+    },
+    "duplicateWorkflowParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "newName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "duplicateWorkflowResult": {
+      "type": "object",
+      "properties": {
+        "workflow": {
+          "type": "object",
+          "properties": {
+            "displayName": {
+              "type": "string"
+            },
+            "category": {
+              "default": "User-Created Workflows",
+              "type": "string"
+            },
+            "description": {
+              "default": "",
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "steps": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "command": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "arguments": {
+                        "default": {},
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "type": [
+                            "string",
+                            "number",
+                            "boolean"
+                          ]
+                        }
+                      },
+                      "remainder": {
+                        "default": "",
+                        "type": "string"
+                      },
+                      "onError": {
+                        "description": "continue keeps the run going when this step fails; stop (default) ends the run",
+                        "type": "string",
+                        "enum": [
+                          "stop",
+                          "continue"
+                        ]
+                      },
+                      "retries": {
+                        "description": "Re-run a failed step up to this many times (at most 10) before handling the failure",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10
+                      }
+                    },
+                    "required": [
+                      "command",
+                      "arguments",
+                      "remainder"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "subAgent": {
+              "type": "object",
+              "properties": {
+                "forwardChatOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardStatusMessages": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardSystemOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardHumanRequests": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardReasoning": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardInputCommands": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "timeout": {
+                  "default": 0,
+                  "type": "number"
+                },
+                "maxResponseLength": {
+                  "default": 10000,
+                  "type": "number"
+                },
+                "minContextLength": {
+                  "default": 1000,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "forwardChatOutput",
+                "forwardStatusMessages",
+                "forwardSystemOutput",
+                "forwardHumanRequests",
+                "forwardReasoning",
+                "forwardInputCommands",
+                "timeout",
+                "maxResponseLength",
+                "minContextLength"
+              ],
+              "additionalProperties": false
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "version",
+                "author",
+                "installedAt"
+              ],
+              "additionalProperties": false
+            },
+            "name": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "displayName",
+            "category",
+            "description",
+            "agentType",
+            "steps",
+            "subAgent",
+            "name",
+            "updatedAt"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "workflow"
+      ],
+      "additionalProperties": false
+    },
+    "exportWorkflowParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "exportWorkflowResult": {
+      "type": "object",
+      "properties": {
+        "fileName": {
+          "type": "string"
+        },
+        "yaml": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "fileName",
+        "yaml"
+      ],
+      "additionalProperties": false
+    },
+    "importWorkflowParams": {
+      "type": "object",
+      "properties": {
+        "yaml": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "yaml"
+      ]
+    },
+    "importWorkflowResult": {
+      "type": "object",
+      "properties": {
+        "workflow": {
+          "type": "object",
+          "properties": {
+            "displayName": {
+              "type": "string"
+            },
+            "category": {
+              "default": "User-Created Workflows",
+              "type": "string"
+            },
+            "description": {
+              "default": "",
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "steps": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "command": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "arguments": {
+                        "default": {},
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "type": [
+                            "string",
+                            "number",
+                            "boolean"
+                          ]
+                        }
+                      },
+                      "remainder": {
+                        "default": "",
+                        "type": "string"
+                      },
+                      "onError": {
+                        "description": "continue keeps the run going when this step fails; stop (default) ends the run",
+                        "type": "string",
+                        "enum": [
+                          "stop",
+                          "continue"
+                        ]
+                      },
+                      "retries": {
+                        "description": "Re-run a failed step up to this many times (at most 10) before handling the failure",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10
+                      }
+                    },
+                    "required": [
+                      "command",
+                      "arguments",
+                      "remainder"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "subAgent": {
+              "type": "object",
+              "properties": {
+                "forwardChatOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardStatusMessages": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardSystemOutput": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardHumanRequests": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "forwardReasoning": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "forwardInputCommands": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "timeout": {
+                  "default": 0,
+                  "type": "number"
+                },
+                "maxResponseLength": {
+                  "default": 10000,
+                  "type": "number"
+                },
+                "minContextLength": {
+                  "default": 1000,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "forwardChatOutput",
+                "forwardStatusMessages",
+                "forwardSystemOutput",
+                "forwardHumanRequests",
+                "forwardReasoning",
+                "forwardInputCommands",
+                "timeout",
+                "maxResponseLength",
+                "minContextLength"
+              ],
+              "additionalProperties": false
+            },
+            "installedFrom": {
+              "type": "object",
+              "properties": {
+                "registry": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "installedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "id",
+                "version",
+                "author",
+                "installedAt"
               ],
               "additionalProperties": false
             },
@@ -1361,13 +2240,30 @@
                 "type": "string"
               },
               "agentId": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "jobId": {
+                "default": null,
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rerunOf": {
+                "default": null,
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "costUsd": {
+                "default": null,
+                "type": [
+                  "number",
+                  "null"
                 ]
               },
               "steps": {
@@ -1391,22 +2287,30 @@
                             "type": "string"
                           },
                           "additionalProperties": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "boolean"
-                              }
+                            "type": [
+                              "string",
+                              "number",
+                              "boolean"
                             ]
                           }
                         },
                         "remainder": {
                           "default": "",
                           "type": "string"
+                        },
+                        "onError": {
+                          "description": "continue keeps the run going when this step fails; stop (default) ends the run",
+                          "type": "string",
+                          "enum": [
+                            "stop",
+                            "continue"
+                          ]
+                        },
+                        "retries": {
+                          "description": "Re-run a failed step up to this many times (at most 10) before handling the failure",
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10
                         }
                       },
                       "required": [
@@ -1419,6 +2323,52 @@
                   ]
                 }
               },
+              "stepRecords": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "running",
+                        "done",
+                        "failed",
+                        "skipped",
+                        "cancelled"
+                      ]
+                    },
+                    "startedAt": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "finishedAt": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "output": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "status",
+                    "startedAt",
+                    "finishedAt",
+                    "output"
+                  ],
+                  "additionalProperties": false
+                }
+              },
               "currentStep": {
                 "type": "number"
               },
@@ -1428,8 +2378,10 @@
                   "starting",
                   "running",
                   "completed",
+                  "completedWithErrors",
                   "failed",
-                  "cancelled"
+                  "cancelled",
+                  "interrupted"
                 ]
               },
               "message": {
@@ -1439,13 +2391,9 @@
                 "type": "number"
               },
               "finishedAt": {
-                "anyOf": [
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "null"
-                  }
+                "type": [
+                  "number",
+                  "null"
                 ]
               }
             },
@@ -1455,7 +2403,11 @@
               "displayName",
               "agentType",
               "agentId",
+              "jobId",
+              "rerunOf",
+              "costUsd",
               "steps",
+              "stepRecords",
               "currentStep",
               "status",
               "message",
@@ -1477,10 +2429,6 @@
       "properties": {
         "name": {
           "type": "string"
-        },
-        "headless": {
-          "default": false,
-          "type": "boolean"
         }
       },
       "required": [
@@ -1498,12 +2446,82 @@
         },
         "description": {
           "type": "string"
+        },
+        "runId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
         }
       },
       "required": [
         "id",
         "displayName",
-        "description"
+        "description",
+        "runId",
+        "jobId"
+      ],
+      "additionalProperties": false
+    },
+    "rerunRunParams": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "runId"
+      ]
+    },
+    "rerunRunResult": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "runId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "displayName",
+        "description",
+        "runId",
+        "jobId"
+      ],
+      "additionalProperties": false
+    },
+    "cancelRunParams": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "runId"
+      ]
+    },
+    "cancelRunResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
       ],
       "additionalProperties": false
     }
@@ -1538,6 +2556,21 @@
         "params": "#/$defs/updateWorkflowParams",
         "result": "#/$defs/updateWorkflowResult"
       },
+      "duplicateWorkflow": {
+        "type": "mutation",
+        "params": "#/$defs/duplicateWorkflowParams",
+        "result": "#/$defs/duplicateWorkflowResult"
+      },
+      "exportWorkflow": {
+        "type": "query",
+        "params": "#/$defs/exportWorkflowParams",
+        "result": "#/$defs/exportWorkflowResult"
+      },
+      "importWorkflow": {
+        "type": "mutation",
+        "params": "#/$defs/importWorkflowParams",
+        "result": "#/$defs/importWorkflowResult"
+      },
       "deleteWorkflow": {
         "type": "mutation",
         "params": "#/$defs/deleteWorkflowParams",
@@ -1552,6 +2585,16 @@
         "type": "mutation",
         "params": "#/$defs/spawnWorkflowParams",
         "result": "#/$defs/spawnWorkflowResult"
+      },
+      "rerunRun": {
+        "type": "mutation",
+        "params": "#/$defs/rerunRunParams",
+        "result": "#/$defs/rerunRunResult"
+      },
+      "cancelRun": {
+        "type": "mutation",
+        "params": "#/$defs/cancelRunParams",
+        "result": "#/$defs/cancelRunResult"
       }
     }
   }

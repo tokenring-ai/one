@@ -1,0 +1,1116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Newsletter RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/newsletter",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "getNewsletterConfiguration request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsletter.getNewsletterConfiguration"
+        },
+        "params": {
+          "$ref": "#/$defs/getNewsletterConfigurationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getNewsletterConfiguration response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getNewsletterConfigurationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listNewsletters request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsletter.listNewsletters"
+        },
+        "params": {
+          "$ref": "#/$defs/listNewslettersParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listNewsletters response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listNewslettersResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listAudiences request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsletter.listAudiences"
+        },
+        "params": {
+          "$ref": "#/$defs/listAudiencesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listAudiences response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listAudiencesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listIssues request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsletter.listIssues"
+        },
+        "params": {
+          "$ref": "#/$defs/listIssuesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listIssues response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listIssuesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getIssue request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsletter.getIssue"
+        },
+        "params": {
+          "$ref": "#/$defs/getIssueParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getIssue response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getIssueResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createIssue request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsletter.createIssue"
+        },
+        "params": {
+          "$ref": "#/$defs/createIssueParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createIssue response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createIssueResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateIssue request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsletter.updateIssue"
+        },
+        "params": {
+          "$ref": "#/$defs/updateIssueParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateIssue response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateIssueResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteIssue request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/newsletter.deleteIssue"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteIssueParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteIssue response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteIssueResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "getNewsletterConfigurationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getNewsletterConfigurationResult": {
+      "type": "object",
+      "properties": {
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "supportedStatuses": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "scheduled",
+                    "sent"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "supportedStatuses"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "providers",
+        "agentTypes"
+      ],
+      "additionalProperties": false
+    },
+    "listNewslettersParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider"
+      ]
+    },
+    "listNewslettersResult": {
+      "type": "object",
+      "properties": {
+        "newsletters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "newsletters"
+      ],
+      "additionalProperties": false
+    },
+    "listAudiencesParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "newsletter": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "newsletter"
+      ]
+    },
+    "listAudiencesResult": {
+      "type": "object",
+      "properties": {
+        "audiences": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "memberCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "audiences"
+      ],
+      "additionalProperties": false
+    },
+    "listIssuesParams": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "scheduled",
+            "sent"
+          ]
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "provider": {
+          "type": "string"
+        },
+        "newsletter": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "newsletter"
+      ]
+    },
+    "listIssuesResult": {
+      "type": "object",
+      "properties": {
+        "issues": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "newsletter": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              },
+              "preheader": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "scheduled",
+                  "sent"
+                ]
+              },
+              "audience": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "number"
+              },
+              "scheduledAt": {
+                "type": "number"
+              },
+              "sentAt": {
+                "type": "number"
+              },
+              "url": {
+                "type": "string"
+              },
+              "stats": {
+                "type": "object",
+                "properties": {
+                  "recipients": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "delivered": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "opened": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "failed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "newsletter",
+              "subject",
+              "status",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "issues"
+      ],
+      "additionalProperties": false
+    },
+    "getIssueParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "id"
+      ]
+    },
+    "getIssueResult": {
+      "type": "object",
+      "properties": {
+        "issue": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "newsletter": {
+              "type": "string"
+            },
+            "subject": {
+              "type": "string"
+            },
+            "preheader": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "scheduled",
+                "sent"
+              ]
+            },
+            "audience": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "number"
+            },
+            "scheduledAt": {
+              "type": "number"
+            },
+            "sentAt": {
+              "type": "number"
+            },
+            "url": {
+              "type": "string"
+            },
+            "stats": {
+              "type": "object",
+              "properties": {
+                "recipients": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "delivered": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "opened": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "failed": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "additionalProperties": false
+            },
+            "markdown": {
+              "type": "string"
+            },
+            "html": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "newsletter",
+            "subject",
+            "status",
+            "createdAt",
+            "updatedAt",
+            "markdown"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "issue"
+      ],
+      "additionalProperties": false
+    },
+    "createIssueParams": {
+      "type": "object",
+      "properties": {
+        "newsletter": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "preheader": {
+          "type": "string"
+        },
+        "markdown": {
+          "type": "string"
+        },
+        "audience": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "newsletter",
+        "subject",
+        "markdown",
+        "provider"
+      ]
+    },
+    "createIssueResult": {
+      "type": "object",
+      "properties": {
+        "issue": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "newsletter": {
+              "type": "string"
+            },
+            "subject": {
+              "type": "string"
+            },
+            "preheader": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "scheduled",
+                "sent"
+              ]
+            },
+            "audience": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "number"
+            },
+            "scheduledAt": {
+              "type": "number"
+            },
+            "sentAt": {
+              "type": "number"
+            },
+            "url": {
+              "type": "string"
+            },
+            "stats": {
+              "type": "object",
+              "properties": {
+                "recipients": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "delivered": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "opened": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "failed": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "additionalProperties": false
+            },
+            "markdown": {
+              "type": "string"
+            },
+            "html": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "newsletter",
+            "subject",
+            "status",
+            "createdAt",
+            "updatedAt",
+            "markdown"
+          ],
+          "additionalProperties": false
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "issue",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "updateIssueParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "updatedData": {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string"
+            },
+            "preheader": {
+              "type": "string"
+            },
+            "markdown": {
+              "type": "string"
+            },
+            "audience": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "provider",
+        "id",
+        "updatedData"
+      ]
+    },
+    "updateIssueResult": {
+      "type": "object",
+      "properties": {
+        "issue": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "newsletter": {
+              "type": "string"
+            },
+            "subject": {
+              "type": "string"
+            },
+            "preheader": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "scheduled",
+                "sent"
+              ]
+            },
+            "audience": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "number"
+            },
+            "updatedAt": {
+              "type": "number"
+            },
+            "scheduledAt": {
+              "type": "number"
+            },
+            "sentAt": {
+              "type": "number"
+            },
+            "url": {
+              "type": "string"
+            },
+            "stats": {
+              "type": "object",
+              "properties": {
+                "recipients": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "delivered": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "opened": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "failed": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "additionalProperties": false
+            },
+            "markdown": {
+              "type": "string"
+            },
+            "html": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "newsletter",
+            "subject",
+            "status",
+            "createdAt",
+            "updatedAt",
+            "markdown"
+          ],
+          "additionalProperties": false
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "issue",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "deleteIssueParams": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "id"
+      ]
+    },
+    "deleteIssueResult": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Newsletter RPC",
+    "path": "/rpc/newsletter",
+    "source": "plugin/newsletter/rpc/schema.ts",
+    "methods": {
+      "getNewsletterConfiguration": {
+        "type": "query",
+        "params": "#/$defs/getNewsletterConfigurationParams",
+        "result": "#/$defs/getNewsletterConfigurationResult"
+      },
+      "listNewsletters": {
+        "type": "query",
+        "params": "#/$defs/listNewslettersParams",
+        "result": "#/$defs/listNewslettersResult"
+      },
+      "listAudiences": {
+        "type": "query",
+        "params": "#/$defs/listAudiencesParams",
+        "result": "#/$defs/listAudiencesResult"
+      },
+      "listIssues": {
+        "type": "query",
+        "params": "#/$defs/listIssuesParams",
+        "result": "#/$defs/listIssuesResult"
+      },
+      "getIssue": {
+        "type": "query",
+        "params": "#/$defs/getIssueParams",
+        "result": "#/$defs/getIssueResult"
+      },
+      "createIssue": {
+        "type": "mutation",
+        "params": "#/$defs/createIssueParams",
+        "result": "#/$defs/createIssueResult"
+      },
+      "updateIssue": {
+        "type": "mutation",
+        "params": "#/$defs/updateIssueParams",
+        "result": "#/$defs/updateIssueResult"
+      },
+      "deleteIssue": {
+        "type": "mutation",
+        "params": "#/$defs/deleteIssueParams",
+        "result": "#/$defs/deleteIssueResult"
+      }
+    }
+  }
+}

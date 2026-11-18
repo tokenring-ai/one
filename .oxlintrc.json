@@ -4,15 +4,13 @@
     "import",
     "typescript",
     "unicorn",
-    "oxc"
+    "oxc",
+    "react"
   ],
   "ignorePatterns": [
     "**/node_modules",
     "**/dist",
-    "**/*.test.*",
-    "plugin/**/test/**",
     "frontend/assets",
-    "frontend/src/test/*",
     "util/**",
     "deps/**",
     "docs/**",
@@ -29,6 +27,17 @@
   },
   "rules": {
     "eslint/no-useless-assignment": "error",
+    "react/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "off",
+    "react/set-state-in-effect": "off",
+    "react/refs": "off",
+    "react/preserve-manual-memoization": "off",
+    "react/purity": "off",
+    "react/immutability": "off",
+    "react/static-components": "off",
+    "react/no-did-update-set-state": "off",
+    "react/globals": "off",
+    "typescript/no-deprecated": "error",
     "typescript/no-unnecessary-condition": "error",
     "typescript/no-floating-promises": "error",
     "typescript/no-unsafe-assignment": "warn",
@@ -46,5 +55,21 @@
   },
   "env": {
     "builtin": true
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.test.*",
+        "frontend/src/test/**",
+        "**/testSetup*",
+        "**/*TestSetup*"
+      ],
+      "rules": {
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unnecessary-condition": "off",
+        "typescript/await-thenable": "off",
+        "typescript/unbound-method": "off"
+      }
+    }
+  ]
 }

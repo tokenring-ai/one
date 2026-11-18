@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, jest, mock } from "bun:test";
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { RpcConnectionClosedError } from "@tokenring-ai/web-host/createWsRPCClient";
 import { useRPCStream } from "./useRPCStream.ts";
 
 afterEach(() => {
@@ -27,6 +28,29 @@ async function* createGenerator<T>(chunks: T[], signal: AbortSignal, options?: {
 }
 
 describe("useRPCStream", () => {
+  it("retries a dropped socket at once, keeping its data and showing no error", async () => {
+    let attempt = 0;
+    const errors: (string | null)[] = [];
+    const { result } = renderHook(() => {
+      const stream = useRPCStream<number, number[]>({
+        key: "dropped",
+        reduce: (prev, chunk) => [...(prev ?? []), chunk],
+        reconnectOptions: { initialDelay: 60_000 },
+        subscribe: async function* (signal) {
+          attempt += 1;
+          yield attempt;
+          if (attempt === 1) throw new RpcConnectionClosedError();
+          await new Promise<void>(resolve => signal.addEventListener("abort", () => resolve(), { once: true }));
+        },
+      });
+      errors.push(stream.error);
+      return stream;
+    });
+    await waitFor(() => expect(result.current.data).toEqual([1, 2]));
+    expect(errors.every(error => error === null)).toBe(true);
+    expect(result.current.reconnectAttempts).toBe(0);
+  });
+
   it("receives stream chunks into data", async () => {
     const { result } = renderHook(() =>
       useRPCStream({
@@ -141,6 +165,44 @@ describe("useRPCStream", () => {
     expect(result.current.reconnectAttempts).toBe(0);
   });
 
+  it("reconnects after a clean stream end with backoff", async () => {
+    jest.useFakeTimers();
+
+    let attempts = 0;
+    const subscribe = mock((signal: AbortSignal) => {
+      attempts += 1;
+      if (attempts === 1) {
+        return createGenerator([{ value: 1 }], signal, { hangAfterLast: false });
+      }
+      return createGenerator([{ value: 2 }], signal);
+    });
+
+    const { result } = renderHook(() =>
+      useRPCStream({
+        key: "clean-end",
+        subscribe,
+        reconnectOptions: { initialDelay: 100 },
+      }),
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.data).toEqual({ value: 1 });
+    // No tight loop: the re-subscription must wait for the backoff delay.
+    expect(subscribe).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      jest.advanceTimersByTime(100);
+      await Promise.resolve();
+    });
+
+    expect(result.current.data).toEqual({ value: 2 });
+    expect(subscribe).toHaveBeenCalledTimes(2);
+    expect(result.current.reconnectAttempts).toBe(0);
+  });
+
   it("aborts the stream on unmount", async () => {
     const abortSignals: AbortSignal[] = [];
     const subscribe = mock((signal: AbortSignal) => {
@@ -168,7 +230,11 @@ describe("useRPCStream", () => {
   });
 
   it("manualReconnect restarts the subscription", async () => {
-    const subscribe = mock((signal: AbortSignal) => createGenerator([{ value: 1 }], signal));
+    let call = 0;
+    const subscribe = mock((signal: AbortSignal) => {
+      call += 1;
+      return createGenerator([{ value: call }], signal);
+    });
 
     const { result } = renderHook(() =>
       useRPCStream({
@@ -181,15 +247,63 @@ describe("useRPCStream", () => {
       expect(result.current.data).toEqual({ value: 1 });
     });
 
+    let reconnectPromise!: Promise<unknown>;
     act(() => {
-      result.current.manualReconnect();
+      reconnectPromise = result.current.manualReconnect();
     });
 
     await waitFor(() => {
       expect(subscribe).toHaveBeenCalledTimes(2);
     });
+    await expect(reconnectPromise).resolves.toEqual({ value: 2 });
     expect(result.current.error).toBeNull();
     expect(result.current.reconnectAttempts).toBe(0);
+  });
+
+  it("manualReconnect settles with last known data when the restarted stream errors", async () => {
+    let call = 0;
+    const subscribe = mock((signal: AbortSignal) => {
+      call += 1;
+      if (call === 1) {
+        return createGenerator([{ value: 1 }], signal);
+      }
+      return createGenerator([{ value: 2 }], signal, { throwAfter: 0, hangAfterLast: false });
+    });
+
+    const { result } = renderHook(() =>
+      useRPCStream({
+        key: "manual-error",
+        subscribe,
+        reconnect: false,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual({ value: 1 });
+    });
+
+    let reconnectPromise!: Promise<unknown>;
+    act(() => {
+      reconnectPromise = result.current.manualReconnect();
+    });
+
+    // Does not hang and does not throw — fire-and-forget `void mutate()` callers stay safe.
+    await expect(reconnectPromise).resolves.toEqual({ value: 1 });
+    await waitFor(() => {
+      expect(result.current.error).toContain("stream failed");
+    });
+  });
+
+  it("manualReconnect resolves immediately when key is null", async () => {
+    const { result } = renderHook(() =>
+      useRPCStream({
+        key: null,
+        initialData: { value: 0 },
+        subscribe: signal => createGenerator([{ value: 1 }], signal),
+      }),
+    );
+
+    await expect(result.current.manualReconnect()).resolves.toEqual({ value: 0 });
   });
 
   it("resets data when key changes", async () => {

@@ -8,20 +8,22 @@ void mock.module("./components/CheckpointBrowser.tsx", () => ({
   default: () => null,
 }));
 
+// Spread the real rpc module so every export App's import graph touches resolves;
+// only the hooks this test cares about are overridden. Merely importing rpc.ts is
+// safe here — it builds client objects lazily and only opens WebSockets on call.
+const rpcActual = await import("./rpc.ts");
+
 void mock.module("./rpc.ts", () => ({
+  ...rpcActual,
   useAgentList: () => ({ data: [], isLoading: false, mutate: mock() }),
   useAgentTypes: () => ({ data: [], isLoading: false }),
   useWorkflows: () => ({ data: [], isLoading: false }),
 }));
 
 // Heavy app shells / selectors that pull more RPC — keep route-loading focused
-void mock.module("./components/layout/AppRail.tsx", () => ({ default: () => null }));
-void mock.module("./components/TopBar.tsx", () => ({ default: () => null }));
-void mock.module("./components/ModelSelector.tsx", () => ({ default: () => null }));
-void mock.module("./components/ToolSelector.tsx", () => ({ default: () => null }));
-void mock.module("./pages/Dashboard.tsx", () => ({ default: () => <div>Dashboard</div> }));
-void mock.module("./pages/apps/AgentsApp.tsx", () => ({ default: () => <div>Agents</div> }));
-void mock.module("./pages/apps/SettingsApp.tsx", () => ({ default: () => <div>Settings</div> }));
+void mock.module("./components/layout/DashboardRail.tsx", () => ({ default: () => null }));
+void mock.module("./shell/TopBar.tsx", () => ({ default: () => null }));
+void mock.module("./shell/AppHost.tsx", () => ({ default: () => <div>Layout app</div> }));
 
 function NavigationHarness() {
   const navigate = useNavigate();

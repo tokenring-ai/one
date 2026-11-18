@@ -1,10 +1,11 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
-import { Check, ExternalLink, Play, Search, Sparkles, X, XCircle } from "lucide-react";
+import { Check, ExternalLink, GraduationCap, Play, Search, X, XCircle } from "lucide-react";
 import type React from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { skillsRPCClient, useEnabledSkills, useSkills } from "../rpc.ts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "./ui/dropdown-menu.tsx";
+import ErrorState from "./ui/ErrorState.tsx";
 import { toastManager } from "./ui/toast.tsx";
 
 interface SkillSelectorProps {
@@ -20,6 +21,7 @@ export default function SkillSelector({ agentId, triggerVariant = "default", onT
   const enabledSkills = useEnabledSkills(agentId);
   const [searchQuery, setSearchQuery] = useState("");
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const optionRefs = useRef(new Map<number, HTMLDivElement>());
   const isIconTrigger = triggerVariant === "icon";
 
   const enabledSkillsData = enabledSkills.data?.status === "success" ? enabledSkills.data : null;
@@ -36,6 +38,13 @@ export default function SkillSelector({ agentId, triggerVariant = "default", onT
       skill => skill.name.toLowerCase().includes(query) || skill.description.toLowerCase().includes(query) || skill.slug.toLowerCase().includes(query),
     );
   }, [skills, searchQuery]);
+
+  // Move DOM focus along with the highlighted option, so keyboard focus and the
+  // visual highlight never diverge (the row's own onFocus keeps the state in sync).
+  useEffect(() => {
+    if (focusedIndex < 0) return;
+    optionRefs.current.get(focusedIndex)?.focus();
+  }, [focusedIndex]);
 
   const handleToggleSkill = useCallback(
     async (skillName: string) => {
@@ -105,7 +114,7 @@ export default function SkillSelector({ agentId, triggerVariant = "default", onT
           aria-label={`Select skills. ${enabledCount} of ${skillCount} enabled`}
           title={`${enabledCount} of ${skillCount} skills enabled`}
         >
-          <Sparkles className={isIconTrigger ? "w-5 h-5" : "w-3.5 h-3.5 text-muted group-hover:text-primary"} />
+          <GraduationCap className={isIconTrigger ? "w-5 h-5" : "w-3.5 h-3.5 text-muted group-hover:text-primary"} />
           {!isIconTrigger && (
             <span className="text-xs font-mono text-muted group-hover:text-primary truncate max-w-48">
               {enabledCount}/{skillCount} enabled
@@ -134,7 +143,7 @@ export default function SkillSelector({ agentId, triggerVariant = "default", onT
                   }
                 }
               }}
-              className="w-full bg-input border border-primary rounded-md py-1.5 pl-9 pr-8 text-xs text-primary placeholder-muted focus-ring transition-all"
+              className="w-full bg-input border border-control rounded-md py-1.5 pl-9 pr-8 text-xs text-primary placeholder-muted focus-ring transition-all"
               onClick={e => e.stopPropagation()}
             />
             {searchQuery && (
@@ -161,6 +170,10 @@ export default function SkillSelector({ agentId, triggerVariant = "default", onT
             return (
               <div
                 key={skill.slug || skill.name}
+                ref={el => {
+                  if (el) optionRefs.current.set(index, el);
+                  else optionRefs.current.delete(index);
+                }}
                 role="option"
                 aria-selected={isEnabled}
                 tabIndex={0}
@@ -186,7 +199,7 @@ export default function SkillSelector({ agentId, triggerVariant = "default", onT
                   >
                     /{skill.name}
                   </div>
-                  {skill.description && <div className="text-2xs text-dim font-mono leading-tight truncate mt-0.5">{skill.description}</div>}
+                  {skill.description && <div className="text-xs text-dim font-mono leading-tight truncate mt-0.5">{skill.description}</div>}
                 </div>
                 {canTry && (
                   <button
@@ -214,10 +227,14 @@ export default function SkillSelector({ agentId, triggerVariant = "default", onT
             </div>
           )}
 
-          {skillCount === 0 && !skillsQuery.isLoading && (
+          {skillsQuery.error && !skillsQuery.data && (
+            <ErrorState title="Failed to load skills" error={skillsQuery.error} onRetry={() => void skillsQuery.mutate()} />
+          )}
+
+          {skillCount === 0 && !skillsQuery.isLoading && !skillsQuery.error && (
             <div className="px-3 py-4 text-center text-xs text-muted space-y-2">
               <p>No skills installed</p>
-              <p className="text-2xs text-dim">Download skills from the Skills app or use /skills download</p>
+              <p className="text-xs text-dim">Download skills from the Skills dashboard or use /skills download</p>
             </div>
           )}
 

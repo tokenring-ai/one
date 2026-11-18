@@ -32,6 +32,98 @@ type WsSocket = tungstenite::WebSocket<MaybeTlsStream<std::net::TcpStream>>;
 const RPC_CALL_TIMEOUT: Duration = Duration::from_secs(35);
 const SOCKET_IO_TIMEOUT: Duration = Duration::from_secs(30);
 
+/// JSON-RPC error code the web host uses for every authentication failure:
+/// session ended (user removed, password changed, signed out elsewhere),
+/// invalid username/password, login rate limiting, or calls made before `auth`.
+pub const SESSION_ENDED_CODE: i64 = -32001;
+
+/// Latched "session ended" message shared by every socket of one client
+/// (including [`RpcClient::isolated`] clones).
+type SessionEndedSlot = Arc<Mutex<Option<String>>>;
+
+/// The server answered with a JSON-RPC error object. The socket itself is
+/// healthy, so the shared connection is kept for later calls.
+#[derive(Clone, Debug)]
+pub struct RpcResponseError {
+    formatted: String,
+}
+
+impl std::fmt::Display for RpcResponseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.formatted)
+    }
+}
+
+impl std::error::Error for RpcResponseError {}
+
+/// The server rejected this client's credentials (code [`SESSION_ENDED_CODE`]).
+/// Reconnecting with the same stored password cannot succeed, so the client
+/// stops all reconnect attempts once this is seen.
+#[derive(Clone, Debug)]
+pub struct SessionEndedError {
+    pub message: String,
+}
+
+impl std::fmt::Display for SessionEndedError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "signed out by the server: {}", self.message)
+    }
+}
+
+impl std::error::Error for SessionEndedError {}
+
+/// The server-supplied message when `error` (or its cause chain) is a
+/// [`SessionEndedError`].
+pub fn session_ended_message(error: &anyhow::Error) -> Option<String> {
+    error
+        .chain()
+        .find_map(|cause| cause.downcast_ref::<SessionEndedError>())
+        .map(|ended| ended.message.clone())
+}
+
+/// Whether `error` means the server rejected this client's credentials.
+pub fn is_session_ended(error: &anyhow::Error) -> bool {
+    session_ended_message(error).is_some()
+}
+
+/// Whether `error` is an ordinary JSON-RPC error response (bad params, not
+/// found, …) after which the socket is still usable.
+fn is_rpc_response_error(error: &anyhow::Error) -> bool {
+    error
+        .chain()
+        .any(|cause| cause.downcast_ref::<RpcResponseError>().is_some())
+}
+
+/// Classify a JSON-RPC `error` object into a typed error.
+fn rpc_error_from_response(error: &Value) -> anyhow::Error {
+    let code = error.get("code").and_then(Value::as_i64);
+    if code == Some(SESSION_ENDED_CODE) {
+        let message = error
+            .get("message")
+            .and_then(Value::as_str)
+            .unwrap_or("authentication failed")
+            .to_string();
+        return SessionEndedError { message }.into();
+    }
+    RpcResponseError {
+        formatted: format_rpc_error(error),
+    }
+    .into()
+}
+
+fn latched_session_end(slot: &Mutex<Option<String>>) -> Option<String> {
+    slot.lock().ok().and_then(|guard| guard.clone())
+}
+
+/// Latch the session-ended state when `error` is an auth rejection.
+fn note_session_end(slot: &Mutex<Option<String>>, error: &anyhow::Error) {
+    if let Some(message) = session_ended_message(error) {
+        if let Ok(mut guard) = slot.lock() {
+            guard.get_or_insert(message);
+        }
+    }
+}
+
 /// A WebSocket JSON-RPC client.
 #[derive(Clone)]
 pub struct RpcClient {
@@ -50,6 +142,7 @@ struct RpcClientInner {
     session_auth: Option<SessionAuth>,
     next_id: AtomicU64,
     request_tx: Sender<WorkerRequest>,
+    session_ended: SessionEndedSlot,
     /// Cloned TCP handle for the active RPC socket; shut down on call timeout
     /// so a stuck `read` unblocks and the worker can process later calls.
     io_abort: Arc<Mutex<Option<TcpStream>>>,
@@ -115,7 +208,7 @@ struct StreamParts<T> {
 
 fn spawn_stream_worker<T, F>(
     thread_name: &str,
-    error_item: fn(String) -> T,
+    error_item: fn(&anyhow::Error) -> T,
     worker: F,
 ) -> StreamParts<T>
 where
@@ -133,12 +226,12 @@ where
         .spawn(move || {
             if let Err(error) = worker(&tx_for_worker, &cancel_worker, &io_abort_worker) {
                 if !cancel_worker.load(Ordering::SeqCst) {
-                    let _ = tx_for_worker.send(error_item(error.to_string()));
+                    let _ = tx_for_worker.send(error_item(&error));
                 }
             }
         })
     {
-        let _ = tx.send(error_item(format!(
+        let _ = tx.send(error_item(&anyhow!(
             "failed to start {thread_name} thread: {error}"
         )));
     }
@@ -175,7 +268,22 @@ impl RpcClient {
         auth_header: Option<HeaderValue>,
         session_auth: Option<SessionAuth>,
     ) -> Result<Self> {
+        Self::with_session_slot(
+            ws_url,
+            auth_header,
+            session_auth,
+            Arc::new(Mutex::new(None)),
+        )
+    }
+
+    fn with_session_slot(
+        ws_url: String,
+        auth_header: Option<HeaderValue>,
+        session_auth: Option<SessionAuth>,
+        session_ended: SessionEndedSlot,
+    ) -> Result<Self> {
         let (request_tx, request_rx) = mpsc::channel();
+        let session_ended_worker = Arc::clone(&session_ended);
         let io_abort = Arc::new(Mutex::new(None));
         let io_abort_worker = Arc::clone(&io_abort);
         let inner = Arc::new(RpcClientInner {
@@ -184,12 +292,20 @@ impl RpcClient {
             session_auth: session_auth.clone(),
             next_id: AtomicU64::new(1),
             request_tx,
+            session_ended,
             io_abort,
         });
         thread::Builder::new()
             .name("tr-rpc-worker".into())
             .spawn(move || {
-                rpc_worker_loop(ws_url, auth_header, session_auth, request_rx, io_abort_worker)
+                rpc_worker_loop(
+                    ws_url,
+                    auth_header,
+                    session_auth,
+                    request_rx,
+                    io_abort_worker,
+                    session_ended_worker,
+                )
             })
             .context("start rpc worker thread")?;
         Ok(Self { inner })
@@ -203,11 +319,19 @@ impl RpcClient {
     /// A separate client (own worker thread) sharing the same endpoint/auth.
     /// Used so background metrics polls cannot block interactive RPCs.
     pub fn isolated(&self) -> Result<Self> {
-        Self::new(
+        Self::with_session_slot(
             self.inner.ws_url.clone(),
             self.inner.auth_header.clone(),
             self.inner.session_auth.clone(),
+            Arc::clone(&self.inner.session_ended),
         )
+    }
+
+    /// The server's message once it has rejected this client's credentials
+    /// (JSON-RPC code [`SESSION_ENDED_CODE`]). After that, no call or stream
+    /// reconnects with the stale password; every request fails immediately.
+    pub fn session_ended(&self) -> Option<String> {
+        latched_session_end(&self.inner.session_ended)
     }
 
     /// Ask the RPC worker to exit after finishing the current call (if any).
@@ -254,9 +378,20 @@ impl RpcClient {
     pub fn spawn_event_stream(&self, agent_id: &str, from_position: usize) -> EventStream {
         let client = self.clone();
         let agent_id = agent_id.to_string();
-        let parts = spawn_stream_worker("tr-event-stream", StreamItem::Error, move |tx, cancel, io| {
-            run_event_stream(&client, &agent_id, from_position, tx, cancel, io)
-        });
+        let parts = spawn_stream_worker(
+            "tr-event-stream",
+            |error| match session_ended_message(error) {
+                Some(message) => StreamItem::SessionEnded(message),
+                None => StreamItem::Error(error.to_string()),
+            },
+            move |tx, cancel, io| {
+                let result = run_event_stream(&client, &agent_id, from_position, tx, cancel, io);
+                if let Err(error) = &result {
+                    note_session_end(&client.inner.session_ended, error);
+                }
+                result
+            },
+        );
         EventStream {
             rx: parts.rx,
             cancel: parts.cancel,
@@ -270,8 +405,14 @@ impl RpcClient {
         let method = method.to_string();
         let parts = spawn_stream_worker(
             "tr-json-stream",
-            JsonStreamItem::Error,
-            move |tx, cancel, io| run_json_stream(&client, &method, params, tx, cancel, io),
+            |error| JsonStreamItem::Error(error.to_string()),
+            move |tx, cancel, io| {
+                let result = run_json_stream(&client, &method, params, tx, cancel, io);
+                if let Err(error) = &result {
+                    note_session_end(&client.inner.session_ended, error);
+                }
+                result
+            },
         );
         JsonStream {
             rx: parts.rx,
@@ -281,6 +422,9 @@ impl RpcClient {
     }
 
     fn connect(&self) -> Result<WsSocket> {
+        if let Some(message) = self.session_ended() {
+            return Err(SessionEndedError { message }.into());
+        }
         connect_socket(
             &self.inner.ws_url,
             self.inner.auth_header.as_ref(),
@@ -295,6 +439,7 @@ fn rpc_worker_loop(
     session_auth: Option<SessionAuth>,
     request_rx: Receiver<WorkerRequest>,
     io_abort: Arc<Mutex<Option<TcpStream>>>,
+    session_ended: SessionEndedSlot,
 ) {
     let mut socket: Option<WsSocket> = None;
 
@@ -309,6 +454,14 @@ fn rpc_worker_loop(
             } => (id, method, params, reply),
         };
 
+        // Credentials were rejected: never reconnect with the stale password.
+        if let Some(message) = latched_session_end(&session_ended) {
+            socket = None;
+            clear_io_abort(&io_abort);
+            let _ = reply.send(Err(SessionEndedError { message }.into()));
+            continue;
+        }
+
         if socket.is_none() {
             match connect_socket(&ws_url, auth_header.as_ref(), session_auth.as_ref()) {
                 Ok(connected) => {
@@ -317,7 +470,8 @@ fn rpc_worker_loop(
                 }
                 Err(error) => {
                     clear_io_abort(&io_abort);
-                    let _ = reply.send(Err(anyhow::anyhow!("{error:#}")));
+                    note_session_end(&session_ended, &error);
+                    let _ = reply.send(Err(error));
                     continue;
                 }
             }
@@ -338,15 +492,24 @@ fn rpc_worker_loop(
             ),
             None => unreachable!("socket was just initialized"),
         };
-        if result.is_err() {
-            clear_io_abort(&io_abort);
-            socket = None;
+        if let Err(error) = &result {
+            note_session_end(&session_ended, error);
+            if !keeps_socket(error) {
+                clear_io_abort(&io_abort);
+                socket = None;
+            }
         }
         // Caller may have timed out and dropped the reply channel. Keep the
         // worker alive so later RPCs (send, abort, metrics, search) still work.
         let _ = reply.send(result);
     }
     clear_io_abort(&io_abort);
+}
+
+/// Ordinary JSON-RPC error responses leave the socket usable; transport
+/// failures and auth rejections drop it.
+fn keeps_socket(error: &anyhow::Error) -> bool {
+    is_rpc_response_error(error) && !is_session_ended(error)
 }
 
 fn execute_call(
@@ -372,17 +535,15 @@ fn execute_call(
         *socket = connect_socket(ws_url, auth_header, session_auth)?;
         register_io_abort(socket, io_abort);
         socket
-            .send(Message::Text(
-                Utf8Bytes::from(
-                    json!({
-                        "jsonrpc": "2.0",
-                        "id": id,
-                        "method": method,
-                        "params": params,
-                    })
-                    .to_string(),
-                ),
-            ))
+            .send(Message::Text(Utf8Bytes::from(
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "method": method,
+                    "params": params,
+                })
+                .to_string(),
+            )))
             .context("resend rpc request after reconnect")?;
     }
 
@@ -405,7 +566,7 @@ fn execute_call(
         }
 
         if let Some(error) = response.get("error") {
-            bail!("{}", format_rpc_error(error));
+            return Err(rpc_error_from_response(error));
         }
 
         return response
@@ -452,18 +613,14 @@ fn authenticate_socket(socket: &mut WsSocket, auth: &SessionAuth) -> Result<()> 
         .context("send websocket authentication")?;
 
     loop {
-        let text =
-            read_text(socket, false).context("read websocket authentication response")?;
+        let text = read_text(socket, false).context("read websocket authentication response")?;
         let response: Value =
             serde_json::from_str(&text).context("decode websocket authentication response")?;
         if response.get("id").and_then(Value::as_u64) != Some(id) {
             continue;
         }
         if let Some(error) = response.get("error") {
-            bail!(
-                "websocket authentication failed: {}",
-                format_rpc_error(error)
-            );
+            return Err(rpc_error_from_response(error).context("websocket authentication failed"));
         }
         let authenticated = response
             .get("result")
@@ -528,6 +685,8 @@ pub enum StreamItem {
     AgentNotFound,
     /// The stream has ended cleanly.
     Ended,
+    /// The server rejected this client's credentials; do not reconnect.
+    SessionEnded(String),
     /// A transport/protocol error occurred.
     Error(String),
 }
@@ -574,7 +733,7 @@ fn run_event_stream(
         let response: Value = serde_json::from_str(&text).context("decode stream response")?;
 
         if let Some(error) = response.get("error") {
-            bail!("{}", format_rpc_error(error));
+            return Err(rpc_error_from_response(error));
         }
 
         if response.get("stream").and_then(Value::as_str) == Some("end") {
@@ -644,7 +803,7 @@ fn run_json_stream(
         };
         let response: Value = serde_json::from_str(&text).context("decode JSON stream response")?;
         if let Some(error) = response.get("error") {
-            bail!("{}", format_rpc_error(error));
+            return Err(rpc_error_from_response(error));
         }
         if response.get("stream").and_then(Value::as_str) == Some("end") {
             let _ = tx.send(JsonStreamItem::Ended);
@@ -746,10 +905,162 @@ mod tests {
 
     #[test]
     fn rpc_error_preserves_numeric_code_and_data() {
-        let err = json!({ "code": -32001, "message": "agent not found", "data": "id abc" });
+        let err = json!({ "code": -32602, "message": "invalid params", "data": "agentId" });
         assert_eq!(
             format_rpc_error(&err),
-            "[code -32001] agent not found — id abc"
+            "[code -32602] invalid params — agentId"
+        );
+    }
+
+    #[test]
+    fn session_ended_code_is_classified_as_auth_ended() {
+        let err = rpc_error_from_response(&json!({
+            "code": -32001,
+            "message": "Your session has ended. Sign in again."
+        }));
+        assert!(is_session_ended(&err));
+        assert!(!keeps_socket(&err));
+        assert_eq!(
+            session_ended_message(&err).as_deref(),
+            Some("Your session has ended. Sign in again.")
+        );
+        // Still recognised through added context (login path).
+        let wrapped = rpc_error_from_response(&json!({
+            "code": -32001,
+            "message": "Invalid username or password"
+        }))
+        .context("websocket authentication failed");
+        assert!(is_session_ended(&wrapped));
+    }
+
+    #[test]
+    fn ordinary_rpc_errors_keep_the_socket() {
+        let err = rpc_error_from_response(&json!({ "code": -32602, "message": "invalid params" }));
+        assert!(!is_session_ended(&err));
+        assert!(keeps_socket(&err));
+        assert_eq!(err.to_string(), "[code -32602] invalid params");
+        assert!(!keeps_socket(&anyhow!("read websocket message")));
+    }
+
+    #[test]
+    fn rpc_error_response_reuses_shared_socket() {
+        let listener = match std::net::TcpListener::bind("127.0.0.1:0") {
+            Ok(listener) => listener,
+            Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied => return,
+            Err(error) => panic!("failed to bind local test listener: {error}"),
+        };
+        let addr = listener.local_addr().unwrap();
+        let server = thread::spawn(move || {
+            // Accept exactly one connection: a reconnect would hang/fail.
+            let (stream, _) = listener.accept().unwrap();
+            let mut socket = tungstenite::accept(stream).unwrap();
+            let first = read_request(&mut socket);
+            send_error(&mut socket, &first, -32602, "invalid params");
+            let second = read_request(&mut socket);
+            send_result(&mut socket, &second, json!({ "ok": true }));
+        });
+
+        let client = RpcClient::new(format!("ws://{addr}/rpc:ws"), None, None).unwrap();
+        let err = client.call("/rpc/test", json!({})).unwrap_err();
+        assert!(err.to_string().contains("invalid params"));
+        let result = client.call("/rpc/test", json!({})).unwrap();
+        assert_eq!(result["ok"], true);
+        assert!(client.session_ended().is_none());
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn session_ended_stops_all_reconnects() {
+        let listener = match std::net::TcpListener::bind("127.0.0.1:0") {
+            Ok(listener) => listener,
+            Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied => return,
+            Err(error) => panic!("failed to bind local test listener: {error}"),
+        };
+        let addr = listener.local_addr().unwrap();
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let mut socket = tungstenite::accept(stream).unwrap();
+            let auth = read_request(&mut socket);
+            send_result(&mut socket, &auth, json!({ "authenticated": true }));
+            let call = read_request(&mut socket);
+            send_error(
+                &mut socket,
+                &call,
+                -32001,
+                "Your session has ended. Sign in again.",
+            );
+            // Keep the listener alive (unaccepted) so any reconnect would
+            // block rather than fail fast; the client must not try.
+            listener
+        });
+
+        let client = RpcClient::new(
+            format!("ws://{addr}/rpc:ws"),
+            None,
+            Some(SessionAuth {
+                username: "cli".into(),
+                password: "stale".into(),
+            }),
+        )
+        .unwrap();
+        let err = client.call("/rpc/test", json!({})).unwrap_err();
+        assert!(is_session_ended(&err));
+        let _listener = server.join().unwrap();
+        assert_eq!(
+            client.session_ended().as_deref(),
+            Some("Your session has ended. Sign in again.")
+        );
+
+        // Later calls, isolated clients, and streams fail immediately.
+        let started = Instant::now();
+        assert!(is_session_ended(
+            &client.call("/rpc/test", json!({})).unwrap_err()
+        ));
+        let isolated = client.isolated().unwrap();
+        assert!(is_session_ended(
+            &isolated.call("/rpc/test", json!({})).unwrap_err()
+        ));
+        let stream = client.spawn_event_stream("agent-1", 0);
+        match stream.rx.recv_timeout(Duration::from_secs(2)).unwrap() {
+            StreamItem::SessionEnded(message) => {
+                assert_eq!(message, "Your session has ended. Sign in again.")
+            }
+            other => panic!("unexpected stream item: {other:?}"),
+        }
+        assert!(started.elapsed() < Duration::from_secs(2));
+    }
+
+    #[test]
+    fn rejected_login_is_session_ended() {
+        let listener = match std::net::TcpListener::bind("127.0.0.1:0") {
+            Ok(listener) => listener,
+            Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied => return,
+            Err(error) => panic!("failed to bind local test listener: {error}"),
+        };
+        let addr = listener.local_addr().unwrap();
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let mut socket = tungstenite::accept(stream).unwrap();
+            let auth = read_request(&mut socket);
+            send_error(&mut socket, &auth, -32001, "Invalid username or password");
+            listener
+        });
+
+        let client = RpcClient::new(
+            format!("ws://{addr}/rpc:ws"),
+            None,
+            Some(SessionAuth {
+                username: "cli".into(),
+                password: "wrong".into(),
+            }),
+        )
+        .unwrap();
+        let err = client.call("/rpc/test", json!({})).unwrap_err();
+        assert!(is_session_ended(&err));
+        let _listener = server.join().unwrap();
+        assert_eq!(
+            client.session_ended().as_deref(),
+            Some("Invalid username or password")
         );
     }
 
@@ -892,10 +1203,8 @@ mod tests {
         });
 
         let client = RpcClient::new(format!("ws://{addr}/rpc:ws"), None, None).unwrap();
-        let stream = client.spawn_json_stream(
-            "/rpc/chat.streamChatUsage",
-            json!({ "agentId": "agent-1" }),
-        );
+        let stream =
+            client.spawn_json_stream("/rpc/chat.streamChatUsage", json!({ "agentId": "agent-1" }));
         match stream.rx.recv_timeout(Duration::from_secs(2)).unwrap() {
             JsonStreamItem::Data { value, latency_ms } => {
                 assert_eq!(value["contextLength"], 42);
@@ -918,6 +1227,24 @@ mod tests {
             panic!("unexpected websocket message: {message:?}");
         };
         serde_json::from_str(&text).unwrap()
+    }
+
+    fn send_error<S: std::io::Read + std::io::Write>(
+        socket: &mut tungstenite::WebSocket<S>,
+        request: &Value,
+        code: i64,
+        message: &str,
+    ) {
+        socket
+            .send(Message::Text(Utf8Bytes::from(
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": request["id"],
+                    "error": { "code": code, "message": message },
+                })
+                .to_string(),
+            )))
+            .unwrap();
     }
 
     fn send_result<S: std::io::Read + std::io::Write>(

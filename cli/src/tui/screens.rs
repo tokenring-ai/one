@@ -695,6 +695,7 @@ mod tests {
                 description: "a running agent".into(),
                 idle: true,
                 current_activity: "".into(),
+                parent_agent_id: None,
             }],
             checkpoints: vec![],
             types: vec![
@@ -912,6 +913,16 @@ mod tests {
         });
         assert!(label.starts_with("Agent  "));
         assert!(label.contains(&now.format("%H:%M:%S").to_string()));
+    }
+
+    #[test]
+    fn running_agent_label_marks_sub_agents() {
+        let label = running_agent_label(&RunningAgent {
+            display_name: "Helper".into(),
+            parent_agent_id: Some("lead".into()),
+            ..RunningAgent::default()
+        });
+        assert!(label.starts_with("↳ Helper"));
     }
 
     #[test]

@@ -7,6 +7,52 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
+      "title": "estimateCost request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/image.estimateCost"
+        },
+        "params": {
+          "$ref": "#/$defs/estimateCostParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "estimateCost response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/estimateCostResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "generateImage request",
       "type": "object",
       "properties": {
@@ -51,6 +97,52 @@
         "result"
       ],
       "additionalProperties": false
+    },
+    {
+      "title": "adjustImage request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/image.adjustImage"
+        },
+        "params": {
+          "$ref": "#/$defs/adjustImageParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "adjustImage response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/adjustImageResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
     }
   ],
   "$defs": {
@@ -87,6 +179,117 @@
         "jsonrpc",
         "id",
         "error"
+      ],
+      "additionalProperties": false
+    },
+    "estimateCostParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "request": {
+          "type": "object",
+          "properties": {
+            "sizing": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "method": {
+                      "type": "string",
+                      "const": "direct"
+                    },
+                    "size": {
+                      "type": "object",
+                      "properties": {
+                        "width": {
+                          "type": "number"
+                        },
+                        "height": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "width",
+                        "height"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "method",
+                    "size"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "method": {
+                      "type": "string",
+                      "const": "guided"
+                    },
+                    "quality": {
+                      "type": "string",
+                      "enum": [
+                        "ultra",
+                        "high",
+                        "standard",
+                        "low"
+                      ],
+                      "description": "Quality of the generated image"
+                    },
+                    "shape": {
+                      "type": "string",
+                      "enum": [
+                        "square",
+                        "landscape",
+                        "portrait",
+                        "ultrawide",
+                        "ultratall"
+                      ],
+                      "description": "Shape of the generated image"
+                    }
+                  },
+                  "required": [
+                    "method",
+                    "quality",
+                    "shape"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "sizing"
+          ]
+        }
+      },
+      "required": [
+        "request"
+      ]
+    },
+    "estimateCostResult": {
+      "type": "object",
+      "properties": {
+        "amountUsd": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "amountUsd",
+        "model"
       ],
       "additionalProperties": false
     },
@@ -307,6 +510,99 @@
           "additionalProperties": false
         }
       ]
+    },
+    "adjustImageParams": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string"
+        },
+        "request": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string",
+              "minLength": 1
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "jpeg",
+                "png",
+                "webp"
+              ]
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 8
+            },
+            "brightness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "quality": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          "required": [
+            "source"
+          ]
+        }
+      },
+      "required": [
+        "agentId",
+        "request"
+      ]
+    },
+    "adjustImageResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "fileName": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            },
+            "mediaType": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "fileName",
+            "width",
+            "height",
+            "mediaType"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "agentNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "x-tokenring-rpc": {
@@ -314,10 +610,20 @@
     "path": "/rpc/image",
     "source": "plugin/image/rpc/schema.ts",
     "methods": {
+      "estimateCost": {
+        "type": "query",
+        "params": "#/$defs/estimateCostParams",
+        "result": "#/$defs/estimateCostResult"
+      },
       "generateImage": {
         "type": "mutation",
         "params": "#/$defs/generateImageParams",
         "result": "#/$defs/generateImageResult"
+      },
+      "adjustImage": {
+        "type": "mutation",
+        "params": "#/$defs/adjustImageParams",
+        "result": "#/$defs/adjustImageResult"
       }
     }
   }

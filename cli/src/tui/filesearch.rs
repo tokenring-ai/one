@@ -210,8 +210,7 @@ mod tests {
     #[test]
     fn empty_query_ranks_shallow_short_first() {
         assert!(
-            score_file_search_match("x.txt", "")
-                > score_file_search_match("a/b/c/deep.txt", "")
+            score_file_search_match("x.txt", "") > score_file_search_match("a/b/c/deep.txt", "")
         );
     }
 

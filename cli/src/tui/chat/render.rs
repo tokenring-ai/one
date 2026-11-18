@@ -27,7 +27,7 @@
 
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph},
     Frame,
@@ -49,8 +49,9 @@ use super::pickers::{
     completion_max_visible_rows, completion_picker_lines, draw_completion_picker,
     draw_filesearch_picker, filesearch_max_visible_rows, filesearch_picker_lines,
 };
-use super::transcript_entries::{render_transcript_entry, EntryRenderProps};
+use super::transcript_entries::render_transcript_lines;
 use super::ChatSession;
+use crate::tui::text::visible_len;
 
 pub(super) fn draw(frame: &mut Frame, session: &mut ChatSession) {
     session.hit_regions = UiHitRegions::default();
@@ -253,7 +254,7 @@ fn draw_chat(
     draw_composer(frame, session, chunks[next], view, spacing);
 }
 
-/// Fixed full-width header bar pinned to the top screen edge (candy #3).
+/// Fixed full-width header: agent, model, and whether work is in progress.
 pub(super) fn draw_header(frame: &mut Frame, session: &ChatSession, area: Rect) {
     let theme = &session.theme;
     let spacing = ui_spacing(area);
@@ -264,65 +265,134 @@ pub(super) fn draw_header(frame: &mut Frame, session: &ChatSession, area: Rect) 
     frame.render_widget(Block::default().style(style), area);
     let block = Block::default().padding(spacing.horizontal_padding());
     let inner = block.inner(area);
-    let line = Line::from(Span::styled(
-        format!("TokenRing{}{}", theme.layout.separator, session.agent.label),
-        style,
-    ));
+    let metrics = session.metrics.get();
+    let model = metrics
+        .as_ref()
+        .and_then(|metrics| metrics.model.clone())
+        .unwrap_or_else(|| "(no model)".to_string());
+    let latency = metrics.as_ref().and_then(|metrics| metrics.rpc_latency_ms);
+    let line = header_line(
+        &session.agent.label,
+        &model,
+        &session.activity_label(),
+        inner.width as usize,
+        theme,
+        session.stream_health().dot_color(theme, latency),
+    );
     frame.render_widget(Paragraph::new(line), inner);
 }
 
+/// `{agent}   {model}   ● {activity}`, dropping the model before the agent.
+pub(super) fn header_line(
+    agent: &str,
+    model: &str,
+    activity: &str,
+    width: usize,
+    theme: &crate::theme::Theme,
+    dot: Color,
+) -> Line<'static> {
+    if width == 0 {
+        return Line::default();
+    }
+    let bg = theme.header.background_color.color();
+    let agent_style = Style::default()
+        .fg(theme.header.color.color())
+        .bg(bg)
+        .add_modifier(Modifier::BOLD);
+    let model_style = Style::default().fg(Tone::Muted.color(theme)).bg(bg);
+    let activity_style = Style::default().fg(theme.header.color.color()).bg(bg);
+    let dot_style = Style::default().fg(dot).bg(bg);
+
+    let gap = "   ";
+    let dot_label = "● ";
+    let agent_w = visible_len(agent);
+    let activity_w = visible_len(activity);
+    let fixed = agent_w + visible_len(gap) + visible_len(dot_label) + activity_w;
+    let model_budget = width.saturating_sub(fixed).saturating_sub(visible_len(gap));
+    let show_model = !model.is_empty() && model_budget >= 4;
+
+    let mut spans = Vec::new();
+    if fixed > width {
+        spans.push(Span::styled(
+            crate::tui::text::fit_line(&format!("{agent}{gap}{dot_label}{activity}"), width),
+            agent_style,
+        ));
+        return Line::from(spans);
+    }
+
+    spans.push(Span::styled(agent.to_string(), agent_style));
+    if show_model {
+        spans.push(Span::styled(gap.to_string(), model_style));
+        spans.push(Span::styled(
+            crate::tui::text::fit_line(model, model_budget),
+            model_style,
+        ));
+    }
+    spans.push(Span::styled(gap.to_string(), activity_style));
+    spans.push(Span::styled(dot_label.to_string(), dot_style));
+    spans.push(Span::styled(activity.to_string(), activity_style));
+    Line::from(spans)
+}
+
+/// Thumb `(start, length)` inside a gutter of `track` rows.
+pub(super) fn gutter_thumb(
+    track: usize,
+    total: usize,
+    visible: usize,
+    scroll_top: usize,
+) -> (usize, usize) {
+    if track == 0 {
+        return (0, 0);
+    }
+    if total <= visible {
+        return (0, track);
+    }
+    let thumb = ((track * visible) / total).clamp(1, track);
+    let max_scroll = total - visible;
+    let travel = track - thumb;
+    let pos = if max_scroll == 0 {
+        0
+    } else {
+        (scroll_top.min(max_scroll) * travel) / max_scroll
+    };
+    (pos, thumb)
+}
+
 pub(super) fn draw_transcript(frame: &mut Frame, session: &mut ChatSession, area: Rect) {
-    let theme = &session.theme;
+    let theme = session.theme.clone();
     let spacing = ui_spacing(area);
     let block = surface_block(
-        theme,
+        &theme,
         theme.transcript.background_color,
         None,
         spacing.transcript_block_padding(),
     );
     let inner = block.inner(area);
-    let inner_width = inner.width as usize;
-    let streaming_idx = session.transcript.streaming_entry_index();
-    let show_body_streaming_cursor = transcript_streaming_cursor(session);
-
-    let mut lines: Vec<Line> = Vec::new();
-
-    for (entry_idx, entry) in session.transcript.entries().iter().enumerate() {
-        if !session.verbose && entry.kind.hidden_in_compact() {
-            continue;
-        }
-
-        // Separate entries with a single blank line, but not before the
-        // very first rendered entry.
-        if spacing.gap > 0 && !lines.is_empty() {
-            lines.push(Line::default());
-        }
-
-        let props = EntryRenderProps {
-            entry,
-            entry_idx,
-            inner_width,
-            theme,
-            spacing,
-            verbose: session.verbose,
-            streaming_entry_idx: streaming_idx,
-            spinner_tick: session.spinner_tick,
-            show_body_streaming_cursor,
-            streaming_reasoning: session.transcript.is_streaming_reasoning(),
-        };
-        let rendered = render_transcript_entry(&props);
-        lines.extend(rendered.lines);
-    }
-
     frame.render_widget(block, area);
 
     let visible_height = inner.height as usize;
-    let total = lines.len();
+    let full_width = inner.width as usize;
+    let mut rendered = render_session_transcript(session, &theme, spacing, full_width);
+    let use_gutter = rendered.lines.len() > visible_height && inner.width > 8;
+    let text_width = if use_gutter {
+        full_width.saturating_sub(1)
+    } else {
+        full_width
+    };
+    if use_gutter {
+        rendered = render_session_transcript(session, &theme, spacing, text_width);
+    }
+
+    let total = rendered.lines.len();
+    let anchored = anchor_expanded_tool(session, &rendered.tool_rows, total, visible_height);
     // While scrolled up, grow scroll-back with new tail lines so the viewport
-    // stays pinned to the same historical content during streaming.
-    if session.transcript_scroll_back > 0 && total > session.prev_transcript_line_count {
+    // stays pinned to the same historical content during streaming. Expanding
+    // a tool is anchored separately and must not look like a new tail.
+    if !anchored && session.transcript_scroll_back > 0 && total > session.prev_transcript_line_count
+    {
         let growth = total - session.prev_transcript_line_count;
         session.transcript_scroll_back = session.transcript_scroll_back.saturating_add(growth);
+        session.transcript_has_new_tail = true;
     }
     session.prev_transcript_line_count = total;
     let max_scroll = total.saturating_sub(visible_height);
@@ -330,11 +400,108 @@ pub(super) fn draw_transcript(frame: &mut Frame, session: &mut ChatSession, area
     if session.transcript_scroll_back > max_scroll {
         session.transcript_scroll_back = max_scroll;
     }
+    if session.transcript_scroll_back == 0 {
+        session.transcript_has_new_tail = false;
+    }
     let scroll = max_scroll
         .saturating_sub(session.transcript_scroll_back)
         .min(max_scroll);
 
-    frame.render_widget(Paragraph::new(lines).scroll((scroll as u16, 0)), inner);
+    let text_area = Rect {
+        x: inner.x,
+        y: inner.y,
+        width: text_width as u16,
+        height: inner.height,
+    };
+    frame.render_widget(
+        Paragraph::new(rendered.lines).scroll((scroll as u16, 0)),
+        text_area,
+    );
+    if use_gutter {
+        draw_scroll_gutter(frame, &theme, inner, total, visible_height, scroll);
+    }
+    session.transcript_viewport = super::session::TranscriptViewport {
+        inner: text_area,
+        scroll_top: scroll,
+        tool_rows: rendered.tool_rows,
+    };
+}
+
+fn render_session_transcript(
+    session: &ChatSession,
+    theme: &crate::theme::Theme,
+    spacing: super::layout::UiSpacing,
+    inner_width: usize,
+) -> super::transcript_entries::TranscriptRender {
+    render_transcript_lines(
+        session.transcript.entries(),
+        inner_width,
+        theme,
+        spacing,
+        session.verbose,
+        session.transcript.streaming_entry_index(),
+        session.spinner_tick,
+        transcript_streaming_cursor(session),
+        session.transcript.is_streaming_reasoning(),
+    )
+}
+
+/// Keep an expanded or collapsed tool header on the same viewport row.
+fn anchor_expanded_tool(
+    session: &mut ChatSession,
+    tool_rows: &[super::transcript_entries::ToolHitRow],
+    total: usize,
+    visible_height: usize,
+) -> bool {
+    let Some(anchor) = session.pending_tool_anchor.take() else {
+        return false;
+    };
+    let Some(hit) = tool_rows.iter().find(|hit| hit.entry_idx == anchor) else {
+        return false;
+    };
+    let offset = session
+        .transcript_viewport
+        .tool_rows
+        .iter()
+        .find(|row| row.entry_idx == anchor)
+        .map(|row| {
+            row.start_line
+                .saturating_sub(session.transcript_viewport.scroll_top)
+        })
+        .unwrap_or(0);
+    let max_scroll = total.saturating_sub(visible_height);
+    let desired_top = hit.start_line.saturating_sub(offset).min(max_scroll);
+    session.transcript_scroll_back = max_scroll.saturating_sub(desired_top);
+    true
+}
+
+fn draw_scroll_gutter(
+    frame: &mut Frame,
+    theme: &crate::theme::Theme,
+    inner: Rect,
+    total: usize,
+    visible: usize,
+    scroll_top: usize,
+) {
+    let track = inner.height as usize;
+    let (thumb_at, thumb_len) = gutter_thumb(track, total, visible, scroll_top);
+    let track_style = Style::default().fg(Tone::Muted.color(theme));
+    let thumb_style = Style::default().fg(theme.panel.stripe_color.color());
+    let mut lines = Vec::with_capacity(track);
+    for row in 0..track {
+        let on_thumb = row >= thumb_at && row < thumb_at + thumb_len;
+        lines.push(Line::from(Span::styled(
+            if on_thumb { "┃" } else { "│" },
+            if on_thumb { thumb_style } else { track_style },
+        )));
+    }
+    let gutter = Rect {
+        x: inner.x + inner.width.saturating_sub(1),
+        y: inner.y,
+        width: 1,
+        height: inner.height,
+    };
+    frame.render_widget(Paragraph::new(lines), gutter);
 }
 
 /// Whether the active transcript stream should show the blinking cursor.
@@ -418,11 +585,11 @@ pub(super) fn draw_quick_replies(frame: &mut Frame, session: &ChatSession, area:
     frame.render_widget(Paragraph::new(lines), area);
 }
 
-pub(super) fn draw_help_overlay(frame: &mut Frame, session: &ChatSession, area: Rect) {
+pub(super) fn draw_help_overlay(frame: &mut Frame, session: &mut ChatSession, area: Rect) {
     if !session.help_open {
         return;
     }
-    let theme = &session.theme;
+    let theme = session.theme.clone();
     let context = HelpContext::detect(
         session.active_question.is_some(),
         session.focused_followup().is_some(),
@@ -431,14 +598,23 @@ pub(super) fn draw_help_overlay(frame: &mut Frame, session: &ChatSession, area: 
         session.completion.is_some(),
         session.transcript_scroll_back,
     );
-    let lines = help::help_lines(context, &session.keybinds, theme);
+    let lines = help::help_lines(context, &session.keybinds, &theme);
     let block = Block::default()
         .borders(ratatui::widgets::Borders::ALL)
         .border_style(Style::default().fg(theme.help.border_color.color()))
         .style(Style::default().bg(theme.help.background_color.color()));
     let inner = block.inner(area);
+    let visible = inner.height as usize;
+    session.help_page_rows = visible.max(1);
+    let max_scroll = lines.len().saturating_sub(visible);
+    if session.help_scroll > max_scroll {
+        session.help_scroll = max_scroll;
+    }
     frame.render_widget(block, area);
-    frame.render_widget(Paragraph::new(lines), inner);
+    frame.render_widget(
+        Paragraph::new(lines).scroll((session.help_scroll as u16, 0)),
+        inner,
+    );
 }
 
 /// Column/row layout for the leader-hint grid, computed from the entry
@@ -609,6 +785,7 @@ fn draw_todos_sidebar(frame: &mut Frame, session: &ChatSession, area: Rect) {
         TodoStatus::Pending => 1,
         TodoStatus::Unknown => 2,
         TodoStatus::Completed => 3,
+        TodoStatus::Cancelled => 4,
     });
 
     // Budget remaining height by wrapped lines (not by raw item count).
@@ -631,6 +808,9 @@ fn draw_todos_sidebar(frame: &mut Frame, session: &ChatSession, area: Rect) {
                 .fg(Tone::Info.color(theme))
                 .add_modifier(Modifier::BOLD),
             TodoStatus::Completed => Style::default().fg(Tone::Muted.color(theme)),
+            TodoStatus::Cancelled => Style::default()
+                .fg(Tone::Muted.color(theme))
+                .add_modifier(Modifier::CROSSED_OUT),
             TodoStatus::Pending | TodoStatus::Unknown => {
                 Style::default().fg(Tone::Chat.color(theme))
             }
@@ -884,6 +1064,64 @@ mod tests {
         let grid = leader_hint_grid(&entries(9), anchor, area);
         assert!(grid.columns >= 1);
         assert!(grid.overlay.height >= 3);
+    }
+
+    #[test]
+    fn header_shows_agent_model_and_activity_when_wide() {
+        let theme = crate::theme::Theme::material_dark();
+        let line = header_line("coder", "gpt", "Ready", 80, &theme, Color::Green);
+        let text: String = line
+            .spans
+            .iter()
+            .map(|span| span.content.as_ref())
+            .collect();
+        assert!(text.contains("coder"));
+        assert!(text.contains("gpt"));
+        assert!(text.contains("Ready"));
+        assert!(text.contains('●'));
+        let width: usize = line
+            .spans
+            .iter()
+            .map(|span| visible_len(span.content.as_ref()))
+            .sum();
+        assert!(width <= 80);
+    }
+
+    #[test]
+    fn header_drops_model_before_the_agent_when_narrow() {
+        let theme = crate::theme::Theme::material_dark();
+        let line = header_line(
+            "coder",
+            "a-very-long-model-name",
+            "Ready",
+            16,
+            &theme,
+            Color::Green,
+        );
+        let text: String = line
+            .spans
+            .iter()
+            .map(|span| span.content.as_ref())
+            .collect();
+        assert!(text.contains("coder"));
+        assert!(text.contains("Ready"));
+        assert!(!text.contains("a-very-long-model-name"));
+        let width: usize = line
+            .spans
+            .iter()
+            .map(|span| visible_len(span.content.as_ref()))
+            .sum();
+        assert!(width <= 16);
+    }
+
+    #[test]
+    fn gutter_thumb_tracks_the_viewport() {
+        let (top, thumb) = gutter_thumb(10, 100, 10, 0);
+        assert_eq!(top, 0);
+        assert!(thumb >= 1 && thumb < 10);
+
+        let (bottom, thumb) = gutter_thumb(10, 100, 10, 90);
+        assert_eq!(bottom + thumb, 10);
     }
 
     #[test]

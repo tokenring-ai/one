@@ -16,7 +16,7 @@ agents:
       enabledTools:
         - websearch_*
 commands:
-  search agent:
+  search_agent:
     agentType: search-agent
     description: Perform a deep-dive web search on a specific topic
     help: |
@@ -29,12 +29,12 @@ commands:
       - Comprehensive markdown formatting
 
       ## Usage
-      /search agent <topic or question>
+      /search_agent <topic or question>
 
       ## Examples
-      /search agent Latest advancements in solid-state battery technology 2024
-      /search agent Financial performance of major tech companies in Q3
-      /search agent Historical context of the Silk Road maritime routes
+      /search_agent Latest advancements in solid-state battery technology 2024
+      /search_agent Financial performance of major tech companies in Q3
+      /search_agent Historical context of the Silk Road maritime routes
 
       ## Notes
       - This agent uses live web search to ensure up-to-date information.

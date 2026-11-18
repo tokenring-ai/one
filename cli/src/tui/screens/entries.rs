@@ -146,10 +146,16 @@ fn format_running_agent_timestamp(created_at_ms: i64) -> String {
 
 pub(super) fn running_agent_label(agent: &RunningAgent) -> String {
     let timestamp = format_running_agent_timestamp(agent.created_at);
-    if timestamp.is_empty() {
-        agent.display_name.clone()
+    // Mark sub-agents so they read as children of the agent that started them.
+    let marker = if agent.parent_agent_id.is_some() {
+        "↳ "
     } else {
-        format!("{}  {timestamp}", agent.display_name)
+        ""
+    };
+    if timestamp.is_empty() {
+        format!("{marker}{}", agent.display_name)
+    } else {
+        format!("{marker}{}  {timestamp}", agent.display_name)
     }
 }
 
@@ -171,6 +177,9 @@ fn running_agent_option(agent: &RunningAgent) -> SelectionEntry {
             ];
             if !agent.current_activity.is_empty() {
                 lines.push(format!("Activity: {}", agent.current_activity));
+            }
+            if let Some(parent) = &agent.parent_agent_id {
+                lines.push(format!("Sub-agent of: {parent}"));
             }
             lines
         },
@@ -269,7 +278,8 @@ pub(super) fn build_workflow_entries(data: &SelectionData) -> Vec<SelectionEntry
             preview_lines: {
                 let mut lines = vec![wf.description.clone()];
                 if !wf.steps.is_empty() {
-                    lines.push(format!("Steps: {}", wf.steps.join(" → ")));
+                    let labels: Vec<String> = wf.steps.iter().map(|s| s.label()).collect();
+                    lines.push(format!("Steps: {}", labels.join(" → ")));
                 }
                 lines
             },

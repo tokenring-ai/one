@@ -7,7 +7,7 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
-      "title": "getDatasources request",
+      "title": "getDatabaseConfiguration request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -17,10 +17,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/database.getDatasources"
+          "const": "/rpc/database.getDatabaseConfiguration"
         },
         "params": {
-          "$ref": "#/$defs/getDatasourcesParams"
+          "$ref": "#/$defs/getDatabaseConfigurationParams"
         }
       },
       "required": [
@@ -32,7 +32,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getDatasources response",
+      "title": "getDatabaseConfiguration response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -42,7 +42,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getDatasourcesResult"
+          "$ref": "#/$defs/getDatabaseConfigurationResult"
         }
       },
       "required": [
@@ -237,6 +237,144 @@
       "additionalProperties": false
     },
     {
+      "title": "executeSql request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/database.executeSql"
+        },
+        "params": {
+          "$ref": "#/$defs/executeSqlParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "executeSql response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/executeSqlResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "showSchema request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/database.showSchema"
+        },
+        "params": {
+          "$ref": "#/$defs/showSchemaParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "showSchema response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/showSchemaResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "mutateRow request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/database.mutateRow"
+        },
+        "params": {
+          "$ref": "#/$defs/mutateRowParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "mutateRow response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/mutateRowResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "getDatabaseState request",
       "type": "object",
       "properties": {
@@ -366,11 +504,11 @@
       ],
       "additionalProperties": false
     },
-    "getDatasourcesParams": {
+    "getDatabaseConfigurationParams": {
       "type": "object",
       "properties": {}
     },
-    "getDatasourcesResult": {
+    "getDatabaseConfigurationResult": {
       "type": "object",
       "properties": {
         "datasources": {
@@ -386,19 +524,34 @@
               },
               "allowWrites": {
                 "type": "boolean"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ready",
+                  "missingSecret"
+                ]
               }
             },
             "required": [
               "name",
               "scheme",
-              "allowWrites"
+              "allowWrites",
+              "status"
             ],
             "additionalProperties": false
+          }
+        },
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
       },
       "required": [
-        "datasources"
+        "datasources",
+        "agentTypes"
       ],
       "additionalProperties": false
     },
@@ -406,6 +559,9 @@
       "type": "object",
       "properties": {
         "datasource": {
+          "type": "string"
+        },
+        "url": {
           "type": "string"
         }
       },
@@ -539,13 +695,9 @@
                     "type": "boolean"
                   },
                   "defaultValue": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "comment": {
@@ -640,13 +792,9 @@
                   {
                     "type": "array",
                     "items": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "number"
-                        }
+                      "type": [
+                        "string",
+                        "number"
                       ]
                     }
                   }
@@ -708,19 +856,11 @@
               "type": "string"
             },
             "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "number",
+                "boolean",
+                "null"
               ]
             }
           }
@@ -732,13 +872,9 @@
           }
         },
         "totalCount": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "number",
+            "null"
           ]
         },
         "hasMore": {
@@ -752,6 +888,378 @@
         "hasMore"
       ],
       "additionalProperties": false
+    },
+    "executeSqlParams": {
+      "type": "object",
+      "properties": {
+        "datasource": {
+          "type": "string"
+        },
+        "sql": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confirmWrite": {
+          "type": "boolean"
+        },
+        "maxRows": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "datasource",
+        "sql"
+      ]
+    },
+    "executeSqlResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "rowCount": {
+              "type": "number"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "affectedRows": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "elapsedMs": {
+              "type": "number"
+            },
+            "readOnly": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "status",
+            "rows",
+            "fields",
+            "rowCount",
+            "truncated",
+            "affectedRows",
+            "elapsedMs",
+            "readOnly"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "confirmationRequired"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "writeRefused"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "error"
+            },
+            "error": {
+              "type": "string"
+            },
+            "elapsedMs": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "status",
+            "error",
+            "elapsedMs"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "showSchemaParams": {
+      "type": "object",
+      "properties": {
+        "datasource": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "datasource"
+      ]
+    },
+    "showSchemaResult": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "schema"
+      ],
+      "additionalProperties": false
+    },
+    "mutateRowParams": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "datasource": {
+              "type": "string"
+            },
+            "table": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "insert"
+            },
+            "values": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "required": [
+            "datasource",
+            "table",
+            "kind",
+            "values"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "datasource": {
+              "type": "string"
+            },
+            "table": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "update"
+            },
+            "key": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              }
+            },
+            "values": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "required": [
+            "datasource",
+            "table",
+            "kind",
+            "key",
+            "values"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "datasource": {
+              "type": "string"
+            },
+            "table": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "delete"
+            },
+            "key": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "required": [
+            "datasource",
+            "table",
+            "kind",
+            "key"
+          ]
+        }
+      ]
+    },
+    "mutateRowResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "affectedRows": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "affectedRows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "writeRefused"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "unsupported"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "error"
+            },
+            "error": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "error"
+          ],
+          "additionalProperties": false
+        }
+      ]
     },
     "getDatabaseStateParams": {
       "type": "object",
@@ -774,23 +1282,15 @@
               "const": "success"
             },
             "activeDatasource": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "activeTable": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "activeTableSchema": {
@@ -839,13 +1339,9 @@
                             "type": "boolean"
                           },
                           "defaultValue": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "comment": {
@@ -939,19 +1435,11 @@
               "type": "string"
             },
             "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "number",
+                "boolean",
+                "null"
               ]
             }
           }
@@ -971,23 +1459,15 @@
               "const": "success"
             },
             "activeDatasource": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "activeTable": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "activeTableSchema": {
@@ -1036,13 +1516,9 @@
                             "type": "boolean"
                           },
                           "defaultValue": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "comment": {
@@ -1122,10 +1598,10 @@
     "path": "/rpc/database",
     "source": "plugin/database/rpc/schema.ts",
     "methods": {
-      "getDatasources": {
+      "getDatabaseConfiguration": {
         "type": "query",
-        "params": "#/$defs/getDatasourcesParams",
-        "result": "#/$defs/getDatasourcesResult"
+        "params": "#/$defs/getDatabaseConfigurationParams",
+        "result": "#/$defs/getDatabaseConfigurationResult"
       },
       "testConnection": {
         "type": "mutation",
@@ -1146,6 +1622,21 @@
         "type": "query",
         "params": "#/$defs/selectRowsParams",
         "result": "#/$defs/selectRowsResult"
+      },
+      "executeSql": {
+        "type": "mutation",
+        "params": "#/$defs/executeSqlParams",
+        "result": "#/$defs/executeSqlResult"
+      },
+      "showSchema": {
+        "type": "query",
+        "params": "#/$defs/showSchemaParams",
+        "result": "#/$defs/showSchemaResult"
+      },
+      "mutateRow": {
+        "type": "mutation",
+        "params": "#/$defs/mutateRowParams",
+        "result": "#/$defs/mutateRowResult"
       },
       "getDatabaseState": {
         "type": "query",

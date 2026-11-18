@@ -50,11 +50,9 @@ pub fn attachment_display_kind(mime: &str) -> AttachmentDisplayKind {
         return AttachmentDisplayKind::MetaOnly;
     }
     match primary.as_str() {
-        "text/plain"
-        | "text/markdown"
-        | "text/html"
-        | "application/json"
-        | "message/rfc822" => AttachmentDisplayKind::Text,
+        "text/plain" | "text/markdown" | "text/html" | "application/json" | "message/rfc822" => {
+            AttachmentDisplayKind::Text
+        }
         // Other text/* subtypes (except diffs, already handled) are showable.
         _ if primary.starts_with("text/") => AttachmentDisplayKind::Text,
         _ => AttachmentDisplayKind::MetaOnly,

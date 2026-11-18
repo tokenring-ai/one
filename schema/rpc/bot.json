@@ -53,6 +53,77 @@
       "additionalProperties": false
     },
     {
+      "title": "streamBots request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/bot.streamBots"
+        },
+        "params": {
+          "$ref": "#/$defs/streamBotsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamBots response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamBotsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamBots stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
       "title": "sendMessage request",
       "type": "object",
       "properties": {
@@ -181,6 +252,52 @@
         },
         "result": {
           "$ref": "#/$defs/createBotResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateBot request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/bot.updateBot"
+        },
+        "params": {
+          "$ref": "#/$defs/updateBotParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateBot response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateBotResult"
         }
       },
       "required": [
@@ -419,6 +536,282 @@
         "result"
       ],
       "additionalProperties": false
+    },
+    {
+      "title": "updateChannel request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/bot.updateChannel"
+        },
+        "params": {
+          "$ref": "#/$defs/updateChannelParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateChannel response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateChannelResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelConversation request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/bot.cancelConversation"
+        },
+        "params": {
+          "$ref": "#/$defs/cancelConversationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelConversation response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/cancelConversationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setEscalation request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/bot.setEscalation"
+        },
+        "params": {
+          "$ref": "#/$defs/setEscalationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setEscalation response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/setEscalationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "testEscalation request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/bot.testEscalation"
+        },
+        "params": {
+          "$ref": "#/$defs/testEscalationParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "testEscalation response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/testEscalationResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setGroup request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/bot.setGroup"
+        },
+        "params": {
+          "$ref": "#/$defs/setGroupParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setGroup response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/setGroupResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteGroup request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/bot.deleteGroup"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteGroupParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteGroup response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteGroupResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
     }
   ],
   "$defs": {
@@ -483,16 +876,26 @@
               "agentType": {
                 "type": "string"
               },
+              "enabled": {
+                "type": "boolean"
+              },
               "directMessages": {
                 "type": "string",
                 "enum": [
                   "listed",
-                  "anyone",
                   "none"
                 ]
               },
               "requireMention": {
                 "type": "boolean"
+              },
+              "joinPolicy": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "whenInvitedByAdmin",
+                  "whenInvited"
+                ]
               },
               "joinMessage": {
                 "type": "string"
@@ -548,6 +951,9 @@
                     "agentType": {
                       "type": "string"
                     },
+                    "agentTypeOverridden": {
+                      "type": "boolean"
+                    },
                     "allowedUsers": {
                       "type": "array",
                       "items": {
@@ -564,6 +970,7 @@
                     "service",
                     "channelId",
                     "agentType",
+                    "agentTypeOverridden",
                     "allowedUsers",
                     "connected"
                   ],
@@ -601,6 +1008,9 @@
                     },
                     "busy": {
                       "type": "boolean"
+                    },
+                    "lastMessage": {
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -615,17 +1025,42 @@
                   ],
                   "additionalProperties": false
                 }
+              },
+              "unknownSenders": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "target": {
+                      "type": "string"
+                    },
+                    "userName": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "target",
+                    "at"
+                  ],
+                  "additionalProperties": false
+                }
               }
             },
             "required": [
               "name",
               "displayName",
               "agentType",
+              "enabled",
               "directMessages",
               "requireMention",
+              "joinPolicy",
               "users",
               "channels",
-              "conversations"
+              "conversations",
+              "unknownSenders"
             ],
             "additionalProperties": false
           }
@@ -703,6 +1138,37 @@
             ],
             "additionalProperties": false
           }
+        },
+        "escalation": {
+          "type": "object",
+          "properties": {
+            "target": {
+              "type": "string"
+            },
+            "afterSeconds": {
+              "type": "number"
+            },
+            "answerFromChat": {
+              "type": "boolean"
+            },
+            "agentTypes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "jobAlertsEnabled": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "target",
+            "afterSeconds",
+            "answerFromChat",
+            "agentTypes",
+            "jobAlertsEnabled"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -710,7 +1176,338 @@
         "bots",
         "services",
         "groups",
-        "discoveredChannels"
+        "discoveredChannels",
+        "escalation"
+      ],
+      "additionalProperties": false
+    },
+    "streamBotsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamBotsResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "success"
+        },
+        "bots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "directMessages": {
+                "type": "string",
+                "enum": [
+                  "listed",
+                  "none"
+                ]
+              },
+              "requireMention": {
+                "type": "boolean"
+              },
+              "joinPolicy": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "whenInvitedByAdmin",
+                  "whenInvited"
+                ]
+              },
+              "joinMessage": {
+                "type": "string"
+              },
+              "users": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "target": {
+                      "type": "string"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "admin",
+                        "user"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "target",
+                    "service",
+                    "userId",
+                    "role"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "channels": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "channelId": {
+                      "type": "string"
+                    },
+                    "agentType": {
+                      "type": "string"
+                    },
+                    "agentTypeOverridden": {
+                      "type": "boolean"
+                    },
+                    "allowedUsers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "connected": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "target",
+                    "service",
+                    "channelId",
+                    "agentType",
+                    "agentTypeOverridden",
+                    "allowedUsers",
+                    "connected"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "conversations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "conversationId": {
+                      "type": "string"
+                    },
+                    "agentId": {
+                      "type": "string"
+                    },
+                    "agentType": {
+                      "type": "string"
+                    },
+                    "channelName": {
+                      "type": "string"
+                    },
+                    "startedAt": {
+                      "type": "number"
+                    },
+                    "lastActivityAt": {
+                      "type": "number"
+                    },
+                    "busy": {
+                      "type": "boolean"
+                    },
+                    "lastMessage": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "service",
+                    "conversationId",
+                    "agentId",
+                    "agentType",
+                    "startedAt",
+                    "lastActivityAt",
+                    "busy"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "unknownSenders": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "target": {
+                      "type": "string"
+                    },
+                    "userName": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "target",
+                    "at"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "name",
+              "displayName",
+              "agentType",
+              "enabled",
+              "directMessages",
+              "requireMention",
+              "joinPolicy",
+              "users",
+              "channels",
+              "conversations",
+              "unknownSenders"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "maxMessageLength": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "maxMessageLength"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "members": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "name",
+              "members"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "discoveredChannels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "target": {
+                "type": "string"
+              },
+              "service": {
+                "type": "string"
+              },
+              "channelId": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "discoveredAt": {
+                "type": "number"
+              },
+              "invitedBy": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "target",
+              "service",
+              "channelId",
+              "discoveredAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "escalation": {
+          "type": "object",
+          "properties": {
+            "target": {
+              "type": "string"
+            },
+            "afterSeconds": {
+              "type": "number"
+            },
+            "answerFromChat": {
+              "type": "boolean"
+            },
+            "agentTypes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "jobAlertsEnabled": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "target",
+            "afterSeconds",
+            "answerFromChat",
+            "agentTypes",
+            "jobAlertsEnabled"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "status",
+        "bots",
+        "services",
+        "groups",
+        "discoveredChannels",
+        "escalation"
       ],
       "additionalProperties": false
     },
@@ -841,7 +1638,6 @@
           "type": "string",
           "enum": [
             "listed",
-            "anyone",
             "none"
           ]
         },
@@ -922,13 +1718,123 @@
                   "path": {
                     "type": "array",
                     "items": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "number"
-                        }
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    }
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "message"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "issues"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "updateBotParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "agentType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "directMessages": {
+          "type": "string",
+          "enum": [
+            "listed",
+            "none"
+          ]
+        },
+        "requireMention": {
+          "type": "boolean"
+        },
+        "joinPolicy": {
+          "type": "string",
+          "enum": [
+            "manual",
+            "whenInvitedByAdmin",
+            "whenInvited"
+          ]
+        },
+        "joinMessage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "updateBotResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "botNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "configRejected"
+            },
+            "issues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "array",
+                    "items": {
+                      "type": [
+                        "string",
+                        "number"
                       ]
                     }
                   },
@@ -1020,13 +1926,9 @@
                   "path": {
                     "type": "array",
                     "items": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "number"
-                        }
+                      "type": [
+                        "string",
+                        "number"
                       ]
                     }
                   },
@@ -1118,13 +2020,9 @@
                   "path": {
                     "type": "array",
                     "items": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "number"
-                        }
+                      "type": [
+                        "string",
+                        "number"
                       ]
                     }
                   },
@@ -1221,13 +2119,9 @@
                   "path": {
                     "type": "array",
                     "items": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "number"
-                        }
+                      "type": [
+                        "string",
+                        "number"
                       ]
                     }
                   },
@@ -1328,13 +2222,9 @@
                   "path": {
                     "type": "array",
                     "items": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "number"
-                        }
+                      "type": [
+                        "string",
+                        "number"
                       ]
                     }
                   },
@@ -1431,13 +2321,491 @@
                   "path": {
                     "type": "array",
                     "items": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "number"
-                        }
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    }
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "message"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "issues"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "updateChannelParams": {
+      "type": "object",
+      "properties": {
+        "bot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowedUsers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "agentType": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "bot",
+        "target"
+      ]
+    },
+    "updateChannelResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "botNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "channelNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "definedElsewhere"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "configRejected"
+            },
+            "issues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "array",
+                    "items": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    }
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "message"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "issues"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "cancelConversationParams": {
+      "type": "object",
+      "properties": {
+        "bot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "conversationKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "bot",
+        "conversationKey"
+      ]
+    },
+    "cancelConversationResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "botNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "conversationNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "setEscalationParams": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "type": "string"
+        },
+        "afterSeconds": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 9007199254740991
+        },
+        "answerFromChat": {
+          "type": "boolean"
+        },
+        "jobAlertsEnabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "target"
+      ]
+    },
+    "setEscalationResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "configRejected"
+            },
+            "issues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "array",
+                    "items": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    }
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "message"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "issues"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "testEscalationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "testEscalationResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "target": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "target"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "failed"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "setGroupParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "members": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "name",
+        "members"
+      ]
+    },
+    "setGroupResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "configRejected"
+            },
+            "issues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "array",
+                    "items": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    }
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "message"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "issues"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "deleteGroupParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "deleteGroupResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "groupNotFound"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "definedElsewhere"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "configRejected"
+            },
+            "issues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "array",
+                    "items": {
+                      "type": [
+                        "string",
+                        "number"
                       ]
                     }
                   },
@@ -1472,6 +2840,11 @@
         "params": "#/$defs/listBotsParams",
         "result": "#/$defs/listBotsResult"
       },
+      "streamBots": {
+        "type": "stream",
+        "params": "#/$defs/streamBotsParams",
+        "result": "#/$defs/streamBotsResult"
+      },
       "sendMessage": {
         "type": "mutation",
         "params": "#/$defs/sendMessageParams",
@@ -1486,6 +2859,11 @@
         "type": "mutation",
         "params": "#/$defs/createBotParams",
         "result": "#/$defs/createBotResult"
+      },
+      "updateBot": {
+        "type": "mutation",
+        "params": "#/$defs/updateBotParams",
+        "result": "#/$defs/updateBotResult"
       },
       "deleteBot": {
         "type": "mutation",
@@ -1511,6 +2889,36 @@
         "type": "mutation",
         "params": "#/$defs/leaveChannelParams",
         "result": "#/$defs/leaveChannelResult"
+      },
+      "updateChannel": {
+        "type": "mutation",
+        "params": "#/$defs/updateChannelParams",
+        "result": "#/$defs/updateChannelResult"
+      },
+      "cancelConversation": {
+        "type": "mutation",
+        "params": "#/$defs/cancelConversationParams",
+        "result": "#/$defs/cancelConversationResult"
+      },
+      "setEscalation": {
+        "type": "mutation",
+        "params": "#/$defs/setEscalationParams",
+        "result": "#/$defs/setEscalationResult"
+      },
+      "testEscalation": {
+        "type": "mutation",
+        "params": "#/$defs/testEscalationParams",
+        "result": "#/$defs/testEscalationResult"
+      },
+      "setGroup": {
+        "type": "mutation",
+        "params": "#/$defs/setGroupParams",
+        "result": "#/$defs/setGroupResult"
+      },
+      "deleteGroup": {
+        "type": "mutation",
+        "params": "#/$defs/deleteGroupParams",
+        "result": "#/$defs/deleteGroupResult"
       }
     }
   }

@@ -1,7 +1,7 @@
 agents:
   swarm:
     displayName: Swarm Agent
-    description: Orchestrates multiple agents in parallel to execute complex tasks. Analyzes requirements, breaks down work into parallel tasks, and uses the tasks_run tool to execute them simultaneously.
+    description: Orchestrates multiple agents in parallel to execute complex tasks. Analyzes requirements, writes task files, and uses the task_* tools to execute them simultaneously.
     category: Coding
     chat:
       context:
@@ -10,42 +10,55 @@ agents:
           - type: tool-context
           - type: current-message
       systemPrompt: |
-        You are an expert task orchestrator that coordinates multiple agents working in parallel. Your role is to:
+        You are an expert task orchestrator that coordinates multiple agents working in parallel.
 
-        1. Analyze the user's task and identify all independent work streams
-        2. Determine which agent types are best suited for each work stream
-        3. Break tasks into non-dependent batches
-        4. Execute each batch with the tasks_run tool, which will execute each batch of tasks in parallel for maximum efficiency
+        Work is organised as tasks on a task board. Each task has a description and one or more
+        assigned agents, each with its own instructions; the user can open the board in the Tasks app.
+        Your procedure:
 
-        When creating tasks:
-        - Break complex tasks into independent, parallelizable units
-        - Each task should be self-contained with all necessary context
-        - Provide detailed context so agents understand exactly what to do
-        - Specify file names, paths, and technical requirements
-        - Do not schedule overlapping or dependent tasks in the same batch, schedule them in follow up batches
-        IMPORTANT: Always use the tasks_run tool to create and execute your task plan.
-        This tool will present the plan to the user for approval and then execute all tasks in parallel.
+        1. Analyze the user's request and identify all independent work streams.
+        2. Determine which agent type is best suited to each work stream (see the available agents).
+        3. Create a board for the objective with `task_board_create` (or reuse one from
+           `task_boards_list` if the user names it). Then call `task_create` once per work stream,
+           with a short `title`, a `body` describing the work, and one entry in `assignments` giving
+           the `agentType` and complete `instructions`.
+        4. Summarize the plan in chat and ask the user to confirm before executing. The tools do
+           NOT prompt for approval — if you skip this step, work starts without the user's consent.
+        5. Call `task_run_group` with the board and the task ids to run. Each assigned agent runs on
+           its own new agent, up to `parallel` at a time, and each agent's report comes back as a
+           separate attachment.
+        6. Review the results. Use `task_read` to see a task's full activity, or `task_run_status`
+           for a group started with `wait: false`. Create follow-up tasks for failures and for work
+           that depended on the first batch, then run them as the next group. Passing the ids of
+           failed tasks to `task_run_group` again retries them. An agent whose state is
+           `unreported` ended its turn without a final report: read its report attachment to decide
+           whether the work is actually finished before building on it.
 
-        Your goal is to maximize parallel execution while ensuring each agent has clear, complete instructions.
+        When writing tasks:
+        - Break complex work into independent, parallelizable units
+        - IMPORTANT: each agent starts fresh with no conversation history, and it cannot ask you
+          questions. Its instructions and the task body must contain every file path,
+          specification, and piece of context needed to complete the work on its own.
+        - Do not put overlapping or dependent tasks in the same group — agents in a group run
+          concurrently and cannot see each other's work. Run dependent work as a follow-up group
+          once the first has finished.
 
-        When scheduling tasks, prefer to schedule batches of tasks that do not overlap or depend on each other.
-        If tasks depend on each other, schedule them in separate runs of the tasks_run tool, not in the same batch.
+        Agents report into each task's activity log, so the user can follow and review the work on
+        the board during and after a run.
 
-        Continue monitoring progress and spawning additional tasks as needed until the overall objective is fully complete.
+        Continue monitoring progress and writing additional tasks as needed until the overall
+        objective is fully complete.
+
+        Notes on this codebase (structure, patterns, conventions) are kept in {{WORKING_DIRECTORY}}/.tokenring/knowledge/code.md. Read it when it would help; it may not exist yet.
       enabledTools:
         - todo
-        - tasks_run
+        - task_*
         - coding_*
-        - research_*
+        - deep_research
         - file_*
         - shell_*
         - queue_*
-    filesystem:
-      selectedFiles:
-        - .tokenring/knowledge/code.md
-    tasks:
-      allowedSubAgents:
-        - "*"
+        - memory_*
 commands:
   swarm:
     agentType: swarm
@@ -56,8 +69,8 @@ commands:
       This agent:
       1. Analyzes the task requirements
       2. Identifies independent work streams that can run in parallel
-      3. Creates a task plan with multiple agents
-      4. Executes all tasks simultaneously using the tasks_run tool
+      3. Puts each work stream on a task board as a task with an assigned agent, and shows you the plan
+      4. Runs the agents in parallel, each on its own agent, and follows up on the results
 
       ## Usage
       /swarm <task description>
@@ -69,7 +82,9 @@ commands:
 
       ## Notes
       - Tasks are executed in parallel for maximum efficiency
-      - You will be asked to approve the task plan before execution
+      - The plan is a task board named after the objective; open it in the Tasks app to read or edit
+        the tasks before the run and to follow each agent's reports during and after it
+      - You will be asked to confirm the plan in chat before anything runs
       - Use /plan if you only want to see the plan without executing
     steps:
       - |
@@ -77,6 +92,9 @@ commands:
         ------
         {{ prompt }}
         ------
-        Analyze the requirements, identify independent work streams, create a task plan, and execute all tasks in parallel using the tasks_run tool.
+        Analyze the requirements and identify independent work streams. Create a board for the
+        objective with task_board_create, add each work stream as a task with task_create (one
+        assigned agent each), summarize the plan, and ask the user to confirm. Once they confirm,
+        run the tasks with task_run_group.
 
-        Continue monitoring progress and spawning additional tasks as needed until the overall objective is fully complete.
+        Continue monitoring progress and writing additional tasks as needed until the overall objective is fully complete.

@@ -5,7 +5,7 @@ import path from "node:path";
 const baseDir = path.resolve(import.meta.dir, "../");
 
 // Configuration
-const sourceDir = `${baseDir}/scripts/boilerplate`;
+const sourceDir = `${baseDir}/util/boilerplate`;
 const targetPatterns = ["plugin/*"];
 
 function getBoilerplateFiles(dir: string, relativePath = ""): string[] {

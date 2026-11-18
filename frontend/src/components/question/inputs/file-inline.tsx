@@ -3,8 +3,10 @@ import type { MaybePromise } from "bun";
 import { AlertCircle, Check, ChevronDown, ChevronRight, File, Folder, RefreshCw, Send, X } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { filesystemRPCClient, useFilesystemState } from "../../../rpc.ts";
+import { scrollBehavior } from "../../../lib/motion.ts";
+import { filesystemRPCClient } from "../../../rpc.ts";
 import { sendInteractionResponse } from "../sendInteractionResponse.ts";
+import { useQuestionAnswer } from "../useQuestionAnswer.ts";
 
 interface FileInlineProps {
   question: ParsedFileSelectQuestion;
@@ -17,7 +19,7 @@ interface FileInlineProps {
 }
 
 export default function FileInlineQuestion({
-  question: { allowFiles, allowDirectories, minimumSelections, maximumSelections, defaultValue },
+  question: { allowFiles, allowDirectories, minimumSelections, maximumSelections, defaultValue, label },
   agentId,
   requestId,
   interactionId,
@@ -30,21 +32,18 @@ export default function FileInlineQuestion({
   const [files, setFiles] = useState<Map<string, string[]>>(new Map());
   const [selected, setSelected] = useState<Set<string>>(new Set(defaultValue));
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Nested in a form (onSubmitValue), the form owns the answer and moves on; stay usable after success.
+  const { answer, busy: isSubmitting, pending, error: answerError } = useQuestionAnswer({ onClose, stayBusyAfterSuccess: !onSubmitValue });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const multiple = maximumSelections !== 1;
 
-  const fsState = useFilesystemState(agentId);
-  const provider = fsState.data?.status === "success" ? fsState.data.provider : null;
-
   const loadDirectory = useCallback(
     async (path: string) => {
       if (files.has(path)) return;
-      if (!provider) return;
       setLoading(prev => new Set(prev).add(path));
       try {
-        const result = await filesystemRPCClient.listDirectory({ path, showHidden: true, provider, recursive: false });
+        const result = await filesystemRPCClient.listDirectory({ path, showHidden: true, recursive: false });
         setFiles(prev => new Map(prev).set(path, result.files));
       } catch {
         setError("Failed to load directory");
@@ -57,7 +56,7 @@ export default function FileInlineQuestion({
         });
       }
     },
-    [provider, files],
+    [files],
   );
 
   const toggleExpand = async (path: string) => {
@@ -107,39 +106,23 @@ export default function FileInlineQuestion({
     return true;
   };
 
+  const respond = async (result: string[] | null) => {
+    if (onSubmitValue) await onSubmitValue(result);
+    else if (interactionId) await sendInteractionResponse({ agentId, requestId, interactionId, result });
+  };
+
   const handleSubmit = async () => {
     if (!isSelectionValid()) {
       setError("Selection is invalid");
       setTimeout(() => setError(null), 2000);
       return;
     }
-    setIsSubmitting(true);
     const result = Array.from(selected);
-    if (onSubmitValue) {
-      await onSubmitValue(result);
-    } else if (interactionId) {
-      await sendInteractionResponse({
-        agentId,
-        requestId,
-        interactionId,
-        result,
-      });
-    }
-    onClose();
+    await answer("submit", () => respond(result));
   };
 
   const handleCancel = async () => {
-    if (onSubmitValue) {
-      await onSubmitValue(null);
-    } else if (interactionId) {
-      await sendInteractionResponse({
-        agentId,
-        requestId,
-        interactionId,
-        result: null,
-      });
-    }
-    onClose();
+    await answer("cancel", () => respond(null));
   };
 
   const renderTree = (path: string, depth: number = 0): React.ReactNode[] => {
@@ -225,7 +208,7 @@ export default function FileInlineQuestion({
   // Auto-focus on mount and scroll into view
   useEffect(() => {
     if (autoFocus && containerRef.current) {
-      containerRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      containerRef.current.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
     }
   }, [autoFocus]);
 
@@ -237,18 +220,23 @@ export default function FileInlineQuestion({
     <div ref={containerRef} className="p-4 space-y-3">
       <div
         role="tree"
-        aria-label="File browser"
+        aria-label={label || "File browser"}
         className="max-h-75 overflow-y-auto custom-scrollbar border border-primary/30 rounded-lg bg-secondary shadow-md p-2"
       >
         {files.has(".") ? (
           renderTree(".", 0)
         ) : (
           <div className="flex items-center justify-center gap-2 text-muted text-sm py-8">
-            <RefreshCw className="w-4 h-4 animate-spin" />
-            <span>Loading files...</span>
+            <RefreshCw className="w-4 h-4 animate-spin" aria-hidden="true" />
+            <span role="status">Loading files...</span>
           </div>
         )}
       </div>
+      {answerError && (
+        <p className="text-xs text-error" role="alert">
+          {answerError}
+        </p>
+      )}
       {error && (
         <div
           className="flex items-center gap-2 px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-sm"
@@ -260,11 +248,11 @@ export default function FileInlineQuestion({
       )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className={`text-2xs font-medium ${isSelectionValid() ? "text-primary" : "text-amber-600 dark:text-amber-400"}`} aria-live="polite">
+          <span className={`text-xs font-medium ${isSelectionValid() ? "text-primary" : "text-amber-600 dark:text-amber-400"}`} aria-live="polite">
             {selected.size} selected
           </span>
           {(minimumSelections !== undefined || maximumSelections !== undefined) && (
-            <span className="text-2xs text-muted">
+            <span className="text-xs text-muted">
               {minimumSelections !== undefined && `min ${minimumSelections}`}
               {minimumSelections !== undefined && maximumSelections !== undefined && " · "}
               {maximumSelections !== undefined && `max ${maximumSelections}`}
@@ -274,7 +262,7 @@ export default function FileInlineQuestion({
             <button
               type="button"
               onClick={() => setSelected(new Set())}
-              className="text-2xs text-muted hover:text-primary transition-colors focus-ring"
+              className="text-xs text-muted hover:text-primary transition-colors focus-ring"
               aria-label="Clear all selections"
             >
               Clear
@@ -297,7 +285,7 @@ export default function FileInlineQuestion({
             disabled={isSubmitting || !isSelectionValid()}
             className="flex items-center gap-1.5 bg-accent hover:bg-accent/90 text-white text-xs font-medium px-3 py-1.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-ring"
           >
-            {isSubmitting ? "Sending..." : "Submit"}
+            {pending === "submit" ? "Sending..." : "Submit"}
             <Send className="w-3.5 h-3.5" />
           </button>
         </div>

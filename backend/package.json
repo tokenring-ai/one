@@ -2,6 +2,11 @@
   "name": "@tokenring-ai/one-backend",
   "description": "TokenRing One Backend",
   "version": "0.2.56",
+  "dependencies": {
+    "chalk": "^6.0.1",
+    "commander": "^15.1.0",
+    "zod": "^4.6.7"
+  },
   "devDependencies": {
     "@tokenring-ai/cloudquote": "workspace:*",
     "@tokenring-ai/newsrpm": "workspace:*",
@@ -17,6 +22,7 @@
     "@tokenring-ai/checkpoint": "workspace:*",
     "@tokenring-ai/code-watch": "workspace:*",
     "@tokenring-ai/codebase": "workspace:*",
+    "@tokenring-ai/dashboard": "workspace:*",
     "@tokenring-ai/database": "workspace:*",
     "@tokenring-ai/docker": "workspace:*",
     "@tokenring-ai/bun-storage": "workspace:*",
@@ -31,6 +37,7 @@
     "@tokenring-ai/git": "workspace:*",
     "@tokenring-ai/github": "workspace:*",
     "@tokenring-ai/ghost-io": "workspace:*",
+    "@tokenring-ai/goal": "workspace:*",
     "@tokenring-ai/google": "workspace:*",
     "@tokenring-ai/image": "workspace:*",
     "@tokenring-ai/javascript": "workspace:*",
@@ -39,9 +46,12 @@
     "@tokenring-ai/media-library": "workspace:*",
     "@tokenring-ai/posix-system": "workspace:*",
     "@tokenring-ai/markdown": "workspace:*",
+    "@tokenring-ai/marketplace": "workspace:*",
     "@tokenring-ai/mcp": "workspace:*",
     "@tokenring-ai/memory": "workspace:*",
     "@tokenring-ai/metrics": "workspace:*",
+    "@tokenring-ai/monitor": "workspace:*",
+    "@tokenring-ai/newsletter": "workspace:*",
     "@tokenring-ai/queue": "workspace:*",
     "@tokenring-ai/reddit": "workspace:*",
     "@tokenring-ai/research": "workspace:*",
@@ -68,12 +78,9 @@
     "@tokenring-ai/websearch": "workspace:*",
     "@tokenring-ai/vault": "workspace:*",
     "@tokenring-ai/x": "workspace:*",
-    "@types/bun": "^1.3.14",
-    "chalk": "^5.6.2",
-    "commander": "^15.0.0",
-    "typescript": "^7.0.2",
-    "zod": "^4.4.3",
-    "@tokenring-ai/secrets": "workspace:*"
+    "@tokenring-ai/secrets": "workspace:*",
+    "@types/bun": "^1.4.4",
+    "typescript": "^7.0.2"
   },
   "repository": {
     "type": "git",
@@ -82,11 +89,12 @@
   },
   "license": "MIT",
   "main": "tokenring.ts",
-  "bin": {},
-  "optionalDependencies": {},
   "files": [
     "LICENSE",
-    "README.md"
+    "README.md",
+    "tokenring.ts",
+    "plugins.ts",
+    "config"
   ],
   "scripts": {
     "build": "tsc --noEmit",

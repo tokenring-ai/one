@@ -1,5 +1,3 @@
-// eslint-disable @typescript-eslint/no-unnecessary-condition -- this is a test file
-
 import { afterEach } from "bun:test";
 import { cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom";
@@ -10,16 +8,23 @@ afterEach(() => {
 });
 
 if (typeof window !== "undefined" && !window.matchMedia) {
-  window.matchMedia = (query: string) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: () => {},
-    removeListener: () => {},
-    addEventListener: () => {},
-    removeEventListener: () => {},
-    dispatchEvent: () => false,
-  });
+  window.matchMedia = (query: string): MediaQueryList => {
+    // Built as a standalone object rather than inline: contextually typing the
+    // literal as `MediaQueryList` would resolve `addListener`/`removeListener`
+    // to the deprecated DOM members. The stub still provides them, because
+    // libraries fall back to them when `addEventListener` is unavailable.
+    const mediaQueryList = {
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    };
+    return mediaQueryList;
+  };
 }
 
 class ResizeObserverStub {

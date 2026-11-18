@@ -3,6 +3,9 @@ import type { WorkflowCommandStep, WorkflowStep } from "@tokenring-ai/workflow/s
 
 export type { AvailableAgentCommand, WorkflowCommandStep, WorkflowStep };
 
+/** Upper bound offered by the step editor; the schema itself only requires a non-negative integer. */
+export const MAX_STEP_RETRIES = 10;
+
 export function isCommandStep(step: WorkflowStep): step is WorkflowCommandStep {
   return typeof step === "object" && "command" in step;
 }
@@ -61,6 +64,19 @@ export function defaultsForCommand(command: AvailableAgentCommand): WorkflowComm
     arguments: args,
     remainder: command.inputSchema.remainder?.defaultValue ?? "",
   };
+}
+
+/** Set a command step's failure handling, dropping the key when it equals the default ("stop"). */
+export function withOnError(step: WorkflowCommandStep, onError: "stop" | "continue"): WorkflowCommandStep {
+  const { onError: _previous, ...rest } = step;
+  return onError === "continue" ? { ...rest, onError } : rest;
+}
+
+/** Set a command step's retry count, clamped to 0..MAX_STEP_RETRIES; 0 drops the key. */
+export function withRetries(step: WorkflowCommandStep, retries: number): WorkflowCommandStep {
+  const { retries: _previous, ...rest } = step;
+  const value = Number.isFinite(retries) ? Math.max(0, Math.min(MAX_STEP_RETRIES, Math.floor(retries))) : 0;
+  return value > 0 ? { ...rest, retries: value } : rest;
 }
 
 /** Compact label for run history and previews. */
@@ -149,11 +165,17 @@ export function normalizeSteps(steps: WorkflowStep[]): WorkflowStep[] {
       if (text !== "") arguments_[name] = text;
     }
 
-    result.push({
+    const normalized: WorkflowCommandStep = {
       command,
       arguments: arguments_,
       remainder: step.remainder.trimEnd(),
-    });
+    };
+    // Only persist non-default execution options so untouched steps stay compact.
+    if (step.onError === "continue") normalized.onError = "continue";
+    if (typeof step.retries === "number" && Number.isFinite(step.retries) && step.retries > 0) {
+      normalized.retries = Math.min(MAX_STEP_RETRIES, Math.floor(step.retries));
+    }
+    result.push(normalized);
   }
   return result;
 }

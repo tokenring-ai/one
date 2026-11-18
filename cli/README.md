@@ -165,8 +165,9 @@ The CLI uses a **leader key** system (`Ctrl+X`) for chorded shortcuts. Press the
 | `Esc` | Cancel current activity / close picker |
 | `Ctrl+1` / `Ctrl+2` / `Ctrl+3` | Quick-reply chips |
 
-Mouse: scroll the transcript over the transcript pane; click picker rows to
-select; click the composer to refocus it.
+Mouse: scroll the transcript over the transcript pane; click a tool row to
+expand or collapse it; click picker rows to select; click the composer to
+refocus it.
 
 ### Editor (emacs bindings)
 
@@ -198,7 +199,8 @@ select; click the composer to refocus it.
 | `Ctrl+Alt+E` | Scroll down one line |
 | `Ctrl+G` / `Home` | Jump to first message |
 | `Ctrl+Alt+G` / `End` | Jump to last message |
-| `Enter` (empty composer) | Expand/collapse tool output |
+| `Enter` (empty composer) | Expand or collapse the tool call in view |
+| Click a tool row | Same as Enter |
 
 ### Slash-command completion (`/`)
 

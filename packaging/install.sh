@@ -190,23 +190,42 @@ exec \"${LIB_DIR}/tokenring-one\" \"\$@\"
 
 print_success() {
   local command_name="$1"
+  local server_name="${2:-}"
 
-  cat <<EOF
+  printf '\n%s\n\n' "${GREEN}${BOLD}TokenRing One ${VERSION} is installed.${RESET}"
 
-${GREEN}${BOLD}TokenRing One ${VERSION} is installed.${RESET}
+  if [ -n "$server_name" ]; then
+    cat <<EOF
+To use it in your browser:
 
-Run it with:
+  1. Start it:
+
+       ${BOLD}${server_name} --port 14008${RESET}
+
+     The first time, it prints a login (user "admin" and a password). Copy the
+     password now; it is shown only once.
+
+  2. Open ${BOLD}http://127.0.0.1:14008${RESET} in your browser and sign in.
+
+  3. On the Home page choose "Set up a model provider" and paste an API key from
+     OpenAI, Anthropic or another provider. The key is saved in an encrypted
+     vault on this computer.
+
+Prefer the terminal? Run:  ${BOLD}${command_name}${RESET}
+EOF
+  else
+    cat <<EOF
+Start it in your terminal:
 
   ${BOLD}${command_name}${RESET}
 
-Optional: set an AI provider key first, for example:
-
-  export OPENAI_API_KEY=sk-...
-  export ANTHROPIC_API_KEY=sk-ant-...
-  export XAI_API_KEY=...
-
-Docs: https://github.com/${REPO}#readme
+It offers to start the local server for you. Once it is running, choose a model provider
+and paste an API key from OpenAI, Anthropic or another provider; the key is
+saved in an encrypted vault on this computer.
 EOF
+  fi
+
+  printf '\nDocs: https://github.com/%s#readme\n' "$REPO"
 }
 
 main() {
@@ -220,7 +239,7 @@ main() {
   case "$(uname -s)" in
     Darwin|Linux)
       install_from_release
-      print_success "one"
+      print_success "one" "tokenring-one"
       ;;
     *)
       die "No bun/npm found and binary installs are only supported on macOS and Linux."

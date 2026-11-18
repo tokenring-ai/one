@@ -48,6 +48,8 @@ pub struct TranscriptEntry {
     /// MIME type for [`EntryKind::Attachment`] entries — drives diff colouring
     /// via [`diff::is_diff_mime`] (never content-sniffed).
     pub mime_type: Option<String>,
+    /// Tool calls only: when set, the row shows its message, actions, and diff.
+    pub expanded: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -75,6 +77,10 @@ impl Transcript {
     /// All entries (including verbose-only ones; filter at render time).
     pub fn entries(&self) -> &[TranscriptEntry] {
         &self.entries
+    }
+
+    pub fn entries_mut(&mut self) -> &mut [TranscriptEntry] {
+        &mut self.entries
     }
 
     /// Index of the entry currently receiving stream chunks, if any.
@@ -262,6 +268,7 @@ impl Transcript {
             verbose_body,
             tone,
             mime_type: None,
+            expanded: false,
         });
         self.enforce_max_entries();
     }
@@ -290,6 +297,7 @@ impl Transcript {
             verbose_body,
             tone: Tone::Info,
             mime_type: Some(attachment.mime_type.clone()),
+            expanded: false,
         });
         self.enforce_max_entries();
     }
@@ -334,6 +342,7 @@ impl Transcript {
             verbose_body: None,
             tone,
             mime_type: None,
+            expanded: false,
         });
         self.active_stream = Some(ActiveStream { index, stream_type });
         self.enforce_max_entries();

@@ -7,7 +7,7 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
-      "title": "getTasks request",
+      "title": "listSchedules request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -17,10 +17,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/scheduler.getTasks"
+          "const": "/rpc/scheduler.listSchedules"
         },
         "params": {
-          "$ref": "#/$defs/getTasksParams"
+          "$ref": "#/$defs/listSchedulesParams"
         }
       },
       "required": [
@@ -32,7 +32,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getTasks response",
+      "title": "listSchedules response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -42,7 +42,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getTasksResult"
+          "$ref": "#/$defs/listSchedulesResult"
         }
       },
       "required": [
@@ -53,7 +53,7 @@
       "additionalProperties": false
     },
     {
-      "title": "addTask request",
+      "title": "addSchedule request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -63,10 +63,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/scheduler.addTask"
+          "const": "/rpc/scheduler.addSchedule"
         },
         "params": {
-          "$ref": "#/$defs/addTaskParams"
+          "$ref": "#/$defs/addScheduleParams"
         }
       },
       "required": [
@@ -78,7 +78,7 @@
       "additionalProperties": false
     },
     {
-      "title": "addTask response",
+      "title": "addSchedule response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -88,7 +88,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/addTaskResult"
+          "$ref": "#/$defs/addScheduleResult"
         }
       },
       "required": [
@@ -99,7 +99,7 @@
       "additionalProperties": false
     },
     {
-      "title": "removeTask request",
+      "title": "updateSchedule request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -109,10 +109,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/scheduler.removeTask"
+          "const": "/rpc/scheduler.updateSchedule"
         },
         "params": {
-          "$ref": "#/$defs/removeTaskParams"
+          "$ref": "#/$defs/updateScheduleParams"
         }
       },
       "required": [
@@ -124,7 +124,7 @@
       "additionalProperties": false
     },
     {
-      "title": "removeTask response",
+      "title": "updateSchedule response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -134,7 +134,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/removeTaskResult"
+          "$ref": "#/$defs/updateScheduleResult"
         }
       },
       "required": [
@@ -145,7 +145,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getStatus request",
+      "title": "removeSchedule request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -155,10 +155,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/scheduler.getStatus"
+          "const": "/rpc/scheduler.removeSchedule"
         },
         "params": {
-          "$ref": "#/$defs/getStatusParams"
+          "$ref": "#/$defs/removeScheduleParams"
         }
       },
       "required": [
@@ -170,7 +170,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getStatus response",
+      "title": "removeSchedule response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -180,7 +180,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getStatusResult"
+          "$ref": "#/$defs/removeScheduleResult"
         }
       },
       "required": [
@@ -191,7 +191,7 @@
       "additionalProperties": false
     },
     {
-      "title": "startScheduler request",
+      "title": "setScheduleEnabled request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -201,10 +201,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/scheduler.startScheduler"
+          "const": "/rpc/scheduler.setScheduleEnabled"
         },
         "params": {
-          "$ref": "#/$defs/startSchedulerParams"
+          "$ref": "#/$defs/setScheduleEnabledParams"
         }
       },
       "required": [
@@ -216,7 +216,7 @@
       "additionalProperties": false
     },
     {
-      "title": "startScheduler response",
+      "title": "setScheduleEnabled response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -226,7 +226,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/startSchedulerResult"
+          "$ref": "#/$defs/setScheduleEnabledResult"
         }
       },
       "required": [
@@ -237,7 +237,7 @@
       "additionalProperties": false
     },
     {
-      "title": "stopScheduler request",
+      "title": "runSchedule request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -247,10 +247,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/scheduler.stopScheduler"
+          "const": "/rpc/scheduler.runSchedule"
         },
         "params": {
-          "$ref": "#/$defs/stopSchedulerParams"
+          "$ref": "#/$defs/runScheduleParams"
         }
       },
       "required": [
@@ -262,7 +262,7 @@
       "additionalProperties": false
     },
     {
-      "title": "stopScheduler response",
+      "title": "runSchedule response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -272,7 +272,53 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/stopSchedulerResult"
+          "$ref": "#/$defs/runScheduleResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "clearHistory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/scheduler.clearHistory"
+        },
+        "params": {
+          "$ref": "#/$defs/clearHistoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "clearHistory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/clearHistoryResult"
         }
       },
       "required": [
@@ -327,6 +373,98 @@
         "result"
       ],
       "additionalProperties": false
+    },
+    {
+      "title": "previewNextRun request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/scheduler.previewNextRun"
+        },
+        "params": {
+          "$ref": "#/$defs/previewNextRunParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "previewNextRun response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/previewNextRunResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setSchedulerRunning request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/scheduler.setSchedulerRunning"
+        },
+        "params": {
+          "$ref": "#/$defs/setSchedulerRunningParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setSchedulerRunning response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/setSchedulerRunningResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
     }
   ],
   "$defs": {
@@ -366,501 +504,1288 @@
       ],
       "additionalProperties": false
     },
-    "getTasksParams": {
+    "listSchedulesParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listSchedulesResult": {
       "type": "object",
       "properties": {
-        "agentId": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "agentId"
-      ]
-    },
-    "getTasksResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
-            },
-            "tasks": {
-              "type": "object",
-              "propertyNames": {
+        "running": {
+          "type": "boolean"
+        },
+        "schedules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
                 "type": "string"
               },
-              "additionalProperties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "config",
+                  "user"
+                ]
+              },
+              "definition": {
                 "type": "object",
                 "properties": {
                   "repeat": {
+                    "description": "Repeat interval as \"<number> <unit>\" (e.g. \"30 minutes\", \"1 day\", \"1 month\"), at least 1 minute. Days, weeks and months follow the calendar in the schedule's timezone. If omitted the schedule runs once a day, unless \"once\" is set",
+                    "type": "string"
+                  },
+                  "once": {
+                    "description": "Run only once; the schedule is disabled after it runs",
+                    "type": "boolean"
+                  },
+                  "at": {
+                    "description": "An exact moment to run, as an ISO-8601 instant with a Z or UTC offset (e.g. \"2026-11-20T09:00:00-05:00\"). The schedule runs once at or after it (once, if the app was down then) and is then done. It cannot be combined with repeat, a time window, weekdays or a day of month",
                     "type": "string"
                   },
                   "after": {
+                    "description": "Only run at or after this time of day (HH:mm, 24-hour)",
                     "type": "string"
                   },
                   "before": {
+                    "description": "Only run at or before this time of day (HH:mm, 24-hour)",
                     "type": "string"
                   },
                   "weekdays": {
+                    "description": "Weekdays it may run on, e.g. \"mon tue wed thu fri\"",
                     "type": "string"
                   },
                   "dayOfMonth": {
-                    "type": "number",
+                    "description": "Day of month it may run on (months without that day are skipped)",
+                    "type": "integer",
                     "minimum": 1,
                     "maximum": 31
                   },
-                  "lastRunTime": {
-                    "type": "number"
-                  },
                   "timezone": {
+                    "description": "IANA timezone the schedule is evaluated in; defaults to the server's",
                     "type": "string"
                   },
-                  "message": {
-                    "type": "string"
+                  "action": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "job"
+                          },
+                          "agentType": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "prompt": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "maxCostUsd": {
+                            "description": "Stop the run and mark it failed when it has spent more than this (USD). Unset: agent.jobs.defaultMaxCostUsd, else no limit",
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "maxApprovalLevel": {
+                            "description": "Highest tool approval level the run may approve without asking anyone (see Tool approval levels). Unset: agent.jobs.maxAutoApprovalLevel. Cannot exceed the operator's agent.jobs.approvalCeiling; actions above it are refused",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "agentType",
+                          "prompt"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "agent"
+                          },
+                          "agentId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "prompt": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "agentId",
+                          "prompt"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "queue"
+                          },
+                          "queue": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "item": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "prompt": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "prompt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "queue",
+                          "item"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "workflow"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "maxCostUsd": {
+                            "description": "Stop the run and mark it failed when it has spent more than this (USD). Unset: agent.jobs.defaultMaxCostUsd, else no limit",
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "maxApprovalLevel": {
+                            "description": "Highest tool approval level the run may approve without asking anyone (see Tool approval levels). Unset: agent.jobs.maxAutoApprovalLevel. Cannot exceed the operator's agent.jobs.approvalCeiling; actions above it are refused",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "tool"
+                          },
+                          "agentType": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "tool": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "input": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
+                          },
+                          "maxCostUsd": {
+                            "description": "Stop the run and mark it failed when it has spent more than this (USD). Unset: agent.jobs.defaultMaxCostUsd, else no limit",
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "maxApprovalLevel": {
+                            "description": "Highest tool approval level the run may approve without asking anyone (see Tool approval levels). Unset: agent.jobs.maxAutoApprovalLevel. Cannot exceed the operator's agent.jobs.approvalCeiling; actions above it are refused",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "agentType",
+                          "tool",
+                          "input"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "task"
+                          },
+                          "ref": {
+                            "type": "object",
+                            "properties": {
+                              "board": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "taskId": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "board",
+                              "taskId"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "assignmentId": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "ref",
+                          "assignmentId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "enabled": {
+                    "description": "Set to false to pause the schedule. Omitted means enabled",
+                    "type": "boolean"
                   }
                 },
                 "required": [
-                  "lastRunTime",
-                  "message"
+                  "action"
                 ],
                 "additionalProperties": false
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "scheduled",
+                  "running",
+                  "paused",
+                  "done",
+                  "missed",
+                  "error",
+                  "stopped"
+                ]
+              },
+              "lastRunTime": {
+                "type": "number"
+              },
+              "nextRunTime": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "currentRun": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "scheduledFor": {
+                        "type": "number"
+                      },
+                      "startTime": {
+                        "type": "number"
+                      },
+                      "endTime": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "running",
+                          "completed",
+                          "failed",
+                          "cancelled",
+                          "interrupted"
+                        ]
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "actionKind": {
+                        "type": "string",
+                        "enum": [
+                          "job",
+                          "agent",
+                          "queue",
+                          "workflow",
+                          "task",
+                          "tool"
+                        ]
+                      },
+                      "jobId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "manual": {
+                        "default": false,
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "scheduledFor",
+                      "startTime",
+                      "endTime",
+                      "status",
+                      "message",
+                      "actionKind",
+                      "jobId",
+                      "manual"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
-            "count": {
-              "type": "number"
-            }
-          },
-          "required": [
-            "status",
-            "tasks",
-            "count"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
+            "required": [
+              "name",
+              "source",
+              "definition",
+              "enabled",
+              "state",
+              "lastRunTime",
+              "nextRunTime",
+              "error",
+              "currentRun"
+            ],
+            "additionalProperties": false
+          }
         }
-      ]
+      },
+      "required": [
+        "running",
+        "schedules"
+      ],
+      "additionalProperties": false
     },
-    "addTaskParams": {
+    "addScheduleParams": {
       "type": "object",
       "properties": {
-        "agentId": {
-          "type": "string"
-        },
         "name": {
           "type": "string"
         },
-        "task": {
+        "schedule": {
           "type": "object",
           "properties": {
             "repeat": {
+              "description": "Repeat interval as \"<number> <unit>\" (e.g. \"30 minutes\", \"1 day\", \"1 month\"), at least 1 minute. Days, weeks and months follow the calendar in the schedule's timezone. If omitted the schedule runs once a day, unless \"once\" is set",
+              "type": "string"
+            },
+            "once": {
+              "description": "Run only once; the schedule is disabled after it runs",
+              "type": "boolean"
+            },
+            "at": {
+              "description": "An exact moment to run, as an ISO-8601 instant with a Z or UTC offset (e.g. \"2026-11-20T09:00:00-05:00\"). The schedule runs once at or after it (once, if the app was down then) and is then done. It cannot be combined with repeat, a time window, weekdays or a day of month",
               "type": "string"
             },
             "after": {
+              "description": "Only run at or after this time of day (HH:mm, 24-hour)",
               "type": "string"
             },
             "before": {
+              "description": "Only run at or before this time of day (HH:mm, 24-hour)",
               "type": "string"
             },
             "weekdays": {
+              "description": "Weekdays it may run on, e.g. \"mon tue wed thu fri\"",
               "type": "string"
             },
             "dayOfMonth": {
-              "type": "number",
+              "description": "Day of month it may run on (months without that day are skipped)",
+              "type": "integer",
               "minimum": 1,
               "maximum": 31
             },
-            "lastRunTime": {
-              "type": "number"
-            },
             "timezone": {
+              "description": "IANA timezone the schedule is evaluated in; defaults to the server's",
               "type": "string"
             },
-            "message": {
-              "type": "string"
+            "action": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "job"
+                    },
+                    "agentType": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "prompt": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxCostUsd": {
+                      "description": "Stop the run and mark it failed when it has spent more than this (USD). Unset: agent.jobs.defaultMaxCostUsd, else no limit",
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "maxApprovalLevel": {
+                      "description": "Highest tool approval level the run may approve without asking anyone (see Tool approval levels). Unset: agent.jobs.maxAutoApprovalLevel. Cannot exceed the operator's agent.jobs.approvalCeiling; actions above it are refused",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "agentType",
+                    "prompt"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "agent"
+                    },
+                    "agentId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "prompt": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "agentId",
+                    "prompt"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "queue"
+                    },
+                    "queue": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "item": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "prompt": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "prompt"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "queue",
+                    "item"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "workflow"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxCostUsd": {
+                      "description": "Stop the run and mark it failed when it has spent more than this (USD). Unset: agent.jobs.defaultMaxCostUsd, else no limit",
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "maxApprovalLevel": {
+                      "description": "Highest tool approval level the run may approve without asking anyone (see Tool approval levels). Unset: agent.jobs.maxAutoApprovalLevel. Cannot exceed the operator's agent.jobs.approvalCeiling; actions above it are refused",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "name"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "tool"
+                    },
+                    "agentType": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "tool": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "input": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    },
+                    "maxCostUsd": {
+                      "description": "Stop the run and mark it failed when it has spent more than this (USD). Unset: agent.jobs.defaultMaxCostUsd, else no limit",
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "maxApprovalLevel": {
+                      "description": "Highest tool approval level the run may approve without asking anyone (see Tool approval levels). Unset: agent.jobs.maxAutoApprovalLevel. Cannot exceed the operator's agent.jobs.approvalCeiling; actions above it are refused",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "agentType",
+                    "tool",
+                    "input"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "task"
+                    },
+                    "ref": {
+                      "type": "object",
+                      "properties": {
+                        "board": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "taskId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "board",
+                        "taskId"
+                      ]
+                    },
+                    "assignmentId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "ref",
+                    "assignmentId"
+                  ]
+                }
+              ]
+            },
+            "enabled": {
+              "description": "Set to false to pause the schedule. Omitted means enabled",
+              "type": "boolean"
             }
           },
           "required": [
-            "lastRunTime",
-            "message"
+            "action"
           ]
         }
       },
       "required": [
-        "agentId",
         "name",
-        "task"
+        "schedule"
       ]
     },
-    "addTaskResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
-            },
-            "success": {
-              "type": "boolean"
-            },
-            "message": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "status",
-            "success",
-            "message"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
-    },
-    "removeTaskParams": {
+    "addScheduleResult": {
       "type": "object",
       "properties": {
-        "agentId": {
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "updateScheduleParams": {
+      "type": "object",
+      "properties": {
+        "name": {
           "type": "string"
         },
+        "schedule": {
+          "type": "object",
+          "properties": {
+            "repeat": {
+              "description": "Repeat interval as \"<number> <unit>\" (e.g. \"30 minutes\", \"1 day\", \"1 month\"), at least 1 minute. Days, weeks and months follow the calendar in the schedule's timezone. If omitted the schedule runs once a day, unless \"once\" is set",
+              "type": "string"
+            },
+            "once": {
+              "description": "Run only once; the schedule is disabled after it runs",
+              "type": "boolean"
+            },
+            "at": {
+              "description": "An exact moment to run, as an ISO-8601 instant with a Z or UTC offset (e.g. \"2026-11-20T09:00:00-05:00\"). The schedule runs once at or after it (once, if the app was down then) and is then done. It cannot be combined with repeat, a time window, weekdays or a day of month",
+              "type": "string"
+            },
+            "after": {
+              "description": "Only run at or after this time of day (HH:mm, 24-hour)",
+              "type": "string"
+            },
+            "before": {
+              "description": "Only run at or before this time of day (HH:mm, 24-hour)",
+              "type": "string"
+            },
+            "weekdays": {
+              "description": "Weekdays it may run on, e.g. \"mon tue wed thu fri\"",
+              "type": "string"
+            },
+            "dayOfMonth": {
+              "description": "Day of month it may run on (months without that day are skipped)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 31
+            },
+            "timezone": {
+              "description": "IANA timezone the schedule is evaluated in; defaults to the server's",
+              "type": "string"
+            },
+            "action": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "job"
+                    },
+                    "agentType": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "prompt": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxCostUsd": {
+                      "description": "Stop the run and mark it failed when it has spent more than this (USD). Unset: agent.jobs.defaultMaxCostUsd, else no limit",
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "maxApprovalLevel": {
+                      "description": "Highest tool approval level the run may approve without asking anyone (see Tool approval levels). Unset: agent.jobs.maxAutoApprovalLevel. Cannot exceed the operator's agent.jobs.approvalCeiling; actions above it are refused",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "agentType",
+                    "prompt"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "agent"
+                    },
+                    "agentId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "prompt": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "agentId",
+                    "prompt"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "queue"
+                    },
+                    "queue": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "item": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "prompt": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "prompt"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "queue",
+                    "item"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "workflow"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxCostUsd": {
+                      "description": "Stop the run and mark it failed when it has spent more than this (USD). Unset: agent.jobs.defaultMaxCostUsd, else no limit",
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "maxApprovalLevel": {
+                      "description": "Highest tool approval level the run may approve without asking anyone (see Tool approval levels). Unset: agent.jobs.maxAutoApprovalLevel. Cannot exceed the operator's agent.jobs.approvalCeiling; actions above it are refused",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "name"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "tool"
+                    },
+                    "agentType": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "tool": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "input": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    },
+                    "maxCostUsd": {
+                      "description": "Stop the run and mark it failed when it has spent more than this (USD). Unset: agent.jobs.defaultMaxCostUsd, else no limit",
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "maxApprovalLevel": {
+                      "description": "Highest tool approval level the run may approve without asking anyone (see Tool approval levels). Unset: agent.jobs.maxAutoApprovalLevel. Cannot exceed the operator's agent.jobs.approvalCeiling; actions above it are refused",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "agentType",
+                    "tool",
+                    "input"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "task"
+                    },
+                    "ref": {
+                      "type": "object",
+                      "properties": {
+                        "board": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "taskId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "board",
+                        "taskId"
+                      ]
+                    },
+                    "assignmentId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "ref",
+                    "assignmentId"
+                  ]
+                }
+              ]
+            },
+            "enabled": {
+              "description": "Set to false to pause the schedule. Omitted means enabled",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "action"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "schedule"
+      ]
+    },
+    "updateScheduleResult": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "removeScheduleParams": {
+      "type": "object",
+      "properties": {
         "name": {
           "type": "string"
         }
       },
       "required": [
-        "agentId",
         "name"
       ]
     },
-    "removeTaskResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
-            },
-            "success": {
-              "type": "boolean"
-            },
-            "message": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "status",
-            "success",
-            "message"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
-    },
-    "getStatusParams": {
+    "removeScheduleResult": {
       "type": "object",
       "properties": {
-        "agentId": {
+        "message": {
           "type": "string"
         }
       },
       "required": [
-        "agentId"
-      ]
+        "message"
+      ],
+      "additionalProperties": false
     },
-    "getStatusResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
-            },
-            "running": {
-              "type": "boolean"
-            },
-            "autoStart": {
-              "type": "boolean"
-            },
-            "executions": {
-              "type": "object",
-              "propertyNames": {
-                "type": "string"
-              },
-              "additionalProperties": {
-                "type": "object",
-                "properties": {
-                  "nextRunTime": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "pending",
-                      "running"
-                    ]
-                  },
-                  "startTime": {
-                    "type": "number"
-                  }
-                },
-                "required": [
-                  "nextRunTime",
-                  "status"
-                ],
-                "additionalProperties": false
-              }
-            }
-          },
-          "required": [
-            "status",
-            "running",
-            "autoStart",
-            "executions"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
-    },
-    "startSchedulerParams": {
+    "setScheduleEnabledParams": {
       "type": "object",
       "properties": {
-        "agentId": {
+        "name": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "enabled"
+      ]
+    },
+    "setScheduleEnabledResult": {
+      "type": "object",
+      "properties": {
+        "message": {
           "type": "string"
         }
       },
       "required": [
-        "agentId"
-      ]
+        "message"
+      ],
+      "additionalProperties": false
     },
-    "startSchedulerResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
-            },
-            "success": {
-              "type": "boolean"
-            },
-            "message": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "status",
-            "success",
-            "message"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
-    },
-    "stopSchedulerParams": {
+    "runScheduleParams": {
       "type": "object",
       "properties": {
-        "agentId": {
+        "name": {
           "type": "string"
         }
       },
       "required": [
-        "agentId"
+        "name"
       ]
     },
-    "stopSchedulerResult": {
-      "oneOf": [
-        {
+    "runScheduleResult": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "run": {
           "type": "object",
           "properties": {
+            "id": {
+              "type": "string"
+            },
+            "scheduledFor": {
+              "type": "number"
+            },
+            "startTime": {
+              "type": "number"
+            },
+            "endTime": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
             "status": {
               "type": "string",
-              "const": "success"
-            },
-            "success": {
-              "type": "boolean"
+              "enum": [
+                "running",
+                "completed",
+                "failed",
+                "cancelled",
+                "interrupted"
+              ]
             },
             "message": {
               "type": "string"
-            }
-          },
-          "required": [
-            "status",
-            "success",
-            "message"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
+            },
+            "actionKind": {
               "type": "string",
-              "const": "agentNotFound"
+              "enum": [
+                "job",
+                "agent",
+                "queue",
+                "workflow",
+                "task",
+                "tool"
+              ]
+            },
+            "jobId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "manual": {
+              "default": false,
+              "type": "boolean"
             }
           },
           "required": [
-            "status"
+            "id",
+            "scheduledFor",
+            "startTime",
+            "endTime",
+            "status",
+            "message",
+            "actionKind",
+            "jobId",
+            "manual"
           ],
           "additionalProperties": false
         }
-      ]
+      },
+      "required": [
+        "message",
+        "run"
+      ],
+      "additionalProperties": false
+    },
+    "clearHistoryParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "clearHistoryResult": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "additionalProperties": false
     },
     "getHistoryParams": {
       "type": "object",
       "properties": {
-        "agentId": {
+        "name": {
           "type": "string"
+        }
+      }
+    },
+    "getHistoryResult": {
+      "type": "object",
+      "properties": {
+        "history": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "scheduledFor": {
+                  "type": "number"
+                },
+                "startTime": {
+                  "type": "number"
+                },
+                "endTime": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "running",
+                    "completed",
+                    "failed",
+                    "cancelled",
+                    "interrupted"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                },
+                "actionKind": {
+                  "type": "string",
+                  "enum": [
+                    "job",
+                    "agent",
+                    "queue",
+                    "workflow",
+                    "task",
+                    "tool"
+                  ]
+                },
+                "jobId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "manual": {
+                  "default": false,
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "scheduledFor",
+                "startTime",
+                "endTime",
+                "status",
+                "message",
+                "actionKind",
+                "jobId",
+                "manual"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "required": [
+        "history"
+      ],
+      "additionalProperties": false
+    },
+    "previewNextRunParams": {
+      "type": "object",
+      "properties": {
+        "timing": {
+          "type": "object",
+          "properties": {
+            "repeat": {
+              "description": "Repeat interval as \"<number> <unit>\" (e.g. \"30 minutes\", \"1 day\", \"1 month\"), at least 1 minute. Days, weeks and months follow the calendar in the schedule's timezone. If omitted the schedule runs once a day, unless \"once\" is set",
+              "type": "string"
+            },
+            "once": {
+              "description": "Run only once; the schedule is disabled after it runs",
+              "type": "boolean"
+            },
+            "at": {
+              "description": "An exact moment to run, as an ISO-8601 instant with a Z or UTC offset (e.g. \"2026-11-20T09:00:00-05:00\"). The schedule runs once at or after it (once, if the app was down then) and is then done. It cannot be combined with repeat, a time window, weekdays or a day of month",
+              "type": "string"
+            },
+            "after": {
+              "description": "Only run at or after this time of day (HH:mm, 24-hour)",
+              "type": "string"
+            },
+            "before": {
+              "description": "Only run at or before this time of day (HH:mm, 24-hour)",
+              "type": "string"
+            },
+            "weekdays": {
+              "description": "Weekdays it may run on, e.g. \"mon tue wed thu fri\"",
+              "type": "string"
+            },
+            "dayOfMonth": {
+              "description": "Day of month it may run on (months without that day are skipped)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 31
+            },
+            "timezone": {
+              "description": "IANA timezone the schedule is evaluated in; defaults to the server's",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "timing"
+      ]
+    },
+    "previewNextRunResult": {
+      "type": "object",
+      "properties": {
+        "nextRunTime": {
+          "type": [
+            "number",
+            "null"
+          ]
         },
-        "taskName": {
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "nextRunTime",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "setSchedulerRunningParams": {
+      "type": "object",
+      "properties": {
+        "running": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "running"
+      ]
+    },
+    "setSchedulerRunningResult": {
+      "type": "object",
+      "properties": {
+        "message": {
           "type": "string"
         }
       },
       "required": [
-        "agentId"
-      ]
-    },
-    "getHistoryResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
-            },
-            "history": {
-              "type": "object",
-              "propertyNames": {
-                "type": "string"
-              },
-              "additionalProperties": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "startTime": {
-                      "type": "number"
-                    },
-                    "endTime": {
-                      "type": "number"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "completed",
-                        "failed"
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "startTime",
-                    "endTime",
-                    "status",
-                    "message"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "required": [
-            "status",
-            "history"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
+        "message"
+      ],
+      "additionalProperties": false
     }
   },
   "x-tokenring-rpc": {
@@ -868,40 +1793,55 @@
     "path": "/rpc/scheduler",
     "source": "plugin/scheduler/rpc/schema.ts",
     "methods": {
-      "getTasks": {
+      "listSchedules": {
         "type": "query",
-        "params": "#/$defs/getTasksParams",
-        "result": "#/$defs/getTasksResult"
+        "params": "#/$defs/listSchedulesParams",
+        "result": "#/$defs/listSchedulesResult"
       },
-      "addTask": {
+      "addSchedule": {
         "type": "mutation",
-        "params": "#/$defs/addTaskParams",
-        "result": "#/$defs/addTaskResult"
+        "params": "#/$defs/addScheduleParams",
+        "result": "#/$defs/addScheduleResult"
       },
-      "removeTask": {
+      "updateSchedule": {
         "type": "mutation",
-        "params": "#/$defs/removeTaskParams",
-        "result": "#/$defs/removeTaskResult"
+        "params": "#/$defs/updateScheduleParams",
+        "result": "#/$defs/updateScheduleResult"
       },
-      "getStatus": {
-        "type": "query",
-        "params": "#/$defs/getStatusParams",
-        "result": "#/$defs/getStatusResult"
-      },
-      "startScheduler": {
+      "removeSchedule": {
         "type": "mutation",
-        "params": "#/$defs/startSchedulerParams",
-        "result": "#/$defs/startSchedulerResult"
+        "params": "#/$defs/removeScheduleParams",
+        "result": "#/$defs/removeScheduleResult"
       },
-      "stopScheduler": {
+      "setScheduleEnabled": {
         "type": "mutation",
-        "params": "#/$defs/stopSchedulerParams",
-        "result": "#/$defs/stopSchedulerResult"
+        "params": "#/$defs/setScheduleEnabledParams",
+        "result": "#/$defs/setScheduleEnabledResult"
+      },
+      "runSchedule": {
+        "type": "mutation",
+        "params": "#/$defs/runScheduleParams",
+        "result": "#/$defs/runScheduleResult"
+      },
+      "clearHistory": {
+        "type": "mutation",
+        "params": "#/$defs/clearHistoryParams",
+        "result": "#/$defs/clearHistoryResult"
       },
       "getHistory": {
         "type": "query",
         "params": "#/$defs/getHistoryParams",
         "result": "#/$defs/getHistoryResult"
+      },
+      "previewNextRun": {
+        "type": "query",
+        "params": "#/$defs/previewNextRunParams",
+        "result": "#/$defs/previewNextRunResult"
+      },
+      "setSchedulerRunning": {
+        "type": "mutation",
+        "params": "#/$defs/setSchedulerRunningParams",
+        "result": "#/$defs/setSchedulerRunningResult"
       }
     }
   }

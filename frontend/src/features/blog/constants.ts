@@ -15,8 +15,6 @@ export const STATUS_FILTERS: FilterTabOption<StatusFilter>[] = [
   { id: "published", label: "Published" },
 ];
 
-export const BLOG_AGENT_TYPES = ["blog", "writer", "contentWriter", "content-writer", "managingEditor"] as const;
-
 /** Parse a comma-separated tags string into a clean array. */
 export function parseTagsInput(value: string): string[] {
   return value

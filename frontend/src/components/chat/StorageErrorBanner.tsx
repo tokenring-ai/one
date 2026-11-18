@@ -35,14 +35,14 @@ export const StorageErrorBanner: React.FC = () => {
         <div className="flex-1">
           <strong className="block mb-1 text-sm font-semibold text-primary">Chat Input History Disabled</strong>
           <div className="text-sm text-primary">{errorMessage}</div>
-          <div className="mt-1 text-2xs text-primary/70">Your typed messages won't be saved between sessions until storage is available.</div>
+          <div className="mt-1 text-xs text-primary/70">Your typed messages won't be saved between sessions until storage is available.</div>
         </div>
       </div>
 
       <button
         type="button"
         onClick={dismissStorageError}
-        className="shrink-0 p-1.5 rounded-md hover:bg-warning/20 transition-colors focus-ring"
+        className="shrink-0 p-1.5 rounded-md hover:bg-(--status-warning-bg) transition-colors focus-ring"
         aria-label="Dismiss warning"
         title="Dismiss this warning"
       >

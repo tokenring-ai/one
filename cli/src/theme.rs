@@ -60,8 +60,7 @@ impl HexColor {
     /// Map an RGB value to the nearest standard ANSI colour when true-color
     /// is unavailable.
     fn approximate_ansi(self) -> Color {
-        let luminance =
-            (self.0 as u32 * 299 + self.1 as u32 * 587 + self.2 as u32 * 114) / 1000;
+        let luminance = (self.0 as u32 * 299 + self.1 as u32 * 587 + self.2 as u32 * 114) / 1000;
         if luminance < 48 {
             Color::Black
         } else if luminance < 96 {

@@ -7,7 +7,7 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
-      "title": "getFilesystemProviders request",
+      "title": "getAllowedPaths request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -17,10 +17,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/filesystem.getFilesystemProviders"
+          "const": "/rpc/filesystem.getAllowedPaths"
         },
         "params": {
-          "$ref": "#/$defs/getFilesystemProvidersParams"
+          "$ref": "#/$defs/getAllowedPathsParams"
         }
       },
       "required": [
@@ -32,7 +32,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getFilesystemProviders response",
+      "title": "getAllowedPaths response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -42,7 +42,53 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getFilesystemProvidersResult"
+          "$ref": "#/$defs/getAllowedPathsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getDefaultDirectories request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/filesystem.getDefaultDirectories"
+        },
+        "params": {
+          "$ref": "#/$defs/getDefaultDirectoriesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getDefaultDirectories response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getDefaultDirectoriesResult"
         }
       },
       "required": [
@@ -89,6 +135,52 @@
         },
         "result": {
           "$ref": "#/$defs/readTextFileResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "readFileBase64 request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/filesystem.readFileBase64"
+        },
+        "params": {
+          "$ref": "#/$defs/readFileBase64Params"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "readFileBase64 response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/readFileBase64Result"
         }
       },
       "required": [
@@ -457,6 +549,236 @@
         },
         "result": {
           "$ref": "#/$defs/deleteFileResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteDirectory request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/filesystem.deleteDirectory"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteDirectoryParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteDirectory response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteDirectoryResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "countDirectoryEntries request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/filesystem.countDirectoryEntries"
+        },
+        "params": {
+          "$ref": "#/$defs/countDirectoryEntriesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "countDirectoryEntries response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/countDirectoryEntriesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchFileContents request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/filesystem.searchFileContents"
+        },
+        "params": {
+          "$ref": "#/$defs/searchFileContentsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchFileContents response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/searchFileContentsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listFileVersions request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/filesystem.listFileVersions"
+        },
+        "params": {
+          "$ref": "#/$defs/listFileVersionsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listFileVersions response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listFileVersionsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "readFileVersion request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/filesystem.readFileVersion"
+        },
+        "params": {
+          "$ref": "#/$defs/readFileVersionParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "readFileVersion response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/readFileVersionResult"
         }
       },
       "required": [
@@ -851,37 +1173,83 @@
       ],
       "additionalProperties": false
     },
-    "getFilesystemProvidersParams": {
+    "getAllowedPathsParams": {
       "type": "object",
       "properties": {}
     },
-    "getFilesystemProvidersResult": {
+    "getAllowedPathsResult": {
       "type": "object",
       "properties": {
-        "providers": {
+        "allowedPaths": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Absolute host directory the agent may access"
+              },
+              "permission": {
+                "default": "write",
+                "description": "read = list/read only; write = read plus create/modify/delete",
+                "type": "string",
+                "enum": [
+                  "read",
+                  "write"
+                ]
+              },
+              "approvalLevel": {
+                "description": "Write entries only: rate file writes, edits and appends under this path at least this level (1-8) on the tool approval scale, so a lower auto-approve threshold asks before changing files here. Never lowers a tool's own level.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8
+              },
+              "description": {
+                "description": "Optional label shown to the model and in Settings",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "permission"
+            ],
+            "additionalProperties": false
           }
         }
       },
       "required": [
-        "providers"
+        "allowedPaths"
+      ],
+      "additionalProperties": false
+    },
+    "getDefaultDirectoriesParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getDefaultDirectoriesResult": {
+      "type": "object",
+      "properties": {
+        "workingDirectory": {
+          "type": "string"
+        },
+        "workspaceDirectory": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "workingDirectory",
+        "workspaceDirectory"
       ],
       "additionalProperties": false
     },
     "readTextFileParams": {
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string"
-        },
         "path": {
           "type": "string"
         }
       },
       "required": [
-        "provider",
         "path"
       ]
     },
@@ -889,13 +1257,9 @@
       "type": "object",
       "properties": {
         "content": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "string",
+            "null"
           ]
         }
       },
@@ -904,18 +1268,40 @@
       ],
       "additionalProperties": false
     },
-    "existsParams": {
+    "readFileBase64Params": {
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string"
-        },
         "path": {
           "type": "string"
         }
       },
       "required": [
-        "provider",
+        "path"
+      ]
+    },
+    "readFileBase64Result": {
+      "type": "object",
+      "properties": {
+        "contentBase64": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "contentBase64"
+      ],
+      "additionalProperties": false
+    },
+    "existsParams": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
         "path"
       ]
     },
@@ -934,15 +1320,11 @@
     "statParams": {
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string"
-        },
         "path": {
           "type": "string"
         }
       },
       "required": [
-        "provider",
         "path"
       ]
     },
@@ -1020,15 +1402,11 @@
     "globParams": {
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string"
-        },
         "pattern": {
           "type": "string"
         }
       },
       "required": [
-        "provider",
         "pattern"
       ]
     },
@@ -1050,9 +1428,6 @@
     "searchWorkspaceFilesParams": {
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string"
-        },
         "query": {
           "default": "",
           "type": "string"
@@ -1062,11 +1437,12 @@
           "type": "integer",
           "exclusiveMinimum": 0,
           "maximum": 9007199254740991
+        },
+        "gitignore": {
+          "default": false,
+          "type": "boolean"
         }
-      },
-      "required": [
-        "provider"
-      ]
+      }
     },
     "searchWorkspaceFilesResult": {
       "type": "object",
@@ -1090,9 +1466,6 @@
     "listDirectoryParams": {
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string"
-        },
         "path": {
           "type": "string"
         },
@@ -1103,10 +1476,13 @@
         "recursive": {
           "default": false,
           "type": "boolean"
+        },
+        "gitignore": {
+          "default": false,
+          "type": "boolean"
         }
       },
       "required": [
-        "provider",
         "path"
       ]
     },
@@ -1128,18 +1504,22 @@
     "writeFileParams": {
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string"
-        },
         "path": {
           "type": "string"
         },
         "content": {
           "type": "string"
+        },
+        "encoding": {
+          "default": "utf8",
+          "type": "string",
+          "enum": [
+            "utf8",
+            "base64"
+          ]
         }
       },
       "required": [
-        "provider",
         "path",
         "content"
       ]
@@ -1159,9 +1539,6 @@
     "appendFileParams": {
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string"
-        },
         "path": {
           "type": "string"
         },
@@ -1170,7 +1547,6 @@
         }
       },
       "required": [
-        "provider",
         "path",
         "content"
       ]
@@ -1190,15 +1566,11 @@
     "deleteFileParams": {
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string"
-        },
         "path": {
           "type": "string"
         }
       },
       "required": [
-        "provider",
         "path"
       ]
     },
@@ -1214,12 +1586,206 @@
       ],
       "additionalProperties": false
     },
+    "deleteDirectoryParams": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "deleteDirectoryResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
+      ],
+      "additionalProperties": false
+    },
+    "countDirectoryEntriesParams": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "countDirectoryEntriesResult": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "number"
+        },
+        "directories": {
+          "type": "number"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "files",
+        "directories",
+        "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "searchFileContentsParams": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "query": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limit": {
+          "default": 200,
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 1000
+        },
+        "ignoreCase": {
+          "default": true,
+          "type": "boolean"
+        },
+        "gitignore": {
+          "default": true,
+          "type": "boolean"
+        },
+        "includeHidden": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "path",
+        "query"
+      ]
+    },
+    "searchFileContentsResult": {
+      "type": "object",
+      "properties": {
+        "matches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "line": {
+                "type": "number"
+              },
+              "match": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "file",
+              "line",
+              "match"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "matches",
+        "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "listFileVersionsParams": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "listFileVersionsResult": {
+      "type": "object",
+      "properties": {
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "size": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "createdAt",
+              "size"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "versions"
+      ],
+      "additionalProperties": false
+    },
+    "readFileVersionParams": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "versionId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "versionId"
+      ]
+    },
+    "readFileVersionResult": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "additionalProperties": false
+    },
     "renameParams": {
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string"
-        },
         "oldPath": {
           "type": "string"
         },
@@ -1228,7 +1794,6 @@
         }
       },
       "required": [
-        "provider",
         "oldPath",
         "newPath"
       ]
@@ -1248,9 +1813,6 @@
     "createDirectoryParams": {
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string"
-        },
         "path": {
           "type": "string"
         },
@@ -1260,7 +1822,6 @@
         }
       },
       "required": [
-        "provider",
         "path"
       ]
     },
@@ -1279,9 +1840,6 @@
     "copyParams": {
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string"
-        },
         "source": {
           "type": "string"
         },
@@ -1294,7 +1852,6 @@
         }
       },
       "required": [
-        "provider",
         "source",
         "destination"
       ]
@@ -1331,11 +1888,41 @@
               "type": "string",
               "const": "success"
             },
-            "provider": {
-              "type": "string"
-            },
-            "workingDirectory": {
-              "type": "string"
+            "allowedPaths": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "Absolute host directory the agent may access"
+                  },
+                  "permission": {
+                    "default": "write",
+                    "description": "read = list/read only; write = read plus create/modify/delete",
+                    "type": "string",
+                    "enum": [
+                      "read",
+                      "write"
+                    ]
+                  },
+                  "approvalLevel": {
+                    "description": "Write entries only: rate file writes, edits and appends under this path at least this level (1-8) on the tool approval scale, so a lower auto-approve threshold asks before changing files here. Never lowers a tool's own level.",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "description": {
+                    "description": "Optional label shown to the model and in Settings",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "permission"
+                ],
+                "additionalProperties": false
+              }
             },
             "selectedFiles": {
               "type": "array",
@@ -1358,8 +1945,7 @@
           },
           "required": [
             "status",
-            "provider",
-            "workingDirectory",
+            "allowedPaths",
             "selectedFiles",
             "readFiles",
             "dirty"
@@ -1401,11 +1987,41 @@
               "type": "string",
               "const": "success"
             },
-            "provider": {
-              "type": "string"
-            },
-            "workingDirectory": {
-              "type": "string"
+            "allowedPaths": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "Absolute host directory the agent may access"
+                  },
+                  "permission": {
+                    "default": "write",
+                    "description": "read = list/read only; write = read plus create/modify/delete",
+                    "type": "string",
+                    "enum": [
+                      "read",
+                      "write"
+                    ]
+                  },
+                  "approvalLevel": {
+                    "description": "Write entries only: rate file writes, edits and appends under this path at least this level (1-8) on the tool approval scale, so a lower auto-approve threshold asks before changing files here. Never lowers a tool's own level.",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "description": {
+                    "description": "Optional label shown to the model and in Settings",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "permission"
+                ],
+                "additionalProperties": false
+              }
             },
             "selectedFiles": {
               "type": "array",
@@ -1428,8 +2044,7 @@
           },
           "required": [
             "status",
-            "provider",
-            "workingDirectory",
+            "allowedPaths",
             "selectedFiles",
             "readFiles",
             "dirty"
@@ -1555,15 +2170,25 @@
     "path": "/rpc/filesystem",
     "source": "plugin/filesystem/rpc/schema.ts",
     "methods": {
-      "getFilesystemProviders": {
+      "getAllowedPaths": {
         "type": "query",
-        "params": "#/$defs/getFilesystemProvidersParams",
-        "result": "#/$defs/getFilesystemProvidersResult"
+        "params": "#/$defs/getAllowedPathsParams",
+        "result": "#/$defs/getAllowedPathsResult"
+      },
+      "getDefaultDirectories": {
+        "type": "query",
+        "params": "#/$defs/getDefaultDirectoriesParams",
+        "result": "#/$defs/getDefaultDirectoriesResult"
       },
       "readTextFile": {
         "type": "query",
         "params": "#/$defs/readTextFileParams",
         "result": "#/$defs/readTextFileResult"
+      },
+      "readFileBase64": {
+        "type": "query",
+        "params": "#/$defs/readFileBase64Params",
+        "result": "#/$defs/readFileBase64Result"
       },
       "exists": {
         "type": "query",
@@ -1604,6 +2229,31 @@
         "type": "mutation",
         "params": "#/$defs/deleteFileParams",
         "result": "#/$defs/deleteFileResult"
+      },
+      "deleteDirectory": {
+        "type": "mutation",
+        "params": "#/$defs/deleteDirectoryParams",
+        "result": "#/$defs/deleteDirectoryResult"
+      },
+      "countDirectoryEntries": {
+        "type": "query",
+        "params": "#/$defs/countDirectoryEntriesParams",
+        "result": "#/$defs/countDirectoryEntriesResult"
+      },
+      "searchFileContents": {
+        "type": "query",
+        "params": "#/$defs/searchFileContentsParams",
+        "result": "#/$defs/searchFileContentsResult"
+      },
+      "listFileVersions": {
+        "type": "query",
+        "params": "#/$defs/listFileVersionsParams",
+        "result": "#/$defs/listFileVersionsResult"
+      },
+      "readFileVersion": {
+        "type": "query",
+        "params": "#/$defs/readFileVersionParams",
+        "result": "#/$defs/readFileVersionResult"
       },
       "rename": {
         "type": "mutation",

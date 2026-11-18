@@ -1,0 +1,815 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Marketplace RPC",
+  "description": "JSON-RPC 2.0 messages for /rpc/marketplace",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/JSONRPCError"
+    },
+    {
+      "title": "listMarketplaceItems request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/marketplace.listMarketplaceItems"
+        },
+        "params": {
+          "$ref": "#/$defs/listMarketplaceItemsParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listMarketplaceItems response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listMarketplaceItemsResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getMarketplaceItem request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/marketplace.getMarketplaceItem"
+        },
+        "params": {
+          "$ref": "#/$defs/getMarketplaceItemParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getMarketplaceItem response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getMarketplaceItemResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "installMarketplaceItem request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/marketplace.installMarketplaceItem"
+        },
+        "params": {
+          "$ref": "#/$defs/installMarketplaceItemParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "installMarketplaceItem response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/installMarketplaceItemResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateMarketplaceItem request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/marketplace.updateMarketplaceItem"
+        },
+        "params": {
+          "$ref": "#/$defs/updateMarketplaceItemParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateMarketplaceItem response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateMarketplaceItemResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "uninstallMarketplaceItem request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/marketplace.uninstallMarketplaceItem"
+        },
+        "params": {
+          "$ref": "#/$defs/uninstallMarketplaceItemParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "uninstallMarketplaceItem response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/uninstallMarketplaceItemResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "JSONRPCError": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "listMarketplaceItemsParams": {
+      "type": "object",
+      "properties": {
+        "refresh": {
+          "default": false,
+          "type": "boolean"
+        }
+      }
+    },
+    "listMarketplaceItemsResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "success"
+            },
+            "registryName": {
+              "type": "string"
+            },
+            "fetchedAt": {
+              "type": "number"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "agent",
+                      "tool",
+                      "workflow",
+                      "skill"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "installAs": {
+                    "type": "string"
+                  },
+                  "displayName": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "default": "",
+                    "type": "string"
+                  },
+                  "category": {
+                    "default": "Community",
+                    "type": "string"
+                  },
+                  "author": {
+                    "default": "",
+                    "type": "string"
+                  },
+                  "tags": {
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "version": {
+                    "default": "",
+                    "type": "string"
+                  },
+                  "updatedAt": {
+                    "default": "",
+                    "type": "string"
+                  },
+                  "icon": {
+                    "default": "",
+                    "type": "string"
+                  },
+                  "requiresPlugins": {
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "installAs",
+                  "displayName",
+                  "description",
+                  "category",
+                  "author",
+                  "tags",
+                  "version",
+                  "updatedAt",
+                  "icon",
+                  "requiresPlugins"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "installed": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "agent",
+                      "tool",
+                      "workflow",
+                      "skill"
+                    ]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "name",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "status",
+            "registryName",
+            "fetchedAt",
+            "items",
+            "installed"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "unavailable"
+            },
+            "registryName": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "registryName",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "disabled"
+            },
+            "registryName": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status",
+            "registryName",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "getMarketplaceItemParams": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "getMarketplaceItemResult": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "agent",
+                    "tool",
+                    "workflow",
+                    "skill"
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "installAs": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "description": {
+                  "default": "",
+                  "type": "string"
+                },
+                "category": {
+                  "default": "Community",
+                  "type": "string"
+                },
+                "author": {
+                  "default": "",
+                  "type": "string"
+                },
+                "tags": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "version": {
+                  "default": "",
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "default": "",
+                  "type": "string"
+                },
+                "icon": {
+                  "default": "",
+                  "type": "string"
+                },
+                "requiresPlugins": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "kind",
+                "id",
+                "installAs",
+                "displayName",
+                "description",
+                "category",
+                "author",
+                "tags",
+                "version",
+                "updatedAt",
+                "icon",
+                "requiresPlugins"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "marketplace": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "default": "",
+              "type": "string"
+            },
+            "author": {
+              "default": "",
+              "type": "string"
+            },
+            "readme": {
+              "default": "",
+              "type": "string"
+            },
+            "icon": {
+              "default": "",
+              "type": "string"
+            },
+            "tags": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "installAs": {
+              "default": "",
+              "type": "string"
+            },
+            "requiresPlugins": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "version",
+            "author",
+            "readme",
+            "icon",
+            "tags",
+            "installAs",
+            "requiresPlugins"
+          ],
+          "additionalProperties": false
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "agent",
+            "tool",
+            "workflow",
+            "skill"
+          ]
+        },
+        "item": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
+        },
+        "installedAs": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "agent",
+                    "tool",
+                    "workflow",
+                    "skill"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "name",
+                "version"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "existingNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "entry",
+        "marketplace",
+        "kind",
+        "item",
+        "installedAs",
+        "existingNames"
+      ],
+      "additionalProperties": false
+    },
+    "installMarketplaceItemParams": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "installAs": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "installMarketplaceItemResult": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "agent",
+            "tool",
+            "workflow",
+            "skill"
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "updateMarketplaceItemParams": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "updateMarketplaceItemResult": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "agent",
+            "tool",
+            "workflow",
+            "skill"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "uninstallMarketplaceItemParams": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "uninstallMarketplaceItemResult": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "agent",
+            "tool",
+            "workflow",
+            "skill"
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-tokenring-rpc": {
+    "name": "Marketplace RPC",
+    "path": "/rpc/marketplace",
+    "source": "plugin/marketplace/rpc/schema.ts",
+    "methods": {
+      "listMarketplaceItems": {
+        "type": "query",
+        "params": "#/$defs/listMarketplaceItemsParams",
+        "result": "#/$defs/listMarketplaceItemsResult"
+      },
+      "getMarketplaceItem": {
+        "type": "query",
+        "params": "#/$defs/getMarketplaceItemParams",
+        "result": "#/$defs/getMarketplaceItemResult"
+      },
+      "installMarketplaceItem": {
+        "type": "mutation",
+        "params": "#/$defs/installMarketplaceItemParams",
+        "result": "#/$defs/installMarketplaceItemResult"
+      },
+      "updateMarketplaceItem": {
+        "type": "mutation",
+        "params": "#/$defs/updateMarketplaceItemParams",
+        "result": "#/$defs/updateMarketplaceItemResult"
+      },
+      "uninstallMarketplaceItem": {
+        "type": "mutation",
+        "params": "#/$defs/uninstallMarketplaceItemParams",
+        "result": "#/$defs/uninstallMarketplaceItemResult"
+      }
+    }
+  }
+}

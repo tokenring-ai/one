@@ -1,6 +1,6 @@
 //! Ephemeral `@` search result cache (nice-to-have #18).
 //!
-//! Results are keyed by `(provider, query)` and retained across picker dismissals
+//! Results are keyed by query and retained across picker dismissals
 //! so repeated `@` queries stay fast. Call [`SearchCache::clear`] for a full reset.
 
 use std::collections::HashMap;
@@ -19,23 +19,22 @@ pub struct SearchCache {
 }
 
 impl SearchCache {
-    pub fn key(provider: &str, query: &str) -> String {
-        format!("{provider}:{}", query.trim())
+    pub fn key(query: &str) -> String {
+        query.trim().to_string()
     }
 
-    pub fn get(&self, provider: &str, query: &str) -> Option<&SearchCacheEntry> {
-        self.entries.get(&Self::key(provider, query))
+    pub fn get(&self, query: &str) -> Option<&SearchCacheEntry> {
+        self.entries.get(&Self::key(query))
     }
 
     pub fn store(
         &mut self,
-        provider: &str,
         query: &str,
         matches: Vec<String>,
         total_matches: usize,
     ) {
         self.entries.insert(
-            Self::key(provider, query),
+            Self::key(query),
             SearchCacheEntry {
                 matches,
                 total_matches,
@@ -54,15 +53,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn cache_key_includes_provider_and_query() {
-        assert_eq!(SearchCache::key("posix", "src"), "posix:src");
+    fn cache_key_is_the_trimmed_query() {
+        assert_eq!(SearchCache::key(" src "), "src");
     }
 
     #[test]
     fn clear_removes_entries() {
         let mut cache = SearchCache::default();
-        cache.store("posix", "a", vec!["x".into()], 1);
+        cache.store("a", vec!["x".into()], 1);
         cache.clear();
-        assert!(cache.get("posix", "a").is_none());
+        assert!(cache.get("a").is_none());
     }
 }

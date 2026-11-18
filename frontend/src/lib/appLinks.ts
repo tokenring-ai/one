@@ -47,6 +47,8 @@ const RESOURCE_SCHEMES: Record<string, string> = {
   config: "/configuration",
   plugin: "/configuration",
   research: "/research",
+  memories: "/memories",
+  memory: "/memories",
   "web-design": "/web-design",
   webdesign: "/web-design",
 };

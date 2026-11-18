@@ -1,0 +1,152 @@
+/*
+ * Paper (light, :root) and Charcoal (dark, .dark). Components consume these
+ * variables; Monaco, xterm and the page chrome read the matching ThemeDef in
+ * themes.ts (tokens.test.ts keeps the two in step). Derived status and accent
+ * fills follow their base color via color-mix, so a mode, or the accent
+ * override applyTheme.ts sets inline on <html>, only overrides what changes.
+ * The legacy --bg-* / --border-primary names stay as the canonical values;
+ * the newer --surface-* / --border-* names alias or extend them.
+ */
+@layer base {
+  :root {
+    --bg-primary: #fafaf9;
+    --bg-secondary: #f5f5f4;
+    --bg-sidebar: #ffffff;
+    --bg-tertiary: #e7e5e4;
+    --bg-hover: rgba(0, 0, 0, 0.05);
+    --bg-active: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+    --bg-input: #ffffff;
+    --bg-overlay: rgba(0, 0, 0, 0.5);
+    --border-primary: #e7e5e4;
+    --border-subtle: #efeeed;
+    --border-default: var(--border-primary);
+    --border-strong: #d6d3d1;
+    --border-control: #7b756f;
+    --surface-canvas: var(--bg-primary);
+    --surface-base: var(--bg-secondary);
+    --surface-raised: #ffffff;
+    --surface-sunken: var(--bg-tertiary);
+    --accent-primary: #5a5df0;
+    --accent-primary-hover: #4346ee;
+    --accent-primary-soft: #494bc2;
+    --text-on-accent: #ffffff;
+    --text-primary: #1c1917;
+    --text-secondary: #44403c;
+    --text-muted: #5e5853;
+    --text-dim: #625c57;
+    --selection: color-mix(in srgb, var(--accent-primary) 30%, transparent);
+
+    --status-info-fg: #036093;
+    --status-success-fg: #026a25;
+    --status-warning-fg: #7c5005;
+    --status-danger-fg: #b20f0f;
+    --status-warning-solid: #b16105;
+    --status-danger-solid: #dc2626;
+
+    --status-info-bg: color-mix(in srgb, var(--status-info-fg) 12%, transparent);
+    --status-info-border: color-mix(in srgb, var(--status-info-fg) 35%, transparent);
+    --status-info-dot: var(--status-info-fg);
+    --status-success-bg: color-mix(in srgb, var(--status-success-fg) 12%, transparent);
+    --status-success-border: color-mix(in srgb, var(--status-success-fg) 35%, transparent);
+    --status-success-dot: var(--status-success-fg);
+    --status-warning-bg: color-mix(in srgb, var(--status-warning-fg) 14%, transparent);
+    --status-warning-border: color-mix(in srgb, var(--status-warning-fg) 35%, transparent);
+    --status-warning-dot: var(--status-warning-fg);
+    --status-danger-bg: color-mix(in srgb, var(--status-danger-fg) 12%, transparent);
+    --status-danger-border: color-mix(in srgb, var(--status-danger-fg) 35%, transparent);
+    --status-danger-dot: var(--status-danger-fg);
+
+    --text-error: var(--status-danger-fg);
+    --text-warning: var(--status-warning-fg);
+    --text-success: var(--status-success-fg);
+
+    --focus-ring: var(--accent-primary);
+    --accent-tint: color-mix(in oklab, var(--accent-primary) 13%, transparent);
+    --accent-line: color-mix(in oklab, var(--accent-primary) 55%, transparent);
+
+    --elevation-card: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+    --elevation-button: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.025);
+    --elevation-popover: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --elevation-overlay: 0 16px 40px rgba(0, 0, 0, 0.18);
+    --elevation-accent: 0 10px 15px -3px color-mix(in srgb, var(--accent-primary) 20%, transparent);
+
+    /* The dark terminal panel is a separate surface from the app canvas. */
+    --terminal-bg: #fafaf9;
+    --terminal-fg: #1c1917;
+
+    --z-dropdown: 40;
+    --z-modal: 50;
+    --z-toast: 60;
+    --z-lightbox: 70;
+
+    /* Shape and density. data-density on <html> (applyTheme.ts) picks the scale. */
+    --pane-radius: 8px;
+    --tab-h: 32px;
+    --head-h: 40px;
+    --control-h: 28px;
+    --pane-gap: 4px;
+    --rail-w: 56px;
+  }
+
+  :root[data-density="compact"] {
+    --tab-h: 28px;
+    --head-h: 34px;
+    --control-h: 24px;
+    --pane-gap: 2px;
+    --rail-w: 48px;
+  }
+
+  :root[data-density="comfortable"] {
+    --tab-h: 36px;
+    --head-h: 44px;
+    --control-h: 32px;
+    --pane-gap: 6px;
+    --rail-w: 60px;
+  }
+
+  .dark {
+    --bg-primary: #171717;
+    --bg-secondary: #242424;
+    --bg-sidebar: #242424;
+    --bg-tertiary: #1a1a1a;
+    --bg-hover: rgba(255, 255, 255, 0.05);
+    --bg-active: rgba(255, 255, 255, 0.11);
+    --bg-input: #1a1a1a;
+    --bg-overlay: rgba(0, 0, 0, 0.6);
+    --border-primary: #444;
+    --border-subtle: #333333;
+    --border-strong: #575757;
+    --border-control: #878787;
+    --surface-raised: #1f1f1f;
+    /* Re-declared so a .dark subtree re-resolves the aliases, not just <html>. */
+    --border-default: var(--border-primary);
+    --surface-canvas: var(--bg-primary);
+    --surface-base: var(--bg-secondary);
+    --surface-sunken: var(--bg-tertiary);
+    --accent-primary: #5a5df0;
+    --accent-primary-hover: #5a5df0;
+    --accent-primary-soft: #a5b4fc;
+    --text-on-accent: #ffffff;
+    --text-primary: #fafafa;
+    --text-secondary: #e5e5e5;
+    --text-muted: #b3b3b3;
+    --text-dim: #a6a6a6;
+    --selection: color-mix(in srgb, var(--accent-primary) 50%, transparent);
+
+    --status-info-fg: #7dd3fc;
+    --status-success-fg: #22c55e;
+    --status-warning-fg: #f59e0b;
+    --status-danger-fg: #f37171;
+    --status-warning-solid: #b16105;
+    --status-danger-solid: #dc2626;
+
+    --elevation-card: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --elevation-button: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+    --elevation-popover: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --elevation-overlay: 0 16px 40px rgba(0, 0, 0, 0.45);
+    --elevation-accent: 0 10px 15px -3px color-mix(in srgb, var(--accent-primary) 20%, transparent);
+
+    --terminal-bg: #1a1a2e;
+    --terminal-fg: #4ade80;
+  }
+}

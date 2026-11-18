@@ -60,11 +60,8 @@ fn apply_snapshot(latest: &mut Option<Metrics>, value: &Value, latency_ms: Optio
     let Some(mut metrics) = parse_metrics(value) else {
         return false;
     };
-    metrics.rpc_latency_ms = latency_ms.or_else(|| {
-        latest
-            .as_ref()
-            .and_then(|previous| previous.rpc_latency_ms)
-    });
+    metrics.rpc_latency_ms =
+        latency_ms.or_else(|| latest.as_ref().and_then(|previous| previous.rpc_latency_ms));
     if latest.as_ref() == Some(&metrics) {
         return false;
     }
@@ -96,9 +93,7 @@ fn parse_metrics(value: &Value) -> Option<Metrics> {
         .get("contextLength")
         .and_then(Value::as_u64)
         .unwrap_or(0);
-    let max_context_length = value
-        .get("maxContextLength")
-        .and_then(Value::as_u64);
+    let max_context_length = value.get("maxContextLength").and_then(Value::as_u64);
 
     Some(Metrics {
         model: value
@@ -106,10 +101,7 @@ fn parse_metrics(value: &Value) -> Option<Metrics> {
             .and_then(|m| m.as_str())
             .map(String::from),
         max_context_length,
-        tools: value
-            .get("toolCount")
-            .and_then(Value::as_u64)
-            .unwrap_or(0) as usize,
+        tools: value.get("toolCount").and_then(Value::as_u64).unwrap_or(0) as usize,
         tokens: context_length,
         cost: value
             .get("cost")

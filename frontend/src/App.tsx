@@ -1,55 +1,94 @@
-import { useEffect, useRef, useState } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Component, type ErrorInfo, type ReactNode, useEffect, useRef, useState } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { ChatInputProvider } from "./components/ChatInputContext.tsx";
 import { StorageErrorBanner } from "./components/chat/StorageErrorBanner.tsx";
 import ErrorBoundary from "./components/ErrorBoundary.tsx";
-import AppRail from "./components/layout/AppRail.tsx";
-import { getActiveApp } from "./components/layout/AppRegistry.ts";
 import { AppShellProvider } from "./components/layout/AppShellContext.tsx";
-import ModelSelector from "./components/ModelSelector.tsx";
+import DashboardRail from "./components/layout/DashboardRail.tsx";
 import LoginOverlay from "./components/overlay/login-overlay.tsx";
-import ToolSelector from "./components/ToolSelector.tsx";
-import TopBar from "./components/TopBar.tsx";
 import { notificationManager, ToastContainer, type ToastItem } from "./components/ui/toast.tsx";
-import AgentsApp from "./pages/apps/AgentsApp.tsx";
-import BlogApp from "./pages/apps/BlogApp.tsx";
-import BotsApp from "./pages/apps/BotsApp.tsx";
-import CalendarApp from "./pages/apps/CalendarApp.tsx";
-import ConfigurationApp from "./pages/apps/ConfigurationApp.tsx";
-import DatabaseApp from "./pages/apps/DatabaseApp.tsx";
-import DebugApp from "./pages/apps/DebugApp.tsx";
-import DocumentsApp from "./pages/apps/DocumentsApp.tsx";
-import EmailApp from "./pages/apps/EmailApp.tsx";
-import FilesApp from "./pages/apps/FilesApp.tsx";
-import MediaApp from "./pages/apps/MediaApp.tsx";
-import MessagingApp from "./pages/apps/MessagingApp.tsx";
-import MetricsApp from "./pages/apps/MetricsApp.tsx";
-import PluginsApp from "./pages/apps/PluginsApp.tsx";
-import QueueApp from "./pages/apps/QueueApp.tsx";
-import ResearchApp from "./pages/apps/ResearchApp.tsx";
-import SchedulerApp from "./pages/apps/SchedulerApp.tsx";
-import ServicesApp from "./pages/apps/ServicesApp.tsx";
-import SettingsApp from "./pages/apps/SettingsApp.tsx";
-import SkillsApp from "./pages/apps/SkillsApp.tsx";
-import SocialApp from "./pages/apps/SocialApp.tsx";
-import StocksApp from "./pages/apps/StocksApp.tsx";
-import TerminalApp from "./pages/apps/TerminalApp.tsx";
-import VaultApp from "./pages/apps/VaultApp.tsx";
-import WebDesignApp from "./pages/apps/WebDesignApp.tsx";
-import WorkflowsApp from "./pages/apps/WorkflowsApp.tsx";
-import Dashboard from "./pages/Dashboard.tsx";
+import { useRestoreLastSession } from "./hooks/useRestoreLastSession.ts";
+import { rpcLayoutRemote } from "./layout/rpcRemote.ts";
 import NotFoundPage from "./pages/NotFoundPage.tsx";
-import { useAgentList } from "./rpc.ts";
+import AppHost from "./shell/AppHost.tsx";
+import { useLayoutRegistry } from "./shell/registry.ts";
+import TopBar from "./shell/TopBar.tsx";
+import { loadUserApps, USER_APP_BASE_PATH } from "./shell/userApps.ts";
+import Button from "./ui/button.tsx";
+
+/** Errors React reports when a lazily imported chunk could not be fetched. */
+const CHUNK_LOAD_ERROR = /dynamically imported module|Importing a module script failed|Loading (CSS )?chunk|ChunkLoadError|Failed to fetch/i;
+
+export function isChunkLoadError(error: unknown): boolean {
+  return error instanceof Error && (error.name === "ChunkLoadError" || CHUNK_LOAD_ERROR.test(error.message));
+}
+
+interface RouteErrorBoundaryProps {
+  /** Changing it (navigating elsewhere) clears a caught error. */
+  resetKey: string;
+  children: ReactNode;
+  /** Injected by tests; reloads the page by default. */
+  reload?: (() => void) | undefined;
+}
+
+/**
+ * Route-level boundary. Unlike keying the subtree on the pathname, it never
+ * remounts healthy dashboards on navigation: only a boundary that has caught an
+ * error resets when the route changes. React caches a failed `lazy()` import
+ * for the page's lifetime, so "Try Again" after a chunk-load failure reloads
+ * the page — the only way to fetch the chunk again.
+ */
+export class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, { error: Error | null }> {
+  state: { error: Error | null } = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Route error boundary caught:", error, errorInfo);
+  }
+
+  componentDidUpdate(previous: RouteErrorBoundaryProps) {
+    if (this.state.error && previous.resetKey !== this.props.resetKey) this.setState({ error: null });
+  }
+
+  private retry = () => {
+    if (isChunkLoadError(this.state.error)) (this.props.reload ?? (() => window.location.reload()))();
+    else this.setState({ error: null });
+  };
+
+  render() {
+    const { error } = this.state;
+    if (!error) return this.props.children;
+    return (
+      <div role="alert" className="flex flex-col items-center justify-center h-full p-6 text-center bg-primary">
+        <h1 className="text-lg font-bold text-primary mb-2">Oops! Something went wrong</h1>
+        <p className="text-sm text-muted mb-6 max-w-md">
+          {isChunkLoadError(error) ? "Part of the app failed to load. Reload to fetch it again." : error.message || "An unexpected error occurred"}
+        </p>
+        <Button type="button" size="md" className="mt-4" onClick={this.retry}>
+          {isChunkLoadError(error) ? "Reload" : "Try Again"}
+        </Button>
+      </div>
+    );
+  }
+}
 
 export default function App() {
+  return (
+    <AppShellProvider>
+      <AppShell />
+    </AppShellProvider>
+  );
+}
+
+function AppShell() {
   const location = useLocation();
+  useRestoreLastSession();
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [showLoadingBar, setShowLoadingBar] = useState(false);
   const loadingBarTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Used by TopBar; each app loads whatever else it needs itself.
-  const agents = useAgentList();
-
   useEffect(() => {
     const cleanup = notificationManager.subscribeToasts(setToasts);
     return cleanup as () => void;
@@ -71,108 +110,56 @@ export default function App() {
     };
   }, [location.key]);
 
+  const layoutRegistry = useLayoutRegistry();
+  // Saved apps (/my/...) resolve once they have loaded; AppHost shows a spinner until then.
+  const onLayoutApp = layoutRegistry.routes.resolve(location.pathname) !== null || location.pathname.startsWith(`${USER_APP_BASE_PATH}/`);
   useEffect(() => {
-    const activeApp = getActiveApp(location.pathname);
-    document.title = activeApp ? `${activeApp.label} · TokenRing One` : "TokenRing One";
-  }, [location.pathname]);
-
-  const currentAgentId = location.pathname.startsWith("/agent/") ? location.pathname.split("/")[2]! : null;
+    void loadUserApps(rpcLayoutRemote);
+  }, []);
 
   return (
-    <AppShellProvider>
-      <ChatInputProvider>
-        <ErrorBoundary>
-          <LoginOverlay />
-          <ToastContainer toasts={toasts} onRemove={id => notificationManager.removeToast(id)} />
-          {/* Route transition loading bar */}
-          {showLoadingBar && (
-            <div
-              key={location.key}
-              data-testid="route-loading-bar"
-              className="fixed top-0 left-0 right-0 h-1 bg-linear-to-r from-accent via-accent to-accent z-[100] route-loading-bar"
-              role="progressbar"
-              aria-label="Loading page"
-            />
-          )}
-          <div className="flex flex-col h-dvh bg-primary/50 text-secondary antialiased font-sans selection:bg-active overflow-hidden">
-            {/* Skip to main content link for accessibility */}
-            <a
-              href="#main-content"
-              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-accent focus:text-primary focus:rounded-lg focus-ring"
-            >
-              Skip to main content
-            </a>
-            <TopBar
-              currentAgentId={currentAgentId}
-              agents={agents}
-              agentControls={
-                currentAgentId ? (
-                  <>
-                    <ModelSelector agentId={currentAgentId} />
-                    <ToolSelector agentId={currentAgentId} />
-                  </>
-                ) : undefined
-              }
-            />
-            {/* Storage error banner - shows when localStorage is unavailable */}
-            <StorageErrorBanner />
-            <div className="flex flex-1 min-h-0">
-              <AppRail />
-              <main id="main-content" className="flex-1 min-w-0 relative">
-                <ErrorBoundary>
-                  <Routes>
-                    {/* Dashboard home */}
-                    <Route path="/" element={<Dashboard />} />
-
-                    {/* App routes */}
-                    {/* Optional param keeps the app mounted while browsing between agent types */}
-                    <Route path="/agents/:agentType?" element={<AgentsApp />} />
-                    {/* Optional param keeps the app mounted while navigating between workflows */}
-                    <Route path="/workflows/:workflowName?" element={<WorkflowsApp />} />
-                    {/* Optional param keeps the app mounted while navigating between bots */}
-                    <Route path="/bots/:botId?" element={<BotsApp />} />
-                    <Route path="/scheduler" element={<SchedulerApp />} />
-                    <Route path="/queue" element={<QueueApp />} />
-                    <Route path="/skills" element={<SkillsApp />} />
-                    {/* Optional params keep the app mounted while navigating between designs */}
-                    <Route path="/web-design/:flowName?/:designName?" element={<WebDesignApp />} />
-                    <Route path="/documents" element={<DocumentsApp />} />
-                    <Route path="/research/:topicName?/:itemName?" element={<ResearchApp />} />
-                    {/* Optional param keeps the app mounted while navigating between posts */}
-                    <Route path="/blog/:blogId?" element={<BlogApp />} />
-                    {/* Optional param keeps the app mounted while navigating between files */}
-                    <Route path="/files/:fileId?" element={<FilesApp />} />
-                    <Route path="/terminal/:terminalId?" element={<TerminalApp />} />
-                    {/* Optional param keeps the app mounted while navigating between email providers */}
-                    <Route path="/email/:provider?" element={<EmailApp />} />
-                    {/* Optional param keeps the app mounted while navigating between datasources */}
-                    <Route path="/database/:datasource?" element={<DatabaseApp />} />
-                    {/* Optional param keeps the app mounted while navigating between calendar providers */}
-                    <Route path="/calendar/:provider?" element={<CalendarApp />} />
-                    <Route path="/media" element={<MediaApp />} />
-                    <Route path="/social" element={<SocialApp />} />
-                    <Route path="/messaging" element={<MessagingApp />} />
-                    <Route path="/stocks" element={<StocksApp />} />
-                    <Route path="/plugins" element={<PluginsApp />} />
-                    {/* Optional param keeps the app mounted while navigating between plugins */}
-                    <Route path="/configuration/:plugin?" element={<ConfigurationApp />} />
-                    <Route path="/services" element={<ServicesApp />} />
-                    <Route path="/metrics" element={<MetricsApp />} />
-                    <Route path="/debug" element={<DebugApp />} />
-                    <Route path="/settings" element={<SettingsApp />} />
-                    <Route path="/vault" element={<VaultApp />} />
-
-                    {/* Agent chat — rendered by the Agents app so its sidebar stays alongside the chat */}
-                    <Route path="/agent/:agentId/*" element={<AgentsApp />} />
-
-                    <Route path="*" element={<NotFoundPage />} />
-                  </Routes>
-                </ErrorBoundary>
-              </main>
-            </div>
+    <ChatInputProvider>
+      <ErrorBoundary>
+        <LoginOverlay />
+        <ToastContainer toasts={toasts} onRemove={id => notificationManager.removeToast(id)} />
+        {/* Route transition loading bar */}
+        {showLoadingBar && (
+          <div
+            key={location.key}
+            data-testid="route-loading-bar"
+            className="fixed top-0 left-0 right-0 h-1 bg-linear-to-r from-accent via-accent to-accent z-[100] route-loading-bar"
+            role="progressbar"
+            aria-label="Loading page"
+          />
+        )}
+        <div className="flex flex-col h-dvh bg-primary/50 text-secondary antialiased font-sans selection:bg-active overflow-hidden">
+          {/* Skip to main content link for accessibility */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-accent focus:text-primary focus:rounded-lg focus-ring"
+          >
+            Skip to main content
+          </a>
+          <TopBar />
+          {/* Storage error banner - shows when localStorage is unavailable */}
+          <StorageErrorBanner />
+          <div className="flex flex-1 min-h-0">
+            <DashboardRail />
+            <main id="main-content" className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+              <RouteErrorBoundary resetKey={location.pathname}>
+                {location.pathname === "/" ? (
+                  <Navigate to="/home" replace />
+                ) : onLayoutApp ? (
+                  // One stable host for every layout app, so moving between an app's routes never remounts it.
+                  <AppHost />
+                ) : (
+                  <NotFoundPage />
+                )}
+              </RouteErrorBoundary>
+            </main>
           </div>
-        </ErrorBoundary>
-      </ChatInputProvider>
-    </AppShellProvider>
+        </div>
+      </ErrorBoundary>
+    </ChatInputProvider>
   );
 }

@@ -7,7 +7,7 @@
       "$ref": "#/$defs/JSONRPCError"
     },
     {
-      "title": "getAvailableSubAgents request",
+      "title": "getTaskConfiguration request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -17,10 +17,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/tasks.getAvailableSubAgents"
+          "const": "/rpc/tasks.getTaskConfiguration"
         },
         "params": {
-          "$ref": "#/$defs/getAvailableSubAgentsParams"
+          "$ref": "#/$defs/getTaskConfigurationParams"
         }
       },
       "required": [
@@ -32,7 +32,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getAvailableSubAgents response",
+      "title": "getTaskConfiguration response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -42,7 +42,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getAvailableSubAgentsResult"
+          "$ref": "#/$defs/getTaskConfigurationResult"
         }
       },
       "required": [
@@ -53,7 +53,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getEnabledSubAgents request",
+      "title": "listBoards request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -63,10 +63,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/tasks.getEnabledSubAgents"
+          "const": "/rpc/tasks.listBoards"
         },
         "params": {
-          "$ref": "#/$defs/getEnabledSubAgentsParams"
+          "$ref": "#/$defs/listBoardsParams"
         }
       },
       "required": [
@@ -78,7 +78,7 @@
       "additionalProperties": false
     },
     {
-      "title": "getEnabledSubAgents response",
+      "title": "listBoards response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -88,7 +88,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/getEnabledSubAgentsResult"
+          "$ref": "#/$defs/listBoardsResult"
         }
       },
       "required": [
@@ -99,7 +99,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamEnabledSubAgents request",
+      "title": "streamBoards request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -109,10 +109,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/tasks.streamEnabledSubAgents"
+          "const": "/rpc/tasks.streamBoards"
         },
         "params": {
-          "$ref": "#/$defs/streamEnabledSubAgentsParams"
+          "$ref": "#/$defs/streamBoardsParams"
         }
       },
       "required": [
@@ -124,7 +124,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamEnabledSubAgents response",
+      "title": "streamBoards response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -134,7 +134,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/streamEnabledSubAgentsResult"
+          "$ref": "#/$defs/streamBoardsResult"
         }
       },
       "required": [
@@ -145,7 +145,7 @@
       "additionalProperties": false
     },
     {
-      "title": "streamEnabledSubAgents stream end response",
+      "title": "streamBoards stream end response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -170,7 +170,7 @@
       "additionalProperties": false
     },
     {
-      "title": "enableSubAgents request",
+      "title": "getBoard request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -180,10 +180,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/tasks.enableSubAgents"
+          "const": "/rpc/tasks.getBoard"
         },
         "params": {
-          "$ref": "#/$defs/enableSubAgentsParams"
+          "$ref": "#/$defs/getBoardParams"
         }
       },
       "required": [
@@ -195,7 +195,7 @@
       "additionalProperties": false
     },
     {
-      "title": "enableSubAgents response",
+      "title": "getBoard response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -205,7 +205,7 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/enableSubAgentsResult"
+          "$ref": "#/$defs/getBoardResult"
         }
       },
       "required": [
@@ -216,7 +216,7 @@
       "additionalProperties": false
     },
     {
-      "title": "disableSubAgents request",
+      "title": "streamBoardSettings request",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -226,10 +226,10 @@
           "type": "number"
         },
         "method": {
-          "const": "/rpc/tasks.disableSubAgents"
+          "const": "/rpc/tasks.streamBoardSettings"
         },
         "params": {
-          "$ref": "#/$defs/disableSubAgentsParams"
+          "$ref": "#/$defs/streamBoardSettingsParams"
         }
       },
       "required": [
@@ -241,7 +241,7 @@
       "additionalProperties": false
     },
     {
-      "title": "disableSubAgents response",
+      "title": "streamBoardSettings response",
       "type": "object",
       "properties": {
         "jsonrpc": {
@@ -251,13 +251,1242 @@
           "type": "number"
         },
         "result": {
-          "$ref": "#/$defs/disableSubAgentsResult"
+          "$ref": "#/$defs/streamBoardSettingsResult"
         }
       },
       "required": [
         "jsonrpc",
         "id",
         "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamBoardSettings stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamBoard request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.streamBoard"
+        },
+        "params": {
+          "$ref": "#/$defs/streamBoardParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamBoard response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamBoardResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamBoard stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createBoard request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.createBoard"
+        },
+        "params": {
+          "$ref": "#/$defs/createBoardParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createBoard response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createBoardResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateBoard request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.updateBoard"
+        },
+        "params": {
+          "$ref": "#/$defs/updateBoardParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateBoard response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateBoardResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteBoard request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.deleteBoard"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteBoardParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteBoard response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteBoardResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listTasks request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.listTasks"
+        },
+        "params": {
+          "$ref": "#/$defs/listTasksParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listTasks response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listTasksResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchTasks request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.searchTasks"
+        },
+        "params": {
+          "$ref": "#/$defs/searchTasksParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "searchTasks response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/searchTasksResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getTask request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.getTask"
+        },
+        "params": {
+          "$ref": "#/$defs/getTaskParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getTask response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getTaskResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTask request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.streamTask"
+        },
+        "params": {
+          "$ref": "#/$defs/streamTaskParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTask response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamTaskResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamTask stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createTask request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.createTask"
+        },
+        "params": {
+          "$ref": "#/$defs/createTaskParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "createTask response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/createTaskResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateTask request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.updateTask"
+        },
+        "params": {
+          "$ref": "#/$defs/updateTaskParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateTask response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateTaskResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setTaskBody request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.setTaskBody"
+        },
+        "params": {
+          "$ref": "#/$defs/setTaskBodyParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "setTaskBody response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/setTaskBodyResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "moveTask request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.moveTask"
+        },
+        "params": {
+          "$ref": "#/$defs/moveTaskParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "moveTask response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/moveTaskResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteTask request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.deleteTask"
+        },
+        "params": {
+          "$ref": "#/$defs/deleteTaskParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "deleteTask response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/deleteTaskResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "addAssignment request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.addAssignment"
+        },
+        "params": {
+          "$ref": "#/$defs/addAssignmentParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "addAssignment response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/addAssignmentResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateAssignment request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.updateAssignment"
+        },
+        "params": {
+          "$ref": "#/$defs/updateAssignmentParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "updateAssignment response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/updateAssignmentResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "removeAssignment request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.removeAssignment"
+        },
+        "params": {
+          "$ref": "#/$defs/removeAssignmentParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "removeAssignment response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/removeAssignmentResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listActivity request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.listActivity"
+        },
+        "params": {
+          "$ref": "#/$defs/listActivityParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "listActivity response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/listActivityResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamActivity request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.streamActivity"
+        },
+        "params": {
+          "$ref": "#/$defs/streamActivityParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamActivity response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamActivityResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamActivity stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "addComment request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.addComment"
+        },
+        "params": {
+          "$ref": "#/$defs/addCommentParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "addComment response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/addCommentResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "dispatchAssignment request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.dispatchAssignment"
+        },
+        "params": {
+          "$ref": "#/$defs/dispatchAssignmentParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "dispatchAssignment response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/dispatchAssignmentResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "dispatchAll request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.dispatchAll"
+        },
+        "params": {
+          "$ref": "#/$defs/dispatchAllParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "dispatchAll response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/dispatchAllResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelDispatch request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.cancelDispatch"
+        },
+        "params": {
+          "$ref": "#/$defs/cancelDispatchParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "cancelDispatch response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/cancelDispatchResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getDispatches request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.getDispatches"
+        },
+        "params": {
+          "$ref": "#/$defs/getDispatchesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "getDispatches response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/getDispatchesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamDispatches request",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "const": "/rpc/tasks.streamDispatches"
+        },
+        "params": {
+          "$ref": "#/$defs/streamDispatchesParams"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamDispatches response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/streamDispatchesResult"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "streamDispatches stream end response",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": "number"
+        },
+        "result": {
+          "type": "null"
+        },
+        "stream": {
+          "const": "end"
+        }
+      },
+      "required": [
+        "jsonrpc",
+        "id",
+        "result",
+        "stream"
       ],
       "additionalProperties": false
     }
@@ -299,264 +1528,2832 @@
       ],
       "additionalProperties": false
     },
-    "getAvailableSubAgentsParams": {
+    "getTaskConfigurationParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getTaskConfigurationResult": {
       "type": "object",
       "properties": {
-        "agentId": {
+        "directory": {
+          "type": "string"
+        },
+        "defaultAgentType": {
+          "type": "string"
+        },
+        "priorities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high",
+              "urgent"
+            ]
+          }
+        },
+        "columnColors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "gray",
+              "blue",
+              "violet",
+              "amber",
+              "green",
+              "red"
+            ]
+          }
+        },
+        "defaultColumns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "color": {
+                "default": "gray",
+                "type": "string",
+                "enum": [
+                  "gray",
+                  "blue",
+                  "violet",
+                  "amber",
+                  "green",
+                  "red"
+                ]
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "active",
+                  "done"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "color",
+              "category"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "agentTypes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "displayName",
+              "description"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "directory",
+        "defaultAgentType",
+        "priorities",
+        "columnColors",
+        "defaultColumns",
+        "agentTypes"
+      ],
+      "additionalProperties": false
+    },
+    "listBoardsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "listBoardsResult": {
+      "type": "object",
+      "properties": {
+        "boards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "key": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "taskCount": {
+                "type": "number"
+              },
+              "categoryCounts": {
+                "type": "object",
+                "properties": {
+                  "open": {
+                    "type": "number"
+                  },
+                  "active": {
+                    "type": "number"
+                  },
+                  "done": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "open",
+                  "active",
+                  "done"
+                ],
+                "additionalProperties": false
+              },
+              "runningCount": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "key",
+              "title",
+              "icon",
+              "taskCount",
+              "categoryCounts",
+              "runningCount"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "boards"
+      ],
+      "additionalProperties": false
+    },
+    "streamBoardsParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamBoardsResult": {
+      "type": "object",
+      "properties": {
+        "boards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "key": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "taskCount": {
+                "type": "number"
+              },
+              "categoryCounts": {
+                "type": "object",
+                "properties": {
+                  "open": {
+                    "type": "number"
+                  },
+                  "active": {
+                    "type": "number"
+                  },
+                  "done": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "open",
+                  "active",
+                  "done"
+                ],
+                "additionalProperties": false
+              },
+              "runningCount": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "key",
+              "title",
+              "icon",
+              "taskCount",
+              "categoryCounts",
+              "runningCount"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "boards"
+      ],
+      "additionalProperties": false
+    },
+    "getBoardParams": {
+      "type": "object",
+      "properties": {
+        "board": {
           "type": "string"
         }
       },
       "required": [
-        "agentId"
+        "board"
       ]
     },
-    "getAvailableSubAgentsResult": {
-      "oneOf": [
-        {
+    "getBoardResult": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9]{1,5}$"
+                },
+                "title": {
+                  "default": "",
+                  "type": "string"
+                },
+                "icon": {
+                  "default": "📋",
+                  "type": "string"
+                },
+                "description": {
+                  "default": "",
+                  "type": "string"
+                },
+                "columns": {
+                  "default": [
+                    {
+                      "id": "backlog",
+                      "name": "Backlog",
+                      "color": "gray",
+                      "category": "open"
+                    },
+                    {
+                      "id": "todo",
+                      "name": "Todo",
+                      "color": "blue",
+                      "category": "open"
+                    },
+                    {
+                      "id": "in-progress",
+                      "name": "In progress",
+                      "color": "amber",
+                      "category": "active"
+                    },
+                    {
+                      "id": "review",
+                      "name": "Review",
+                      "color": "violet",
+                      "category": "active"
+                    },
+                    {
+                      "id": "done",
+                      "name": "Done",
+                      "color": "green",
+                      "category": "done"
+                    }
+                  ],
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "color": {
+                        "default": "gray",
+                        "type": "string",
+                        "enum": [
+                          "gray",
+                          "blue",
+                          "violet",
+                          "amber",
+                          "green",
+                          "red"
+                        ]
+                      },
+                      "category": {
+                        "type": "string",
+                        "enum": [
+                          "open",
+                          "active",
+                          "done"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "color",
+                      "category"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "defaultColumn": {
+                  "default": "todo",
+                  "type": "string"
+                },
+                "automation": {
+                  "type": "object",
+                  "properties": {
+                    "onDispatch": {
+                      "default": "in-progress",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "onAllReported": {
+                      "default": "review",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "onDispatch",
+                    "onAllReported"
+                  ],
+                  "additionalProperties": false
+                },
+                "nextTaskNumber": {
+                  "default": 1,
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "createdAt": {
+                  "default": "",
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "title",
+                "icon",
+                "description",
+                "columns",
+                "defaultColumn",
+                "automation",
+                "nextTaskNumber",
+                "createdAt",
+                "id"
+              ],
+              "additionalProperties": {}
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "board"
+      ],
+      "additionalProperties": false
+    },
+    "streamBoardSettingsParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board"
+      ]
+    },
+    "streamBoardSettingsResult": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9]{1,5}$"
+                },
+                "title": {
+                  "default": "",
+                  "type": "string"
+                },
+                "icon": {
+                  "default": "📋",
+                  "type": "string"
+                },
+                "description": {
+                  "default": "",
+                  "type": "string"
+                },
+                "columns": {
+                  "default": [
+                    {
+                      "id": "backlog",
+                      "name": "Backlog",
+                      "color": "gray",
+                      "category": "open"
+                    },
+                    {
+                      "id": "todo",
+                      "name": "Todo",
+                      "color": "blue",
+                      "category": "open"
+                    },
+                    {
+                      "id": "in-progress",
+                      "name": "In progress",
+                      "color": "amber",
+                      "category": "active"
+                    },
+                    {
+                      "id": "review",
+                      "name": "Review",
+                      "color": "violet",
+                      "category": "active"
+                    },
+                    {
+                      "id": "done",
+                      "name": "Done",
+                      "color": "green",
+                      "category": "done"
+                    }
+                  ],
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "color": {
+                        "default": "gray",
+                        "type": "string",
+                        "enum": [
+                          "gray",
+                          "blue",
+                          "violet",
+                          "amber",
+                          "green",
+                          "red"
+                        ]
+                      },
+                      "category": {
+                        "type": "string",
+                        "enum": [
+                          "open",
+                          "active",
+                          "done"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "color",
+                      "category"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "defaultColumn": {
+                  "default": "todo",
+                  "type": "string"
+                },
+                "automation": {
+                  "type": "object",
+                  "properties": {
+                    "onDispatch": {
+                      "default": "in-progress",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "onAllReported": {
+                      "default": "review",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "onDispatch",
+                    "onAllReported"
+                  ],
+                  "additionalProperties": false
+                },
+                "nextTaskNumber": {
+                  "default": 1,
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "createdAt": {
+                  "default": "",
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "title",
+                "icon",
+                "description",
+                "columns",
+                "defaultColumn",
+                "automation",
+                "nextTaskNumber",
+                "createdAt",
+                "id"
+              ],
+              "additionalProperties": {}
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "board"
+      ],
+      "additionalProperties": false
+    },
+    "streamBoardParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board"
+      ]
+    },
+    "streamBoardResult": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9]{1,5}$"
+                },
+                "title": {
+                  "default": "",
+                  "type": "string"
+                },
+                "icon": {
+                  "default": "📋",
+                  "type": "string"
+                },
+                "description": {
+                  "default": "",
+                  "type": "string"
+                },
+                "columns": {
+                  "default": [
+                    {
+                      "id": "backlog",
+                      "name": "Backlog",
+                      "color": "gray",
+                      "category": "open"
+                    },
+                    {
+                      "id": "todo",
+                      "name": "Todo",
+                      "color": "blue",
+                      "category": "open"
+                    },
+                    {
+                      "id": "in-progress",
+                      "name": "In progress",
+                      "color": "amber",
+                      "category": "active"
+                    },
+                    {
+                      "id": "review",
+                      "name": "Review",
+                      "color": "violet",
+                      "category": "active"
+                    },
+                    {
+                      "id": "done",
+                      "name": "Done",
+                      "color": "green",
+                      "category": "done"
+                    }
+                  ],
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "color": {
+                        "default": "gray",
+                        "type": "string",
+                        "enum": [
+                          "gray",
+                          "blue",
+                          "violet",
+                          "amber",
+                          "green",
+                          "red"
+                        ]
+                      },
+                      "category": {
+                        "type": "string",
+                        "enum": [
+                          "open",
+                          "active",
+                          "done"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "color",
+                      "category"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "defaultColumn": {
+                  "default": "todo",
+                  "type": "string"
+                },
+                "automation": {
+                  "type": "object",
+                  "properties": {
+                    "onDispatch": {
+                      "default": "in-progress",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "onAllReported": {
+                      "default": "review",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "onDispatch",
+                    "onAllReported"
+                  ],
+                  "additionalProperties": false
+                },
+                "nextTaskNumber": {
+                  "default": 1,
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "createdAt": {
+                  "default": "",
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "title",
+                "icon",
+                "description",
+                "columns",
+                "defaultColumn",
+                "automation",
+                "nextTaskNumber",
+                "createdAt",
+                "id"
+              ],
+              "additionalProperties": {}
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "board": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "low",
+                  "medium",
+                  "high",
+                  "urgent"
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "due": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rank": {
+                "type": "string"
+              },
+              "assignments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "agentType": {
+                      "type": "string"
+                    },
+                    "instructions": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "state": {
+                      "default": "idle",
+                      "type": "string",
+                      "enum": [
+                        "idle",
+                        "running",
+                        "done",
+                        "unreported",
+                        "blocked",
+                        "failed",
+                        "cancelled",
+                        "interrupted"
+                      ]
+                    },
+                    "agentId": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "dispatchId": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "jobId": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "lastDispatchedAt": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "lastFinishedAt": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "lastSummary": {
+                      "default": "",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "agentType",
+                    "instructions",
+                    "state",
+                    "agentId",
+                    "dispatchId",
+                    "jobId",
+                    "lastDispatchedAt",
+                    "lastFinishedAt",
+                    "lastSummary"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "board",
+              "title",
+              "icon",
+              "status",
+              "priority",
+              "tags",
+              "due",
+              "rank",
+              "assignments",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "board",
+        "tasks"
+      ],
+      "additionalProperties": false
+    },
+    "createBoardParams": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title"
+      ]
+    },
+    "createBoardResult": {
+      "type": "object",
+      "properties": {
+        "board": {
           "type": "object",
           "properties": {
-            "status": {
+            "key": {
               "type": "string",
-              "const": "success"
+              "pattern": "^[A-Z][A-Z0-9]{1,5}$"
             },
-            "agents": {
+            "title": {
+              "default": "",
+              "type": "string"
+            },
+            "icon": {
+              "default": "📋",
+              "type": "string"
+            },
+            "description": {
+              "default": "",
+              "type": "string"
+            },
+            "columns": {
+              "default": [
+                {
+                  "id": "backlog",
+                  "name": "Backlog",
+                  "color": "gray",
+                  "category": "open"
+                },
+                {
+                  "id": "todo",
+                  "name": "Todo",
+                  "color": "blue",
+                  "category": "open"
+                },
+                {
+                  "id": "in-progress",
+                  "name": "In progress",
+                  "color": "amber",
+                  "category": "active"
+                },
+                {
+                  "id": "review",
+                  "name": "Review",
+                  "color": "violet",
+                  "category": "active"
+                },
+                {
+                  "id": "done",
+                  "name": "Done",
+                  "color": "green",
+                  "category": "done"
+                }
+              ],
+              "minItems": 1,
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "type": {
-                    "type": "string"
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
                   },
-                  "displayName": {
-                    "type": "string"
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
                   },
-                  "description": {
-                    "type": "string"
+                  "color": {
+                    "default": "gray",
+                    "type": "string",
+                    "enum": [
+                      "gray",
+                      "blue",
+                      "violet",
+                      "amber",
+                      "green",
+                      "red"
+                    ]
                   },
                   "category": {
-                    "type": "string"
-                  },
-                  "enabledTools": {
-                    "default": [],
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "active",
+                      "done"
+                    ]
                   }
                 },
                 "required": [
-                  "type",
-                  "displayName",
-                  "description",
-                  "enabledTools"
+                  "id",
+                  "name",
+                  "color",
+                  "category"
                 ],
                 "additionalProperties": false
               }
+            },
+            "defaultColumn": {
+              "default": "todo",
+              "type": "string"
+            },
+            "automation": {
+              "type": "object",
+              "properties": {
+                "onDispatch": {
+                  "default": "in-progress",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "onAllReported": {
+                  "default": "review",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "onDispatch",
+                "onAllReported"
+              ],
+              "additionalProperties": false
+            },
+            "nextTaskNumber": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "createdAt": {
+              "default": "",
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
             }
           },
           "required": [
-            "status",
-            "agents"
+            "key",
+            "title",
+            "icon",
+            "description",
+            "columns",
+            "defaultColumn",
+            "automation",
+            "nextTaskNumber",
+            "createdAt",
+            "id"
           ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
-    },
-    "getEnabledSubAgentsParams": {
-      "type": "object",
-      "properties": {
-        "agentId": {
-          "type": "string"
+          "additionalProperties": {}
         }
       },
       "required": [
-        "agentId"
-      ]
+        "board"
+      ],
+      "additionalProperties": false
     },
-    "getEnabledSubAgentsResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
-            },
-            "agents": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
-          "required": [
-            "status",
-            "agents"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
-    },
-    "streamEnabledSubAgentsParams": {
+    "updateBoardParams": {
       "type": "object",
       "properties": {
-        "agentId": {
+        "board": {
           "type": "string"
-        }
-      },
-      "required": [
-        "agentId"
-      ]
-    },
-    "streamEnabledSubAgentsResult": {
-      "oneOf": [
-        {
+        },
+        "patch": {
           "type": "object",
           "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
+            "title": {
+              "type": "string"
             },
-            "agents": {
+            "icon": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "columns": {
               "type": "array",
               "items": {
-                "type": "string"
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "color": {
+                    "default": "gray",
+                    "type": "string",
+                    "enum": [
+                      "gray",
+                      "blue",
+                      "violet",
+                      "amber",
+                      "green",
+                      "red"
+                    ]
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "active",
+                      "done"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "category"
+                ]
+              }
+            },
+            "defaultColumn": {
+              "type": "string"
+            },
+            "automation": {
+              "type": "object",
+              "properties": {
+                "onDispatch": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "onAllReported": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
               }
             }
-          },
-          "required": [
-            "status",
-            "agents"
-          ],
-          "additionalProperties": false
+          }
         },
-        {
+        "reassign": {
           "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
+          "propertyNames": {
+            "type": "string"
           },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
-    },
-    "enableSubAgentsParams": {
-      "type": "object",
-      "properties": {
-        "agentId": {
-          "type": "string"
-        },
-        "agents": {
-          "type": "array",
-          "items": {
+          "additionalProperties": {
             "type": "string"
           }
         }
       },
       "required": [
-        "agentId",
-        "agents"
+        "board",
+        "patch"
       ]
     },
-    "enableSubAgentsResult": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "success"
-            },
-            "success": {
-              "type": "boolean"
-            }
-          },
-          "required": [
-            "status",
-            "success"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "string",
-              "const": "agentNotFound"
-            }
-          },
-          "required": [
-            "status"
-          ],
-          "additionalProperties": false
-        }
-      ]
-    },
-    "disableSubAgentsParams": {
+    "updateBoardResult": {
       "type": "object",
       "properties": {
-        "agentId": {
+        "board": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]{1,5}$"
+            },
+            "title": {
+              "default": "",
+              "type": "string"
+            },
+            "icon": {
+              "default": "📋",
+              "type": "string"
+            },
+            "description": {
+              "default": "",
+              "type": "string"
+            },
+            "columns": {
+              "default": [
+                {
+                  "id": "backlog",
+                  "name": "Backlog",
+                  "color": "gray",
+                  "category": "open"
+                },
+                {
+                  "id": "todo",
+                  "name": "Todo",
+                  "color": "blue",
+                  "category": "open"
+                },
+                {
+                  "id": "in-progress",
+                  "name": "In progress",
+                  "color": "amber",
+                  "category": "active"
+                },
+                {
+                  "id": "review",
+                  "name": "Review",
+                  "color": "violet",
+                  "category": "active"
+                },
+                {
+                  "id": "done",
+                  "name": "Done",
+                  "color": "green",
+                  "category": "done"
+                }
+              ],
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "color": {
+                    "default": "gray",
+                    "type": "string",
+                    "enum": [
+                      "gray",
+                      "blue",
+                      "violet",
+                      "amber",
+                      "green",
+                      "red"
+                    ]
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "active",
+                      "done"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "color",
+                  "category"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "defaultColumn": {
+              "default": "todo",
+              "type": "string"
+            },
+            "automation": {
+              "type": "object",
+              "properties": {
+                "onDispatch": {
+                  "default": "in-progress",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "onAllReported": {
+                  "default": "review",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "onDispatch",
+                "onAllReported"
+              ],
+              "additionalProperties": false
+            },
+            "nextTaskNumber": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "createdAt": {
+              "default": "",
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "title",
+            "icon",
+            "description",
+            "columns",
+            "defaultColumn",
+            "automation",
+            "nextTaskNumber",
+            "createdAt",
+            "id"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "board"
+      ],
+      "additionalProperties": false
+    },
+    "deleteBoardParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board"
+      ]
+    },
+    "deleteBoardResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
+      ],
+      "additionalProperties": false
+    },
+    "listTasksParams": {
+      "type": "object",
+      "properties": {
+        "board": {
           "type": "string"
         },
-        "agents": {
+        "status": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "query": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board"
+      ]
+    },
+    "listTasksResult": {
+      "type": "object",
+      "properties": {
+        "tasks": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "board": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "low",
+                  "medium",
+                  "high",
+                  "urgent"
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "due": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rank": {
+                "type": "string"
+              },
+              "assignments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "agentType": {
+                      "type": "string"
+                    },
+                    "instructions": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "state": {
+                      "default": "idle",
+                      "type": "string",
+                      "enum": [
+                        "idle",
+                        "running",
+                        "done",
+                        "unreported",
+                        "blocked",
+                        "failed",
+                        "cancelled",
+                        "interrupted"
+                      ]
+                    },
+                    "agentId": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "dispatchId": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "jobId": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "lastDispatchedAt": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "lastFinishedAt": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "lastSummary": {
+                      "default": "",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "agentType",
+                    "instructions",
+                    "state",
+                    "agentId",
+                    "dispatchId",
+                    "jobId",
+                    "lastDispatchedAt",
+                    "lastFinishedAt",
+                    "lastSummary"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "board",
+              "title",
+              "icon",
+              "status",
+              "priority",
+              "tags",
+              "due",
+              "rank",
+              "assignments",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
           }
         }
       },
       "required": [
-        "agentId",
-        "agents"
+        "tasks"
+      ],
+      "additionalProperties": false
+    },
+    "searchTasksParams": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "board": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
       ]
     },
-    "disableSubAgentsResult": {
+    "searchTasksResult": {
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "board": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "low",
+                  "medium",
+                  "high",
+                  "urgent"
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "due": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rank": {
+                "type": "string"
+              },
+              "assignments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "agentType": {
+                      "type": "string"
+                    },
+                    "instructions": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "state": {
+                      "default": "idle",
+                      "type": "string",
+                      "enum": [
+                        "idle",
+                        "running",
+                        "done",
+                        "unreported",
+                        "blocked",
+                        "failed",
+                        "cancelled",
+                        "interrupted"
+                      ]
+                    },
+                    "agentId": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "dispatchId": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "jobId": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "lastDispatchedAt": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "lastFinishedAt": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "lastSummary": {
+                      "default": "",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "agentType",
+                    "instructions",
+                    "state",
+                    "agentId",
+                    "dispatchId",
+                    "jobId",
+                    "lastDispatchedAt",
+                    "lastFinishedAt",
+                    "lastSummary"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "board",
+              "title",
+              "icon",
+              "status",
+              "priority",
+              "tags",
+              "due",
+              "rank",
+              "assignments",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "tasks"
+      ],
+      "additionalProperties": false
+    },
+    "getTaskParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board",
+        "taskId"
+      ]
+    },
+    "getTaskResult": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "board": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "icon": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "priority": {
+                  "type": "string",
+                  "enum": [
+                    "none",
+                    "low",
+                    "medium",
+                    "high",
+                    "urgent"
+                  ]
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "due": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "rank": {
+                  "type": "string"
+                },
+                "assignments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "agentType": {
+                        "type": "string"
+                      },
+                      "instructions": {
+                        "default": "",
+                        "type": "string"
+                      },
+                      "state": {
+                        "default": "idle",
+                        "type": "string",
+                        "enum": [
+                          "idle",
+                          "running",
+                          "done",
+                          "unreported",
+                          "blocked",
+                          "failed",
+                          "cancelled",
+                          "interrupted"
+                        ]
+                      },
+                      "agentId": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "dispatchId": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "jobId": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "lastDispatchedAt": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "lastFinishedAt": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "lastSummary": {
+                        "default": "",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "agentType",
+                      "instructions",
+                      "state",
+                      "agentId",
+                      "dispatchId",
+                      "jobId",
+                      "lastDispatchedAt",
+                      "lastFinishedAt",
+                      "lastSummary"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "string"
+                },
+                "bodyHash": {
+                  "type": "string"
+                },
+                "filePath": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "board",
+                "title",
+                "icon",
+                "status",
+                "priority",
+                "tags",
+                "due",
+                "rank",
+                "assignments",
+                "createdAt",
+                "updatedAt",
+                "body",
+                "bodyHash",
+                "filePath"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "additionalProperties": false
+    },
+    "streamTaskParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board",
+        "taskId"
+      ]
+    },
+    "streamTaskResult": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "board": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "icon": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "priority": {
+                  "type": "string",
+                  "enum": [
+                    "none",
+                    "low",
+                    "medium",
+                    "high",
+                    "urgent"
+                  ]
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "due": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "rank": {
+                  "type": "string"
+                },
+                "assignments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "agentType": {
+                        "type": "string"
+                      },
+                      "instructions": {
+                        "default": "",
+                        "type": "string"
+                      },
+                      "state": {
+                        "default": "idle",
+                        "type": "string",
+                        "enum": [
+                          "idle",
+                          "running",
+                          "done",
+                          "unreported",
+                          "blocked",
+                          "failed",
+                          "cancelled",
+                          "interrupted"
+                        ]
+                      },
+                      "agentId": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "dispatchId": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "jobId": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "lastDispatchedAt": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "lastFinishedAt": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "lastSummary": {
+                        "default": "",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "agentType",
+                      "instructions",
+                      "state",
+                      "agentId",
+                      "dispatchId",
+                      "jobId",
+                      "lastDispatchedAt",
+                      "lastFinishedAt",
+                      "lastSummary"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "string"
+                },
+                "bodyHash": {
+                  "type": "string"
+                },
+                "filePath": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "board",
+                "title",
+                "icon",
+                "status",
+                "priority",
+                "tags",
+                "due",
+                "rank",
+                "assignments",
+                "createdAt",
+                "updatedAt",
+                "body",
+                "bodyHash",
+                "filePath"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "additionalProperties": false
+    },
+    "createTaskParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "task": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "default": "",
+              "type": "string"
+            },
+            "icon": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "none",
+                "low",
+                "medium",
+                "high",
+                "urgent"
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "due": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "body": {
+              "default": "",
+              "type": "string"
+            },
+            "assignments": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "agentType": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "instructions": {
+                    "default": "",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "agentType"
+                ]
+              }
+            },
+            "afterId": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "board",
+        "task"
+      ]
+    },
+    "createTaskResult": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "board": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "icon": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "none",
+                "low",
+                "medium",
+                "high",
+                "urgent"
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "due": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "rank": {
+              "type": "string"
+            },
+            "assignments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "agentType": {
+                    "type": "string"
+                  },
+                  "instructions": {
+                    "default": "",
+                    "type": "string"
+                  },
+                  "state": {
+                    "default": "idle",
+                    "type": "string",
+                    "enum": [
+                      "idle",
+                      "running",
+                      "done",
+                      "unreported",
+                      "blocked",
+                      "failed",
+                      "cancelled",
+                      "interrupted"
+                    ]
+                  },
+                  "agentId": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "dispatchId": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "jobId": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "lastDispatchedAt": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "lastFinishedAt": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "lastSummary": {
+                    "default": "",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "agentType",
+                  "instructions",
+                  "state",
+                  "agentId",
+                  "dispatchId",
+                  "jobId",
+                  "lastDispatchedAt",
+                  "lastFinishedAt",
+                  "lastSummary"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "bodyHash": {
+              "type": "string"
+            },
+            "filePath": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "board",
+            "title",
+            "icon",
+            "status",
+            "priority",
+            "tags",
+            "due",
+            "rank",
+            "assignments",
+            "createdAt",
+            "updatedAt",
+            "body",
+            "bodyHash",
+            "filePath"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "additionalProperties": false
+    },
+    "updateTaskParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "patch": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "icon": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "none",
+                "low",
+                "medium",
+                "high",
+                "urgent"
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "due": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "board",
+        "taskId",
+        "patch"
+      ]
+    },
+    "updateTaskResult": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "board": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "icon": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "none",
+                "low",
+                "medium",
+                "high",
+                "urgent"
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "due": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "rank": {
+              "type": "string"
+            },
+            "assignments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "agentType": {
+                    "type": "string"
+                  },
+                  "instructions": {
+                    "default": "",
+                    "type": "string"
+                  },
+                  "state": {
+                    "default": "idle",
+                    "type": "string",
+                    "enum": [
+                      "idle",
+                      "running",
+                      "done",
+                      "unreported",
+                      "blocked",
+                      "failed",
+                      "cancelled",
+                      "interrupted"
+                    ]
+                  },
+                  "agentId": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "dispatchId": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "jobId": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "lastDispatchedAt": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "lastFinishedAt": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "lastSummary": {
+                    "default": "",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "agentType",
+                  "instructions",
+                  "state",
+                  "agentId",
+                  "dispatchId",
+                  "jobId",
+                  "lastDispatchedAt",
+                  "lastFinishedAt",
+                  "lastSummary"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "bodyHash": {
+              "type": "string"
+            },
+            "filePath": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "board",
+            "title",
+            "icon",
+            "status",
+            "priority",
+            "tags",
+            "due",
+            "rank",
+            "assignments",
+            "createdAt",
+            "updatedAt",
+            "body",
+            "bodyHash",
+            "filePath"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "additionalProperties": false
+    },
+    "setTaskBodyParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "baseHash": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board",
+        "taskId",
+        "body"
+      ]
+    },
+    "setTaskBodyResult": {
       "oneOf": [
         {
           "type": "object",
           "properties": {
             "status": {
               "type": "string",
-              "const": "success"
+              "const": "saved"
             },
-            "success": {
-              "type": "boolean"
+            "task": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "board": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "icon": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "priority": {
+                  "type": "string",
+                  "enum": [
+                    "none",
+                    "low",
+                    "medium",
+                    "high",
+                    "urgent"
+                  ]
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "due": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "rank": {
+                  "type": "string"
+                },
+                "assignments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "agentType": {
+                        "type": "string"
+                      },
+                      "instructions": {
+                        "default": "",
+                        "type": "string"
+                      },
+                      "state": {
+                        "default": "idle",
+                        "type": "string",
+                        "enum": [
+                          "idle",
+                          "running",
+                          "done",
+                          "unreported",
+                          "blocked",
+                          "failed",
+                          "cancelled",
+                          "interrupted"
+                        ]
+                      },
+                      "agentId": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "dispatchId": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "jobId": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "lastDispatchedAt": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "lastFinishedAt": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "lastSummary": {
+                        "default": "",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "agentType",
+                      "instructions",
+                      "state",
+                      "agentId",
+                      "dispatchId",
+                      "jobId",
+                      "lastDispatchedAt",
+                      "lastFinishedAt",
+                      "lastSummary"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "string"
+                },
+                "bodyHash": {
+                  "type": "string"
+                },
+                "filePath": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "board",
+                "title",
+                "icon",
+                "status",
+                "priority",
+                "tags",
+                "due",
+                "rank",
+                "assignments",
+                "createdAt",
+                "updatedAt",
+                "body",
+                "bodyHash",
+                "filePath"
+              ],
+              "additionalProperties": false
             }
           },
           "required": [
             "status",
-            "success"
+            "task"
           ],
           "additionalProperties": false
         },
@@ -565,15 +4362,1375 @@
           "properties": {
             "status": {
               "type": "string",
-              "const": "agentNotFound"
+              "const": "conflict"
+            },
+            "currentHash": {
+              "type": "string"
             }
           },
           "required": [
-            "status"
+            "status",
+            "currentHash"
           ],
           "additionalProperties": false
         }
       ]
+    },
+    "moveTaskParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "previousId": {
+          "type": "string"
+        },
+        "nextId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board",
+        "taskId",
+        "status"
+      ]
+    },
+    "moveTaskResult": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "board": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "icon": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "none",
+                "low",
+                "medium",
+                "high",
+                "urgent"
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "due": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "rank": {
+              "type": "string"
+            },
+            "assignments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "agentType": {
+                    "type": "string"
+                  },
+                  "instructions": {
+                    "default": "",
+                    "type": "string"
+                  },
+                  "state": {
+                    "default": "idle",
+                    "type": "string",
+                    "enum": [
+                      "idle",
+                      "running",
+                      "done",
+                      "unreported",
+                      "blocked",
+                      "failed",
+                      "cancelled",
+                      "interrupted"
+                    ]
+                  },
+                  "agentId": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "dispatchId": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "jobId": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "lastDispatchedAt": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "lastFinishedAt": {
+                    "default": null,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "lastSummary": {
+                    "default": "",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "agentType",
+                  "instructions",
+                  "state",
+                  "agentId",
+                  "dispatchId",
+                  "jobId",
+                  "lastDispatchedAt",
+                  "lastFinishedAt",
+                  "lastSummary"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "bodyHash": {
+              "type": "string"
+            },
+            "filePath": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "board",
+            "title",
+            "icon",
+            "status",
+            "priority",
+            "tags",
+            "due",
+            "rank",
+            "assignments",
+            "createdAt",
+            "updatedAt",
+            "body",
+            "bodyHash",
+            "filePath"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "additionalProperties": false
+    },
+    "deleteTaskParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board",
+        "taskId"
+      ]
+    },
+    "deleteTaskResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
+      ],
+      "additionalProperties": false
+    },
+    "addAssignmentParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "assignment": {
+          "type": "object",
+          "properties": {
+            "agentType": {
+              "type": "string",
+              "minLength": 1
+            },
+            "instructions": {
+              "default": "",
+              "type": "string"
+            }
+          },
+          "required": [
+            "agentType"
+          ]
+        }
+      },
+      "required": [
+        "board",
+        "taskId",
+        "assignment"
+      ]
+    },
+    "addAssignmentResult": {
+      "type": "object",
+      "properties": {
+        "assignment": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "instructions": {
+              "default": "",
+              "type": "string"
+            },
+            "state": {
+              "default": "idle",
+              "type": "string",
+              "enum": [
+                "idle",
+                "running",
+                "done",
+                "unreported",
+                "blocked",
+                "failed",
+                "cancelled",
+                "interrupted"
+              ]
+            },
+            "agentId": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "dispatchId": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "jobId": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "lastDispatchedAt": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "lastFinishedAt": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "lastSummary": {
+              "default": "",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "agentType",
+            "instructions",
+            "state",
+            "agentId",
+            "dispatchId",
+            "jobId",
+            "lastDispatchedAt",
+            "lastFinishedAt",
+            "lastSummary"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "assignment"
+      ],
+      "additionalProperties": false
+    },
+    "updateAssignmentParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "assignmentId": {
+          "type": "string"
+        },
+        "patch": {
+          "type": "object",
+          "properties": {
+            "agentType": {
+              "type": "string"
+            },
+            "instructions": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "board",
+        "taskId",
+        "assignmentId",
+        "patch"
+      ]
+    },
+    "updateAssignmentResult": {
+      "type": "object",
+      "properties": {
+        "assignment": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "agentType": {
+              "type": "string"
+            },
+            "instructions": {
+              "default": "",
+              "type": "string"
+            },
+            "state": {
+              "default": "idle",
+              "type": "string",
+              "enum": [
+                "idle",
+                "running",
+                "done",
+                "unreported",
+                "blocked",
+                "failed",
+                "cancelled",
+                "interrupted"
+              ]
+            },
+            "agentId": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "dispatchId": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "jobId": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "lastDispatchedAt": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "lastFinishedAt": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "lastSummary": {
+              "default": "",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "agentType",
+            "instructions",
+            "state",
+            "agentId",
+            "dispatchId",
+            "jobId",
+            "lastDispatchedAt",
+            "lastFinishedAt",
+            "lastSummary"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "assignment"
+      ],
+      "additionalProperties": false
+    },
+    "removeAssignmentParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "assignmentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board",
+        "taskId",
+        "assignmentId"
+      ]
+    },
+    "removeAssignmentResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
+      ],
+      "additionalProperties": false
+    },
+    "listActivityParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "before": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        }
+      },
+      "required": [
+        "board",
+        "taskId"
+      ]
+    },
+    "listActivityResult": {
+      "type": "object",
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              },
+              "author": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "human"
+                      },
+                      "name": {
+                        "default": "You",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "name"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "agent"
+                      },
+                      "agentType": {
+                        "type": "string"
+                      },
+                      "agentId": {
+                        "type": "string"
+                      },
+                      "assignmentId": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "agentType",
+                      "agentId",
+                      "assignmentId"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "system"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "created",
+                  "comment",
+                  "report",
+                  "dispatch",
+                  "status",
+                  "assignment"
+                ]
+              },
+              "body": {
+                "default": "",
+                "type": "string"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "reportStatus": {
+                    "type": "string",
+                    "enum": [
+                      "progress",
+                      "done",
+                      "unreported",
+                      "blocked",
+                      "failed",
+                      "cancelled",
+                      "interrupted"
+                    ]
+                  },
+                  "summary": {
+                    "type": "string"
+                  },
+                  "autoCaptured": {
+                    "type": "boolean"
+                  },
+                  "dispatchId": {
+                    "type": "string"
+                  },
+                  "jobId": {
+                    "type": "string"
+                  },
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "at",
+              "author",
+              "type",
+              "body",
+              "data"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "entries",
+        "hasMore"
+      ],
+      "additionalProperties": false
+    },
+    "streamActivityParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board",
+        "taskId"
+      ]
+    },
+    "streamActivityResult": {
+      "type": "object",
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              },
+              "author": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "human"
+                      },
+                      "name": {
+                        "default": "You",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "name"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "agent"
+                      },
+                      "agentType": {
+                        "type": "string"
+                      },
+                      "agentId": {
+                        "type": "string"
+                      },
+                      "assignmentId": {
+                        "default": null,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "agentType",
+                      "agentId",
+                      "assignmentId"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "system"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "created",
+                  "comment",
+                  "report",
+                  "dispatch",
+                  "status",
+                  "assignment"
+                ]
+              },
+              "body": {
+                "default": "",
+                "type": "string"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "reportStatus": {
+                    "type": "string",
+                    "enum": [
+                      "progress",
+                      "done",
+                      "unreported",
+                      "blocked",
+                      "failed",
+                      "cancelled",
+                      "interrupted"
+                    ]
+                  },
+                  "summary": {
+                    "type": "string"
+                  },
+                  "autoCaptured": {
+                    "type": "boolean"
+                  },
+                  "dispatchId": {
+                    "type": "string"
+                  },
+                  "jobId": {
+                    "type": "string"
+                  },
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "at",
+              "author",
+              "type",
+              "body",
+              "data"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "entries",
+        "hasMore"
+      ],
+      "additionalProperties": false
+    },
+    "addCommentParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board",
+        "taskId",
+        "body"
+      ]
+    },
+    "addCommentResult": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "at": {
+              "type": "string"
+            },
+            "author": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "human"
+                    },
+                    "name": {
+                      "default": "You",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "agent"
+                    },
+                    "agentType": {
+                      "type": "string"
+                    },
+                    "agentId": {
+                      "type": "string"
+                    },
+                    "assignmentId": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "agentType",
+                    "agentId",
+                    "assignmentId"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "system"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "created",
+                "comment",
+                "report",
+                "dispatch",
+                "status",
+                "assignment"
+              ]
+            },
+            "body": {
+              "default": "",
+              "type": "string"
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "reportStatus": {
+                  "type": "string",
+                  "enum": [
+                    "progress",
+                    "done",
+                    "unreported",
+                    "blocked",
+                    "failed",
+                    "cancelled",
+                    "interrupted"
+                  ]
+                },
+                "summary": {
+                  "type": "string"
+                },
+                "autoCaptured": {
+                  "type": "boolean"
+                },
+                "dispatchId": {
+                  "type": "string"
+                },
+                "jobId": {
+                  "type": "string"
+                },
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "id",
+            "at",
+            "author",
+            "type",
+            "body",
+            "data"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "entry"
+      ],
+      "additionalProperties": false
+    },
+    "dispatchAssignmentParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "assignmentId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board",
+        "taskId",
+        "assignmentId"
+      ]
+    },
+    "dispatchAssignmentResult": {
+      "type": "object",
+      "properties": {
+        "dispatchId": {
+          "type": "string"
+        },
+        "agentId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "jobId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "dispatchId",
+        "agentId",
+        "jobId"
+      ],
+      "additionalProperties": false
+    },
+    "dispatchAllParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board",
+        "taskId"
+      ]
+    },
+    "dispatchAllResult": {
+      "type": "object",
+      "properties": {
+        "dispatches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "dispatchId": {
+                "type": "string"
+              },
+              "agentId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "jobId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "dispatchId",
+              "agentId",
+              "jobId"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "assignmentId": {
+                "type": "string"
+              },
+              "error": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "assignmentId",
+              "error"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "dispatches",
+        "errors"
+      ],
+      "additionalProperties": false
+    },
+    "cancelDispatchParams": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "assignmentId": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "board",
+        "taskId",
+        "assignmentId"
+      ]
+    },
+    "cancelDispatchResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success"
+      ],
+      "additionalProperties": false
+    },
+    "getDispatchesParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "getDispatchesResult": {
+      "type": "object",
+      "properties": {
+        "dispatches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "board": {
+                "type": "string"
+              },
+              "taskId": {
+                "type": "string"
+              },
+              "taskTitle": {
+                "type": "string"
+              },
+              "assignmentId": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "agentId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "jobId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "starting",
+                  "running",
+                  "done",
+                  "unreported",
+                  "blocked",
+                  "failed",
+                  "cancelled",
+                  "interrupted"
+                ]
+              },
+              "activity": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "costUsd": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "startedAt": {
+                "type": "number"
+              },
+              "finishedAt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "board",
+              "taskId",
+              "taskTitle",
+              "assignmentId",
+              "agentType",
+              "agentId",
+              "jobId",
+              "status",
+              "activity",
+              "summary",
+              "costUsd",
+              "startedAt",
+              "finishedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "dispatches"
+      ],
+      "additionalProperties": false
+    },
+    "streamDispatchesParams": {
+      "type": "object",
+      "properties": {}
+    },
+    "streamDispatchesResult": {
+      "type": "object",
+      "properties": {
+        "dispatches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "board": {
+                "type": "string"
+              },
+              "taskId": {
+                "type": "string"
+              },
+              "taskTitle": {
+                "type": "string"
+              },
+              "assignmentId": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "agentId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "jobId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "starting",
+                  "running",
+                  "done",
+                  "unreported",
+                  "blocked",
+                  "failed",
+                  "cancelled",
+                  "interrupted"
+                ]
+              },
+              "activity": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "costUsd": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "startedAt": {
+                "type": "number"
+              },
+              "finishedAt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "board",
+              "taskId",
+              "taskTitle",
+              "assignmentId",
+              "agentType",
+              "agentId",
+              "jobId",
+              "status",
+              "activity",
+              "summary",
+              "costUsd",
+              "startedAt",
+              "finishedAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "dispatches"
+      ],
+      "additionalProperties": false
     }
   },
   "x-tokenring-rpc": {
@@ -581,30 +5738,150 @@
     "path": "/rpc/tasks",
     "source": "plugin/tasks/rpc/schema.ts",
     "methods": {
-      "getAvailableSubAgents": {
+      "getTaskConfiguration": {
         "type": "query",
-        "params": "#/$defs/getAvailableSubAgentsParams",
-        "result": "#/$defs/getAvailableSubAgentsResult"
+        "params": "#/$defs/getTaskConfigurationParams",
+        "result": "#/$defs/getTaskConfigurationResult"
       },
-      "getEnabledSubAgents": {
+      "listBoards": {
         "type": "query",
-        "params": "#/$defs/getEnabledSubAgentsParams",
-        "result": "#/$defs/getEnabledSubAgentsResult"
+        "params": "#/$defs/listBoardsParams",
+        "result": "#/$defs/listBoardsResult"
       },
-      "streamEnabledSubAgents": {
+      "streamBoards": {
         "type": "stream",
-        "params": "#/$defs/streamEnabledSubAgentsParams",
-        "result": "#/$defs/streamEnabledSubAgentsResult"
+        "params": "#/$defs/streamBoardsParams",
+        "result": "#/$defs/streamBoardsResult"
       },
-      "enableSubAgents": {
-        "type": "mutation",
-        "params": "#/$defs/enableSubAgentsParams",
-        "result": "#/$defs/enableSubAgentsResult"
+      "getBoard": {
+        "type": "query",
+        "params": "#/$defs/getBoardParams",
+        "result": "#/$defs/getBoardResult"
       },
-      "disableSubAgents": {
+      "streamBoardSettings": {
+        "type": "stream",
+        "params": "#/$defs/streamBoardSettingsParams",
+        "result": "#/$defs/streamBoardSettingsResult"
+      },
+      "streamBoard": {
+        "type": "stream",
+        "params": "#/$defs/streamBoardParams",
+        "result": "#/$defs/streamBoardResult"
+      },
+      "createBoard": {
         "type": "mutation",
-        "params": "#/$defs/disableSubAgentsParams",
-        "result": "#/$defs/disableSubAgentsResult"
+        "params": "#/$defs/createBoardParams",
+        "result": "#/$defs/createBoardResult"
+      },
+      "updateBoard": {
+        "type": "mutation",
+        "params": "#/$defs/updateBoardParams",
+        "result": "#/$defs/updateBoardResult"
+      },
+      "deleteBoard": {
+        "type": "mutation",
+        "params": "#/$defs/deleteBoardParams",
+        "result": "#/$defs/deleteBoardResult"
+      },
+      "listTasks": {
+        "type": "query",
+        "params": "#/$defs/listTasksParams",
+        "result": "#/$defs/listTasksResult"
+      },
+      "searchTasks": {
+        "type": "query",
+        "params": "#/$defs/searchTasksParams",
+        "result": "#/$defs/searchTasksResult"
+      },
+      "getTask": {
+        "type": "query",
+        "params": "#/$defs/getTaskParams",
+        "result": "#/$defs/getTaskResult"
+      },
+      "streamTask": {
+        "type": "stream",
+        "params": "#/$defs/streamTaskParams",
+        "result": "#/$defs/streamTaskResult"
+      },
+      "createTask": {
+        "type": "mutation",
+        "params": "#/$defs/createTaskParams",
+        "result": "#/$defs/createTaskResult"
+      },
+      "updateTask": {
+        "type": "mutation",
+        "params": "#/$defs/updateTaskParams",
+        "result": "#/$defs/updateTaskResult"
+      },
+      "setTaskBody": {
+        "type": "mutation",
+        "params": "#/$defs/setTaskBodyParams",
+        "result": "#/$defs/setTaskBodyResult"
+      },
+      "moveTask": {
+        "type": "mutation",
+        "params": "#/$defs/moveTaskParams",
+        "result": "#/$defs/moveTaskResult"
+      },
+      "deleteTask": {
+        "type": "mutation",
+        "params": "#/$defs/deleteTaskParams",
+        "result": "#/$defs/deleteTaskResult"
+      },
+      "addAssignment": {
+        "type": "mutation",
+        "params": "#/$defs/addAssignmentParams",
+        "result": "#/$defs/addAssignmentResult"
+      },
+      "updateAssignment": {
+        "type": "mutation",
+        "params": "#/$defs/updateAssignmentParams",
+        "result": "#/$defs/updateAssignmentResult"
+      },
+      "removeAssignment": {
+        "type": "mutation",
+        "params": "#/$defs/removeAssignmentParams",
+        "result": "#/$defs/removeAssignmentResult"
+      },
+      "listActivity": {
+        "type": "query",
+        "params": "#/$defs/listActivityParams",
+        "result": "#/$defs/listActivityResult"
+      },
+      "streamActivity": {
+        "type": "stream",
+        "params": "#/$defs/streamActivityParams",
+        "result": "#/$defs/streamActivityResult"
+      },
+      "addComment": {
+        "type": "mutation",
+        "params": "#/$defs/addCommentParams",
+        "result": "#/$defs/addCommentResult"
+      },
+      "dispatchAssignment": {
+        "type": "mutation",
+        "params": "#/$defs/dispatchAssignmentParams",
+        "result": "#/$defs/dispatchAssignmentResult"
+      },
+      "dispatchAll": {
+        "type": "mutation",
+        "params": "#/$defs/dispatchAllParams",
+        "result": "#/$defs/dispatchAllResult"
+      },
+      "cancelDispatch": {
+        "type": "mutation",
+        "params": "#/$defs/cancelDispatchParams",
+        "result": "#/$defs/cancelDispatchResult"
+      },
+      "getDispatches": {
+        "type": "query",
+        "params": "#/$defs/getDispatchesParams",
+        "result": "#/$defs/getDispatchesResult"
+      },
+      "streamDispatches": {
+        "type": "stream",
+        "params": "#/$defs/streamDispatchesParams",
+        "result": "#/$defs/streamDispatchesResult"
       }
     }
   }

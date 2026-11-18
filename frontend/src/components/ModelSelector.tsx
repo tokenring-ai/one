@@ -1,8 +1,11 @@
 import formatError from "@tokenring-ai/utility/error/formatError";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Bot, Check, Cloud, Code, Cpu, Database, GitFork, Search, Sparkles, Zap } from "lucide-react";
-import type React from "react";
+import { Check, Cpu, Plug, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { AI_PROVIDERS_PATH } from "../apps/configuration/manifest.ts";
+import { scrollBehavior } from "../lib/motion.ts";
+import { resolveProviderBrand } from "../lib/providerBrand.ts";
 import { chatRPCClient, useChatModelsByProvider, useModel } from "../rpc.ts";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "./ui/dropdown-menu.tsx";
 import { toastManager } from "./ui/toast.tsx";
@@ -11,37 +14,6 @@ interface ModelSelectorProps {
   agentId: string;
   triggerVariant?: "default" | "icon";
 }
-
-// Provider icon mapping
-const providerIcons: Record<string, React.ReactNode> = {
-  anthropic: <Sparkles className="w-3.5 h-3.5" />,
-  azure: <Cloud className="w-3.5 h-3.5" />,
-  cerebras: <Cpu className="w-3.5 h-3.5" />,
-  deepseek: <Code className="w-3.5 h-3.5" />,
-  google: <Sparkles className="w-3.5 h-3.5" />,
-  groq: <Zap className="w-3.5 h-3.5" />,
-  openai: <Bot className="w-3.5 h-3.5" />,
-  openrouter: <GitFork className="w-3.5 h-3.5" />,
-  qwen: <Cloud className="w-3.5 h-3.5" />,
-  xai: <Cloud className="w-3.5 h-3.5" />,
-  zai: <BookOpen className="w-3.5 h-3.5" />,
-};
-
-// Provider color mapping
-const providerColors: Record<string, string> = {
-  anthropic: "text-accent",
-  azure: "text-blue-600 dark:text-blue-400",
-  cerebras: "text-amber-600 dark:text-amber-500",
-  deepseek: "text-cyan-600 dark:text-cyan-500",
-  google: "text-blue-500 dark:text-blue-400",
-  groq: "text-orange-600 dark:text-orange-500",
-  openai: "text-zinc-900 dark:text-white",
-  openrouter: "text-purple-600 dark:text-purple-400",
-  qwen: "text-pink-600 dark:text-pink-500",
-  xai: "text-zinc-800 dark:text-zinc-100",
-  zai: "text-green-600 dark:text-green-500",
-  default: "text-muted",
-};
 
 export default function ModelSelector({ agentId, triggerVariant = "default" }: ModelSelectorProps) {
   const currentModel = useModel(agentId);
@@ -61,8 +33,10 @@ export default function ModelSelector({ agentId, triggerVariant = "default" }: M
       setSelectingModelId(modelId);
       setIsSelecting(true);
       try {
-        await chatRPCClient.setModel({ agentId, model: modelId });
-        void currentModel.mutate(); //.mutate({ status: "success", model: modelId, modelSpec: currentModel.data.});
+        const result = await chatRPCClient.setModel({ agentId, model: modelId });
+        if (result.status === "agentNotFound") throw new Error("This agent no longer exists");
+        if (result.status === "modelNotFound") throw new Error(`${modelId} is not available. Pick another model.`);
+        void currentModel.mutate();
         setIsSelecting(false);
         setSelectingModelId(null);
         setIsOpen(false);
@@ -161,6 +135,23 @@ export default function ModelSelector({ agentId, triggerVariant = "default" }: M
         </button>
       </DropdownMenuTrigger>
 
+      {!hasModels && !modelsData.isLoading && (
+        <DropdownMenuContent className="shadow-card w-72 p-3 space-y-2" aria-label="No AI models">
+          <p className="text-xs font-medium text-primary">No models available</p>
+          <p className="text-xs text-muted">
+            {modelsData.error ? `Could not load models: ${formatError(modelsData.error)}` : "Connect an AI service to give agents a model to think with."}
+          </p>
+          <Link
+            to={AI_PROVIDERS_PATH}
+            onClick={() => setIsOpen(false)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-accent text-on-accent hover:bg-accent-hover transition-colors focus-ring"
+          >
+            <Plug className="w-3.5 h-3.5" aria-hidden="true" />
+            Connect a provider
+          </Link>
+        </DropdownMenuContent>
+      )}
+
       {hasModels && (
         <DropdownMenuContent className="max-h-150 overflow-hidden flex flex-col shadow-card" style={{ width: "450px" }} aria-label="Select AI model">
           <div className="flex items-center gap-2 px-3 pt-2 pb-2 shrink-0 border-b border-primary">
@@ -192,7 +183,7 @@ export default function ModelSelector({ agentId, triggerVariant = "default" }: M
                     if (model) void handleSelectModel(model.modelId);
                   }
                 }}
-                className="w-full bg-input border border-primary rounded-md py-1.5 pl-9 pr-8 text-xs text-primary placeholder-muted focus-ring transition-all"
+                className="w-full bg-input border border-control rounded-md py-1.5 pl-9 pr-8 text-xs text-primary placeholder-muted focus-ring transition-all"
                 onClick={e => e.stopPropagation()}
               />
             </div>
@@ -202,9 +193,8 @@ export default function ModelSelector({ agentId, triggerVariant = "default" }: M
           <div className="flex-1 overflow-y-auto custom-scrollbar py-1 space-y-0.5">
             {Object.entries(groupedModels).map(([provider, models]) => {
               const isProviderExpanded = expandedProviders.has(provider);
-              const providerCode = models[0]?.modelName.replace(/:.*/, "") ?? "unknown";
-              const providerIcon = providerIcons[providerCode] ?? <Database className="w-3.5 h-3.5" />;
-              const providerColor = providerColors[providerCode] ?? providerColors.default;
+              const brand = resolveProviderBrand(provider, models[0]?.modelId);
+              const ProviderIcon = brand.icon;
 
               return (
                 <div key={provider} className="flex flex-col">
@@ -242,10 +232,12 @@ export default function ModelSelector({ agentId, triggerVariant = "default" }: M
                       </svg>
                     </span>
                     <div className="flex-1 flex items-center gap-2 text-primary text-xs font-medium">
-                      <span className={providerColor}>{providerIcon}</span>
+                      <span className={brand.color}>
+                        <ProviderIcon className="w-3.5 h-3.5" />
+                      </span>
                       {provider}
                     </div>
-                    <span className="text-2xs font-mono text-muted px-1.5">{models.length}</span>
+                    <span className="text-xs font-mono text-muted px-1.5">{models.length}</span>
                   </div>
 
                   {/* Model List */}
@@ -268,7 +260,7 @@ export default function ModelSelector({ agentId, triggerVariant = "default" }: M
                               ref={
                                 isFocused
                                   ? el => {
-                                      if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                                      if (el) el.scrollIntoView({ block: "nearest", behavior: scrollBehavior() });
                                     }
                                   : undefined
                               }
@@ -298,7 +290,7 @@ export default function ModelSelector({ agentId, triggerVariant = "default" }: M
                               <span
                                 className={`flex-1 text-xs font-mono leading-tight truncate ${
                                   currentModelData?.model === model.modelId
-                                    ? "text-accent font-medium"
+                                    ? "text-accent-soft font-medium"
                                     : isFocused
                                       ? "text-primary font-medium"
                                       : "text-muted group-hover:text-primary"

@@ -13,13 +13,13 @@ interface ToolApprovalSelectorProps {
 type ToolApprovalMode = "ask" | "reject" | "auto";
 
 const MODES: { mode: ToolApprovalMode; label: string; description: string }[] = [
-  { mode: "ask", label: "Ask", description: "Prompt before running the action" },
-  { mode: "reject", label: "Reject", description: "Deny the action without prompting" },
-  { mode: "auto", label: "Auto", description: "Re-assess with the chat model, then approve or ask" },
+  { mode: "ask", label: "Ask", description: "Ask me first" },
+  { mode: "reject", label: "Reject", description: "Say no without asking me" },
+  { mode: "auto", label: "Auto", description: "The AI judges the risk, then goes ahead or asks me" },
 ];
 
 /** Level 0 is not part of the server's 1–10 classification scale; it means "approve nothing automatically". */
-const LEVEL_ZERO_DESCRIPTION = "Nothing is auto-approved — every tool action uses the mode above";
+const LEVEL_ZERO_DESCRIPTION = "Nothing goes ahead without asking, every action uses the choice above";
 
 export default function ToolApprovalSelector({ agentId, triggerVariant = "default" }: ToolApprovalSelectorProps) {
   const toolApproval = useToolApproval(agentId);
@@ -52,9 +52,11 @@ export default function ToolApprovalSelector({ agentId, triggerVariant = "defaul
     [agentId, toolApproval],
   );
 
-  const summary = currentMode && currentLevel != null ? `≤ ${currentLevel} auto · ${currentMode}` : "Tool approval";
+  const summary = currentMode && currentLevel != null ? `≤ ${currentLevel} auto · ${currentMode}` : "When to ask";
   const title =
-    currentMode && currentLevel != null ? `Tool approval: auto-approve at or below level ${currentLevel}/10, then ${currentMode}` : "Tool approval settings";
+    currentMode && currentLevel != null
+      ? `When TokenRing asks first: goes ahead without asking up to safety level ${currentLevel}/10, then ${currentMode}`
+      : "When TokenRing asks first";
 
   return (
     <DropdownMenu>
@@ -77,15 +79,15 @@ export default function ToolApprovalSelector({ agentId, triggerVariant = "defaul
       <DropdownMenuContent
         className="max-h-150 overflow-hidden flex flex-col bg-secondary border-primary shadow-card"
         style={{ width: "400px" }}
-        aria-label="Tool approval settings"
+        aria-label="When TokenRing asks first"
       >
         <div className="flex items-center gap-2 px-3 pt-2 pb-2 shrink-0 border-b border-primary">
-          <span className="text-sm flex-1 font-mono text-muted">Tool Approval</span>
-          <span className="text-2xs font-mono text-dim">{settings ? summary : "loading…"}</span>
+          <span className="text-sm flex-1 font-mono text-muted">When TokenRing asks first</span>
+          <span className="text-xs font-mono text-dim">{settings ? summary : "loading…"}</span>
         </div>
 
         <div className="border-b border-primary py-1">
-          <div className="px-3 pb-1 text-2xs font-mono uppercase text-dim">Mode above auto-approval level</div>
+          <div className="px-3 pb-1 text-xs font-mono uppercase text-dim">For bigger actions</div>
           {MODES.map(({ mode, label, description }) => {
             const isActive = currentMode === mode;
             return (
@@ -99,10 +101,10 @@ export default function ToolApprovalSelector({ agentId, triggerVariant = "defaul
               >
                 <div className={`w-1.5 h-1.5 rounded-full mr-2.5 shrink-0 ${isActive ? "bg-accent shadow-[0_0_6px_rgba(99,102,241,0.5)]" : "bg-muted/50"}`} />
                 <div className="flex-1 min-w-0">
-                  <div className={`text-xs font-mono leading-tight truncate ${isActive ? "text-accent font-medium" : "text-muted group-hover:text-primary"}`}>
+                  <div className={`text-xs font-mono leading-tight truncate ${isActive ? "text-accent-soft font-medium" : "text-muted group-hover:text-primary"}`}>
                     {label}
                   </div>
-                  <div className="text-2xs text-dim font-mono leading-tight truncate mt-0.5">{description}</div>
+                  <div className="text-xs text-dim font-mono leading-tight truncate mt-0.5">{description}</div>
                 </div>
                 {isActive &&
                   (pending === "mode" ? (
@@ -115,7 +117,7 @@ export default function ToolApprovalSelector({ agentId, triggerVariant = "defaul
           })}
         </div>
 
-        <div className="px-3 pt-2 pb-1 text-2xs font-mono uppercase text-dim shrink-0">Auto-approve at or below</div>
+        <div className="px-3 pt-2 pb-1 text-xs font-mono uppercase text-dim shrink-0">Go ahead without asking up to safety level</div>
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-1 space-y-0.5">
           {levels.map(({ level, description }) => {
             const isActive = currentLevel === level;
@@ -129,14 +131,14 @@ export default function ToolApprovalSelector({ agentId, triggerVariant = "defaul
                 className="flex items-center cursor-pointer py-1.5 rounded-md px-3 transition-colors group hover:bg-hover"
               >
                 <span
-                  className={`w-5 text-2xs font-mono tabular-nums text-right mr-2.5 shrink-0 ${isActive ? "text-accent font-medium" : "text-dim"}`}
+                  className={`w-5 text-xs font-mono tabular-nums text-right mr-2.5 shrink-0 ${isActive ? "text-accent-soft font-medium" : "text-dim"}`}
                   aria-hidden="true"
                 >
                   {level}
                 </span>
                 <div
                   className={`flex-1 min-w-0 text-xs font-mono leading-tight truncate ${
-                    isActive ? "text-accent font-medium" : "text-muted group-hover:text-primary"
+                    isActive ? "text-accent-soft font-medium" : "text-muted group-hover:text-primary"
                   }`}
                 >
                   {description}
@@ -151,7 +153,7 @@ export default function ToolApprovalSelector({ agentId, triggerVariant = "defaul
             );
           })}
 
-          {levels.length === 1 && <div className="px-3 py-4 text-center text-xs text-muted">Approval levels unavailable</div>}
+          {levels.length === 1 && <div className="px-3 py-4 text-center text-xs text-muted">Safety levels unavailable</div>}
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

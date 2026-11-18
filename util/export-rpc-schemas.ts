@@ -1,12 +1,13 @@
 #!/usr/bin/env bun
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { RPCSchema } from "@tokenring-ai/rpc/types";
 import { z } from "zod";
 
 const projectDirectory = path.resolve(import.meta.dir, "..");
 const outputDirectory = path.join(projectDirectory, "schema/rpc");
-const schemaGlob = new Bun.Glob("plugin/*/rpc/schema.ts");
+/** `rpc/schema.ts` exports as `<plugin>.json`; a plugin's extra endpoints in `rpc/<name>.schema.ts` export as `<plugin>-<name>.json`. */
+const schemaGlobs = [new Bun.Glob("plugin/*/rpc/schema.ts"), new Bun.Glob("plugin/*/rpc/*.schema.ts")];
 
 type JSONSchema = Record<string, unknown>;
 
@@ -21,6 +22,8 @@ const unrepresentableTypes = new Map([
   ["transform", "transform"],
   ["map", "Map"],
   ["set", "Set"],
+  ["promise", "Promise"],
+  ["file", "File"],
 ]);
 
 function escapeJSONPointer(value: string): string {
@@ -167,7 +170,8 @@ function createRPCJSONSchema(rpcSchema: RPCSchema, source: string) {
 }
 
 async function main(): Promise<void> {
-  const schemaFiles = [...schemaGlob.scanSync({ cwd: projectDirectory, absolute: true })].sort();
+  const checkOnly = process.argv.includes("--check");
+  const schemaFiles = schemaGlobs.flatMap(glob => [...glob.scanSync({ cwd: projectDirectory, absolute: true })]).sort();
   if (schemaFiles.length === 0) {
     throw new Error("No RPC schema modules found at plugin/*/rpc/schema.ts");
   }
@@ -187,7 +191,8 @@ async function main(): Promise<void> {
     }
 
     const rpcSchema = module.default;
-    const outputFile = path.join(outputDirectory, `${pluginName}.json`);
+    const extraName = path.basename(schemaFile).match(/^(.+)\.schema\.ts$/)?.[1];
+    const outputFile = path.join(outputDirectory, extraName ? `${pluginName}-${extraName}.json` : `${pluginName}.json`);
     const jsonSchema = createRPCJSONSchema(rpcSchema, relativeSource);
     const currentMethodCount = Object.keys(rpcSchema.methods).length;
     methodCount += currentMethodCount;
@@ -197,6 +202,41 @@ async function main(): Promise<void> {
   // Convert every schema before writing so a failure cannot leave a partially
   // updated output directory.
   await mkdir(outputDirectory, { recursive: true });
+
+  // Outputs from plugins whose rpc/schema.ts has since been deleted would
+  // otherwise linger forever and ship dead schemas to consumers.
+  const generatedNames = new Set(exports.map(rpcExport => path.basename(rpcExport.outputFile)));
+  const staleFiles = (await readdir(outputDirectory))
+    .filter(name => name.endsWith(".json") && !generatedNames.has(name))
+    .sort();
+  if (!checkOnly) {
+    for (const name of staleFiles) {
+      await unlink(path.join(outputDirectory, name));
+      console.log(`Removed stale schema ${name} (no matching plugin/*/rpc/schema.ts)`);
+    }
+  }
+
+  if (checkOnly) {
+    const drift: string[] = [];
+    for (const rpcExport of exports) {
+      const existing = await readFile(rpcExport.outputFile, "utf8").catch(() => null);
+      if (existing === null) {
+        drift.push(`${path.relative(projectDirectory, rpcExport.outputFile)} is missing (run: bun util/export-rpc-schemas.ts)`);
+      } else if (existing !== rpcExport.contents) {
+        drift.push(`${path.relative(projectDirectory, rpcExport.outputFile)} is out of date (run: bun util/export-rpc-schemas.ts)`);
+      }
+    }
+    for (const name of staleFiles) {
+      drift.push(`schema/rpc/${name} has no matching plugin/*/rpc/schema.ts (run: bun util/export-rpc-schemas.ts)`);
+    }
+    if (drift.length > 0) {
+      console.error(`RPC schemas are out of sync:\n  - ${drift.join("\n  - ")}`);
+      process.exit(1);
+    }
+    console.log(`RPC schemas are in sync (${exports.length} schemas, ${methodCount} methods).`);
+    return;
+  }
+
   for (const rpcExport of exports) {
     await writeFile(rpcExport.outputFile, rpcExport.contents);
     console.log(

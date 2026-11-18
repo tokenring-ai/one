@@ -1,22 +1,17 @@
 import Editor from "@monaco-editor/react";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { useTheme } from "../../hooks/useTheme.ts";
+import { useMonacoTheme } from "../../theme/bridges/useMonacoTheme.ts";
 
 interface FileViewerProps {
   file: string;
   content: string;
   onContentChange?: (content: string) => void;
-  onMarkSaved?: () => void;
 }
 
 type MonacoEditorInstance = Parameters<NonNullable<React.ComponentProps<typeof Editor>["onMount"]>>[0];
 
-export default function CodeEditor({ file, content, onContentChange, onMarkSaved }: FileViewerProps) {
-  const handleMarkSaved = () => {
-    setIsModified(false);
-    onMarkSaved?.();
-  };
+export default function CodeEditor({ file, content, onContentChange }: FileViewerProps) {
   const [editorContent, setEditorContent] = useState(content);
   const [isModified, setIsModified] = useState(false);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
@@ -80,7 +75,7 @@ export default function CodeEditor({ file, content, onContentChange, onMarkSaved
     return words.length;
   };
 
-  const [theme] = useTheme();
+  const monacoTheme = useMonacoTheme();
   const language = getLanguage(file);
   const lineCount = getLineCount(editorContent);
   const wordCount = getWordCount(editorContent);
@@ -109,7 +104,8 @@ export default function CodeEditor({ file, content, onContentChange, onMarkSaved
           value={editorContent}
           onChange={handleContentChange}
           onMount={handleEditorMount}
-          theme={theme === "light" ? "vs-light" : "vs-dark"}
+          beforeMount={monacoTheme.beforeMount}
+          theme={monacoTheme.theme}
           options={{
             minimap: { enabled: true },
             fontSize: 14,
@@ -139,17 +135,6 @@ export default function CodeEditor({ file, content, onContentChange, onMarkSaved
           <span className="text-muted" title="Cursor position">
             Ln {cursorPosition.line}, Col {cursorPosition.column}
           </span>
-          <button
-            type="button"
-            onClick={handleMarkSaved}
-            disabled={!isModified}
-            className={`px-2 py-0.5 rounded-md text-xs transition-colors focus-ring ${
-              isModified ? "bg-accent text-white hover:bg-accent active:scale-[0.98]" : "opacity-30 cursor-not-allowed bg-accent text-white"
-            }`}
-            title="Mark as saved"
-          >
-            Mark Saved
-          </button>
         </div>
       </div>
     </div>

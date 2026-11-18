@@ -3,9 +3,16 @@ name: Publish TokenRing One
 on:
   push:
 
+# Jobs elevate their own permissions (publish-npm: id-token, create-release:
+# contents); everything else runs with read-only defaults.
 permissions:
-  id-token: write
   contents: read
+
+# Superseded builds for the same ref are cancelled; published releases are not
+# affected because a new run would target a different ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   REGISTRY: ghcr.io
@@ -76,6 +83,28 @@ jobs:
         with:
           name: ${{ matrix.cli_artifact }}
           path: ./${{ matrix.cli_artifact }}
+
+  rust-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: cli
+
+      - name: Format check
+        run: cargo fmt --check --manifest-path cli/Cargo.toml
+
+      - name: Clippy
+        run: cargo clippy --locked --manifest-path cli/Cargo.toml
+
+      - name: Tests
+        run: cargo test --locked --manifest-path cli/Cargo.toml
 
   publish-npm:
     runs-on: ubuntu-latest
@@ -308,6 +337,9 @@ jobs:
             artifacts/tokenring-one-backend_*.rpm
             artifacts/tokenring-one-cli_*.rpm
 
+  # Every push builds the images and pushes them to the registry BY DIGEST ONLY: no tag points at them, so they can be
+  # fetched only as `ghcr.io/tokenring-ai/one@sha256:...` (the digests are listed in the run summary). Tags are created
+  # separately, by the manifest job below, and only for release tags (v1.2.3).
   publish-docker:
     needs: [build]
     permissions:
@@ -353,6 +385,17 @@ jobs:
 
       - uses: docker/setup-buildx-action@v4
 
+      # The version goes into the image's org.opencontainers.image.version label. A release tag (v1.2.3) gives 1.2.3; any
+      # other push gives "<package version>-<short sha>", so a work-in-progress build never claims a release number.
+      - name: Resolve version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$(jq -r .version packaging/npm/one/package.json)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and push ${{ matrix.target }} by digest
         id: build
         uses: docker/build-push-action@v7
@@ -361,6 +404,8 @@ jobs:
           file: ./packaging/docker/one/Dockerfile
           target: ${{ matrix.target }}
           platforms: ${{ matrix.platform }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=one-${{ matrix.target }}-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=one-${{ matrix.target }}-${{ matrix.arch }}
@@ -370,6 +415,8 @@ jobs:
           mkdir -p "${{ runner.temp }}/digests"
           digest="${{ steps.build.outputs.digest }}"
           touch "${{ runner.temp }}/digests/${digest#sha256:}"
+          # The only way to refer to a build that is not a release: pull it by this digest.
+          echo "${{ matrix.target }} (${{ matrix.arch }}), version ${{ steps.version.outputs.version }}: \`${{ env.IMAGE_NAME }}@${digest}\`" >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -378,6 +425,7 @@ jobs:
           retention-days: 1
 
   publish-docker-manifest:
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     needs: [publish-docker]
     permissions:
@@ -401,6 +449,9 @@ jobs:
 
       - uses: docker/setup-buildx-action@v4
 
+      # A release tag (v1.2.3) publishes the permanent `one:1.2.3-<target>`, which nothing ever moves, and points the
+      # moving `one:<target>` at the same build. A pre-release (v1.2.3-rc.1) gets only its permanent tag, so a release
+      # candidate never becomes what `one:server` means.
       - name: Create one:${{ matrix.target }} multi-arch manifest
         working-directory: ${{ runner.temp }}/digests
         run: |
@@ -408,5 +459,11 @@ jobs:
           for digest in *; do
             refs+=("${{ env.IMAGE_NAME }}@sha256:$digest")
           done
-          docker buildx imagetools create -t "${{ env.IMAGE_NAME }}:${{ matrix.target }}" "${refs[@]}"
-          docker buildx imagetools inspect "${{ env.IMAGE_NAME }}:${{ matrix.target }}"
+          version="${GITHUB_REF#refs/tags/v}"
+          # Docker tags allow letters, digits, "_", "." and "-" only (semver build metadata uses "+").
+          tags=(-t "${{ env.IMAGE_NAME }}:${version//+/_}-${{ matrix.target }}")
+          if [[ "$version" != *-* ]]; then
+            tags+=(-t "${{ env.IMAGE_NAME }}:${{ matrix.target }}")
+          fi
+          docker buildx imagetools create "${tags[@]}" "${refs[@]}"
+          docker buildx imagetools inspect "${{ env.IMAGE_NAME }}:${version//+/_}-${{ matrix.target }}"

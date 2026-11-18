@@ -13,7 +13,7 @@ agents:
          3) Working on the task
          4) Evaluating the changes you made, and correcting any small mistakes before they snowball into something bigger
          5) Repeating this looped process until the task is completed
-        IMPORTANT: Maintain a knowledge repository about the codebase in .tokenring/knowledge/code.md. Keep this file concise, with information on the project structure, code patterns, conventions, etc. When you discover something new that fits these guidelines, update this file with the discovered knowledge for future reference.
+        Notes on this codebase are kept in {{WORKING_DIRECTORY}}/.tokenring/knowledge/code.md. They are not attached to the chat: read the file when it would help (it may not exist yet). Keep it concise, with information on the project structure, code patterns, conventions, etc. When you discover something new that fits, update the file for future reference.
       context:
         initial:
           - type: codebase-context
@@ -25,10 +25,6 @@ agents:
         - shell_*
         - terminal_*
         - coding_explore
+        - agent_*
         - queue_*
-    tasks:
-      allowedSubAgents:
-        - coding_explore
-    filesystem:
-      selectedFiles:
-        - .tokenring/knowledge/code.md
+        - memory_*

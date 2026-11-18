@@ -8,16 +8,17 @@ pub mod completion;
 pub mod diff;
 pub mod editor;
 pub mod filesearch;
+pub mod goal;
 pub mod help;
 pub mod keybinds;
 pub mod markdown;
 pub mod metrics;
 pub mod notify;
-pub mod todos;
 pub mod questions;
 pub mod screens;
 pub mod spinner;
 pub mod text;
+pub mod todos;
 pub mod transcript;
 pub mod tty;
 pub mod ui_layout;
@@ -47,12 +48,13 @@ use std::path::Path;
 use crate::rpc::{self, RpcClient};
 use crate::theme::Theme;
 use crate::tui::chat::ChatSession;
+use crate::tui::goal::GoalHandle;
 use crate::tui::metrics::MetricsHandle;
-use crate::tui::todos::TodosHandle;
 use crate::tui::screens::{
     run_loading_screen, run_local_instance_screen, run_selection_screen, show_error_screen,
     ErrorScreenAction, SelectionOutcome,
 };
+use crate::tui::todos::TodosHandle;
 
 /// A handle to the agent the UI is attached to.
 #[derive(Clone)]
@@ -87,6 +89,49 @@ pub enum ChatExit {
     SelectAgent,
     /// Delete the current agent then return to agent selection.
     DeleteAgent(String),
+    /// The server rejected our credentials (JSON-RPC -32001): session ended,
+    /// password changed, user removed, or login refused. Exit cleanly.
+    SessionEnded(String),
+}
+
+const SESSION_ENDED_TITLE: &str = "Signed out";
+
+/// Explain a credential rejection; the CLI has no interactive login prompt, so
+/// the only fix is restarting with updated credentials.
+fn session_ended_detail(server_message: &str) -> String {
+    format!(
+        "{server_message}\n\nThe server rejected this CLI's credentials (signed out elsewhere, \
+         password changed, or user removed). Restart the CLI with valid credentials \
+         (--auth-password, TR_AUTH_PASSWORD, or config auth_password)."
+    )
+}
+
+/// Error screens offer Retry only when retrying could succeed.
+fn retryable(error: &anyhow::Error) -> bool {
+    !rpc::is_session_ended(error)
+}
+
+/// Show the "signed out" screen (no Retry) when the client has latched a
+/// session-ended state. Returns true when it did, so callers stop.
+fn report_session_ended<C: ratatui::backend::Backend>(
+    terminal: &mut Terminal<C>,
+    client: &RpcClient,
+    theme: &Theme,
+) -> Result<bool>
+where
+    <C as ratatui::backend::Backend>::Error: Send + Sync + 'static,
+{
+    let Some(message) = client.session_ended() else {
+        return Ok(false);
+    };
+    show_error_screen(
+        terminal,
+        SESSION_ENDED_TITLE,
+        &session_ended_detail(&message),
+        theme,
+        false,
+    )?;
+    Ok(true)
 }
 
 /// RAII guard enabling raw mode + alternate screen.
@@ -268,6 +313,16 @@ fn run_app(client: RpcClient, options: RunOptions) -> Result<()> {
             pending_prompt.take(),
         ) {
             Ok(ChatExit::Quit) => break,
+            Ok(ChatExit::SessionEnded(message)) => {
+                show_error_screen(
+                    &mut terminal,
+                    SESSION_ENDED_TITLE,
+                    &session_ended_detail(&message),
+                    &options.theme,
+                    false,
+                )?;
+                break;
+            }
             Ok(ChatExit::SelectAgent) => {
                 use_selection = true;
                 continue;
@@ -276,6 +331,9 @@ fn run_app(client: RpcClient, options: RunOptions) -> Result<()> {
                 if let Err(error) =
                     rpc::delete_agent(&client, &id, "Agent was shut down from the CLI")
                 {
+                    if report_session_ended(&mut terminal, &client, &options.theme)? {
+                        break;
+                    }
                     match show_error_screen(
                         &mut terminal,
                         "Failed to delete agent",
@@ -290,6 +348,7 @@ fn run_app(client: RpcClient, options: RunOptions) -> Result<()> {
                 use_selection = true;
                 continue;
             }
+            Err(_) if report_session_ended(&mut terminal, &client, &options.theme)? => break,
             Err(e) => match show_error_screen(
                 &mut terminal,
                 "Session error",
@@ -320,13 +379,14 @@ where
 {
     let data = match run_loading_screen(terminal, client, theme) {
         Ok(data) => data,
+        Err(_) if report_session_ended(terminal, client, theme)? => return Ok(None),
         Err(e) => {
             return match show_error_screen(
                 terminal,
                 "Connection failed",
                 &format!("{e:#}"),
                 theme,
-                true,
+                retryable(&e),
             )? {
                 ErrorScreenAction::Retry => {
                     resolve_agent(terminal, client, agent_type, select, theme)
@@ -361,19 +421,20 @@ where
     <C as ratatui::backend::Backend>::Error: Send + Sync + 'static,
 {
     loop {
-        match rpc::create_agent(client, agent_type, false) {
+        match rpc::create_agent(client, agent_type) {
             Ok(created) => {
                 return Ok(Some(AgentHandle {
                     label: format!("{} ({})", created.display_name, created.id),
                     id: created.id,
                 }));
             }
+            Err(_) if report_session_ended(terminal, client, theme)? => return Ok(None),
             Err(e) => match show_error_screen(
                 terminal,
                 "Failed to create agent",
                 &format!("Could not spawn a '{agent_type}' agent.\n\n{e:#}"),
                 theme,
-                true,
+                retryable(&e),
             )? {
                 ErrorScreenAction::Retry => continue,
                 ErrorScreenAction::Dismiss => return Ok(None),
@@ -399,7 +460,7 @@ where
             SelectionOutcome::Spawn {
                 agent_type,
                 display_name: _,
-            } => rpc::create_agent(client, agent_type, false).map(|created| AgentHandle {
+            } => rpc::create_agent(client, agent_type).map(|created| AgentHandle {
                 label: format!("{agent_type} · {}", created.id),
                 id: created.id,
             }),
@@ -426,6 +487,7 @@ where
 
         match result {
             Ok(agent) => return Ok(Some(agent)),
+            Err(_) if report_session_ended(terminal, client, theme)? => return Ok(None),
             Err(e) => {
                 let title = match &outcome {
                     SelectionOutcome::Spawn { .. } => "Failed to create agent",
@@ -433,7 +495,7 @@ where
                     SelectionOutcome::Resume { .. } => "Failed to resume session",
                     SelectionOutcome::Workflow { .. } => "Failed to start workflow",
                 };
-                match show_error_screen(terminal, title, &format!("{e:#}"), theme, true)? {
+                match show_error_screen(terminal, title, &format!("{e:#}"), theme, retryable(&e))? {
                     ErrorScreenAction::Retry => continue,
                     ErrorScreenAction::Dismiss => return Ok(None),
                     ErrorScreenAction::Quit => return Ok(None),
@@ -459,6 +521,13 @@ where
     // fetch before the live stream attaches).
     let snapshot = match rpc::get_agent_events(&client, &agent.id, 0) {
         Ok(snapshot) => snapshot,
+        Err(error) if rpc::is_session_ended(&error) => {
+            return Ok(ChatExit::SessionEnded(
+                client
+                    .session_ended()
+                    .unwrap_or_else(|| format!("{error:#}")),
+            ));
+        }
         Err(error) => {
             // Still attach; surface the miss so it is not silent.
             let _ = show_error_screen(
@@ -474,25 +543,20 @@ where
             }
         }
     };
-    let catchup = rpc::get_agent_events(&client, &agent.id, snapshot.position)
-        .unwrap_or(rpc::AgentEventsSnapshot {
+    let catchup = rpc::get_agent_events(&client, &agent.id, snapshot.position).unwrap_or(
+        rpc::AgentEventsSnapshot {
             events: Vec::new(),
             position: snapshot.position,
-        });
+        },
+    );
     let stream = client.spawn_event_stream(&agent.id, catchup.position);
 
     // Best-effort working directory for the status line.
-    let fs_state = rpc::get_filesystem_state(&client, &agent.id).unwrap_or_default();
-    let working_directory = if fs_state.working_directory.is_empty() {
-        ".".to_string()
-    } else {
-        fs_state.working_directory
-    };
-    let provider = if fs_state.provider.is_empty() {
-        "posix".to_string()
-    } else {
-        fs_state.provider
-    };
+    let dirs = rpc::get_default_directories(&client).unwrap_or_default();
+    let working_directory = [dirs.working_directory, dirs.workspace_directory]
+        .into_iter()
+        .find(|dir| !dir.is_empty())
+        .unwrap_or_else(|| ".".to_string());
     let home = dirs::home_dir().map(|p| p.to_string_lossy().into_owned());
     let history = rpc::get_command_history(&client, &agent.id).unwrap_or_default();
     let commands = rpc::get_available_commands(&client, &agent.id)
@@ -504,21 +568,22 @@ where
         })
         .collect();
 
-    // Metrics and todos use their own long-lived stream sockets and never block interactive RPCs.
+    // Metrics, todos, and goal status use their own long-lived stream sockets and never block interactive RPCs.
     let metrics = MetricsHandle::spawn(client.clone(), agent.id.clone());
     let todos = TodosHandle::spawn(client.clone(), agent.id.clone());
+    let goal = GoalHandle::spawn(client.clone(), agent.id.clone());
 
     let mut session = ChatSession::new(
         client,
         agent,
         working_directory,
-        provider,
         home,
         history,
         commands,
         stream,
         metrics,
         todos,
+        goal,
         options.theme.clone(),
         options.verbose,
         prompt,

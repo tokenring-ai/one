@@ -9,6 +9,7 @@ use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 
 use ratatui::{
+    layout::Rect,
     style::Style,
     text::{Line, Span},
     Terminal,
@@ -23,11 +24,12 @@ use crate::tui::candy::{self, StreamHealth};
 use crate::tui::completion;
 use crate::tui::editor::InputEditor;
 use crate::tui::filesearch;
+use crate::tui::goal::GoalHandle;
 use crate::tui::keybinds::Keybinds;
 use crate::tui::metrics::MetricsHandle;
 use crate::tui::notify;
 use crate::tui::spinner::spinner_frame;
-use crate::tui::text::{format_compact_number, format_currency, shorten_path, visible_len};
+use crate::tui::text::{format_compact_number, format_currency, shorten_path};
 use crate::tui::todos::TodosHandle;
 use crate::tui::transcript::{EntryKind, Transcript};
 use crate::tui::ui_layout::UiHitRegions;
@@ -36,6 +38,31 @@ use crate::tui::{AgentHandle, ChatExit};
 
 use super::interactions::ActiveQuestion;
 use super::layout::truncate;
+use super::transcript_entries::ToolHitRow;
+
+/// Last painted transcript text area and the tool rows inside it.
+#[derive(Clone, Debug, Default)]
+pub(super) struct TranscriptViewport {
+    pub inner: Rect,
+    pub scroll_top: usize,
+    pub tool_rows: Vec<ToolHitRow>,
+}
+
+pub(super) fn format_idle_hint() -> String {
+    "↵ send  ·  / commands  ·  @ files  ·  ? help".to_string()
+}
+
+pub(super) fn format_running_hint(activity: &str) -> String {
+    format!("{activity}  ·  Esc interrupt")
+}
+
+pub(super) fn format_scrolled_hint(has_new_tail: bool) -> String {
+    if has_new_tail {
+        "Viewing earlier  ·  End to follow  ·  ↓ new".to_string()
+    } else {
+        "Viewing earlier  ·  End to follow".to_string()
+    }
+}
 
 /// Spinner cadence (ms) — matches the TS `start()` interval.
 pub(super) const SPINNER_INTERVAL: Duration = Duration::from_millis(120);
@@ -117,6 +144,7 @@ pub struct ChatSession {
     pub(super) transcript: Transcript,
     pub(super) metrics: MetricsHandle,
     pub(super) todos: TodosHandle,
+    pub(super) goal: GoalHandle,
     pub(super) working_directory: String,
     pub(super) home: Option<String>,
     pub(super) execution: ExecutionState,
@@ -131,7 +159,6 @@ pub struct ChatSession {
     pub(super) commands: Vec<completion::CommandMatch>,
     pub(super) completion: Option<completion::CompletionState>,
     pub(super) dismissed_completion: Option<String>,
-    pub(super) provider: String,
     pub(super) workspace_search: WorkspaceSearch,
     pub(super) filesearch: Option<filesearch::FileSearchState>,
     pub(super) dismissed_filesearch: Option<String>,
@@ -195,6 +222,16 @@ pub struct ChatSession {
     pub(super) transcript_max_scroll_back: usize,
     /// Line count from the previous transcript render (for scroll pin while streaming).
     pub(super) prev_transcript_line_count: usize,
+    /// Last painted transcript viewport, used to hit-test tool rows.
+    pub(super) transcript_viewport: TranscriptViewport,
+    /// Tail grew while the viewport was pinned away from it.
+    pub(super) transcript_has_new_tail: bool,
+    /// Tool entry whose header should stay put after an expand/collapse.
+    pub(super) pending_tool_anchor: Option<usize>,
+    /// Scroll offset of the help overlay.
+    pub(super) help_scroll: usize,
+    /// Rows of help text visible in the last frame.
+    pub(super) help_page_rows: usize,
     /// Composer text stashed when a required question steals focus.
     pub(super) composer_stash: Option<(String, usize)>,
     /// Last frame reported a terminal too small for the full UI.
@@ -207,13 +244,13 @@ impl ChatSession {
         client: RpcClient,
         agent: AgentHandle,
         working_directory: String,
-        provider: String,
         home: Option<String>,
         history: Vec<String>,
         commands: Vec<completion::CommandMatch>,
         stream: EventStream,
         metrics: MetricsHandle,
         todos: TodosHandle,
+        goal: GoalHandle,
         theme: Theme,
         verbose: bool,
         initial_prompt: Option<String>,
@@ -230,6 +267,7 @@ impl ChatSession {
             transcript: Transcript::new(),
             metrics,
             todos,
+            goal,
             working_directory,
             home,
             execution: ExecutionState::default(),
@@ -244,7 +282,6 @@ impl ChatSession {
             commands,
             completion: None,
             dismissed_completion: None,
-            provider,
             workspace_search: WorkspaceSearch::default(),
             filesearch: None,
             dismissed_filesearch: None,
@@ -284,6 +321,11 @@ impl ChatSession {
             hit_regions: UiHitRegions::default(),
             transcript_max_scroll_back: 0,
             prev_transcript_line_count: 0,
+            transcript_viewport: TranscriptViewport::default(),
+            transcript_has_new_tail: false,
+            pending_tool_anchor: None,
+            help_scroll: 0,
+            help_page_rows: 1,
             composer_stash: None,
             terminal_too_small: false,
         }
@@ -581,63 +623,37 @@ impl ChatSession {
 
         if self.transcript_scroll_back > 0 && self.transcript_max_scroll_back > 0 {
             return plain(
+                truncate(&format_scrolled_hint(self.transcript_has_new_tail), width),
+                Tone::Info,
+            );
+        }
+
+        if self.execution.running {
+            return plain(
                 truncate(
-                    "Viewing earlier transcript · PgUp/PgDn scroll  End follow latest",
+                    &self.with_optional_questions(format_running_hint(&self.activity_label())),
                     width,
                 ),
                 Tone::Info,
             );
         }
 
-        let optional_hint = {
-            let count = self.optional_questions().len();
-            if count > 0 {
-                format!(" · Alt+Q optional {count}")
-            } else {
-                String::new()
-            }
-        };
+        plain(
+            truncate(&self.with_optional_questions(format_idle_hint()), width),
+            Tone::Muted,
+        )
+    }
 
-        let leader = self.keybinds.leader_hint_label();
-        let muted = Style::default()
-            .fg(Tone::Muted.color(theme))
-            .bg(theme.hint.background_color.color());
-        let hotkeys = if self.execution.running {
-            format!(
-                "{} · Hotkeys: {leader} + [a] Agents · Esc interrupt{optional_hint}",
-                self.activity_label(),
-            )
-        } else {
-            format!(
-                "{} · Hotkeys: {leader} + [m] Model · [t] Tools · ",
-                self.activity_label(),
-            )
-        };
-
-        if self.execution.running {
-            return Line::from(Span::styled(truncate(&hotkeys, width), muted));
+    /// Pending optional questions are easy to miss once the hotkey essay is gone.
+    fn with_optional_questions(&self, hint: String) -> String {
+        let count = self.optional_questions().len();
+        if count == 0 {
+            return hint;
         }
-
-        let verbose_key = "[v] Verbose";
-        let suffix = format!(" · [a] Agents{optional_hint}");
-        let full = format!("{hotkeys}{verbose_key}{suffix}");
-        if visible_len(&full) > width {
-            return Line::from(Span::styled(truncate(&full, width), muted));
-        }
-
-        let verbose_style = if self.verbose {
-            Style::default()
-                .fg(Tone::Success.color(theme))
-                .bg(theme.hint.background_color.color())
-        } else {
-            muted
-        };
-
-        Line::from(vec![
-            Span::styled(hotkeys, muted),
-            Span::styled(verbose_key.to_string(), verbose_style),
-            Span::styled(suffix, muted),
-        ])
+        format!(
+            "{hint}  ·  {} optional {count}",
+            self.keybinds.cli_optional_picker.first_label()
+        )
     }
 
     pub(super) fn status_line(&self, width: usize) -> Line<'static> {
@@ -654,12 +670,14 @@ impl ChatSession {
         let tokens = format_compact_number(Some(metrics.tokens), "");
         let cost = format_currency(Some(metrics.cost));
         let cwd = shorten_path(&self.working_directory, self.home.as_deref());
+        let goal_label = self.goal.get().map(|goal| goal.status_segment());
 
         match theme.layout.status_style {
             StatusStyle::Inverted => candy::format_status_segments(
                 theme,
                 self.stream_health(),
                 model,
+                goal_label,
                 context_label,
                 metrics.context_percent_left,
                 metrics.rpc_latency_ms,
@@ -671,7 +689,7 @@ impl ChatSession {
             ),
             StatusStyle::Flat => {
                 let stream = self.stream_health();
-                let segments = [
+                let mut segments = vec![
                     model,
                     context_label,
                     format!("{} tools", metrics.tools),
@@ -679,6 +697,9 @@ impl ChatSession {
                     cost,
                     cwd,
                 ];
+                if let Some(goal) = goal_label {
+                    segments.insert(1, goal);
+                }
                 let detail =
                     candy::format_status_flat(theme, &segments, metrics.context_percent_left);
                 let connection = stream.status_text(metrics.rpc_latency_ms);
@@ -737,6 +758,59 @@ impl ChatSession {
                 .transcript_scroll_back
                 .saturating_sub((-lines) as usize);
         }
+        if self.transcript_scroll_back == 0 {
+            self.transcript_has_new_tail = false;
+        }
+    }
+
+    pub(super) fn open_help(&mut self) {
+        self.help_open = true;
+        self.help_scroll = 0;
+        self.mark_dirty();
+    }
+
+    /// Toggle one tool call and keep its header anchored in the viewport.
+    pub(super) fn toggle_tool_entry(&mut self, entry_idx: usize) -> bool {
+        let Some(entry) = self.transcript.entries_mut().get_mut(entry_idx) else {
+            return false;
+        };
+        if entry.kind != EntryKind::ToolCall {
+            return false;
+        }
+        entry.expanded = !entry.expanded;
+        self.pending_tool_anchor = Some(entry_idx);
+        self.mark_dirty();
+        true
+    }
+
+    /// Tool call under a transcript click, if the point lands on its row.
+    pub(super) fn tool_entry_at(&self, column: u16, row: u16) -> Option<usize> {
+        let area = self.transcript_viewport.inner;
+        if area.height == 0 || !rect_contains(area, column, row) {
+            return None;
+        }
+        let line = self.transcript_viewport.scroll_top + (row - area.y) as usize;
+        self.transcript_viewport
+            .tool_rows
+            .iter()
+            .find(|hit| line >= hit.start_line && line < hit.start_line + hit.line_count)
+            .map(|hit| hit.entry_idx)
+    }
+
+    /// Bottom-most tool call currently inside the transcript viewport.
+    pub(super) fn visible_tool_entry(&self) -> Option<usize> {
+        let area = self.transcript_viewport.inner;
+        if area.height == 0 {
+            return None;
+        }
+        let top = self.transcript_viewport.scroll_top;
+        let bottom = top + area.height as usize;
+        self.transcript_viewport
+            .tool_rows
+            .iter()
+            .rev()
+            .find(|hit| hit.start_line < bottom && hit.start_line + hit.line_count > top)
+            .map(|hit| hit.entry_idx)
     }
 
     /// Tear down slash-completion and `@` file-search picker state.
@@ -763,6 +837,11 @@ pub fn run_session<C: ratatui::backend::Backend>(
 
         session.take_expired_flash();
         session.expire_leader();
+        // Any RPC (interactive call or stream) seeing the server reject our
+        // credentials ends the session; nothing will retry the stale password.
+        if let Some(message) = session.client.session_ended() {
+            return Ok(ChatExit::SessionEnded(message));
+        }
         session.maybe_reconnect_stream();
         session.drain_stream();
         if session.metrics.refresh() {
@@ -777,6 +856,9 @@ pub fn run_session<C: ratatui::backend::Backend>(
             {
                 session.sidebar_open = true;
             }
+            session.mark_dirty();
+        }
+        if session.goal.refresh() {
             session.mark_dirty();
         }
         session.drain_search();
@@ -861,6 +943,13 @@ pub fn run_session<C: ratatui::backend::Backend>(
     }
 }
 
+fn rect_contains(area: Rect, column: u16, row: u16) -> bool {
+    column >= area.x
+        && column < area.x.saturating_add(area.width)
+        && row >= area.y
+        && row < area.y.saturating_add(area.height)
+}
+
 fn is_ctrl_c_key(key: KeyEvent) -> bool {
     key.modifiers.contains(KeyModifiers::CONTROL)
         && matches!(key.code, KeyCode::Char('c') | KeyCode::Char('C'))
@@ -868,7 +957,32 @@ fn is_ctrl_c_key(key: KeyEvent) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::ExecutionState;
+    use super::{format_idle_hint, format_running_hint, format_scrolled_hint, ExecutionState};
+    use crate::tui::text::{fit_line, visible_len};
+
+    #[test]
+    fn idle_hint_fits_sixty_and_one_hundred_columns() {
+        let hint = format_idle_hint();
+        assert!(visible_len(&hint) <= 60, "{hint}");
+        assert!(visible_len(&fit_line(&hint, 100)) <= 100);
+        assert!(hint.contains("send"));
+        assert!(hint.contains("? help"));
+    }
+
+    #[test]
+    fn running_and_scrolled_hints_stay_within_width() {
+        let running = format_running_hint("Editing src/main.rs");
+        assert!(visible_len(&fit_line(&running, 100)) <= 100);
+        assert!(fit_line(&running, 100).contains("Esc interrupt"));
+        assert!(visible_len(&fit_line(&format_running_hint(&"x".repeat(200)), 60)) <= 60);
+
+        let scrolled = format_scrolled_hint(false);
+        let with_new = format_scrolled_hint(true);
+        assert!(scrolled.contains("End to follow"));
+        assert!(with_new.contains("↓ new"));
+        assert!(visible_len(&fit_line(&with_new, 60)) <= 60);
+        assert!(visible_len(&fit_line(&with_new, 100)) <= 100);
+    }
 
     #[test]
     fn execution_state_combines_queue_and_input_activity() {

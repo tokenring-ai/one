@@ -1,0 +1,421 @@
+@layer utilities {
+  /* Background utilities */
+  .bg-primary {
+    background-color: var(--bg-primary);
+  }
+
+  .bg-secondary {
+    background-color: var(--bg-secondary);
+  }
+
+  .bg-sidebar {
+    background-color: var(--bg-sidebar);
+  }
+
+  .bg-tertiary {
+    background-color: var(--bg-tertiary);
+  }
+
+  .bg-hover {
+    background-color: var(--bg-hover);
+  }
+
+  .bg-active {
+    background-color: var(--bg-active);
+  }
+
+  .bg-input {
+    background-color: var(--bg-input);
+  }
+
+  .bg-accent {
+    background-color: var(--accent-primary);
+  }
+
+  .bg-accent-hover {
+    background-color: var(--accent-primary-hover);
+  }
+
+  .hover\:bg-accent-hover:hover {
+    background-color: var(--accent-primary-hover);
+  }
+
+  .bg-accent-muted {
+    background-color: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+  }
+
+  .hover\:bg-accent-muted-hover:hover {
+    background-color: color-mix(in srgb, var(--accent-primary) 25%, transparent);
+  }
+
+  .bg-accent-subtle {
+    background-color: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+  }
+
+  :root:not(.dark) .bg-accent-subtle {
+    background-color: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-secondary));
+  }
+
+  .bg-focus {
+    background-color: var(--bg-active);
+  }
+
+  /* Semantic background colors. Solids are for filled indicators; /10 and /20 stay as the subtle status fill. */
+  .bg-error {
+    background-color: var(--status-danger-solid);
+  }
+
+  .bg-error\/10,
+  .bg-error\/20 {
+    background-color: var(--status-danger-bg);
+  }
+
+  .bg-warning {
+    background-color: var(--status-warning-dot);
+  }
+
+  .bg-warning\/10,
+  .bg-warning\/20 {
+    background-color: var(--status-warning-bg);
+  }
+
+  .bg-success {
+    background-color: var(--status-success-dot);
+  }
+
+  .bg-success\/10,
+  .bg-success\/20 {
+    background-color: var(--status-success-bg);
+  }
+
+  .bg-danger-solid {
+    background-color: var(--status-danger-solid);
+  }
+
+  .bg-warning-solid {
+    background-color: var(--status-warning-solid);
+  }
+
+  .bg-danger-subtle {
+    background-color: var(--status-danger-bg);
+  }
+
+  .bg-warning-subtle {
+    background-color: var(--status-warning-bg);
+  }
+
+  .bg-success-subtle {
+    background-color: var(--status-success-bg);
+  }
+
+  .bg-info-subtle {
+    background-color: var(--status-info-bg);
+  }
+
+  .bg-info {
+    background-color: var(--status-info-dot);
+  }
+
+  .bg-overlay {
+    background-color: var(--bg-overlay);
+  }
+
+  .bg-canvas {
+    background-color: var(--bg-primary);
+  }
+
+  .bg-surface {
+    background-color: var(--bg-secondary);
+  }
+
+  .bg-sunken {
+    background-color: var(--bg-tertiary);
+  }
+
+  .bg-field {
+    background-color: var(--bg-input);
+  }
+
+  /* Border utilities */
+  .border-primary {
+    border-color: var(--border-primary);
+  }
+
+  .border-error,
+  .border-danger {
+    border-color: var(--status-danger-border);
+  }
+
+  .border-warning {
+    border-color: var(--status-warning-border);
+  }
+
+  .border-success {
+    border-color: var(--status-success-border);
+  }
+
+  .border-info {
+    border-color: var(--status-info-border);
+  }
+
+  .border-default {
+    border-color: var(--border-primary);
+  }
+
+  .border-accent {
+    border-color: var(--accent-primary);
+  }
+
+  .border-accent-muted {
+    border-color: color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  }
+
+  .border-accent-strong {
+    border-color: color-mix(in srgb, var(--accent-primary) 50%, transparent);
+  }
+
+  .border-l-accent {
+    border-left-color: var(--accent-primary);
+  }
+
+  .hover\:border-accent-muted:hover {
+    border-color: color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  }
+
+  .hover\:border-accent-strong:hover {
+    border-color: color-mix(in srgb, var(--accent-primary) 50%, transparent);
+  }
+
+  .hover\:border-accent-soft:hover {
+    border-color: var(--accent-primary-soft);
+  }
+
+  /* Ring utilities */
+  .ring-accent {
+    --tw-ring-color: var(--accent-primary);
+  }
+
+  .ring-focus {
+    --tw-ring-color: var(--accent-primary);
+  }
+
+  /* Text utilities */
+  .text-primary {
+    color: var(--text-primary);
+  }
+
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+
+  .text-muted {
+    color: var(--text-muted);
+  }
+
+  .text-dim {
+    color: var(--text-dim);
+  }
+
+  .text-accent {
+    color: var(--accent-primary);
+  }
+
+  .text-accent-soft {
+    color: var(--accent-primary-soft);
+  }
+
+  .hover\:text-accent-soft:hover {
+    color: var(--accent-primary-soft);
+  }
+
+  .text-on-accent {
+    color: var(--text-on-accent);
+  }
+
+  .text-accent\/90 {
+    color: color-mix(in srgb, var(--accent-primary) 90%, transparent);
+  }
+
+  .text-accent\/70 {
+    color: color-mix(in srgb, var(--accent-primary) 70%, transparent);
+  }
+
+  /* Semantic text colors */
+  .text-danger {
+    color: var(--status-danger-fg);
+  }
+
+  .text-info {
+    color: var(--status-info-fg);
+  }
+
+  .text-fg {
+    color: var(--text-primary);
+  }
+
+  .text-fg-secondary {
+    color: var(--text-secondary);
+  }
+
+  .placeholder-muted::placeholder {
+    color: var(--text-muted);
+  }
+
+  .bg-toast-success {
+    /* The status tint is translucent; laid over the raised surface so nothing behind shows through. */
+    background-color: var(--surface-raised);
+    background-image: linear-gradient(var(--status-success-bg), var(--status-success-bg));
+  }
+
+  .bg-toast-error {
+    /* The status tint is translucent; laid over the raised surface so nothing behind shows through. */
+    background-color: var(--surface-raised);
+    background-image: linear-gradient(var(--status-danger-bg), var(--status-danger-bg));
+  }
+
+  .bg-toast-info {
+    /* The status tint is translucent; laid over the raised surface so nothing behind shows through. */
+    background-color: var(--surface-raised);
+    background-image: linear-gradient(var(--status-info-bg), var(--status-info-bg));
+  }
+
+  .bg-toast-warning {
+    /* The status tint is translucent; laid over the raised surface so nothing behind shows through. */
+    background-color: var(--surface-raised);
+    background-image: linear-gradient(var(--status-warning-bg), var(--status-warning-bg));
+  }
+
+  .text-toast-success {
+    color: var(--status-success-fg);
+  }
+
+  .text-toast-error {
+    color: var(--status-danger-fg);
+  }
+
+  .text-toast-info {
+    color: var(--status-info-fg);
+  }
+
+  .text-toast-warning {
+    color: var(--status-warning-fg);
+  }
+
+  .border-toast-success {
+    border-color: var(--status-success-border);
+  }
+
+  .border-toast-error {
+    border-color: var(--status-danger-border);
+  }
+
+  .border-toast-info {
+    border-color: var(--status-info-border);
+  }
+
+  .border-toast-warning {
+    border-color: var(--status-warning-border);
+  }
+
+  .shadow-card {
+    box-shadow: var(--elevation-card);
+  }
+
+  .shadow-popover {
+    box-shadow: var(--elevation-popover);
+  }
+
+  .shadow-overlay {
+    box-shadow: var(--elevation-overlay);
+  }
+
+  .shadow-button {
+    box-shadow: var(--elevation-button);
+  }
+
+  .shadow-accent,
+  .shadow-button-primary {
+    box-shadow: var(--elevation-accent);
+  }
+
+  .focus-ring:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--focus-ring);
+  }
+
+  .z-dropdown {
+    z-index: var(--z-dropdown);
+  }
+
+  .z-modal {
+    z-index: var(--z-modal);
+  }
+
+  .z-toast {
+    z-index: var(--z-toast);
+  }
+
+  .z-lightbox {
+    z-index: var(--z-lightbox);
+  }
+
+  .focus-accent:focus {
+    outline: none;
+    border-color: color-mix(in srgb, var(--accent-primary) 50%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-primary) 20%, transparent);
+  }
+
+  .accent-control {
+    accent-color: var(--accent-primary);
+  }
+
+  .btn-accent {
+    background-color: var(--accent-primary);
+    color: var(--text-on-accent);
+    transition-property: color, background-color, border-color, box-shadow;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+    cursor: pointer;
+    box-shadow: var(--elevation-accent);
+  }
+
+  .btn-accent:hover {
+    background-color: var(--accent-primary-hover);
+  }
+
+  .btn-accent:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /*.dark .focus-ring {
+   @apply focus:ring-offset-gray-900;
+  }*/
+  .prose {
+    max-width: 100ch;
+
+    h1 {
+      font-size: 1.6em;
+    }
+
+    ol {
+      padding-left: 2.3em;
+    }
+  }
+}
+
+/*
+ * Status text colours as real utilities, so variants work (`hover:text-error`).
+ * Plain classes inside `@layer utilities` get no variants in Tailwind v4.
+ */
+@utility text-error {
+  color: var(--text-error);
+}
+
+@utility text-warning {
+  color: var(--text-warning);
+}
+
+@utility text-success {
+  color: var(--text-success);
+}

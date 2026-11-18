@@ -14,6 +14,7 @@ import CheckpointPlugin from "@tokenring-ai/checkpoint/plugin";
 import CloudQuotePlugin from "@tokenring-ai/cloudquote/plugin";
 import CodeWatchPlugin from "@tokenring-ai/code-watch/plugin";
 import CodeBasePlugin from "@tokenring-ai/codebase/plugin";
+import DashboardPlugin from "@tokenring-ai/dashboard/plugin";
 import DatabasePlugin from "@tokenring-ai/database/plugin";
 import DiscordPlugin from "@tokenring-ai/discord/plugin";
 import DockerPlugin from "@tokenring-ai/docker/plugin";
@@ -24,16 +25,20 @@ import FilesystemPlugin from "@tokenring-ai/filesystem/plugin";
 import GhostIOPlugin from "@tokenring-ai/ghost-io/plugin";
 import GitPlugin from "@tokenring-ai/git/plugin";
 import GithubPlugin from "@tokenring-ai/github/plugin";
+import GoalPlugin from "@tokenring-ai/goal/plugin";
 import GooglePlugin from "@tokenring-ai/google/plugin";
 import ImageGenerationPlugin from "@tokenring-ai/image/plugin";
 import JavascriptPlugin from "@tokenring-ai/javascript/plugin";
 import KubernetesPlugin from "@tokenring-ai/kubernetes/plugin";
 import LifecyclePlugin from "@tokenring-ai/lifecycle/plugin";
 import MarkdownPlugin from "@tokenring-ai/markdown/plugin";
+import MarketplacePlugin from "@tokenring-ai/marketplace/plugin";
 import MCPPlugin from "@tokenring-ai/mcp/plugin";
 import MediaLibraryPlugin from "@tokenring-ai/media-library/plugin";
 import MemoryPlugin from "@tokenring-ai/memory/plugin";
 import MetricsPlugin from "@tokenring-ai/metrics/plugin";
+import MonitorPlugin from "@tokenring-ai/monitor/plugin";
+import NewsletterPlugin from "@tokenring-ai/newsletter/plugin";
 import NewsRPMPlugin from "@tokenring-ai/newsrpm/plugin";
 import OneFrontendPlugin from "@tokenring-ai/one-frontend/plugin";
 import PosixSystemPlugin from "@tokenring-ai/posix-system/plugin";
@@ -81,6 +86,7 @@ export const plugins = [
   CheckpointPlugin,
   CodeBasePlugin,
   CodeWatchPlugin,
+  DashboardPlugin,
   DatabasePlugin,
   DiscordPlugin,
   DockerPlugin,
@@ -93,6 +99,7 @@ export const plugins = [
   GhostIOPlugin,
   GitPlugin,
   GithubPlugin,
+  GoalPlugin,
   GooglePlugin,
   MediaLibraryPlugin,
   ImageGenerationPlugin,
@@ -101,9 +108,12 @@ export const plugins = [
   LifecyclePlugin,
   PosixSystemPlugin,
   MarkdownPlugin,
+  MarketplacePlugin,
   MCPPlugin,
   MemoryPlugin,
   MetricsPlugin,
+  MonitorPlugin,
+  NewsletterPlugin,
   NewsRPMPlugin,
   RedditPlugin,
   ResearchPlugin,
@@ -149,11 +159,14 @@ export const configSchema = z.object({
   ...DiscordPlugin.configSchema.shape,
   ...DockerPlugin.configSchema.shape,
   ...BunStoragePlugin.immutableConfigSchema.shape,
+  ...EmailPlugin.configSchema.shape,
   ...BotPlugin.configSchema.shape,
   ...FileIndexPlugin.configSchema.shape,
   ...FilesystemPlugin.configSchema.shape,
   ...GhostIOPlugin.configSchema.shape,
+  ...GitPlugin.configSchema.shape,
   ...GithubPlugin.configSchema.shape,
+  ...GoalPlugin.configSchema.shape,
   ...GooglePlugin.configSchema.shape,
   ...MediaLibraryPlugin.configSchema.shape,
   ...ImageGenerationPlugin.configSchema.shape,
@@ -161,7 +174,11 @@ export const configSchema = z.object({
   ...LifecyclePlugin.configSchema.shape,
   ...PosixSystemPlugin.configSchema.shape,
   ...MarkdownPlugin.configSchema.shape,
+  ...MarketplacePlugin.configSchema.shape,
+  ...MemoryPlugin.configSchema.shape,
   ...MetricsPlugin.configSchema.shape,
+  ...MonitorPlugin.configSchema.shape,
+  ...NewsletterPlugin.configSchema.shape,
   ...MCPPlugin.configSchema.shape,
   ...NewsRPMPlugin.configSchema.shape,
   ...RedditPlugin.configSchema.shape,
